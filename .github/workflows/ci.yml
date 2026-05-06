@@ -92,11 +92,12 @@ jobs:
   e2e-visual:
     name: E2E (Playwright - visual-regression)
     runs-on: ubuntu-latest
-    # Baselines for visual-regression are not yet committed (would need to be
-    # generated on a Linux runner — local macOS snapshots are darwin-flavored
-    # and PNG-incompatible). Keep the job visible but non-blocking until we
-    # add a baseline-generation workflow (or run the suite locally + commit).
-    continue-on-error: true
+    # Visual-regression spec is currently `test.skip()`-gated on CI inside
+    # tests/e2e/visual-regression.spec.ts because Linux baselines have not
+    # yet been generated and committed. The job runs (so size-budget +
+    # browser install pipelines stay warm) and reports green via skipped
+    # tests. Re-enable real assertions by committing snapshot PNGs and
+    # removing the skip guard at the top of the spec.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

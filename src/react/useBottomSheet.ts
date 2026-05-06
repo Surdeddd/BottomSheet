@@ -14,11 +14,11 @@ const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export type UseBottomSheetRefs = {
-  sheetRef: React.RefObject<HTMLElement>;
-  handleRef: React.RefObject<HTMLElement>;
-  contentRef: React.RefObject<HTMLElement>;
-  backdropRef: React.RefObject<HTMLElement>;
-  screenRef: React.RefObject<HTMLElement>;
+  sheetRef: React.RefObject<HTMLElement | null>;
+  handleRef: React.RefObject<HTMLElement | null>;
+  contentRef: React.RefObject<HTMLElement | null>;
+  backdropRef: React.RefObject<HTMLElement | null>;
+  screenRef: React.RefObject<HTMLElement | null>;
 };
 
 /**

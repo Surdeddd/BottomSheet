@@ -76,6 +76,13 @@ const waitForSnap = async (
   await waitForSheetSettled(page);
 };
 
+// Skipped on CI until Linux baseline snapshots are generated and committed.
+// Run locally to seed baselines (`npx playwright test tests/e2e/visual-regression.spec.ts --update-snapshots`)
+// against a Linux runner — macOS-generated PNGs differ in font hinting and
+// won't match Ubuntu CI. Re-enable by removing this `skip()` once baselines
+// land in `tests/e2e/visual-regression.spec.ts-snapshots/`.
+test.skip(!!process.env.CI, "visual-regression baselines not yet generated");
+
 test.describe("Visual regression — demo layout", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");

@@ -12,8 +12,8 @@ const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export type UseOverlayReturn = {
-  panelRef: React.RefObject<HTMLElement>;
-  backdropRef: React.RefObject<HTMLElement>;
+  panelRef: React.RefObject<HTMLElement | null>;
+  backdropRef: React.RefObject<HTMLElement | null>;
   state: OverlayState;
   open: () => Promise<void>;
   close: () => Promise<void>;
