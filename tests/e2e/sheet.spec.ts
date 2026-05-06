@@ -103,7 +103,7 @@ test.describe("React BottomSheet", () => {
     await page.waitForFunction(
       () => document.querySelector("#ro-active")?.textContent?.includes("half"),
       undefined,
-      { timeout: 5000 },
+      { timeout: 10000 },
     );
   });
 });
@@ -123,7 +123,7 @@ test.describe("Theme + i18n toggles", () => {
     await page.waitForFunction(
       prev => document.documentElement.dataset.theme !== prev,
       before,
-      { timeout: 5000 },
+      { timeout: 10000 },
     );
     const after = await page.evaluate(
       () => document.documentElement.dataset.theme,
@@ -145,7 +145,7 @@ test.describe("Theme + i18n toggles", () => {
           .querySelector('[data-i18n="ctrl.mode"]')
           ?.textContent?.trim() !== prev,
       initial,
-      { timeout: 5000 },
+      { timeout: 10000 },
     );
     const after = (
       await page.locator('[data-i18n="ctrl.mode"]').textContent()

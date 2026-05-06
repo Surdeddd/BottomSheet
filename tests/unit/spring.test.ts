@@ -37,7 +37,11 @@ describe("runSpring", () => {
     });
     await handle.promise;
     // With velocity > 0, the spring departs the target before returning.
-    const peak = Math.max(...samples);
+    // Use reduce instead of `Math.max(...samples)`: a heavily overdamped
+    // spring on slower CI hardware can collect tens of thousands of samples,
+    // and spread-arg max blows the call-stack limit. Reduce is O(n) without
+    // the variadic-arg pitfall.
+    const peak = samples.reduce((a, b) => (b > a ? b : a), -Infinity);
     expect(peak).toBeGreaterThan(100);
     expect(samples[samples.length - 1]).toBe(100);
   });
@@ -66,7 +70,11 @@ describe("runSpring", () => {
       onUpdate: v => samples.push(v),
     });
     await handle.promise;
-    const peak = Math.max(...samples);
+    // Use reduce instead of `Math.max(...samples)`: a heavily overdamped
+    // spring on slower CI hardware can collect tens of thousands of samples,
+    // and spread-arg max blows the call-stack limit. Reduce is O(n) without
+    // the variadic-arg pitfall.
+    const peak = samples.reduce((a, b) => (b > a ? b : a), -Infinity);
     expect(peak).toBeLessThanOrEqual(100.5); // tiny tolerance for floating point
   });
 });

@@ -84,7 +84,9 @@ const activate = async (page: import("@playwright/test").Page, key: AdapterKey) 
       return raw ? parseFloat(raw) > 0 : false;
     },
     { adapter: key, shadow: usesShadow(key) },
-    { timeout: 15000 },
+    // 25s — CI Linux Pixel-5 emulation cold-loads Vue/Svelte/Solid plugins
+    // 16s+ on first activation. 15s was right on the edge and flaked.
+    { timeout: 25000 },
   );
 };
 
@@ -158,7 +160,7 @@ test.describe("All adapters mount and respond", () => {
           return raw ? parseFloat(raw) > 400 : false;
         },
         { adapter, shadow: usesShadow(adapter) },
-        { timeout: 4000 },
+        { timeout: 8000 },
       );
 
       // snapTo half → between 200 and 400.
@@ -185,13 +187,18 @@ test.describe("All adapters mount and respond", () => {
           return v > 200 && v < 400;
         },
         { adapter, shadow: usesShadow(adapter) },
-        { timeout: 4000 },
+        { timeout: 8000 },
       );
     });
   }
 });
 
 test.describe("Adapter-specific identity assertions", () => {
+  // Same rationale as the "All adapters mount and respond" describe above —
+  // first activation of each adapter triggers a Vite cold-load; serial mode
+  // keeps each one within the per-test mount budget on CI runners.
+  test.describe.configure({ mode: "serial" });
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.waitForSelector(`.device-screen[data-screen="react"] .bs-sheet`);
@@ -208,7 +215,7 @@ test.describe("Adapter-specific identity assertions", () => {
           .querySelector(`.device-screen[data-screen="svelte"] .bs-sheet`)
           ?.getAttribute("data-active") === "half",
       undefined,
-      { timeout: 4000 },
+      { timeout: 8000 },
     );
     await clickSnap(page, "full");
     await page.waitForFunction(
@@ -217,7 +224,7 @@ test.describe("Adapter-specific identity assertions", () => {
           .querySelector(`.device-screen[data-screen="svelte"] .bs-sheet`)
           ?.getAttribute("data-active") === "full",
       undefined,
-      { timeout: 4000 },
+      { timeout: 8000 },
     );
   });
 
@@ -244,7 +251,7 @@ test.describe("Adapter-specific identity assertions", () => {
         return raw ? parseFloat(raw) > 400 : false;
       },
       undefined,
-      { timeout: 4000 },
+      { timeout: 8000 },
     );
   });
 
@@ -287,7 +294,7 @@ test.describe("Adapter-specific identity assertions", () => {
         return host?.sheetState?.activeId === "full";
       },
       undefined,
-      { timeout: 4000 },
+      { timeout: 8000 },
     );
   });
 });
