@@ -1,0 +1,89 @@
+import type { Component, Snippet } from "svelte";
+import type {
+  EngineOptions,
+  EngineState,
+  SheetMode,
+  SnapPoint,
+  SnapPointDef,
+} from "../core/types";
+import type { SheetEventMap } from "../core/types";
+
+export type SvelteBottomSheetOpts<TId extends string = string> = Omit<
+  EngineOptions,
+  | "element"
+  | "handle"
+  | "scrollContainer"
+  | "backdrop"
+  | "screenComponent"
+  | "snapPoints"
+  | "allowed"
+  | "initial"
+> & {
+  snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
+  allowed?: TId[] | ReadonlyArray<TId>;
+  initial?: TId;
+  onSnap?: (id: TId) => void;
+};
+
+export type SvelteAttachRefs = {
+  element: HTMLElement;
+  handle?: HTMLElement;
+  scrollContainer?: HTMLElement;
+  backdrop?: HTMLElement;
+  screenComponent?: HTMLElement;
+};
+
+export type SvelteBottomSheetController<TId extends string = string> = {
+  attach(refs: SvelteAttachRefs): () => void;
+  state(): EngineState & { activeId: TId };
+  on<K extends keyof SheetEventMap>(
+    event: K,
+    fn: (payload: SheetEventMap[K]) => void,
+  ): () => void;
+  snapTo(id: TId): Promise<void>;
+  open(id?: TId): Promise<void>;
+  close(): Promise<void>;
+  setAllowed(ids: TId[], snap?: TId): void;
+  destroy(): void;
+};
+
+export function createBottomSheet<TId extends string = string>(
+  opts: SvelteBottomSheetOpts<TId>,
+): SvelteBottomSheetController<TId>;
+
+export type BottomSheetProps<TId extends string = string> = {
+  snapPoints: SnapPointDef<TId>[];
+  allowed?: TId[];
+  initial?: TId;
+  mode?: SheetMode;
+  animation?: "spring" | "tween";
+  spring?: { stiffness?: number; damping?: number; mass?: number };
+  focusTrap?: boolean;
+  closeOnEscape?: boolean;
+  closeOnBack?: boolean;
+  lockBodyScroll?: boolean;
+  rubberBand?: boolean;
+  backdropRange?: [number, number];
+  backdrop?: boolean;
+  closeOnBackdrop?: boolean;
+  ariaLabel?: string;
+  header?: Snippet<[EngineState & { activeId: TId }]>;
+  leftButton?: Snippet;
+  rightButton?: Snippet;
+  screen?: Snippet;
+  children?: Snippet;
+  onsnap?: (id: TId) => void;
+  onopen?: (id: TId) => void;
+  onclose?: () => void;
+  onchange?: (state: EngineState & { activeId: TId }) => void;
+};
+
+export const BottomSheet: Component<BottomSheetProps>;
+
+export type {
+  SnapPoint,
+  SnapPointDef,
+  SheetMode,
+  EngineState,
+  EngineOptions,
+};

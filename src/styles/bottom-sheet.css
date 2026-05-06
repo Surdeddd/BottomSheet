@@ -1,0 +1,508 @@
+/* =====================================================================
+ * @surdeddd/bottom-sheet — base styles
+ * Override any token below to retheme. All sizes use logical defaults
+ * so the same stylesheet works for bottom / top / left / right modes.
+ * ===================================================================== */
+
+:where(.bs-root) {
+  /* surface */
+  --bs-surface: #ffffff;
+  --bs-surface-border: rgba(225, 227, 237, 1);
+  --bs-shadow: 0 -3px 12px rgba(0, 0, 0, 0.12);
+  --bs-radius: 20px;
+
+  /* handle — WCAG 1.4.11 contrast against light surface ≥ 3:1 */
+  --bs-handle-color: #b5b3a8;
+  --bs-handle-width: 40px;
+  --bs-handle-height: 5px;
+
+  /* layout */
+  --bs-z-backdrop: 90;
+  --bs-z-sheet: 100;
+  --bs-header-min-height: 80px;
+
+  /* backdrop */
+  --bs-backdrop-color: rgba(0, 0, 0, 0.5);
+
+  /* scrim — dimming layer for the area NOT occupied by the sheet
+     (used with scrimMode: "above-sheet" or the .bs-scrim* recipes below).
+     Override these to retheme without rewriting the recipe. */
+  --bs-scrim-color: rgba(0, 0, 0, 0.4);
+  --bs-scrim-blur: 0px;
+  --bs-z-scrim: calc(var(--bs-z-sheet) - 1);
+
+  /* engine writes these — read them in your own CSS to react to drag */
+  --bs-size: 0px;
+  --bs-progress: 0;
+}
+
+.bs-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--bs-backdrop-color);
+  opacity: 0;
+  pointer-events: none;
+  z-index: var(--bs-z-backdrop);
+  /* Transition only when NOT actively dragging/animating — engine writes
+     opacity per-frame and the transition would delay it by 150ms. */
+  transition: opacity 0.15s linear;
+  will-change: opacity;
+}
+.bs-root[data-dragging="true"] .bs-backdrop,
+.bs-root[data-animating="true"] .bs-backdrop {
+  transition: none;
+}
+
+/* ----- sheet ----- */
+.bs-sheet {
+  position: fixed;
+  background: var(--bs-surface);
+  box-shadow: var(--bs-shadow);
+  z-index: var(--bs-z-sheet);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* engine sets touch-action on the handle directly; this is for clicks. */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  overscroll-behavior: contain;
+  /* engine drives the size via transform translate3d. */
+}
+
+.bs-sheet[data-mode="bottom"] {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  border-top-left-radius: var(--bs-radius);
+  border-top-right-radius: var(--bs-radius);
+  border-top: 1px solid var(--bs-surface-border);
+  /* iPhone home-indicator safe area. */
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Progress-driven shadow depth — deeper as the sheet expands. */
+  box-shadow: 0
+              calc(var(--bs-progress, 0) * -2px - 3px)
+              calc(var(--bs-progress, 0) * 18px + 12px)
+              rgba(0, 0, 0, calc(var(--bs-progress, 0) * 0.15 + 0.12));
+}
+.bs-sheet[data-mode="top"] {
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  border-bottom-left-radius: var(--bs-radius);
+  border-bottom-right-radius: var(--bs-radius);
+  border-bottom: 1px solid var(--bs-surface-border);
+  flex-direction: column-reverse;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+  padding-top: env(safe-area-inset-top);
+}
+.bs-sheet[data-mode="left"] {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: 100%;
+  border-top-right-radius: var(--bs-radius);
+  border-bottom-right-radius: var(--bs-radius);
+  border-right: 1px solid var(--bs-surface-border);
+  /* default flex layout (column) — handle is positioned-absolute at the
+     open edge (right) so column flow doesn't matter for it */
+  box-shadow: 3px 0 12px rgba(0, 0, 0, 0.12);
+}
+.bs-sheet[data-mode="right"] {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  border-top-left-radius: var(--bs-radius);
+  border-bottom-left-radius: var(--bs-radius);
+  border-left: 1px solid var(--bs-surface-border);
+  box-shadow: -3px 0 12px rgba(0, 0, 0, 0.12);
+}
+/* In side modes, content sits inside the sheet but with padding to clear
+   the absolutely-positioned handle strip on the open edge. */
+.bs-sheet[data-mode="left"] .bs-content {
+  padding-right: 36px;
+}
+.bs-sheet[data-mode="right"] .bs-content {
+  padding-left: 36px;
+}
+
+/* ----- handle ----- */
+.bs-handle {
+  flex-shrink: 0;
+  /* WCAG 2.5.5 / Apple HIG / Material — 44px minimum hit target. */
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 16px 4px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background: var(--bs-surface);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  /* anchor point for the optional .bs-handle--ticks ::after dots */
+  position: relative;
+}
+.bs-handle:active {
+  cursor: grabbing;
+}
+.bs-handle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+  border-radius: var(--bs-radius);
+}
+
+.bs-handle::before {
+  content: "";
+  display: block;
+  width: var(--bs-handle-width);
+  height: var(--bs-handle-height);
+  background: var(--bs-handle-color);
+  border-radius: calc(var(--bs-handle-height) / 2);
+  margin: 0 auto 8px;
+  transition: width 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  pointer-events: none; /* always hit the padding-zoned parent */
+}
+
+/* Side-mode handle: a thin grab-strip docked to the sheet's open edge,
+   absolutely positioned so it sits on the visible boundary regardless of
+   the sheet's flex-direction. The header content inside it is hidden in
+   side modes — for vertical sheets the handle is just a grip. The hidden
+   header content stays in DOM (and out of the a11y tree thanks to
+   `display: none`) so screen readers don't read a stale header here —
+   consumers should put descriptive content inside the scrollable area
+   instead in side modes. */
+.bs-sheet[data-mode="left"] .bs-handle,
+.bs-sheet[data-mode="right"] .bs-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--bs-surface);
+  z-index: 1;
+  overflow: hidden;
+}
+.bs-sheet[data-mode="left"] .bs-handle > *,
+.bs-sheet[data-mode="right"] .bs-handle > * {
+  display: none;
+}
+.bs-sheet[data-mode="left"] .bs-handle {
+  right: 0;
+  border-left: 1px solid var(--bs-surface-border);
+}
+.bs-sheet[data-mode="right"] .bs-handle {
+  left: 0;
+  border-right: 1px solid var(--bs-surface-border);
+}
+
+.bs-sheet[data-mode="left"] .bs-handle::before,
+.bs-sheet[data-mode="right"] .bs-handle::before {
+  width: var(--bs-handle-height);
+  height: var(--bs-handle-width);
+  margin: 0;
+}
+
+.bs-sheet:hover .bs-handle::before {
+  background: color-mix(in oklab, var(--bs-handle-color), #000 15%);
+}
+.bs-handle:active::before {
+  background: color-mix(in oklab, var(--bs-handle-color), #000 35%);
+  transform: scaleX(1.15);
+}
+
+/* ----- snap-target ticks (opt-in via .bs-handle--ticks) -----
+   Material You / Apple Music inspired: while dragging, render a faint row
+   of dots near the grip to suggest "this thing has multiple stops".
+   Decorative only — positions are NOT computed from real snap points.
+   Hidden in idle state, fades in during drag. Opt-in via the modifier
+   class so consumers who don't want the hint don't get it. */
+.bs-handle.bs-handle--ticks::after {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 50%;
+  /* Sit just under the grip in vertical (bottom/top) modes. Translate -50%
+     so the dot row is centered horizontally regardless of width. */
+  bottom: 6px;
+  transform: translateX(-50%);
+  width: calc(var(--bs-handle-width) * 2);
+  height: 3px;
+  /* 3px dots spaced every 8px — purely visual hint. */
+  background-image: radial-gradient(
+    circle,
+    var(--bs-handle-color) 0 1.5px,
+    transparent 1.6px
+  );
+  background-size: 8px 3px;
+  background-repeat: repeat-x;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.18s ease-out;
+  pointer-events: none;
+}
+/* Only visible while the user is actively dragging the sheet. */
+.bs-root[data-dragging="true"] .bs-handle.bs-handle--ticks::after {
+  opacity: 0.4;
+}
+/* Top mode: dots above the grip instead of below. */
+.bs-sheet[data-mode="top"] .bs-handle.bs-handle--ticks::after {
+  bottom: auto;
+  top: 6px;
+}
+/* Side modes: dots run vertically alongside the (vertical) grip. */
+.bs-sheet[data-mode="left"] .bs-handle.bs-handle--ticks::after,
+.bs-sheet[data-mode="right"] .bs-handle.bs-handle--ticks::after {
+  left: 50%;
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: calc(var(--bs-handle-width) * 2);
+  background-size: 3px 8px;
+  background-repeat: repeat-y;
+  /* Offset the column so it sits beside the grip, not on top of it. */
+  margin-left: calc(var(--bs-handle-height) + 6px);
+}
+.bs-sheet[data-mode="right"] .bs-handle.bs-handle--ticks::after {
+  margin-left: calc(-1 * (var(--bs-handle-height) + 6px));
+}
+
+/* ----- content ----- */
+.bs-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 16px 16px;
+}
+
+/* ----- screen-component (fades in behind sheet, opacity = --bs-progress) -----
+ *
+ * Two ready-made scrim recipes for the engine's `screenComponent`:
+ *
+ * 1. `.bs-screen` — base. Engine writes `opacity` and `display`; consumer
+ *    controls layout. Use directly when scrimMode: "full" (default).
+ *
+ * 2. `.bs-scrim` — opinionated scrim with token-driven color + optional
+ *    blur. Drop on the same element as `.bs-screen` (or alone) for an
+ *    instant "monitoring-style" dim with no extra CSS.
+ *
+ * 3. `.bs-scrim--above` — pairs with `scrimMode: "above-sheet"`. The
+ *    engine writes the `inset` so the scrim covers only the area NOT
+ *    occupied by the sheet; this class only adds the visual treatment.
+ *
+ * Tokens (override at any cascade level):
+ *   --bs-scrim-color  default rgba(0, 0, 0, 0.4)
+ *   --bs-scrim-blur   default 0px (set to e.g. 8px for backdrop blur)
+ *   --bs-z-scrim      default calc(--bs-z-sheet - 1)
+ */
+.bs-screen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: none;
+  z-index: var(--bs-z-scrim);
+}
+
+.bs-scrim {
+  background: var(--bs-scrim-color);
+  /* Engine writes opacity per-frame; transition only when not actively
+     dragging/animating to avoid the 150ms lag on fast snaps. */
+  transition: opacity 0.15s linear;
+  will-change: opacity;
+}
+.bs-root[data-dragging="true"] .bs-scrim,
+.bs-root[data-animating="true"] .bs-scrim {
+  transition: none;
+}
+
+/* Optional blur — opt-in by setting --bs-scrim-blur to a non-zero length.
+   `backdrop-filter: blur(0)` is a no-op visually but still triggers a
+   compositing layer; the calc() guards against accidental layer creation
+   when the consumer hasn't customised the token. */
+.bs-scrim {
+  backdrop-filter: blur(var(--bs-scrim-blur));
+  -webkit-backdrop-filter: blur(var(--bs-scrim-blur));
+}
+
+/* `.bs-scrim--above` is a documented marker class for `scrimMode:
+   "above-sheet"` — the engine writes the `inset` + `position: fixed`
+   inline. Add your own declarations under `.bs-scrim--above { ... }` to
+   override the visual treatment per-context. */
+
+/* ----- buttons docked above the sheet ----- */
+.bs-button-slot {
+  position: absolute;
+  z-index: calc(var(--bs-z-sheet) + 1);
+  pointer-events: auto;
+}
+.bs-button-slot[data-side="left"] {
+  left: 16px;
+  bottom: calc(var(--bs-size, 0px) + 12px);
+  transition: bottom 0.15s ease;
+}
+.bs-button-slot[data-side="right"] {
+  right: 16px;
+  bottom: calc(var(--bs-size, 0px) + 12px);
+  transition: bottom 0.15s ease;
+}
+
+/* ----- accessibility ----- */
+@media (prefers-reduced-motion: reduce) {
+  .bs-backdrop,
+  .bs-handle::before,
+  .bs-button-slot[data-side="left"],
+  .bs-button-slot[data-side="right"] {
+    transition: none !important;
+  }
+}
+
+/* ----- dark mode token defaults ----- */
+@media (prefers-color-scheme: dark) {
+  :where(.bs-root) {
+    --bs-surface: #1a1a1d;
+    --bs-surface-border: rgba(255, 255, 255, 0.08);
+    /* WCAG 1.4.11 — non-text contrast ≥ 3:1 against the surface. */
+    --bs-handle-color: rgba(255, 255, 255, 0.45);
+    --bs-shadow: 0 -3px 16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* visually-hidden helper for aria-live announcements */
+.bs-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =====================================================================
+ * OVERLAY — bottom-anchored slide-up panel
+ * ===================================================================== */
+
+:where(.ovl-root) {
+  --ovl-surface: var(--bs-surface, #ffffff);
+  --ovl-surface-border: var(--bs-surface-border, rgba(0, 0, 0, 0.08));
+  --ovl-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
+  --ovl-radius: var(--bs-radius, 20px);
+  --ovl-backdrop-color: rgba(0, 0, 0, 0.5);
+  --ovl-z-backdrop: 200;
+  --ovl-z-panel: 201;
+}
+
+.ovl-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--ovl-backdrop-color);
+  opacity: 0;
+  pointer-events: none;
+  z-index: var(--ovl-z-backdrop);
+}
+
+.ovl-panel {
+  position: fixed;
+  background: var(--ovl-surface);
+  box-shadow: var(--ovl-shadow);
+  z-index: var(--ovl-z-panel);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  /* Modern open transition — works alongside the JS double-rAF fallback
+     in core/overlay.ts. In browsers that support @starting-style
+     (Chrome 117+, Safari 17.5+, Firefox 129+), the engine just flips
+     [data-state] from "entering" to "open" and the browser interpolates
+     from the @starting-style block below. The JS still writes inline
+     transition/transform for older browsers; setting the same transition
+     here is harmless because the inline style wins via specificity. */
+  transition: transform 0.32s cubic-bezier(0.29, 1.24, 0.84, 0.99),
+              opacity 0.32s ease-out;
+}
+.ovl-panel[data-state="open"] {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+/* @starting-style: define the "from" frame for the entry interpolation
+   per edge. Browsers without support fall back gracefully — the
+   double-rAF in overlay.ts still drives the same animation. */
+@starting-style {
+  .ovl-panel[data-edge="bottom"][data-state="open"] {
+    transform: translate3d(0, 100%, 0);
+    opacity: 0;
+  }
+  .ovl-panel[data-edge="top"][data-state="open"] {
+    transform: translate3d(0, -100%, 0);
+    opacity: 0;
+  }
+  .ovl-panel[data-edge="left"][data-state="open"] {
+    transform: translate3d(-100%, 0, 0);
+    opacity: 0;
+  }
+  .ovl-panel[data-edge="right"][data-state="open"] {
+    transform: translate3d(100%, 0, 0);
+    opacity: 0;
+  }
+}
+
+.ovl-panel[data-edge="bottom"] {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  border-top-left-radius: var(--ovl-radius);
+  border-top-right-radius: var(--ovl-radius);
+  border-top: 1px solid var(--ovl-surface-border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.ovl-panel[data-edge="top"] {
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  border-bottom-left-radius: var(--ovl-radius);
+  border-bottom-right-radius: var(--ovl-radius);
+  border-bottom: 1px solid var(--ovl-surface-border);
+  padding-top: env(safe-area-inset-top);
+}
+
+.ovl-panel[data-edge="left"] {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: 100%;
+  border-top-right-radius: var(--ovl-radius);
+  border-bottom-right-radius: var(--ovl-radius);
+  border-right: 1px solid var(--ovl-surface-border);
+}
+
+.ovl-panel[data-edge="right"] {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  border-top-left-radius: var(--ovl-radius);
+  border-bottom-left-radius: var(--ovl-radius);
+  border-left: 1px solid var(--ovl-surface-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ovl-panel,
+  .ovl-backdrop {
+    transition: none !important;
+  }
+}

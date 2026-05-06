@@ -1,0 +1,22 @@
+diff --git a/node_modules/esbuild-svelte/dist/index.js b/node_modules/esbuild-svelte/dist/index.js
+index 2c9e0c0..52f6932 100644
+--- a/node_modules/esbuild-svelte/dist/index.js
++++ b/node_modules/esbuild-svelte/dist/index.js
+@@ -7,7 +7,7 @@ async function convertMessage({ message, start, end }, filename, source, sourcem
+   let location;
+   if (start && end) {
+     let lineText = source.split(/\r\n|\r|\n/g)[start.line - 1];
+-    let lineEnd = start.line === end.line ? end.column : lineText.length;
++    let lineEnd = start.line === end.line ? end.column : (lineText ? lineText.length : 0);
+     if (sourcemap) {
+       sourcemap = new TraceMap(sourcemap);
+       const pos = originalPositionFor(sourcemap, {
+@@ -23,7 +23,7 @@ async function convertMessage({ message, start, end }, filename, source, sourcem
+       file: filename,
+       line: start.line,
+       column: start.column,
+-      length: lineEnd - start.column,
++      length: Math.max(0, Number.isFinite(lineEnd - start.column) ? Math.round(lineEnd - start.column) : 0),
+       lineText
+     };
+   }

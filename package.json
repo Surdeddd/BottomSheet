@@ -1,0 +1,287 @@
+{
+  "name": "@surdeddd/bottom-sheet",
+  "version": "0.1.0",
+  "description": "Universal, headless bottom sheet — framework-agnostic core with React, Vue 3, Svelte, Solid, Qwik, Preact, Lit and Custom Element adapters. Pointer Events, snap points, momentum, a11y, SSR-safe.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Surdeddd",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Surdeddd/BottomSheet.git"
+  },
+  "homepage": "https://github.com/Surdeddd/BottomSheet#readme",
+  "bugs": {
+    "url": "https://github.com/Surdeddd/BottomSheet/issues"
+  },
+  "keywords": [
+    "bottom-sheet",
+    "modal",
+    "drawer",
+    "headless",
+    "framework-agnostic",
+    "react",
+    "vue",
+    "svelte",
+    "solid-js",
+    "qwik",
+    "preact",
+    "lit",
+    "web-component",
+    "ssr",
+    "a11y",
+    "snap-points",
+    "gesture",
+    "pointer-events"
+  ],
+  "sideEffects": [
+    "./dist/styles.css",
+    "./dist/themes/ios.css",
+    "./dist/themes/material.css",
+    "./dist/themes/vercel.css",
+    "./dist/element.js",
+    "./dist/element.cjs",
+    "./dist/element.iife.global.js"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    },
+    "./preact": {
+      "types": "./dist/preact.d.ts",
+      "import": "./dist/preact.js",
+      "require": "./dist/preact.cjs"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js",
+      "require": "./dist/vue.cjs"
+    },
+    "./element": {
+      "types": "./dist/element.d.ts",
+      "import": "./dist/element.js",
+      "require": "./dist/element.cjs"
+    },
+    "./svelte": {
+      "types": "./dist/svelte.d.ts",
+      "import": "./dist/svelte.js",
+      "require": "./dist/svelte.cjs"
+    },
+    "./overlay": {
+      "types": "./dist/overlay.d.ts",
+      "import": "./dist/overlay.js",
+      "require": "./dist/overlay.cjs"
+    },
+    "./qwik": {
+      "types": "./dist/qwik.d.ts",
+      "import": "./dist/qwik.js",
+      "require": "./dist/qwik.cjs"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.ts",
+      "import": "./dist/solid.js",
+      "require": "./dist/solid.cjs"
+    },
+    "./integrations/react-hook-form": {
+      "types": "./dist/integrations/react-hook-form.d.ts",
+      "import": "./dist/integrations/react-hook-form.js",
+      "require": "./dist/integrations/react-hook-form.cjs"
+    },
+    "./integrations/formik": {
+      "types": "./dist/integrations/formik.d.ts",
+      "import": "./dist/integrations/formik.js",
+      "require": "./dist/integrations/formik.cjs"
+    },
+    "./styles": "./dist/styles.css",
+    "./styles.css": "./dist/styles.css",
+    "./themes/ios": "./dist/themes/ios.css",
+    "./themes/ios.css": "./dist/themes/ios.css",
+    "./themes/material": "./dist/themes/material.css",
+    "./themes/material.css": "./dist/themes/material.css",
+    "./themes/vercel": "./dist/themes/vercel.css",
+    "./themes/vercel.css": "./dist/themes/vercel.css"
+  },
+  "workspaces": [
+    "examples/*"
+  ],
+  "size-limit": [
+    {
+      "name": "core (engine + types)",
+      "path": "dist/index.js",
+      "limit": "18 KB",
+      "gzip": true
+    },
+    {
+      "name": "react adapter",
+      "path": "dist/react.js",
+      "limit": "22 KB",
+      "gzip": true
+    },
+    {
+      "name": "vue adapter",
+      "path": "dist/vue.js",
+      "limit": "20 KB",
+      "gzip": true
+    },
+    {
+      "name": "svelte adapter",
+      "path": "dist/svelte.js",
+      "limit": "19 KB",
+      "gzip": true
+    },
+    {
+      "name": "solid adapter",
+      "path": "dist/solid.js",
+      "limit": "18 KB",
+      "gzip": true
+    },
+    {
+      "name": "qwik adapter",
+      "path": "dist/qwik.js",
+      "limit": "18 KB",
+      "gzip": true
+    },
+    {
+      "name": "preact adapter (re-export only)",
+      "path": "dist/preact.js",
+      "limit": "1 KB",
+      "gzip": true,
+      "ignore": [
+        "./react.js"
+      ]
+    },
+    {
+      "name": "web component (self-contained)",
+      "path": "dist/element.js",
+      "limit": "24 KB",
+      "gzip": true
+    },
+    {
+      "name": "web component (IIFE / CDN)",
+      "path": "dist/element.iife.global.js",
+      "limit": "19 KB",
+      "gzip": true
+    },
+    {
+      "name": "overlay (subpath)",
+      "path": "dist/overlay.js",
+      "limit": "6 KB",
+      "gzip": true
+    }
+  ],
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prebuild": "node ./scripts/clean-dist.mjs && node ./scripts/inline-base-css.mjs",
+    "build": "tsup && tsup --config tsup.iife.config.ts",
+    "postbuild": "node ./scripts/copy-d-ts-templates.mjs && node ./scripts/fix-preact-dist.mjs && node ./scripts/strip-icloud-dupes.mjs",
+    "sync:css": "node ./scripts/inline-base-css.mjs",
+    "dev": "tsup --watch",
+    "demo": "vite",
+    "demo:build": "vite build",
+    "demo:preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "bench": "vitest bench",
+    "size": "size-limit",
+    "docs:api": "typedoc",
+    "lhci": "lhci autorun --config=./lighthouserc.json",
+    "prepublishOnly": "npm run build",
+    "postinstall": "node ./scripts/postinstall-patches.mjs",
+    "prepare": "husky"
+  },
+  "peerDependencies": {
+    "@builder.io/qwik": ">=1.0.0",
+    "formik": ">=2.0.0",
+    "preact": ">=10.0.0",
+    "preact-render-to-string": ">=6.0.0",
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0",
+    "react-hook-form": ">=7.0.0",
+    "solid-js": ">=1.0.0",
+    "svelte": ">=5.0.0",
+    "vue": ">=3.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@builder.io/qwik": {
+      "optional": true
+    },
+    "formik": {
+      "optional": true
+    },
+    "preact": {
+      "optional": true
+    },
+    "preact-render-to-string": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "react-hook-form": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.2",
+    "@builder.io/qwik": "^1.19.2",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.59.1",
+    "@size-limit/preset-small-lib": "^12.1.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "@vitest/coverage-v8": "^1.2.0",
+    "esbuild-svelte": "^0.9.4",
+    "fast-check": "^4.7.0",
+    "happy-dom": "^13.3.0",
+    "husky": "^9.1.7",
+    "lit": "^3.3.2",
+    "patch-package": "^8.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "size-limit": "^12.1.0",
+    "solid-js": "^1.9.12",
+    "svelte": "^5.55.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "unplugin-vue": "^7.1.1",
+    "vite": "^5.0.10",
+    "vite-plugin-solid": "^2.11.12",
+    "vitest": "^1.2.0",
+    "vue": "^3.4.0",
+    "vue-tsc": "^1.8.27"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

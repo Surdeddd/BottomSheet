@@ -1,0 +1,24 @@
+/* Material 3 theme — elevated surface, M3-spec shadow, larger radius. Activate
+   by adding `bs-theme-material` to the `.bs-root` element. */
+
+.bs-theme-material {
+  --bs-surface: #fef7ff;
+  --bs-surface-border: rgba(73, 69, 79, 0.12);
+  --bs-shadow: 0 -1px 3px rgba(0, 0, 0, 0.12),
+               0 -4px 8px 3px rgba(0, 0, 0, 0.08);
+  --bs-radius: 28px;
+  --bs-handle-color: #79747e;
+  --bs-handle-width: 32px;
+  --bs-handle-height: 4px;
+  --bs-backdrop-color: rgba(0, 0, 0, 0.5);
+  --bs-scrim-color: rgba(28, 27, 31, 0.5);
+  --bs-scrim-blur: 0px;
+}
+
+[data-theme="dark"] .bs-theme-material {
+  --bs-surface: #1d1b20;
+  --bs-surface-border: rgba(202, 196, 208, 0.16);
+  --bs-shadow: 0 -1px 3px rgba(0, 0, 0, 0.5),
+               0 -4px 8px 3px rgba(0, 0, 0, 0.3);
+  --bs-handle-color: #cac4d0;
+}

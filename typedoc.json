@@ -1,0 +1,34 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "@surdeddd/bottom-sheet",
+  "entryPoints": [
+    "src/index.ts",
+    "src/react/index.ts",
+    "src/vue/index.ts",
+    "src/svelte/index.ts",
+    "src/solid/index.tsx",
+    "src/qwik/index.tsx",
+    "src/preact/index.ts",
+    "src/web-component/index.ts",
+    "src/core/overlay.ts"
+  ],
+  "out": "docs/api",
+  "tsconfig": "tsconfig.json",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "navigationLinks": {
+    "GitHub": "https://github.com/Surdeddd/BottomSheet",
+    "Migration v2": "https://github.com/Surdeddd/BottomSheet/blob/main/docs/migration-v2.md"
+  },
+  "categorizeByGroup": true,
+  "sort": ["source-order"],
+  "githubPages": false,
+  "validation": {
+    "notExported": false,
+    "invalidLink": true,
+    "notDocumented": false
+  }
+}

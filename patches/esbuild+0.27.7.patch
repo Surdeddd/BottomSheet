@@ -1,0 +1,20 @@
+diff --git a/node_modules/esbuild/lib/main.js b/node_modules/esbuild/lib/main.js
+index d41cc1b..1a7af43 100644
+--- a/node_modules/esbuild/lib/main.js
++++ b/node_modules/esbuild/lib/main.js
+@@ -1767,13 +1767,13 @@ function replaceDetailsInMessages(messages, stash) {
+   return messages;
+ }
+ function sanitizeLocation(location, where, terminalWidth) {
+-  if (location == null) return null;
++  if (location == null) return null; if (location && typeof location === "object") { const _loc = location; ["line","column","length"].forEach(k => { if (typeof _loc[k] === "number" && _loc[k] !== (_loc[k] | 0)) { location = Object.assign({}, location, {[k]: isFinite(_loc[k]) ? Math.round(_loc[k]) : 0}); } }); }
+   let keys = {};
+   let file = getFlag(location, keys, "file", mustBeString);
+   let namespace = getFlag(location, keys, "namespace", mustBeString);
+   let line = getFlag(location, keys, "line", mustBeInteger);
+   let column = getFlag(location, keys, "column", mustBeInteger);
+-  let length = getFlag(location, keys, "length", mustBeInteger);
++  let length = (() => { const v = location["length"]; if (v === undefined || v === null) return undefined; if (typeof v !== "number" || !isFinite(v) || v !== (v | 0)) return Math.max(0, (v | 0) >= 0 ? (v | 0) : 0); return v; })(); if (length !== undefined) location = Object.assign({}, location, { length }); length = getFlag(location, keys, "length", mustBeInteger);
+   let lineText = getFlag(location, keys, "lineText", mustBeString);
+   let suggestion = getFlag(location, keys, "suggestion", mustBeString);
+   checkForInvalidFlags(location, keys, where);

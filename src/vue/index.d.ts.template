@@ -1,0 +1,68 @@
+import type { DefineComponent } from "vue";
+import type {
+  EngineOptions,
+  EngineState,
+  SheetEventMap,
+  SheetMode,
+  SnapPoint,
+  SnapPointDef,
+} from "../core/types";
+
+export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
+  EngineOptions,
+  | "element"
+  | "handle"
+  | "scrollContainer"
+  | "backdrop"
+  | "screenComponent"
+  | "snapPoints"
+  | "allowed"
+  | "initial"
+> & {
+  snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
+  allowed?: TId[] | ReadonlyArray<TId>;
+  initial?: TId;
+  onSnap?: (id: TId) => void;
+};
+
+export type UseBottomSheetVueReturn<TId extends string = string> = {
+  sheetRef: { value: HTMLElement | null };
+  handleRef: { value: HTMLElement | null };
+  contentRef: { value: HTMLElement | null };
+  backdropRef: { value: HTMLElement | null };
+  screenRef: { value: HTMLElement | null };
+  state: EngineState & { activeId: TId };
+  snapTo: (id: TId) => Promise<void>;
+  open: (id?: TId) => Promise<void>;
+  close: () => Promise<void>;
+  setAllowed: (ids: TId[], snap?: TId) => void;
+  setSnapPoints: (
+    points: EngineOptions["snapPoints"],
+    allowed?: string[],
+  ) => void;
+  on: <K extends keyof SheetEventMap>(
+    event: K,
+    fn: (payload: SheetEventMap[K]) => void,
+  ) => () => void;
+};
+
+export function useBottomSheet<TId extends string = string>(
+  opts: UseBottomSheetVueOptions<TId>,
+): UseBottomSheetVueReturn<TId>;
+
+export type BottomSheetProps<TId extends string = string> =
+  UseBottomSheetVueOptions<TId> & {
+    backdrop?: boolean;
+    closeOnBackdrop?: boolean;
+    ariaLabel?: string;
+  };
+
+export const BottomSheet: DefineComponent<BottomSheetProps>;
+
+export type {
+  SnapPoint,
+  SnapPointDef,
+  SheetMode,
+  EngineState,
+  EngineOptions,
+};

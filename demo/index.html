@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1a1614" />
+    <title>@surdeddd/bottom-sheet — universal sheet engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Hanken+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to demo</a>
+    <div class="grain"></div>
+
+    <div class="topbar">
+      <button
+        class="topbar-btn"
+        id="lang-toggle"
+        type="button"
+        aria-label="Language: English. Click to switch."
+      >
+        <span class="topbar-active" id="lang-en" aria-hidden="true">EN</span>
+        <span class="topbar-sep" aria-hidden="true">·</span>
+        <span id="lang-ru" aria-hidden="true">RU</span>
+      </button>
+      <button
+        class="topbar-btn"
+        id="theme-toggle"
+        type="button"
+        aria-label="Theme: light. Click to switch."
+      >
+        <span id="theme-light" class="topbar-active" aria-hidden="true">☀</span>
+        <span class="topbar-sep" aria-hidden="true">·</span>
+        <span id="theme-dark" aria-hidden="true">☾</span>
+      </button>
+    </div>
+
+    <main id="main-content">
+    <header class="hero">
+      <div class="hero-meta">
+        <span class="kicker" data-i18n="hero.kicker.left"
+          >Issue Nº 01 · Apr 2026 · MIT</span
+        >
+        <span class="kicker" data-i18n="hero.kicker.right"
+          >Filed under: gestures · physics · a11y</span
+        >
+      </div>
+      <h1 class="hero-title">
+        <span class="title-line">@surdeddd/</span>
+        <span class="title-line title-italic">bottom-sheet</span>
+      </h1>
+      <p class="hero-lede" data-i18n-html="hero.lede">
+        A <em>universal</em> sheet engine. One framework-agnostic core, seven
+        adapters, native-feel gestures.
+      </p>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">9<span class="stat-unit">KB gzip</span></span>
+          <span class="stat-label" data-i18n="stat.core">core / esm</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">7</span>
+          <span class="stat-label" data-i18n="stat.adapters">adapters</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">4</span>
+          <span class="stat-label" data-i18n="stat.modes">modes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">138<span class="stat-unit">+32</span></span>
+          <span class="stat-label" data-i18n="stat.tests"
+            >tests · unit + e2e</span
+          >
+        </div>
+        <div class="stat">
+          <span class="stat-num">0</span>
+          <span class="stat-label" data-i18n="stat.deps">runtime deps</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="adapter-row" aria-label="Adapter selector">
+      <button class="adapter is-active" data-adapter="react">
+        <span class="adapter-no">01</span>
+        <span class="adapter-name">React</span>
+        <span class="adapter-meta">useBottomSheet · forwardRef</span>
+      </button>
+      <button class="adapter" data-adapter="vue">
+        <span class="adapter-no">02</span>
+        <span class="adapter-name">Vue&nbsp;3</span>
+        <span class="adapter-meta">composable · sfc</span>
+      </button>
+      <button class="adapter" data-adapter="svelte">
+        <span class="adapter-no">03</span>
+        <span class="adapter-name">Svelte&nbsp;5</span>
+        <span class="adapter-meta">runes · sfc</span>
+      </button>
+      <button class="adapter" data-adapter="solid">
+        <span class="adapter-no">04</span>
+        <span class="adapter-name">Solid</span>
+        <span class="adapter-meta">signals · jsx</span>
+      </button>
+      <button class="adapter" data-adapter="lit">
+        <span class="adapter-no">05</span>
+        <span class="adapter-name">Lit</span>
+        <span class="adapter-meta">litelement · directives</span>
+      </button>
+      <button class="adapter" data-adapter="element">
+        <span class="adapter-no">06</span>
+        <span class="adapter-name">Web Component</span>
+        <span class="adapter-meta">custom element · shadow dom</span>
+      </button>
+      <button class="adapter" data-adapter="vanilla">
+        <span class="adapter-no">07</span>
+        <span class="adapter-name">Vanilla</span>
+        <span class="adapter-meta">engine · no framework</span>
+      </button>
+    </section>
+
+    <section class="showcase">
+      <aside class="readouts" aria-label="Live engine readouts">
+        <h2 class="section-title" data-i18n="live.title">Live state</h2>
+
+        <div class="readout">
+          <span class="readout-label" data-i18n="live.active">snap.active</span>
+          <span class="readout-value mono" id="ro-active">—</span>
+        </div>
+
+        <div class="readout">
+          <span class="readout-label" data-i18n="live.progress">progress</span>
+          <span class="readout-value mono" id="ro-progress">0.000</span>
+          <div class="bar"><div class="bar-fill" id="ro-bar"></div></div>
+        </div>
+
+        <div class="readout">
+          <span class="readout-label" data-i18n="live.size">size · px</span>
+          <span class="readout-value mono" id="ro-size">0</span>
+        </div>
+
+        <div class="readout">
+          <span class="readout-label" data-i18n="live.velocity"
+            >velocity · px/ms</span
+          >
+          <span class="readout-value mono" id="ro-velocity">0.000</span>
+        </div>
+
+        <div class="readout">
+          <span class="readout-label" data-i18n="live.flags">flags</span>
+          <div class="flags">
+            <span class="flag" id="fl-dragging">drag</span>
+            <span class="flag" id="fl-animating">anim</span>
+            <span class="flag" id="fl-trap">trap</span>
+            <span class="flag" id="fl-haptic">haptic</span>
+          </div>
+        </div>
+
+        <div class="readout">
+          <span class="readout-label" data-i18n="live.fps"
+            >fps · drag-frame</span
+          >
+          <span class="readout-value mono" id="ro-fps">—</span>
+        </div>
+      </aside>
+
+      <div class="device-wrap">
+        <div class="device-bezel">
+          <div class="device-notch"></div>
+          <div class="device-frame" id="device-frame">
+            <!-- adapter mount target -->
+            <div
+              class="device-screen"
+              id="screen-react"
+              data-screen="react"
+            ></div>
+            <div
+              class="device-screen"
+              id="screen-vue"
+              data-screen="vue"
+              hidden
+            ></div>
+            <div
+              class="device-screen"
+              id="screen-svelte"
+              data-screen="svelte"
+              hidden
+            ></div>
+            <div
+              class="device-screen"
+              id="screen-solid"
+              data-screen="solid"
+              hidden
+            ></div>
+            <div
+              class="device-screen"
+              id="screen-lit"
+              data-screen="lit"
+              hidden
+            ></div>
+            <div
+              class="device-screen"
+              id="screen-element"
+              data-screen="element"
+              hidden
+            ></div>
+            <div
+              class="device-screen"
+              id="screen-vanilla"
+              data-screen="vanilla"
+              hidden
+            ></div>
+          </div>
+          <div class="device-pill"></div>
+        </div>
+        <div class="device-cap mono">
+          <span
+            >360×720&nbsp;·&nbsp;<span id="cap-mode">bottom</span
+            >&nbsp;mode</span
+          >
+          <span>
+            <kbd class="mono">↑↓</kbd>
+            <kbd class="mono">Esc</kbd>
+            <kbd class="mono">Tab</kbd>
+          </span>
+        </div>
+      </div>
+
+      <aside class="snippet" aria-label="Code snippet for active adapter">
+        <h2 class="section-title">
+          Usage <span class="section-tag mono" id="snip-tag">react</span>
+          <button
+            type="button"
+            id="code-copy"
+            class="topbar-btn snippet-action snippet-action-first"
+            aria-label="Copy code to clipboard"
+          >
+            <span id="code-copy-label">copy</span>
+          </button>
+        </h2>
+        <div id="snippet-status" class="sr-only" role="status" aria-live="polite"></div>
+        <pre class="code" tabindex="0" role="region" aria-label="React code example" id="code-react">
+<span class="c-c">// React</span>
+<span class="c-k">import</span> { <span class="c-i">BottomSheet</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet/react"</span>;
+<span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/styles"</span>;
+
+&lt;<span class="c-i">BottomSheet</span>
+  <span class="c-a">snapPoints</span>=<span class="c-s">{[</span>
+    { id: <span class="c-s">"closed"</span>,    size: 0 },
+    { id: <span class="c-s">"minimized"</span>, size: 96 },
+    { id: <span class="c-s">"half"</span>,      size: <span class="c-s">"45%"</span> },
+    { id: <span class="c-s">"full"</span>,      size: <span class="c-s">"85%"</span> },
+  ]}
+  <span class="c-a">initial</span>=<span class="c-s">"minimized"</span>
+  <span class="c-a">animation</span>=<span class="c-s">"spring"</span>
+  <span class="c-a">spring</span>={{ stiffness: 260, damping: 28 }}
+  <span class="c-a">focusTrap</span>
+  <span class="c-a">closeOnEscape</span>
+  <span class="c-a">backdropRange</span>=<span class="c-s">{[0.4, 1]}</span>
+&gt;
+  &lt;<span class="c-i">YourList</span> /&gt;
+&lt;/<span class="c-i">BottomSheet</span>&gt;</pre>
+
+        <pre class="code" tabindex="0" role="region" aria-label="Vue code example" id="code-vue" hidden>
+<span class="c-c">&lt;!-- Vue 3 --&gt;</span>
+&lt;<span class="c-k">script setup</span>&gt;
+<span class="c-k">import</span> { <span class="c-i">BottomSheet</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet/vue"</span>;
+<span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/styles"</span>;
+&lt;/<span class="c-k">script</span>&gt;
+
+&lt;<span class="c-k">template</span>&gt;
+  &lt;<span class="c-i">BottomSheet</span>
+    :<span class="c-a">snap-points</span>=<span class="c-s">"[
+      { id: 'minimized', size: 96 },
+      { id: 'half',      size: '45%' },
+      { id: 'full',      size: '85%' },
+    ]"</span>
+    <span class="c-a">initial</span>=<span class="c-s">"minimized"</span>
+    <span class="c-a">animation</span>=<span class="c-s">"spring"</span>
+    <span class="c-a">focus-trap</span>
+    @<span class="c-a">snap</span>=<span class="c-s">"onSnap"</span>
+  &gt;
+    &lt;YourList /&gt;
+  &lt;/<span class="c-i">BottomSheet</span>&gt;
+&lt;/<span class="c-k">template</span>&gt;</pre>
+
+        <pre class="code" tabindex="0" role="region" aria-label="Svelte code example" id="code-svelte" hidden>
+<span class="c-c">&lt;!-- Svelte 5 — runes + SFC --&gt;</span>
+&lt;<span class="c-k">script lang</span>=<span class="c-s">"ts"</span>&gt;
+<span class="c-k">import</span> { <span class="c-i">BottomSheet</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet/svelte"</span>;
+<span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/styles"</span>;
+<span class="c-k">let</span> sheet: <span class="c-i">any</span> = $state();
+&lt;/<span class="c-k">script</span>&gt;
+
+&lt;<span class="c-i">BottomSheet</span>
+  <span class="c-a">bind:this</span>={sheet}
+  <span class="c-a">snapPoints</span>={[
+    { <span class="c-a">id</span>: <span class="c-s">"min"</span>,  <span class="c-a">size</span>: 96 },
+    { <span class="c-a">id</span>: <span class="c-s">"half"</span>, <span class="c-a">size</span>: <span class="c-s">"45%"</span> },
+    { <span class="c-a">id</span>: <span class="c-s">"full"</span>, <span class="c-a">size</span>: <span class="c-s">"85%"</span> },
+  ]}
+  <span class="c-a">animation</span>=<span class="c-s">"spring"</span>
+  <span class="c-a">onsnap</span>={(id) =&gt; <span class="c-i">console</span>.log(id)}
+&gt;
+  {#snippet header()}&lt;<span class="c-k">h2</span>&gt;Title&lt;/<span class="c-k">h2</span>&gt;{/snippet}
+  &lt;<span class="c-i">YourList</span> /&gt;
+&lt;/<span class="c-i">BottomSheet</span>&gt;</pre>
+
+        <pre class="code" tabindex="0" role="region" aria-label="Solid code example" id="code-solid" hidden>
+<span class="c-c">// Solid — engine wired to refs via `ref={...}`</span>
+<span class="c-k">import</span> { <span class="c-i">BottomSheetEngine</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet"</span>;
+<span class="c-k">import</span> { onMount } <span class="c-k">from</span> <span class="c-s">"solid-js"</span>;
+<span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/styles"</span>;
+
+<span class="c-k">let</span> sheetEl, handleEl, contentEl;
+onMount(() =&gt; {
+  <span class="c-k">new</span> <span class="c-i">BottomSheetEngine</span>({
+    element: sheetEl, handle: handleEl, scrollContainer: contentEl,
+    snapPoints: [
+      { id: <span class="c-s">"min"</span>,  size: 96 },
+      { id: <span class="c-s">"half"</span>, size: <span class="c-s">"45%"</span> },
+      { id: <span class="c-s">"full"</span>, size: <span class="c-s">"85%"</span> },
+    ],
+    animation: <span class="c-s">"spring"</span>,
+  });
+});
+
+&lt;<span class="c-k">div</span> class=<span class="c-s">"bs-root"</span>&gt;
+  &lt;<span class="c-k">section</span> class=<span class="c-s">"bs-sheet"</span> ref={sheetEl}&gt;
+    &lt;<span class="c-k">div</span> class=<span class="c-s">"bs-handle"</span> ref={handleEl}&gt;Header&lt;/<span class="c-k">div</span>&gt;
+    &lt;<span class="c-k">div</span> class=<span class="c-s">"bs-content"</span> ref={contentEl}&gt;…&lt;/<span class="c-k">div</span>&gt;
+  &lt;/<span class="c-k">section</span>&gt;
+&lt;/<span class="c-k">div</span>&gt;</pre>
+
+        <pre class="code" tabindex="0" role="region" aria-label="Lit code example" id="code-lit" hidden>
+<span class="c-c">// Lit — wraps the &lt;bottom-sheet&gt; custom element</span>
+<span class="c-k">import</span> { <span class="c-i">LitElement</span>, html } <span class="c-k">from</span> <span class="c-s">"lit"</span>;
+<span class="c-k">import</span> { <span class="c-i">customElement</span> } <span class="c-k">from</span> <span class="c-s">"lit/decorators.js"</span>;
+<span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/element"</span>;
+
+@<span class="c-i">customElement</span>(<span class="c-s">"my-sheet"</span>)
+<span class="c-k">class</span> <span class="c-i">MySheet</span> <span class="c-k">extends</span> <span class="c-i">LitElement</span> {
+  <span class="c-i">createRenderRoot</span>() { <span class="c-k">return</span> <span class="c-k">this</span>; } <span class="c-c">// inherit page CSS</span>
+  render() {
+    <span class="c-k">return</span> html<span class="c-s">`
+      &lt;bottom-sheet
+        snap-points='[{"id":"min","size":96},{"id":"full","size":"85%"}]'
+        initial="min"
+        animation="spring"
+      &gt;
+        &lt;h2 slot="header"&gt;Title&lt;/h2&gt;
+        &lt;ul&gt;…&lt;/ul&gt;
+      &lt;/bottom-sheet&gt;
+    `</span>;
+  }
+}</pre>
+
+        <pre class="code" tabindex="0" role="region" aria-label="Web Component code example" id="code-element" hidden>
+<span class="c-c">&lt;!-- Web Component --&gt;</span>
+&lt;<span class="c-k">link</span> rel=<span class="c-s">"stylesheet"</span> href=<span class="c-s">"/styles.css"</span>&gt;
+&lt;<span class="c-k">script type</span>=<span class="c-s">"module"</span> src=<span class="c-s">"/element.js"</span>&gt;&lt;/script&gt;
+
+&lt;<span class="c-i">bottom-sheet</span>
+  <span class="c-a">snap-points</span>=<span class="c-s">'[
+    {"id":"min","size":96},
+    {"id":"half","size":"45%"},
+    {"id":"full","size":"85%"}
+  ]'</span>
+  <span class="c-a">initial</span>=<span class="c-s">"min"</span>
+  <span class="c-a">animation</span>=<span class="c-s">"spring"</span>
+  <span class="c-a">focus-trap</span>=<span class="c-s">"true"</span>
+&gt;
+  &lt;<span class="c-k">h2</span> slot=<span class="c-s">"header"</span>&gt;Title&lt;/<span class="c-k">h2</span>&gt;
+  &lt;<span class="c-k">ul</span>&gt;...&lt;/<span class="c-k">ul</span>&gt;
+&lt;/<span class="c-i">bottom-sheet</span>&gt;</pre>
+
+        <pre class="code" tabindex="0" role="region" aria-label="Vanilla JS code example" id="code-vanilla" hidden>
+<span class="c-c">// Vanilla — engine wired to plain DOM</span>
+<span class="c-k">import</span> { <span class="c-i">BottomSheetEngine</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet"</span>;
+<span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/styles"</span>;
+
+<span class="c-k">const</span> engine = <span class="c-k">new</span> <span class="c-i">BottomSheetEngine</span>({
+  element:         document.querySelector(<span class="c-s">".bs-sheet"</span>),
+  handle:          document.querySelector(<span class="c-s">".bs-handle"</span>),
+  scrollContainer: document.querySelector(<span class="c-s">".bs-content"</span>),
+  backdrop:        document.querySelector(<span class="c-s">".bs-backdrop"</span>),
+  snapPoints: [
+    { id: <span class="c-s">"min"</span>,  size: 96 },
+    { id: <span class="c-s">"half"</span>, size: <span class="c-s">"45%"</span> },
+    { id: <span class="c-s">"full"</span>, size: <span class="c-s">"85%"</span> },
+  ],
+  animation: <span class="c-s">"spring"</span>,
+});
+engine.on(<span class="c-s">"snap"</span>, ({ id }) =&gt; <span class="c-i">console</span>.log(id));
+engine.snapTo(<span class="c-s">"full"</span>);</pre>
+      </aside>
+    </section>
+
+    <section class="controls">
+      <div class="control-group">
+        <h3 class="control-title" data-i18n="ctrl.snap">Snap point</h3>
+        <div class="chip-row" id="snap-chips">
+          <button class="chip is-active" data-snap="minimized">
+            minimized
+          </button>
+          <button class="chip" data-snap="half">half</button>
+          <button class="chip" data-snap="full">full</button>
+          <button class="chip" data-snap="closed">closed</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3 class="control-title" data-i18n="ctrl.mode">Mode</h3>
+        <div class="chip-row" id="mode-chips">
+          <button class="chip is-active" data-mode="bottom">bottom</button>
+          <button class="chip" data-mode="top">top</button>
+          <button class="chip" data-mode="left">left</button>
+          <button class="chip" data-mode="right">right</button>
+          <button class="chip" data-mode="overlay">overlay</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3 class="control-title">
+          <span data-i18n="ctrl.spring">Spring physics</span>
+          <span class="hint mono" data-i18n="ctrl.spring.hint">(remounts)</span>
+        </h3>
+        <label class="slider">
+          <span>stiffness <span class="mono" id="lbl-stiff">260</span></span>
+          <input
+            type="range"
+            id="sl-stiff"
+            min="80"
+            max="500"
+            step="10"
+            value="260"
+          />
+        </label>
+        <label class="slider">
+          <span>damping <span class="mono" id="lbl-damp">28</span></span>
+          <input
+            type="range"
+            id="sl-damp"
+            min="6"
+            max="60"
+            step="1"
+            value="28"
+          />
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3 class="control-title" data-i18n="ctrl.behavior">Behavior</h3>
+        <label class="toggle">
+          <input type="checkbox" id="tg-trap" checked />
+          <span data-i18n="ctrl.trap">focus trap</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="tg-esc" checked />
+          <span data-i18n="ctrl.esc">close on Esc</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="tg-haptic" checked />
+          <span data-i18n="ctrl.haptic">haptic on snap</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="tg-rubber" checked />
+          <span data-i18n="ctrl.rubber">rubber-band</span>
+        </label>
+      </div>
+
+      <div class="control-group">
+        <h3 class="control-title" data-i18n="ctrl.scrim">Scrim</h3>
+        <div class="chip-row" id="scrim-preset-chips">
+          <button class="chip" data-scrim-preset="off" data-i18n="ctrl.scrim.off">off</button>
+          <button class="chip" data-scrim-preset="subtle" data-i18n="ctrl.scrim.subtle">subtle</button>
+          <button class="chip" data-scrim-preset="standard" data-i18n="ctrl.scrim.standard">standard</button>
+          <button class="chip is-active" data-scrim-preset="monitoring" data-i18n="ctrl.scrim.monitoring">monitoring</button>
+          <button class="chip" data-scrim-preset="cinematic" data-i18n="ctrl.scrim.cinematic">cinematic</button>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tg-scrim-above" checked />
+          <span data-i18n="ctrl.scrim.above">above sheet only</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="tg-scrim-tap" />
+          <span data-i18n="ctrl.scrim.tap">tap to close</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="tg-scrim-floating" />
+          <span data-i18n="ctrl.scrim.floating">floating action</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="advanced">
+      <header class="advanced-head">
+        <h2 class="section-title" data-i18n="advanced.title">
+          Advanced playground
+        </h2>
+      </header>
+      <div class="advanced-grid">
+        <div class="advanced-card">
+          <h3 class="advanced-card-title" data-i18n="adv.editor.title">
+            Snap-point editor
+          </h3>
+          <p class="advanced-card-sub" data-i18n="adv.editor.sub">
+            Add, remove, edit, reorder snaps. Sheet remounts live.
+          </p>
+          <ul class="snap-editor-list" id="snap-editor"></ul>
+          <button class="advanced-btn" id="snap-add" data-i18n="adv.editor.add">
+            + add snap
+          </button>
+        </div>
+
+        <div class="advanced-card">
+          <h3 class="advanced-card-title" data-i18n="adv.stress.title">
+            Stress test
+          </h3>
+          <p class="advanced-card-sub" data-i18n="adv.stress.sub">
+            Cycle min↔full at decreasing intervals. Watch the FPS.
+          </p>
+          <button
+            class="advanced-btn pulse"
+            id="stress-start"
+            data-i18n="adv.stress.run"
+          >
+            ⚡ stress 8s
+          </button>
+          <p class="recorder-status mono" id="stress-status">idle</p>
+        </div>
+
+        <div class="advanced-card">
+          <h3 class="advanced-card-title" data-i18n="adv.theme.title">
+            Theme preset
+          </h3>
+          <p class="advanced-card-sub" data-i18n="adv.theme.sub">
+            Opt-in via class on <code>.bs-root</code>. Loads the theme CSS
+            lazily.
+          </p>
+          <div class="chip-row" id="theme-chips">
+            <button class="chip is-active" data-theme-preset="default">
+              default
+            </button>
+            <button class="chip" data-theme-preset="ios">ios</button>
+            <button class="chip" data-theme-preset="material">material</button>
+            <button class="chip" data-theme-preset="vercel">vercel</button>
+          </div>
+          <p class="recorder-status mono" id="theme-status">default</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <header class="features-head">
+        <h2 class="features-title">
+          <span data-i18n="features.title.a">What's inside</span>
+          <em class="features-italic" data-i18n="features.title.b"
+            >— twelve+</em
+          >
+        </h2>
+      </header>
+      <div class="features-grid">
+        <article class="feature">
+          <span class="feature-no mono">F.01</span>
+          <h3 class="feature-title" data-i18n="f01.title">Spring physics</h3>
+          <p class="feature-body" data-i18n-html="f01.body">
+            Critical-damped harmonic oscillator. Drag <em>velocity</em> carries
+            into the settle — no jerk on flick. Sub-stepped at 240Hz, one DOM
+            write per RAF.
+          </p>
+          <div class="feature-spec mono">stiffness · damping · mass</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.02</span>
+          <h3 class="feature-title" data-i18n="f02.title">GPU-only motion</h3>
+          <p class="feature-body" data-i18n-html="f02.body">
+            Sized once via <code>height</code>; resized via
+            <code>transform: translate3d</code>. Zero layout per frame.
+            <code>will-change</code> gated to drag/animate.
+          </p>
+          <div class="feature-spec mono">60fps drag · 0 reflow</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.03</span>
+          <h3 class="feature-title" data-i18n="f03.title">Any CSS length</h3>
+          <p class="feature-body" data-i18n-html="f03.body">
+            Snap points accept px, percentages, <code>fit</code>,
+            <code>full</code>, plus arbitrary CSS: <code>50dvh</code>,
+            <code>clamp()</code>, <code>env()</code>.
+          </p>
+          <div class="feature-spec mono">probe-element resolver</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.04</span>
+          <h3 class="feature-title" data-i18n="f04.title">Four directions</h3>
+          <p class="feature-body" data-i18n-html="f04.body">
+            <em>bottom · top · left · right</em>. Same engine — drawer-side
+            sheets without code duplication. Pointer axis & sign computed.
+          </p>
+          <div class="feature-spec mono">switch (mode) { ... }</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.05</span>
+          <h3 class="feature-title" data-i18n="f05.title">
+            Pointer-type tuned
+          </h3>
+          <p class="feature-body" data-i18n-html="f05.body">
+            Touch flicks: 0.65px/ms threshold, 120ms velocity window. Mouse
+            inertia: 0.4px/ms, 160ms window. Gesture parses what the pointer is.
+          </p>
+          <div class="feature-spec mono">PointerEvent.pointerType</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.06</span>
+          <h3 class="feature-title" data-i18n="f06.title">Native a11y</h3>
+          <p class="feature-body" data-i18n-html="f06.body">
+            <code>role=slider</code> on handle. ↑↓ steps snaps, Home/End jumps,
+            Esc closes. Focus trap with restore. ARIA-live announcer. WCAG 2.1
+            AA.
+          </p>
+          <div class="feature-spec mono">keyboard · screen-reader · inert</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.07</span>
+          <h3 class="feature-title" data-i18n="f07.title">Mobile primitives</h3>
+          <p class="feature-body" data-i18n-html="f07.body">
+            <code>env(safe-area-inset-*)</code>, hardware-back interception,
+            haptic tick on snap, body scroll lock that's iOS-safe
+            (<code>position:fixed</code>).
+          </p>
+          <div class="feature-spec mono">iPhone · Android Chrome</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.08</span>
+          <h3 class="feature-title" data-i18n="f08.title">
+            Headless or framed
+          </h3>
+          <p class="feature-body" data-i18n-html="f08.body">
+            Use <code>useBottomSheet()</code> for full JSX control, or grab the
+            ready-made <code>&lt;BottomSheet&gt;</code>. Three layers, your
+            call.
+          </p>
+          <div class="feature-spec mono">
+            React · Vue · Svelte · Solid · Lit · WC · core
+          </div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.09</span>
+          <h3 class="feature-title" data-i18n="f09.title">Multi-sheet stack</h3>
+          <p class="feature-body" data-i18n-html="f09.body">
+            Open a sheet from another sheet. Z-index orchestrated, backdrops
+            de-duped, only the topmost owns Escape.
+          </p>
+          <div class="feature-spec mono">sheetStack singleton</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.10</span>
+          <h3 class="feature-title" data-i18n="f10.title">SSR-safe</h3>
+          <p class="feature-body" data-i18n-html="f10.body">
+            Zero <code>window</code> at import.
+            <code>useSyncExternalStore</code> with cached snapshot. Optional
+            <code>noSSR</code> prop kills hydration mismatches in Next.js.
+          </p>
+          <div class="feature-spec mono">React 18+ · Vue 3+</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.11</span>
+          <h3 class="feature-title" data-i18n="f11.title">Sheet manager</h3>
+          <p class="feature-body" data-i18n-html="f11.body">
+            <code>createSheetManager()</code> — typed registry mapping route
+            keys to configs. <code>onOpen</code>/<code>onClose</code> hooks like
+            the original Vue 2 manager, framework-agnostic.
+          </p>
+          <div class="feature-spec mono">manager.transition(prev, next)</div>
+        </article>
+
+        <article class="feature">
+          <span class="feature-no mono">F.12</span>
+          <h3 class="feature-title" data-i18n="f12.title">Tested</h3>
+          <p class="feature-body" data-i18n-html="f12.body">
+            138 unit tests (vitest + happy-dom) covering snap math, spring,
+            gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize.
+            25 e2e via Playwright on mobile-Chrome. All green.
+          </p>
+          <div class="feature-spec mono">npm test · npx playwright test</div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <pre class="install mono">$ npm i @surdeddd/bottom-sheet</pre>
+      <div class="footer-meta">
+        <span>MIT</span>
+        <span>·</span>
+        <span>Distilled from a fleet-monitoring app, rebuilt headless</span>
+        <span>·</span>
+        <span class="mono">v0.1</span>
+      </div>
+    </footer>
+    </main>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

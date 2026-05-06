@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>bench: vaul</title>
+    <style>
+      html,body{margin:0;background:#eee;font-family:system-ui}
+      .item{padding:8px 12px;border-bottom:1px solid #ddd}
+      [data-vaul-drawer]{position:fixed;inset:auto 0 0 0;background:#fff;border-top-left-radius:12px;border-top-right-radius:12px;box-shadow:0 -8px 24px rgba(0,0,0,.15)}
+      [data-vaul-drawer-content]{max-height:85dvh;overflow-y:auto}
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.2.0",
+          "react-dom": "https://esm.sh/react-dom@18.2.0",
+          "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+          "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+          "vaul": "https://esm.sh/vaul@1.1.2?deps=react@18.2.0,react-dom@18.2.0"
+        }
+      }
+    </script>
+    <script type="module">
+      import { createRoot } from "react-dom/client";
+      import { jsx, jsxs } from "react/jsx-runtime";
+      import { useState, useRef, useEffect } from "react";
+      import { Drawer } from "vaul";
+
+      const ITEMS = 1000;
+
+      let drawerApi = null;
+
+      function App() {
+        const [open, setOpen] = useState(true);
+        const [snap, setSnap] = useState(0.15);
+        useEffect(() => {
+          drawerApi = { setOpen, setSnap };
+        }, []);
+        return jsx(Drawer.Root, {
+          open,
+          onOpenChange: setOpen,
+          snapPoints: [0.15, 0.85],
+          activeSnapPoint: snap,
+          setActiveSnapPoint: setSnap,
+          children: jsx(Drawer.Portal, {
+            children: jsx(Drawer.Content, {
+              "data-vaul-drawer": true,
+              children: jsxs("div", {
+                "data-vaul-drawer-content": true,
+                children: [
+                  jsx("div", { style: { padding: 12, borderBottom: "1px solid #ddd" }, children: "Bench list" }),
+                  ...Array.from({ length: ITEMS }, (_, i) =>
+                    jsx("div", { className: "item", children: `Item ${i + 1}` }, i)
+                  ),
+                ],
+              }),
+            }),
+          }),
+        });
+      }
+
+      const root = createRoot(document.getElementById("app"));
+      root.render(jsx(App, {}));
+
+      window.__bench = {
+        async runDrag() {
+          drawerApi.setSnap(0.15);
+          await new Promise(r => setTimeout(r, 100));
+          const start = performance.now();
+          const deltas = [];
+          let lastT = start;
+          const tick = t => {
+            deltas.push(t - lastT);
+            lastT = t;
+            if (t - start < 320) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          drawerApi.setSnap(0.85);
+          await new Promise(r => setTimeout(r, 360));
+          const meanDelta = deltas.reduce((a, b) => a + b, 0) / Math.max(deltas.length, 1);
+          return meanDelta > 0 ? 1000 / meanDelta : 0;
+        },
+        async runSettle() {
+          drawerApi.setSnap(0.15);
+          await new Promise(r => setTimeout(r, 100));
+          const start = performance.now();
+          drawerApi.setSnap(0.85);
+          // Vaul's internal animation duration is ~500ms
+          await new Promise(r => setTimeout(r, 540));
+          return performance.now() - start;
+        },
+      };
+      window.__benchReady = true;
+    </script>
+  </body>
+</html>

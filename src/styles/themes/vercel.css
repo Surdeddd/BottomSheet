@@ -1,0 +1,24 @@
+/* Vercel-style theme — minimal flat surface, sharp radius, mono handle.
+   Activate by adding `bs-theme-vercel` to the `.bs-root` element. */
+
+.bs-theme-vercel {
+  --bs-surface: #ffffff;
+  --bs-surface-border: #eaeaea;
+  --bs-shadow: 0 -1px 0 #eaeaea,
+               0 -10px 30px rgba(0, 0, 0, 0.06);
+  --bs-radius: 8px;
+  --bs-handle-color: #999999;
+  --bs-handle-width: 32px;
+  --bs-handle-height: 4px;
+  --bs-backdrop-color: rgba(0, 0, 0, 0.6);
+  --bs-scrim-color: rgba(0, 0, 0, 0.45);
+  --bs-scrim-blur: 8px;
+}
+
+[data-theme="dark"] .bs-theme-vercel {
+  --bs-surface: #000000;
+  --bs-surface-border: #333333;
+  --bs-shadow: 0 -1px 0 #333333,
+               0 -10px 30px rgba(0, 0, 0, 0.7);
+  --bs-handle-color: #666666;
+}

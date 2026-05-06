@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>bench: react-modal-sheet</title>
+    <style>
+      html,body{margin:0;background:#eee;font-family:system-ui}
+      .item{padding:8px 12px;border-bottom:1px solid #ddd}
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.2.0",
+          "react-dom": "https://esm.sh/react-dom@18.2.0",
+          "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+          "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+          "framer-motion": "https://esm.sh/framer-motion@11?deps=react@18.2.0",
+          "react-modal-sheet": "https://esm.sh/react-modal-sheet@4?deps=react@18.2.0,framer-motion@11"
+        }
+      }
+    </script>
+    <script type="module">
+      import { createRoot } from "react-dom/client";
+      import { jsx, jsxs } from "react/jsx-runtime";
+      import { useState, useEffect, useRef } from "react";
+      import { Sheet } from "react-modal-sheet";
+
+      const ITEMS = 1000;
+      let api = null;
+
+      function App() {
+        const [open, setOpen] = useState(true);
+        const ref = useRef(null);
+        useEffect(() => {
+          api = { setOpen, snapTo: i => ref.current?.snapTo(i) };
+        }, []);
+        return jsx(Sheet, {
+          ref,
+          isOpen: open,
+          onClose: () => setOpen(false),
+          snapPoints: [0.85, 0.15, 0],
+          initialSnap: 1,
+          children: [
+            jsx(Sheet.Container, {
+              children: [
+                jsx(Sheet.Header, {}, "h"),
+                jsx(Sheet.Content, {
+                  children: jsx(Sheet.Scroller, {
+                    children: jsxs("div", {
+                      children: Array.from({ length: ITEMS }, (_, i) =>
+                        jsx("div", { className: "item", children: `Item ${i + 1}` }, i)
+                      ),
+                    }),
+                  }),
+                }, "c"),
+              ],
+            }, "container"),
+            jsx(Sheet.Backdrop, {}, "backdrop"),
+          ],
+        });
+      }
+
+      const root = createRoot(document.getElementById("app"));
+      root.render(jsx(App, {}));
+
+      window.__bench = {
+        async runDrag() {
+          api.snapTo(1);
+          await new Promise(r => setTimeout(r, 100));
+          const start = performance.now();
+          const deltas = [];
+          let lastT = start;
+          const tick = t => {
+            deltas.push(t - lastT);
+            lastT = t;
+            if (t - start < 320) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          api.snapTo(0);
+          await new Promise(r => setTimeout(r, 360));
+          const meanDelta = deltas.reduce((a, b) => a + b, 0) / Math.max(deltas.length, 1);
+          return meanDelta > 0 ? 1000 / meanDelta : 0;
+        },
+        async runSettle() {
+          api.snapTo(1);
+          await new Promise(r => setTimeout(r, 100));
+          const start = performance.now();
+          api.snapTo(0);
+          await new Promise(r => setTimeout(r, 540));
+          return performance.now() - start;
+        },
+      };
+      window.__benchReady = true;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+    groups:
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"
+          - "eslint*"
+      build-tooling:
+        patterns:
+          - "tsup"
+          - "vite*"
+          - "@vitejs/*"
+          - "@rollup/*"
+          - "esbuild*"
+      test-tooling:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "playwright*"
+          - "@playwright/*"
+          - "happy-dom"
+      framework-runtimes:
+        patterns:
+          - "react*"
+          - "preact*"
+          - "vue"
+          - "@vue/*"
+          - "svelte*"
+          - "solid*"
+          - "@builder.io/qwik*"
+          - "lit*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: chore(actions)

@@ -1,0 +1,17 @@
+{
+  "name": "bottom-sheet-example-web-component",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@surdeddd/bottom-sheet": "file:../.."
+  },
+  "devDependencies": {
+    "vite": "^5.0.10"
+  }
+}

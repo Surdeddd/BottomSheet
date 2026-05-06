@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>@surdeddd/bottom-sheet · Vanilla example</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body { font-family: system-ui, sans-serif; background: #f4eee0; color: #1a1614; }
+      .page { padding: 24px; }
+      .sheet-list { padding: 16px; display: flex; flex-direction: column; gap: 8px; margin: 0; }
+      .sheet-list li { background: #ece2d0; padding: 12px 14px; border-radius: 10px; list-style: none; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Vanilla example</h1>
+      <p>Drag the handle to expand the sheet.</p>
+
+      <!-- Standard .bs-root > .bs-backdrop + .bs-sheet markup; main.ts wires the engine. -->
+      <div class="bs-root">
+        <div class="bs-backdrop" id="backdrop"></div>
+        <section class="bs-sheet" data-mode="bottom" id="sheet" role="dialog">
+          <div class="bs-handle" id="handle" role="slider" tabindex="0" aria-label="Resize sheet">
+            <h2 style="margin: 0; padding: 12px 20px">Search vehicles</h2>
+          </div>
+          <div class="bs-content" id="content">
+            <ul class="sheet-list">
+              <li>Item #1</li>
+              <li>Item #2</li>
+              <li>Item #3</li>
+              <li>Item #4</li>
+              <li>Item #5</li>
+              <li>Item #6</li>
+              <li>Item #7</li>
+              <li>Item #8</li>
+              <li>Item #9</li>
+              <li>Item #10</li>
+              <li>Item #11</li>
+              <li>Item #12</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

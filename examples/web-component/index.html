@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>@surdeddd/bottom-sheet · Web Component example</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body { font-family: system-ui, sans-serif; background: #f4eee0; color: #1a1614; }
+      .page { padding: 24px; }
+      .sheet-list { padding: 16px; display: flex; flex-direction: column; gap: 8px; margin: 0; }
+      .sheet-list li { background: #ece2d0; padding: 12px 14px; border-radius: 10px; list-style: none; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Web Component example</h1>
+      <p>Drag the handle to expand the sheet.</p>
+
+      <!--
+        snap-points is JSON-encoded; initial picks the starting snap.
+        The element self-registers when /src/main.js imports the adapter.
+      -->
+      <bottom-sheet
+        snap-points='[{"id":"minimized","size":96},{"id":"half","size":"45dvh"},{"id":"full","size":"85%"}]'
+        initial="minimized"
+        animation="spring"
+        focus-trap="true"
+        close-on-escape="true"
+      >
+        <h2 slot="header" style="margin: 0; padding: 12px 20px">Search vehicles</h2>
+        <ul class="sheet-list">
+          <li>Item #1</li>
+          <li>Item #2</li>
+          <li>Item #3</li>
+          <li>Item #4</li>
+          <li>Item #5</li>
+          <li>Item #6</li>
+          <li>Item #7</li>
+          <li>Item #8</li>
+          <li>Item #9</li>
+          <li>Item #10</li>
+          <li>Item #11</li>
+          <li>Item #12</li>
+        </ul>
+      </bottom-sheet>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# Pre-commit quality gate. Mirrors the CI checks that block PRs.
+# Escape hatch: HUSKY=0 git commit ... (skip via husky's own env, see below)
+# or SKIP_PRECOMMIT=1 to bypass just this hook while still running others.
+
+if [ "${HUSKY:-}" = "0" ] || [ "${SKIP_PRECOMMIT:-}" = "1" ]; then
+  echo "[pre-commit] skipped via env"
+  exit 0
+fi
+
+set -e
+
+start=$(date +%s)
+
+echo "[pre-commit] 1/3 CSS drift-guard"
+npm run --silent sync:css
+if ! git diff --exit-code src/web-component/baseStyles.ts; then
+  echo "::error::src/web-component/baseStyles.ts is out of sync with src/styles/bottom-sheet.css."
+  echo "Run \`npm run sync:css\` and stage src/web-component/baseStyles.ts."
+  exit 1
+fi
+
+echo "[pre-commit] 2/3 typecheck"
+npx --no-install tsc --noEmit
+
+echo "[pre-commit] 3/3 unit tests"
+npx --no-install vitest run --reporter=dot
+
+end=$(date +%s)
+echo "[pre-commit] OK in $((end - start))s"

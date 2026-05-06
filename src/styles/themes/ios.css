@@ -1,0 +1,24 @@
+/* iOS theme — soft surface, restrained shadow, generous radius. Activate by
+   adding `bs-theme-ios` to the `.bs-root` element. */
+
+.bs-theme-ios {
+  --bs-surface: #f2f2f7;
+  --bs-surface-border: rgba(60, 60, 67, 0.12);
+  --bs-shadow: 0 -1px 0 rgba(60, 60, 67, 0.16),
+               0 -8px 24px rgba(0, 0, 0, 0.08);
+  --bs-radius: 14px;
+  --bs-handle-color: rgba(60, 60, 67, 0.3);
+  --bs-handle-width: 36px;
+  --bs-handle-height: 5px;
+  --bs-backdrop-color: rgba(0, 0, 0, 0.4);
+  --bs-scrim-color: rgba(28, 28, 30, 0.5);
+  --bs-scrim-blur: 20px;
+}
+
+[data-theme="dark"] .bs-theme-ios {
+  --bs-surface: #1c1c1e;
+  --bs-surface-border: rgba(84, 84, 88, 0.6);
+  --bs-shadow: 0 -1px 0 rgba(255, 255, 255, 0.04),
+               0 -8px 24px rgba(0, 0, 0, 0.6);
+  --bs-handle-color: rgba(255, 255, 255, 0.3);
+}

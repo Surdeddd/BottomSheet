@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>bench: surdeddd</title>
+    <style>
+      html,body{margin:0;background:#eee;font-family:system-ui}
+      .item{padding:8px 12px;border-bottom:1px solid #ddd}
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { BottomSheetEngine } from "@surdeddd/bottom-sheet";
+      import "@surdeddd/bottom-sheet/styles";
+
+      const root = document.createElement("div");
+      root.className = "bs-root";
+      const sheet = document.createElement("section");
+      sheet.className = "bs-sheet";
+      sheet.dataset.mode = "bottom";
+      const handle = document.createElement("div");
+      handle.className = "bs-handle";
+      const content = document.createElement("div");
+      content.className = "bs-content";
+
+      const ITEMS = 1000;
+      const list = document.createElement("div");
+      list.className = "sheet-list";
+      for (let i = 0; i < ITEMS; i++) {
+        const it = document.createElement("div");
+        it.className = "item";
+        it.textContent = `Item ${i + 1}`;
+        list.appendChild(it);
+      }
+      content.appendChild(list);
+      sheet.append(handle, content);
+      root.appendChild(sheet);
+      document.getElementById("app").appendChild(root);
+
+      const engine = new BottomSheetEngine({
+        element: sheet,
+        handle,
+        scrollContainer: content,
+        snapPoints: [
+          { id: "closed", size: 0 },
+          { id: "min", size: 96 },
+          { id: "full", size: "85%" },
+        ],
+        initial: "min",
+        animation: "spring",
+        lockBodyScroll: false,
+      });
+
+      window.__bench = {
+        async runDrag() {
+          await engine.snapTo("min");
+          await new Promise(r => setTimeout(r, 100));
+          const start = performance.now();
+          let frames = 0;
+          let lastT = start;
+          const deltas = [];
+          const tick = t => {
+            frames++;
+            deltas.push(t - lastT);
+            lastT = t;
+            if (t - start < 320) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          engine.snapTo("full");
+          await new Promise(r => setTimeout(r, 360));
+          const meanDelta = deltas.reduce((a, b) => a + b, 0) / Math.max(deltas.length, 1);
+          return meanDelta > 0 ? 1000 / meanDelta : 0;
+        },
+        async runSettle() {
+          await engine.snapTo("min");
+          await new Promise(r => setTimeout(r, 100));
+          const start = performance.now();
+          await engine.snapTo("full");
+          return performance.now() - start;
+        },
+      };
+      window.__benchReady = true;
+    </script>
+  </body>
+</html>
