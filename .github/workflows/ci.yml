@@ -41,6 +41,8 @@ jobs:
           fi
       - name: Type check
         run: npx tsc --noEmit
+      - name: Build library
+        run: npm run build
       - name: Unit tests
         run: npx vitest run --coverage --reporter=verbose
       - name: Upload coverage to Codecov
@@ -50,8 +52,6 @@ jobs:
           use_oidc: true
           files: ./coverage/lcov.info
           fail_ci_if_error: false
-      - name: Build library
-        run: npx tsup
 
   e2e:
     name: E2E (Playwright - ${{ matrix.project }})
@@ -74,6 +74,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Build library (demo + dist-dependent tests need it)
+        run: npm run build
       - name: Install Playwright browser (${{ matrix.project }})
         run: npx playwright install --with-deps ${{ matrix.project }}
       - name: E2E tests (${{ matrix.playwright_project }})
@@ -97,6 +99,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Build library (demo needs dist for theme resolution)
+        run: npm run build
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Visual-regression tests
