@@ -156,3 +156,4 @@ node_modules.nosync/
 # Bun / Deno tooling state (lockfiles deno.lock / bun.lockb stay tracked)
 .bun/
 .deno/
+.vercel
