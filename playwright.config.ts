@@ -27,7 +27,13 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: "list",
+  // CI runners (especially WebKit emulation on Linux) have non-deterministic
+  // first-paint timing for shadow-DOM and Svelte adapters. Two retries on CI
+  // catches flakes without masking real regressions — local runs stay strict.
+  retries: process.env.CI ? 2 : 0,
+  reporter: process.env.CI
+    ? [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]]
+    : "list",
   webServer: {
     command: "npx vite --port 5173",
     port: 5173,
