@@ -1,16 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-/**
- * Accessibility audit. Backs the README's "WCAG 2.1 AA" claim with axe-core
- * scans of the live demo. Fails the suite if there are any violations of
- * `moderate`, `serious`, or `critical` severity. Skips `minor` (cosmetic
- * issues like duplicate-id warnings on third-party fonts).
- *
- * Run via `npm run e2e -- tests/e2e/a11y.spec.ts`. The dev server is reused
- * from the existing playwright.config.ts `webServer` block.
- */
-
 const SEVERITY_FILTER = ["moderate", "serious", "critical"] as const;
 
 const formatViolations = (
@@ -72,7 +62,6 @@ test.describe("a11y — axe-core demo audit", () => {
       '.device-screen[data-screen="react"] .bs-sheet',
     );
     await page.click('#snap-chips .chip:has-text("full")');
-    // wait for spring to settle
     await page.waitForFunction(
       () => {
         const el = document.querySelector<HTMLElement>(

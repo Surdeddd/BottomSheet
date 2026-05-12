@@ -5,8 +5,11 @@ import type {
   SheetMode,
   SnapPoint,
   SnapPointDef,
+  ScrimUpdate,
+  ScrimOverlayOptions,
 } from "../core/types";
 import type { SheetEventMap } from "../core/types";
+import type { BottomSheetEngine } from "../core/BottomSheetEngine";
 
 export type SvelteBottomSheetOpts<TId extends string = string> = Omit<
   EngineOptions,
@@ -14,7 +17,7 @@ export type SvelteBottomSheetOpts<TId extends string = string> = Omit<
   | "handle"
   | "scrollContainer"
   | "backdrop"
-  | "screenComponent"
+  | "scrim"
   | "snapPoints"
   | "allowed"
   | "initial"
@@ -30,7 +33,7 @@ export type SvelteAttachRefs = {
   handle?: HTMLElement;
   scrollContainer?: HTMLElement;
   backdrop?: HTMLElement;
-  screenComponent?: HTMLElement;
+  scrim?: HTMLElement;
 };
 
 export type SvelteBottomSheetController<TId extends string = string> = {
@@ -44,6 +47,10 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   open(id?: TId): Promise<void>;
   close(): Promise<void>;
   setAllowed(ids: TId[], snap?: TId): void;
+  setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
+  setScrim(opts: ScrimUpdate): void;
+  setScrimOverlay(opts: ScrimOverlayOptions): () => void;
+  getEngine(): BottomSheetEngine | null;
   destroy(): void;
 };
 

@@ -13,15 +13,10 @@ const stubPointerCapture = (el: HTMLElement) => {
   });
 };
 
-// Gestures-specific extension: the keyboard-dismiss tests need an `<input>`
-// inside `content` so `document.activeElement` can be an editable, AND the
-// sheet itself needs pointer-capture stubs (the engine calls them on `sheet`
-// for the dismiss-keyboard codepath, not just on `handle`).
 const makeDom = () => {
   const base = makeBaseDom();
   const input = document.createElement("input");
   input.type = "text";
-  // happy-dom needs the input attached for `focus()` / `activeElement` to work.
   base.content.appendChild(input);
   stubPointerCapture(base.sheet);
   return { ...base, input };
@@ -32,10 +27,6 @@ const dispatchPointer = (
   type: "pointerdown" | "pointermove" | "pointerup" | "pointercancel",
   init: PointerEventInit & { clientY?: number; clientX?: number; pointerType?: string },
 ) => {
-  // happy-dom's PointerEvent honors the dictionary, but doesn't compute timeStamp
-  // in a useful way; the gestures module reads `e.timeStamp` for velocity
-  // sampling, and reading 0 across all samples produces dt=0 (no velocity) —
-  // which is fine, since the keyboard-dismiss path doesn't depend on velocity.
   const e = new PointerEvent(type, {
     pointerId: 1,
     pointerType: "touch",
@@ -68,20 +59,15 @@ describe("gestures: drag-to-dismiss-keyboard", () => {
       duration: 0,
       respectReducedMotion: false,
     });
-    // Focus the input so the soft keyboard would (notionally) be open.
     input.focus();
     expect(document.activeElement).toBe(input);
     const blurSpy = vi.spyOn(input, "blur");
 
-    // Mode "bottom", touch pointer, drag DOWN (clientY increases) = dismissive
-    // (sheet shrinks because sign = -1 for bottom, so positive raw delta
-    // becomes negative axis delta → next < dragStartSize).
     dispatchPointer(handle, "pointerdown", { clientY: 100, pointerType: "touch" });
     dispatchPointer(handle, "pointermove", { clientY: 200, pointerType: "touch" });
 
     expect(blurSpy).toHaveBeenCalledTimes(1);
 
-    // Subsequent dismissive moves in the same drag must NOT re-blur.
     dispatchPointer(handle, "pointermove", { clientY: 250, pointerType: "touch" });
     expect(blurSpy).toHaveBeenCalledTimes(1);
 
@@ -134,8 +120,6 @@ describe("gestures: drag-to-dismiss-keyboard", () => {
     input.focus();
     const blurSpy = vi.spyOn(input, "blur");
 
-    // Drag UP (clientY decreases) on a "bottom" sheet = expansive (sheet grows),
-    // not dismissive — keyboard should remain.
     dispatchPointer(handle, "pointerdown", { clientY: 500, pointerType: "touch" });
     dispatchPointer(handle, "pointermove", { clientY: 300, pointerType: "touch" });
 
@@ -147,11 +131,6 @@ describe("gestures: drag-to-dismiss-keyboard", () => {
   });
 
   it("reuses the same payload object across drag emissions (no per-frame alloc)", () => {
-    // Regression: GestureController mutates a single `{size, delta}` object
-    // per drag instead of allocating per onMove. Asserts object identity is
-    // preserved across multiple pointermoves so consumers can rely on the
-    // documented contract (and so a future refactor that re-introduces
-    // per-frame `{ size: next, delta }` literal allocation is caught).
     const { sheet, handle } = makeDom();
     const engine = new BottomSheetEngine({
       element: sheet,
@@ -177,15 +156,12 @@ describe("gestures: drag-to-dismiss-keyboard", () => {
     dispatchPointer(handle, "pointermove", { clientY: 440, pointerType: "touch" });
     dispatchPointer(handle, "pointerup", { clientY: 440, pointerType: "touch" });
 
-    // At least two emissions are needed to compare identity meaningfully.
     expect(seen.length).toBeGreaterThanOrEqual(2);
     const first = seen[0];
     expect(first).toBeDefined();
-    // All emitted payloads must be the SAME object reference.
     for (let i = 1; i < seen.length; i++) {
       expect(seen[i]).toBe(first);
     }
-    // Payload shape contract still holds — fields are numbers.
     expect(typeof first!.size).toBe("number");
     expect(typeof first!.delta).toBe("number");
 
@@ -194,7 +170,6 @@ describe("gestures: drag-to-dismiss-keyboard", () => {
 
   it("does NOT blur when active element is not an editable", () => {
     const { sheet, handle } = makeDom();
-    // Focus a non-editable inside the sheet — a button.
     const btn = document.createElement("button");
     sheet.appendChild(btn);
     const engine = new BottomSheetEngine({

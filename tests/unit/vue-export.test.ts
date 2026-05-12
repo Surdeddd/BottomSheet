@@ -1,7 +1,4 @@
 // @vitest-environment node
-//
-// Smoke test for the `/vue` subpath. Imports the BUILT dist (same
-// convention as ssr.test.ts and preact-export.test.ts).
 
 import { describe, expect, it, beforeAll } from "vitest";
 import { existsSync } from "node:fs";
@@ -32,9 +29,6 @@ describe("@surdeddd/bottom-sheet/vue", () => {
     const cmp = mod.BottomSheet;
     expect(cmp).toBeDefined();
     expect(typeof cmp).toBe("object");
-    // Compiled Vue SFCs expose at least one of: render / setup / __vccOpts /
-    // __file. We don't pin the exact key (varies across @vitejs/plugin-vue
-    // versions) — we just assert it's not a bare object.
     const keys = Object.keys(cmp).concat(
       cmp.__v_isComponent ? ["__v_isComponent"] : [],
     );
@@ -47,7 +41,6 @@ describe("@surdeddd/bottom-sheet/vue", () => {
   });
 
   it("does not expose React/Solid/Qwik primitives by mistake", async () => {
-    // Defensive: the dist must not pull in cross-framework symbols.
     const mod = await import(resolve(distDir, "vue.js"));
     expect(mod).not.toHaveProperty("createSignal");
     expect(mod).not.toHaveProperty("useSyncExternalStore");

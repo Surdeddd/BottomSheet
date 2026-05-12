@@ -1,32 +1,11 @@
 import type { TransformAxis } from "../primitives/transform";
 
-/**
- * ARIA slider keyboard control. Required by WCAG 2.5.7 (Dragging Movements)
- * as a single-pointer alternative — keyboard users navigate snap points via
- * Arrow keys (axis-appropriate), Home (first snap), End (last snap).
- *
- * Axis mapping:
- *   - vertical sheets (`bottom` / `top`):  ArrowUp = expand, ArrowDown = collapse
- *   - horizontal sheets (`left` / `right`): ArrowRight = expand, ArrowLeft = collapse
- *
- * `top` mode inverts: ArrowDown expands (the sheet grows down from the top
- * edge), ArrowUp collapses.
- *
- * Listens on `handle` (the slider element). Returns a teardown that removes
- * the keydown listener.
- */
 export type SliderKeyboardDeps = {
-  /** Element with `role="slider"` — the key listener attaches here. */
   handle: HTMLElement;
-  /** Mode is fixed for the engine's lifetime — no live accessor needed. */
   mode: TransformAxis;
-  /** Live engine state. */
   isDestroyed: () => boolean;
-  /** Live allow-list — keyboard nav respects runtime allowed-id changes. */
   getAllowedIds: () => string[];
-  /** Currently active snap id — index into the allow-list. */
   getActiveId: () => string;
-  /** Drive the engine — uses public snapTo so events fire normally. */
   snapTo: (id: string) => void;
 };
 

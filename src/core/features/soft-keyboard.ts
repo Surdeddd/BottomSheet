@@ -1,15 +1,3 @@
-/**
- * On iOS / Android, dragging the sheet handle while a textarea/input is
- * focused leaves the soft keyboard floating over the now-moving sheet —
- * which jitters as `visualViewport.height` changes mid-drag and looks
- * broken. Engine calls this on `pointerdown` to dismiss the keyboard
- * BEFORE the drag begins, so the viewport stays stable.
- *
- * Returns `true` when a focused editable was actually blurred — engine
- * uses the return as a flag to avoid emitting double-blur cycles.
- *
- * @internal
- */
 export function dismissSoftKeyboardIfFocused(root: HTMLElement): boolean {
   if (typeof document === "undefined") return false;
   const active = document.activeElement as
@@ -27,7 +15,6 @@ export function dismissSoftKeyboardIfFocused(root: HTMLElement): boolean {
     active.blur();
     return true;
   } catch {
-    // Some shadow-DOM / detached scenarios throw on blur(). Treat as no-op.
     return false;
   }
 }

@@ -24,14 +24,10 @@ const DEFAULT_SNAP_POINTS: SnapPointDef[] = [{ id: "full", size: "full" }];
 
 const parseSnapPoints = (raw: string | null): SnapPointDef[] => {
   if (!raw) return DEFAULT_SNAP_POINTS;
-  // Accept either JSON or shorthand: "minimized:80,half:40%,full:80%"
+
   try {
     const parsed = JSON.parse(raw);
-    // Runtime shape check — without it a malformed JSON object passes
-    // through to the engine and fails deep in axis math. JSON.parse
-    // strips dangerous `__proto__` keys via the spec's
-    // `[[DefineOwnProperty]]` path so prototype pollution is impossible
-    // here, but `[{"id":null,"size":{}}]` would otherwise reach engine.
+
     if (
       Array.isArray(parsed) &&
       parsed.length > 0 &&
@@ -39,12 +35,10 @@ const parseSnapPoints = (raw: string | null): SnapPointDef[] => {
     ) {
       return parsed;
     }
-    // JSON parsed but shape invalid (or empty array) — treat as malformed
-    // and fall back to a safe default rather than letting the shorthand
-    // parser produce garbage from JSON-syntax input like `[{"id":null}]`.
+
     if (Array.isArray(parsed)) return DEFAULT_SNAP_POINTS;
   } catch {
-    /* fall through to shorthand parse */
+
   }
   return raw
     .split(",")
@@ -143,18 +137,13 @@ const buildShadowTree = (): {
   const content = document.createElement("div");
   content.className = "bs-content";
   content.setAttribute("part", "content");
-  // WCAG 2.1 SC 2.1.1 — scrollable region must be keyboard-focusable.
+
   content.setAttribute("tabindex", "0");
   content.setAttribute("role", "region");
   content.setAttribute("aria-label", "Sheet content");
   const defaultSlot = document.createElement("slot");
   content.appendChild(defaultSlot);
 
-  // SR-only live region for snap announcements (WCAG 4.1.3 Status Messages).
-  // The framework adapters render an equivalent <span role="status"> in their
-  // returned JSX/template; the WC must own one in shadow DOM since consumers
-  // can't inject DOM into the shadow tree. Visually hidden but discoverable
-  // by AT.
   const announcer = document.createElement("span");
   announcer.className = "bs-sr-announce";
   announcer.setAttribute("role", "status");
@@ -184,38 +173,6 @@ const buildShadowTree = (): {
   };
 };
 
-/**
- * Custom element wrapping the engine. Works in any framework — drop it into
- * Angular, Svelte, plain HTML, WordPress, anything that accepts HTML.
- *
- *   <bottom-sheet snap-points='[{"id":"min","size":80},{"id":"full","size":"80%"}]'
- *                 initial="min">
- *     <div slot="header">Title</div>
- *     <p>Content</p>
- *   </bottom-sheet>
- *
- * ## Per-snap header limitation
- *
- * The framework adapters (React, Vue, Svelte) accept a function/scoped-slot
- * `header` that re-renders on every snap transition — so the header can morph
- * (e.g. minimized vs full) without imperative wiring. The Web Component
- * deliberately does NOT replicate this: native `<slot>` in Shadow DOM has
- * no concept of "render this slot with these props per state", and
- * synthesizing that on top would either bloat the shadow tree or force
- * Light DOM consumers into an opaque, framework-flavored API.
- *
- * If you need per-snap header content with the Web Component, listen to the
- * `snap` CustomEvent and update the slotted node imperatively:
- *
- *   const sheet = document.querySelector("bottom-sheet");
- *   const header = sheet.querySelector('[slot="header"]');
- *   sheet.addEventListener("snap", e => {
- *     const { id } = e.detail;
- *     header.textContent = id === "min" ? "Title" : "Full title";
- *   });
- *
- * `snap` fires after the animation settles, so the swap is jank-free.
- */
 export class BottomSheetElement extends HTMLElement {
   static get observedAttributes(): string[] {
     return [
@@ -240,19 +197,11 @@ export class BottomSheetElement extends HTMLElement {
   constructor() {
     super();
     this.root = this.attachShadow({ mode: "open" });
-    // Page stylesheets can't reach Shadow DOM, so inject base styles first.
+
     const baseStyle = document.createElement("style");
     baseStyle.textContent = baseStyles;
     this.root.appendChild(baseStyle);
-    // Consumer-provided overrides loaded after base so they win on tokens.
-    //
-    // SECURITY: the `stylesheet` attribute MUST NOT be derived from untrusted
-    // input. CSS injected here can exfiltrate sibling form values via
-    // attribute-selector requests (`input[value^="a"] { background: url(...) }`),
-    // mount UI redress via `position: fixed`, or leak the visitor's IP through
-    // a third-party stylesheet load. The element does not validate the URL —
-    // pass only same-origin or trusted CDN URLs, and consider Subresource
-    // Integrity at the consumer level if CDN-loaded.
+
     const stylesheet = this.getAttribute(ATTR_STYLESHEET);
     if (stylesheet) {
       const link = document.createElement("link");
@@ -292,6 +241,10 @@ export class BottomSheetElement extends HTMLElement {
     this.initEngine();
   }
 
+  getEngine(): BottomSheetEngine | null {
+    return this.engine;
+  }
+
   private teardownEngine(): void {
     this.offHandlers.forEach(off => off());
     this.offHandlers = [];
@@ -310,12 +263,7 @@ export class BottomSheetElement extends HTMLElement {
     sheet.setAttribute("data-mode", mode);
 
     const focusTrap = this.getAttribute(ATTR_FOCUS_TRAP) === "true";
-    // aria-modal must reflect the actual modality. With focus-trap on, inert
-    // siblings + scroll lock activate too, so SR users should switch to the
-    // modal interaction model. With focus-trap off, the sheet is non-modal
-    // and we OMIT the attribute rather than setting "false" (see WAI-ARIA:
-    // omitted attribute is preferred over the stale "false" string for
-    // some AT implementations).
+
     if (focusTrap) {
       sheet.setAttribute("aria-modal", "true");
     } else {
@@ -334,7 +282,7 @@ export class BottomSheetElement extends HTMLElement {
       handle,
       scrollContainer: content,
       backdrop: showBackdrop ? backdrop : undefined,
-      screenComponent: this.refs.screen,
+      scrim: this.refs.screen,
       mode,
       snapPoints: parseSnapPoints(this.getAttribute(ATTR_SNAP_POINTS)),
       allowed: parseList(this.getAttribute(ATTR_ALLOWED)),
@@ -349,8 +297,7 @@ export class BottomSheetElement extends HTMLElement {
 
     this.offHandlers = [
       this.engine.on("snap", payload => {
-        // Announce snap id to AT via the live region. Update textContent so
-        // SRs re-announce on each change (aria-live=polite + aria-atomic).
+
         announcer.textContent = payload.id;
         this.dispatchEvent(new CustomEvent("snap", { detail: payload }));
       }),
@@ -383,28 +330,6 @@ export class BottomSheetElement extends HTMLElement {
   }
 }
 
-/**
- * Opt-in literal-id narrowing for the Web Component instance. The class
- * itself stays `string`-typed — making `BottomSheetElement` generic would
- * break `customElements.define`, which registers a 1:1 tag→class mapping
- * (one runtime class per tag, regardless of TS generic instantiations).
- *
- * Consumers narrow at the call site by typing the `querySelector` result:
- *
- * ```ts
- * import type { TypedBottomSheetElement } from "@surdeddd/bottom-sheet/element";
- *
- * const el = document.querySelector<
- *   TypedBottomSheetElement<"min" | "full">
- * >("bottom-sheet");
- * el?.snapTo("typo"); // ❌ TS2345
- * el?.snapTo("full"); // ✓
- * ```
- *
- * Defaults `TId = string` so untyped `querySelector("bottom-sheet")` keeps
- * the existing string-loose behaviour. The runtime class is unchanged; this
- * is purely a TS-level convenience layered on the HTMLElement instance.
- */
 export type TypedBottomSheetElement<TId extends string = string> =
   HTMLElement & {
     snapTo: (id: TId) => Promise<void>;

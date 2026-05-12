@@ -78,5 +78,6 @@ export const mountElementDemo = (
     onVelocity: (fn: (v: number) => void) => {
       velocityCb = fn;
     },
+    getEngine: () => sheet.getEngine() ?? null,
   };
 };

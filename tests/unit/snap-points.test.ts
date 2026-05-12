@@ -50,10 +50,6 @@ describe("resolveSnap", () => {
   });
 
   it("resolves 'fit' to the probe element's offsetHeight", () => {
-    // BottomSheetEngine passes `() => this.handle.offsetHeight` as the probe;
-    // a snap with size: "fit" must therefore equal whatever the probe returns.
-    // This locks down the contract so a later refactor can't silently break
-    // the "preview = handle height" use case.
     const probe = () => 88;
     expect(resolveSnap("fit", "bottom", probe)).toBe(88);
     expect(resolveSnap("fit", "top", probe)).toBe(88);
@@ -102,8 +98,6 @@ describe("findNearest", () => {
   });
 
   it("biases toward direction × velocity", () => {
-    // at 110, geometrically closer to b(100) than c(500); flick up with bias=400
-    // shifts effective target to 510, which is closer to c.
     expect(findNearest(110, list, ["a", "b", "c", "d"], 1, 400)?.id).toBe("c");
   });
 

@@ -23,7 +23,6 @@ describe("runSpring", () => {
     await handle.promise;
     expect(samples.length).toBeGreaterThan(2);
     expect(samples[samples.length - 1]).toBe(100);
-    // First sample should be moving in the right direction
     expect(samples[1]!).toBeGreaterThan(samples[0]!);
   });
 
@@ -31,16 +30,11 @@ describe("runSpring", () => {
     const samples: number[] = [];
     const handle = runSpring({
       from: 100,
-      to: 100, // already at target
-      velocity: 500, // but moving fast
+      to: 100,
+      velocity: 500,
       onUpdate: v => samples.push(v),
     });
     await handle.promise;
-    // With velocity > 0, the spring departs the target before returning.
-    // Use reduce instead of `Math.max(...samples)`: a heavily overdamped
-    // spring on slower CI hardware can collect tens of thousands of samples,
-    // and spread-arg max blows the call-stack limit. Reduce is O(n) without
-    // the variadic-arg pitfall.
     const peak = samples.reduce((a, b) => (b > a ? b : a), -Infinity);
     expect(peak).toBeGreaterThan(100);
     expect(samples[samples.length - 1]).toBe(100);
@@ -57,7 +51,6 @@ describe("runSpring", () => {
     handle.cancel();
     const updatesAtCancel = updates;
     await new Promise(r => setTimeout(r, 100));
-    // No further updates after cancel
     expect(updates).toBe(updatesAtCancel);
   });
 
@@ -66,15 +59,11 @@ describe("runSpring", () => {
     const handle = runSpring({
       from: 0,
       to: 100,
-      config: { stiffness: 100, damping: 50, mass: 1 }, // way overdamped
+      config: { stiffness: 100, damping: 50, mass: 1 },
       onUpdate: v => samples.push(v),
     });
     await handle.promise;
-    // Use reduce instead of `Math.max(...samples)`: a heavily overdamped
-    // spring on slower CI hardware can collect tens of thousands of samples,
-    // and spread-arg max blows the call-stack limit. Reduce is O(n) without
-    // the variadic-arg pitfall.
     const peak = samples.reduce((a, b) => (b > a ? b : a), -Infinity);
-    expect(peak).toBeLessThanOrEqual(100.5); // tiny tolerance for floating point
+    expect(peak).toBeLessThanOrEqual(100.5);
   });
 });

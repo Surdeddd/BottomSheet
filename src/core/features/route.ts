@@ -26,10 +26,6 @@ export function installRoute(deps: RouteDeps): () => void {
     return () => {};
   }
 
-  // Both flags are true only between our own `history.pushState` and the
-  // matching `history.back()`. They guard against double-back when the
-  // consumer also wires their own router on top, and against issuing a
-  // redundant pop when the browser has already popped our entry.
   let routePushed = false;
   let closeOnBackPushed = false;
   let detachPopstate: (() => void) | null = null;
@@ -40,25 +36,20 @@ export function installRoute(deps: RouteDeps): () => void {
       try {
         history.back();
       } catch {
-        /* sandboxed iframe or detached frame */
       }
     }
   };
 
   const onOpen = (): void => {
-    // routedTo wins over closeOnBack — both would require two back-presses.
     if (deps.routedTo && !detachPopstate) {
       const target = deps.routedTo;
       try {
         history.pushState({ __bsRouted: target }, "", target);
         routePushed = true;
       } catch {
-        /* SecurityError: cross-origin URL or sandboxed iframe */
       }
       const onPop = (event: PopStateEvent): void => {
         if (deps.isDestroyed()) return;
-        // Only react when the popped state is OUR routed entry; an
-        // unrelated history pop (consumer back nav) shouldn't close the sheet.
         const state = event.state as Record<string, unknown> | null;
         if (
           state &&
@@ -76,7 +67,6 @@ export function installRoute(deps: RouteDeps): () => void {
         history.pushState({ __bsSheet: deps.sheetId }, "");
         closeOnBackPushed = true;
       } catch {
-        /* sandboxed iframe */
       }
       const onPop = (): void => {
         if (deps.isDestroyed()) return;
@@ -106,8 +96,6 @@ export function installRoute(deps: RouteDeps): () => void {
 
   const unsubscribeOpen = deps.on("open", onOpen);
   const unsubscribeClose = deps.on("close", onClose);
-  // If sheet is already open at install time (e.g. SSR-restored state),
-  // run the open path now so the back-button handler is registered.
   if (deps.getSize() > 0) onOpen();
 
   return () => {

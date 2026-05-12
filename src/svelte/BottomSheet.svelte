@@ -5,6 +5,9 @@
     EngineState,
     SnapPointDef,
     SheetMode,
+    ScrimUpdate,
+    ScrimOverlayOptions,
+    EngineOptions,
   } from "../core/types";
 
   type Props = {
@@ -23,16 +26,6 @@
     backdrop?: boolean;
     closeOnBackdrop?: boolean;
     ariaLabel?: string;
-    /**
-     * Header snippet. Receives the live `EngineState` so consumers can
-     * render different markup per snap (e.g. minimized vs full):
-     *
-     *   {#snippet header(state)}
-     *     {#if state.activeId === "min"}<span>title</span>{:else}<h2>full</h2>{/if}
-     *   {/snippet}
-     *
-     * Snippets that ignore the argument keep working unchanged.
-     */
     header?: Snippet<[EngineState & { activeId: TId }]>;
     leftButton?: Snippet;
     rightButton?: Snippet;
@@ -77,8 +70,6 @@
   let backdropEl: HTMLElement | undefined = $state();
   let screenEl: HTMLElement | undefined = $state();
 
-  // svelte-ignore state_referenced_locally
-  // initial seed only; engine owns activeId after onMount.
   let viewState: EngineState & { activeId: TId } = $state({
     size: 0,
     activeId: (initial ?? snapPoints[0]?.id ?? "default") as TId,
@@ -96,7 +87,7 @@
       handle: handleEl,
       scrollContainer: contentEl,
       backdrop: backdropEl,
-      screenComponent: screenEl,
+      scrim: screenEl,
       mode,
       snapPoints,
       allowed,
@@ -138,8 +129,24 @@
   export const close = () => engine?.close() ?? Promise.resolve();
   export const setAllowed = (ids: TId[], snap?: TId) =>
     engine?.setAllowed(ids as unknown as string[], snap);
+  export const setSnapPoints = (
+    points: EngineOptions["snapPoints"],
+    nextAllowed?: string[],
+  ) => engine?.setSnapPoints(points, nextAllowed);
+  export const setScrim = (opts: ScrimUpdate) => engine?.setScrim(opts);
+  export const setScrimOverlay = (opts: ScrimOverlayOptions): (() => void) =>
+    engine?.setScrimOverlay(opts) ?? (() => {});
   export const getState = (): EngineState & { activeId: TId } =>
     (engine?.state ?? viewState) as EngineState & { activeId: TId };
+  export const getEngine = (): BottomSheetEngine | null => engine;
+
+  let allowedIds = $derived(
+    allowed && allowed.length > 0
+      ? allowed
+      : snapPoints.map(s => s.id),
+  );
+  let activeIdx = $derived(allowedIds.indexOf(viewState.activeId));
+  let isVerticalAxis = $derived(mode === "bottom" || mode === "top");
 </script>
 
 <div class="bs-root">
@@ -156,11 +163,14 @@
       onclick={closeOnBackdrop ? () => engine?.close() : undefined}
     ></div>
   {/if}
-  {#if screen}
-    <div class="bs-screen" bind:this={screenEl}>
-      {@render screen()}
-    </div>
-  {/if}
+  <!--
+    Scrim surface always renders so the engine can host scrim presets, overlay
+    injections, and progress-driven opacity. The `screen` snippet, when
+    provided, renders inside as user content.
+  -->
+  <div class="bs-screen" bind:this={screenEl}>
+    {#if screen}{@render screen()}{/if}
+  </div>
   <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
   <section
     class="bs-sheet"
@@ -187,9 +197,11 @@
       role="slider"
       tabindex="0"
       aria-label="Resize sheet"
-      aria-valuemin="0"
-      aria-valuemax="0"
-      aria-valuenow="0"
+      aria-orientation={isVerticalAxis ? "vertical" : "horizontal"}
+      aria-valuemin={0}
+      aria-valuemax={Math.max(0, allowedIds.length - 1)}
+      aria-valuenow={Math.max(0, activeIdx)}
+      aria-valuetext={viewState.activeId}
     >
       {#if header}{@render header(viewState)}{/if}
     </div>

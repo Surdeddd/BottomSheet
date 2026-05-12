@@ -6,7 +6,10 @@ import type {
   SheetMode,
   SnapPoint,
   SnapPointDef,
+  ScrimUpdate,
+  ScrimOverlayOptions,
 } from "../core/types";
+import type { BottomSheetEngine } from "../core/BottomSheetEngine";
 
 export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   EngineOptions,
@@ -14,7 +17,7 @@ export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   | "handle"
   | "scrollContainer"
   | "backdrop"
-  | "screenComponent"
+  | "scrim"
   | "snapPoints"
   | "allowed"
   | "initial"
@@ -40,10 +43,13 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
     points: EngineOptions["snapPoints"],
     allowed?: string[],
   ) => void;
+  setScrim: (opts: ScrimUpdate) => void;
+  setScrimOverlay: (opts: ScrimOverlayOptions) => () => void;
   on: <K extends keyof SheetEventMap>(
     event: K,
     fn: (payload: SheetEventMap[K]) => void,
   ) => () => void;
+  getEngine: () => BottomSheetEngine | null;
 };
 
 export function useBottomSheet<TId extends string = string>(

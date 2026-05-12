@@ -157,3 +157,7 @@ node_modules.nosync/
 .bun/
 .deno/
 .vercel
+
+scripts/record-gifs/.raw/
+
+memory-bank/

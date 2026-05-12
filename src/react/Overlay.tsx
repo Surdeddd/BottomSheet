@@ -12,9 +12,7 @@ export type OverlayProps = Omit<
   OverlayOptions,
   "element" | "backdrop"
 > & {
-  /** Controlled open state. If omitted, the overlay is uncontrolled. */
   open?: boolean;
-  /** Render the backdrop. Default: true. */
   backdrop?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -31,11 +29,6 @@ export type OverlayHandle = {
   state: OverlayState;
 };
 
-/**
- * Bottom-anchored slide-up overlay panel. Distinct from `<BottomSheet>`:
- * no drag, no snap points, single binary state. CSS-transition animated
- * (no spring) — lighter weight, predictable timing.
- */
 export const Overlay = forwardRef<OverlayHandle, OverlayProps>(function Overlay(
   props,
   ref,
@@ -58,7 +51,6 @@ export const Overlay = forwardRef<OverlayHandle, OverlayProps>(function Overlay(
     edge,
   });
 
-  // Controlled mode — sync prop → engine
   useEffect(() => {
     if (openProp === undefined) return;
     if (openProp && !state.isOpen) void open();

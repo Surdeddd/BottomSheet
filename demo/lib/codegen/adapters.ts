@@ -1,6 +1,3 @@
-// Per-adapter snippet generators. Each `gen*` builds a self-contained code
-// snippet from current `DemoSettings` + the active snap-points list. The
-// shared formatting helpers in `./shared` keep the eight outputs consistent.
 
 import type { DemoSettings } from "../../apps/shared";
 import {
@@ -10,6 +7,14 @@ import {
   dropEmpty,
   jsonInline,
   optLine,
+  scrimSnippetElement,
+  scrimSnippetLit,
+  scrimSnippetQwik,
+  scrimSnippetReact,
+  scrimSnippetSolid,
+  scrimSnippetSvelte,
+  scrimSnippetVanilla,
+  scrimSnippetVue,
   skipBehavior,
   skipNum,
   skipStr,
@@ -29,18 +34,21 @@ export function genReact(
   const springSkip =
     skipNum(settings.stiffness, SNIPPET_DEFAULTS.stiffness, c) &&
     skipNum(settings.damping, SNIPPET_DEFAULTS.damping, c);
+  const scrim = scrimSnippetReact(settings, c);
   return dropEmpty(`// React
-import { BottomSheet } from "@surdeddd/bottom-sheet/react";
+import { BottomSheet, type BottomSheetHandle } from "@surdeddd/bottom-sheet/react";
 import "@surdeddd/bottom-sheet/styles";
 
+const ref = useRef<BottomSheetHandle>(null);
 <BottomSheet
+  ref={ref}
   snapPoints={[
 ${snapsToInline(snaps)},
   ]}
 ${optLine(`  initial="${settings.initial}"`, skipStr(settings.initial, SNIPPET_DEFAULTS.initial, c))}${optLine(`  mode="${mode}"`, skipStr(mode, SNIPPET_DEFAULTS.mode, c))}  animation="spring"
 ${optLine(`  spring={{ stiffness: ${settings.stiffness}, damping: ${settings.damping} }}`, springSkip)}${beh ? beh + "\n" : ""}>
   <YourList />
-</BottomSheet>`);
+</BottomSheet>${scrim ? "\n\n" + scrim : ""}`);
 }
 
 export function genVue(
@@ -60,6 +68,7 @@ export function genVue(
   const springSkip =
     skipNum(settings.stiffness, SNIPPET_DEFAULTS.stiffness, c) &&
     skipNum(settings.damping, SNIPPET_DEFAULTS.damping, c);
+  const scrim = scrimSnippetVue(settings, c);
   return dropEmpty(`<!-- Vue 3 -->
 <script setup>
 import { BottomSheet } from "@surdeddd/bottom-sheet/vue";
@@ -74,7 +83,7 @@ ${optLine(`    :spring="{ stiffness: ${settings.stiffness}, damping: ${settings.
   >
     <YourList />
   </BottomSheet>
-</template>`);
+</template>${scrim ? "\n\n" + scrim : ""}`);
 }
 
 export function genSvelte(
@@ -94,6 +103,7 @@ export function genSvelte(
   const springSkip =
     skipNum(settings.stiffness, SNIPPET_DEFAULTS.stiffness, c) &&
     skipNum(settings.damping, SNIPPET_DEFAULTS.damping, c);
+  const scrim = scrimSnippetSvelte(settings, c);
   return dropEmpty(`<!-- Svelte 5 — runes + SFC -->
 <script lang="ts">
 import { BottomSheet } from "@surdeddd/bottom-sheet/svelte";
@@ -110,7 +120,7 @@ ${optLine(`  initial="${settings.initial}"`, skipStr(settings.initial, SNIPPET_D
 ${optLine(`  spring={{ stiffness: ${settings.stiffness}, damping: ${settings.damping} }}`, springSkip)}${beh.length ? beh.join("\n") + "\n" : ""}  onsnap={(id) => console.log(id)}
 >
   <YourList />
-</BottomSheet>`);
+</BottomSheet>${scrim ? "\n\n" + scrim : ""}`);
 }
 
 export function genSolid(
@@ -124,6 +134,7 @@ export function genSolid(
   const springSkip =
     skipNum(settings.stiffness, SNIPPET_DEFAULTS.stiffness, c) &&
     skipNum(settings.damping, SNIPPET_DEFAULTS.damping, c);
+  const scrim = scrimSnippetSolid(settings, c);
   return dropEmpty(`// Solid
 import { BottomSheet } from "@surdeddd/bottom-sheet/solid";
 import "@surdeddd/bottom-sheet/styles";
@@ -136,7 +147,7 @@ ${optLine(`  initial="${settings.initial}"`, skipStr(settings.initial, SNIPPET_D
 ${optLine(`  spring={{ stiffness: ${settings.stiffness}, damping: ${settings.damping} }}`, springSkip)}${beh ? beh + "\n" : ""}  onSnap={(id) => console.log(id)}
 >
   <YourList />
-</BottomSheet>`);
+</BottomSheet>${scrim ? "\n\n" + scrim : ""}`);
 }
 
 export function genQwik(
@@ -156,6 +167,7 @@ export function genQwik(
   const springSkip =
     skipNum(settings.stiffness, SNIPPET_DEFAULTS.stiffness, c) &&
     skipNum(settings.damping, SNIPPET_DEFAULTS.damping, c);
+  const scrim = scrimSnippetQwik(settings, c);
   return dropEmpty(`// Qwik
 import { component$, $ } from "@builder.io/qwik";
 import { BottomSheet } from "@surdeddd/bottom-sheet/qwik";
@@ -171,7 +183,7 @@ ${optLine(`    spring={{ stiffness: ${settings.stiffness}, damping: ${settings.d
   >
     <YourList />
   </BottomSheet>
-));`);
+));${scrim ? "\n\n" + scrim : ""}`);
 }
 
 export function genLit(
@@ -181,6 +193,7 @@ export function genLit(
 ): string {
   const beh = behaviorPropsKebab(settings, !!opts.compact);
   const mode = settings.mode === "overlay" ? "bottom" : settings.mode;
+  const scrim = scrimSnippetLit(settings, !!opts.compact);
   return dropEmpty(`// Lit — wraps the <bottom-sheet> custom element
 import { LitElement, html } from "lit";
 import { customElement } from "lit/decorators.js";
@@ -204,7 +217,7 @@ ${beh
       </bottom-sheet>
     \`;
   }
-}`);
+}${scrim ? "\n\n" + scrim : ""}`);
 }
 
 export function genElement(
@@ -214,6 +227,7 @@ export function genElement(
 ): string {
   const beh = behaviorPropsKebab(settings, !!opts.compact);
   const mode = settings.mode === "overlay" ? "bottom" : settings.mode;
+  const scrim = scrimSnippetElement(settings, !!opts.compact);
   return dropEmpty(`<!-- Web Component -->
 <link rel="stylesheet" href="/styles.css">
 <script type="module" src="/element.js"></script>
@@ -224,7 +238,7 @@ ${optLine(`  initial="${settings.initial}"`, skipStr(settings.initial, SNIPPET_D
 ${beh}${beh ? "\n" : ""}>
   <h2 slot="header">Title</h2>
   <ul>…</ul>
-</bottom-sheet>`);
+</bottom-sheet>${scrim ? "\n\n" + scrim : ""}`);
 }
 
 export function genVanilla(
@@ -234,6 +248,7 @@ export function genVanilla(
 ): string {
   const c = !!opts.compact;
   const mode = settings.mode === "overlay" ? "bottom" : settings.mode;
+  const scrim = scrimSnippetVanilla(settings, c);
   return dropEmpty(`// Vanilla — engine wired to plain DOM
 import { BottomSheetEngine } from "@surdeddd/bottom-sheet";
 import "@surdeddd/bottom-sheet/styles";
@@ -249,5 +264,5 @@ ${snapsToInline(snaps)},
 ${optLine(`  initial: "${settings.initial}",`, skipStr(settings.initial, SNIPPET_DEFAULTS.initial, c))}${optLine(`  mode: "${mode}",`, skipStr(mode, SNIPPET_DEFAULTS.mode, c))}  animation: "spring",
 ${optLine(`  spring: { stiffness: ${settings.stiffness}, damping: ${settings.damping} },`, skipNum(settings.stiffness, SNIPPET_DEFAULTS.stiffness, c) && skipNum(settings.damping, SNIPPET_DEFAULTS.damping, c))}${optLine(`  focusTrap: ${settings.focusTrap},`, skipBehavior(settings.focusTrap, SNIPPET_DEFAULTS.focusTrap, c))}${optLine(`  closeOnEscape: ${settings.closeOnEscape},`, skipBehavior(settings.closeOnEscape, SNIPPET_DEFAULTS.closeOnEscape, c))}${optLine(`  rubberBand: ${settings.rubberBand},`, skipBehavior(settings.rubberBand, SNIPPET_DEFAULTS.rubberBand, c))}});
 engine.on("snap", ({ id }) => console.log(id));
-engine.snapTo("${settings.initial}");`);
+engine.snapTo("${settings.initial}");${scrim ? "\n\n" + scrim : ""}`);
 }

@@ -21,17 +21,6 @@ export type UseBottomSheetRefs = {
   screenRef: React.RefObject<HTMLElement | null>;
 };
 
-/**
- * Return shape of `useBottomSheet`. Optionally narrows to a literal-id union
- * `TId` when the consumer explicitly types the call site:
- *
- * ```ts
- * const sheet = useBottomSheet<"min" | "full">({ snapPoints: [...] });
- * sheet.snapTo("min"); // ✓
- * ```
- *
- * Without an explicit type argument `TId` defaults to `string`.
- */
 export type UseBottomSheetReturn<TId extends string = string> =
   UseBottomSheetRefs & {
     state: EngineState & { activeId: TId };
@@ -39,20 +28,7 @@ export type UseBottomSheetReturn<TId extends string = string> =
     open: (id?: TId) => Promise<void>;
     close: () => Promise<void>;
     setAllowed: (ids: TId[], snap?: TId) => void;
-    /**
-     * @deprecated React Strict Mode double-invokes the layout effect — the
-     * effect tears down (engineRef.current = null), the next render reads
-     * this field as `null` for one frame, and only the second mount restores
-     * a live engine. Consumers calling methods through this field during that
-     * window get `null`. Use `getEngine()` instead — it lazy-reads the live
-     * ref and is safe across Strict Mode and across resize/setSnapPoints
-     * paths that don't fire React-tracked events. Will be removed in v2.
-     */
     engine: BottomSheetEngine | null;
-    /** Lazy accessor — always reads the live engine, even after external
-     * mutations (resize, setSnapPoints) that don't fire React-tracked events.
-     * Strict-Mode-safe: returns the current ref at call time, not a stale
-     * snapshot from the last commit. */
     getEngine: () => BottomSheetEngine | null;
   };
 
@@ -64,21 +40,13 @@ const SSR_STATE: EngineState = Object.freeze({
   progress: 0,
 });
 
-/**
- * Headless React hook. Wires the engine to refs and subscribes to its events
- * via `useSyncExternalStore` for tear-free state in concurrent mode.
- *
- * The snapshot is cached in a ref and only refreshed when a notify fires,
- * so React's identity check doesn't trigger an infinite loop (the engine's
- * `state` getter constructs a fresh object every call).
- */
 type HookOpts<TId extends string> = Omit<
   EngineOptions,
   | "element"
   | "handle"
   | "scrollContainer"
   | "backdrop"
-  | "screenComponent"
+  | "scrim"
   | "snapPoints"
   | "allowed"
   | "initial"
@@ -86,7 +54,6 @@ type HookOpts<TId extends string> = Omit<
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
-  /** Called after a snap commit settles. Mirrors the engine's `snap` event. */
   onSnap?: (id: TId) => void;
 };
 
@@ -111,7 +78,7 @@ export function useBottomSheet<TId extends string = string>(
     if (!sheetRef.current) return;
     const current = optsRef.current as Omit<
       EngineOptions,
-      "element" | "handle" | "scrollContainer" | "backdrop" | "screenComponent"
+      "element" | "handle" | "scrollContainer" | "backdrop" | "scrim"
     >;
     const engine = new BottomSheetEngine({
       ...current,
@@ -119,14 +86,12 @@ export function useBottomSheet<TId extends string = string>(
       handle: handleRef.current ?? undefined,
       scrollContainer: contentRef.current ?? undefined,
       backdrop: backdropRef.current ?? undefined,
-      screenComponent: screenRef.current ?? undefined,
+      scrim: screenRef.current ?? undefined,
     });
     engineRef.current = engine;
     cachedSnapshotRef.current = { ...engine.state };
     setMounted(n => n + 1);
 
-    // Settled-state-only sync: drag/progress are 60fps and would flood React
-    // with re-renders. Subscribe to those imperatively via `engine.on(...)`.
     const refresh = () => {
       cachedSnapshotRef.current = { ...engine.state };
       subscribersRef.current.forEach(fn => fn());
@@ -149,7 +114,6 @@ export function useBottomSheet<TId extends string = string>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // NUL separator so ids containing any printable character cannot collide.
   const allowedKey = (opts.allowed ?? opts.snapPoints.map(p => p.id)).join(
     "\x00",
   );

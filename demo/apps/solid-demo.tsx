@@ -11,18 +11,6 @@ import {
   type DemoSettings,
 } from "./shared";
 
-/**
- * Solid demo for the headless BottomSheet engine.
- *
- * The published `@surdeddd/bottom-sheet/solid` adapter wraps this same engine
- * with sensible defaults; this demo wires `BottomSheetEngine` directly so the
- * test harness's controller (snapTo / onUpdate / onVelocity) gets uncomplicated
- * access to the engine instance.
- *
- * The engine instance is handed back to `mountSolidDemo` via the `onReady`
- * callback prop so the page-level polling loop can read `engine.state`
- * without resorting to a `window` side-channel.
- */
 const SolidSheet = (props: {
   settings: DemoSettings;
   onReady: (engine: BottomSheetEngine) => void;
@@ -126,8 +114,6 @@ export const mountSolidDemo = (
   const mountPoint = document.createElement("div");
   shell.append(mountPoint);
 
-  // Engine handle captured via the component's `onReady` callback. Ref-via-props
-  // beats a `window.__solidEngine` side-channel — same lifetime, no globals.
   let engineRef: BottomSheetEngine | null = null;
 
   const dispose = render(
@@ -176,5 +162,6 @@ export const mountSolidDemo = (
     onVelocity: fn => {
       velocityCb = fn;
     },
+    getEngine: () => engineRef ?? null,
   };
 };

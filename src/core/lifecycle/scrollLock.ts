@@ -1,11 +1,3 @@
-/**
- * Body-scroll lock that survives multiple sheets opening at once.
- *
- * The first call snapshots `document.body` overflow + position + top, sets
- * `position: fixed; top: -<scrollY>` to freeze the page in place (iOS-safe),
- * and returns a release function. The Nth call only increments the lock
- * counter; the page is restored when the counter drops back to 0.
- */
 let lockCount = 0;
 let savedStyles: {
   overflow: string;

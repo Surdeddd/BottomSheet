@@ -2,9 +2,6 @@ import { $, type Settings } from "./types";
 
 export type EditableSnap = { id: string; size: number };
 
-// Single source of truth for the editor's seed list. Reused everywhere we
-// need to know what the engine will fall back to once `customSnaps` is set
-// back to null (empty list).
 export const defaultSnaps = (): EditableSnap[] => [
   { id: "minimized", size: 110 },
   { id: "half", size: 320 },
@@ -15,8 +12,6 @@ let customSnaps: EditableSnap[] | null = null;
 
 export const getCustomSnaps = (): EditableSnap[] | null => customSnaps;
 
-// `shared.ts` reads `window.__bsCustomSnaps()` at every adapter mount —
-// this getter is the single bridge to that side-channel.
 declare global {
   interface Window {
     __bsCustomSnaps?: () => EditableSnap[] | null;
@@ -24,18 +19,6 @@ declare global {
 }
 window.__bsCustomSnaps = getCustomSnaps;
 
-/**
- * Keep `settings.initial` valid after the user edits / removes snaps, or
- * after a permalink restore. If the active id no longer exists in the new
- * snap list, fall back to the smallest non-zero snap; if all snaps have
- * size 0, fall back to the first id. Without this guard, the engine starts
- * with `activeId` pointing at a missing snap, `size` stays at the default
- * 0, and the sheet renders fully off-screen.
- *
- * Accepts either the editor's narrow `EditableSnap` shape or the engine's
- * wider `SnapPointDef` shape (size can be a string like "85%" — we only
- * inspect identity + numeric > 0, so non-numeric sizes resolve as truthy).
- */
 export const reconcileInitialSnap = (
   settings: Settings,
   snaps: ReadonlyArray<{ id: string; size: number | string }>,
@@ -60,8 +43,8 @@ export const reconcileInitialSnap = (
 
 export type SnapEditorDeps = {
   settings: Settings;
-  onChange: () => void; // called after every mutation; should remount adapter
-  onChipUpdate: () => void; // called after every mutation; should refresh chip row
+  onChange: () => void;
+  onChipUpdate: () => void;
 };
 
 export const mountSnapEditor = (deps: SnapEditorDeps): void => {
@@ -103,9 +86,6 @@ export const mountSnapEditor = (deps: SnapEditorDeps): void => {
           id: idIn.value || `snap-${i}`,
           size: Number(sizeIn.value) || 0,
         };
-        // Empty list collapses to `null` so `shared.ts` falls back to per-mode
-        // defaults cleanly instead of returning `[]` (the guard treats them
-        // identically but reconcile then can't recover the active id).
         customSnaps = next.length === 0 ? null : next;
         reconcileInitialSnap(settings, customSnaps ?? defaultSnaps());
         onChipUpdate();

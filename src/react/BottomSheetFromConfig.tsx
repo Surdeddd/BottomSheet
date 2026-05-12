@@ -9,30 +9,14 @@ import {
 import { BottomSheet, type BottomSheetHandle } from "./BottomSheet";
 import type { SheetMode, SnapPoint } from "../core/types";
 
-/**
- * JSON-serializable sheet configuration for CMS-driven / A-B / plugin /
- * server-driven UI. Functions can't be JSON, so handlers live in the
- * sibling `eventHandlers` prop keyed by `events.{onSnap,onOpen,onClose}`.
- *
- * Treat configs as immutable — derived props are memoized by config
- * identity, mutating in place leaves stale snap geometry behind.
- */
 export type SheetConfig = {
-  /** Schema version. Must be `1` for the current wrapper. */
   version: 1;
-  /** Ordered list of snap points (smallest → largest). Required. */
   snapPoints: Array<{ id: string; size: number | string }>;
-  /** Initial snap id. Falls back to first allowed (or first overall). */
   initial?: string;
-  /** Subset of snap-point ids the sheet may settle on right now. */
   allowed?: string[];
-  /** Direction the sheet expands from. Default: "bottom". */
   mode?: SheetMode;
-  /** Animation strategy. Default: "spring". */
   animation?: "spring" | "tween";
-  /** Spring config when `animation: "spring"`. */
   spring?: { stiffness?: number; damping?: number; mass?: number };
-  /** Behavior toggles. All optional; missing keys fall back to engine defaults. */
   behavior?: {
     focusTrap?: boolean;
     closeOnEscape?: boolean;
@@ -40,28 +24,15 @@ export type SheetConfig = {
     lockBodyScroll?: boolean;
     rubberBand?: boolean;
   };
-  /**
-   * Map event name → handler key. The actual functions live in the
-   * `eventHandlers` prop on the wrapper component, keyed by the same
-   * string. Missing handler keys are tolerated (warn + no-op).
-   */
   events?: { onSnap?: string; onOpen?: string; onClose?: string };
 };
 
-// Union (not optional arg) so TS accepts both `(id) => ...` and `() => ...`
-// without surfacing `id?: string` to callers.
 export type SheetEventHandler = ((id: string) => void) | (() => void);
 
 export type BottomSheetFromConfigProps = {
   config: SheetConfig;
   eventHandlers?: Record<string, SheetEventHandler>;
   slotContent?: { header?: ReactNode; body?: ReactNode };
-  /**
-   * Memoize derived props by content (JSON.stringify) instead of identity.
-   * Set when fetching via SWR / TanStack Query / RSC loaders that hand back
-   * a fresh object on every cache hit — prevents engine rebuilds on byte-
-   * identical revalidations. Default false keeps the cheap identity path.
-   */
   stableContent?: boolean;
 };
 
@@ -87,8 +58,6 @@ const BEHAVIOR_KEYS = new Set([
 ]);
 const EVENTS_KEYS = new Set(["onSnap", "onOpen", "onClose"]);
 
-// Compile-time guard: when SheetConfig grows a new key, this fails to
-// assign `true` until the allow-list is updated. No runtime cost.
 type _EnsureAllKeys<TKeys extends string, TType> =
   Exclude<keyof TType, TKeys> extends never
     ? Exclude<TKeys, keyof TType> extends never
@@ -123,7 +92,6 @@ const _eventsKeysCheck: _EnsureAllKeys<
   "onSnap" | "onOpen" | "onClose",
   NonNullable<SheetConfig["events"]>
 > = true;
-// Reference the assertions so the compiler doesn't strip them as unused.
 void _topLevelKeysCheck;
 void _behaviorKeysCheck;
 void _eventsKeysCheck;
@@ -134,8 +102,6 @@ const warnUnknownKeys = (
   context: string,
 ): void => {
   if (!obj || typeof obj !== "object") return;
-  // Batch into one warn per nesting level — a CMS payload with three typos
-  // shouldn't emit three console.warns (six under Strict Mode).
   const unknown = Object.keys(obj).filter(k => !allowed.has(k));
   if (unknown.length === 0) return;
   console.warn(
@@ -143,8 +109,6 @@ const warnUnknownKeys = (
   );
 };
 
-// Dedupe warnings across React Strict Mode's double-invoke effects.
-// WeakSet keys by identity so GC'd configs auto-evict.
 const validatedConfigs = new WeakSet<object>();
 
 function validateConfig(config: SheetConfig): boolean {
@@ -159,8 +123,6 @@ function validateConfig(config: SheetConfig): boolean {
         config.version,
       )}; expected ${SUPPORTED_VERSION}. Falling back to defaults.`,
     );
-    // Short-circuit so a future-schema config doesn't trigger unknown-key
-    // warnings for every v2-only key against the v1 allow-list.
     return false;
   }
 
@@ -190,7 +152,6 @@ function validateConfig(config: SheetConfig): boolean {
   return ok;
 }
 
-/** Default snap geometry the wrapper falls back to on invalid input. */
 const FALLBACK_SNAP_POINTS = [
   { id: "default", size: "full" as SnapPoint },
 ];
@@ -205,8 +166,6 @@ export const BottomSheetFromConfig = forwardRef<
     validateConfig(config);
   }, [config]);
 
-  // Memoize by config identity (or content hash if stableContent) — engine
-  // rebuilds lose in-flight animations, focus trap, and scroll position.
   const memoKey = stableContent ? JSON.stringify(config) : config;
   const derived = useMemo(() => {
     const valid = config.version === SUPPORTED_VERSION;
@@ -230,8 +189,6 @@ export const BottomSheetFromConfig = forwardRef<
 
   const handlers = eventHandlers ?? {};
 
-  // Refs let the change handler read fresh handlers/events without tearing
-  // down listeners on every parent render.
   const eventsRef = useRef(derived.events);
   eventsRef.current = derived.events;
   const handlersRef = useRef(handlers);
@@ -239,18 +196,12 @@ export const BottomSheetFromConfig = forwardRef<
 
   const sheetRef = useRef<BottomSheetHandle | null>(null);
 
-  // Forward the inner sheet's imperative handle through whatever ref the
-  // consumer attached. `useImperativeHandle` runs after layout effects, so
-  // by the time the parent calls .snapTo() the inner ref is populated;
-  // it also nulls the ref on unmount automatically (no manual cleanup).
   useImperativeHandle(
     ref,
     () => sheetRef.current as BottomSheetHandle,
     [],
   );
 
-  // BottomSheet surfaces only `onChange` (fires on snap settle). open/close
-  // are inferred from activeId transitions to avoid engine-internal coupling.
   const lastActiveIdRef = useRef<string | null>(null);
 
   const handleChange = (state: { activeId: string }) => {
@@ -272,8 +223,6 @@ export const BottomSheetFromConfig = forwardRef<
       }
     }
 
-    // Engine treats id "" / size 0 as closed. Detect open/close via the
-    // activeId transition since BottomSheet doesn't surface engine events.
     const isClosedNext = next === "" || next === "closed";
     const isClosedPrev = prev === null || prev === "" || prev === "closed";
 

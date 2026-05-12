@@ -34,7 +34,10 @@ const {
   close,
   setAllowed,
   setSnapPoints,
+  setScrim,
+  setScrimOverlay,
   on,
+  getEngine,
 } = useBottomSheet<TId>(props);
 
 watch(
@@ -68,10 +71,10 @@ defineExpose({
   close,
   setAllowed,
   setSnapPoints,
+  setScrim,
+  setScrimOverlay,
   on,
-  // readonly() prevents external write-through (e.g. `bsRef.value.state.size = 999`)
-  // that would desync the local view-state proxy from the engine's truth.
-  // Mirrors React's getter-based exposure and Svelte's getState() snapshot.
+  getEngine,
   state: readonly(state),
 });
 </script>
@@ -85,7 +88,14 @@ defineExpose({
       aria-hidden="true"
       @click="closeOnBackdrop ? close() : undefined"
     />
-    <div v-if="$slots.screen" ref="screenRef" class="bs-screen">
+    <!--
+      Scrim surface always renders so the engine can host scrim presets
+      (color/blur via setScrim), overlay injections (setScrimOverlay),
+      and progress-driven opacity. The `screen` slot, when used, renders
+      inside as user content. Without a slot it stays an empty positioning
+      context.
+    -->
+    <div ref="screenRef" class="bs-screen">
       <slot name="screen" />
     </div>
     <section

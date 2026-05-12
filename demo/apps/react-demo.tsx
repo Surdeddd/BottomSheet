@@ -34,9 +34,6 @@ const ReactOverlay: FC<{
     }));
   }, [registerPoll, open]);
 
-  // Auto-open once on mount, then auto-close after 3.5s — but cancel the
-  // auto-close as soon as the user interacts (clicks chip / cancel / Esc /
-  // backdrop). After interaction, the overlay is fully manual.
   const userInteracted = useRef(false);
   useEffect(() => {
     let tClose: ReturnType<typeof setTimeout> | null = null;
@@ -50,7 +47,6 @@ const ReactOverlay: FC<{
     };
   }, []);
 
-  // Wrap snap callback to mark interaction.
   useEffect(() => {
     registerSnap((cmd: string) => {
       userInteracted.current = true;
@@ -157,7 +153,8 @@ const ReactSheet: FC<{
   settings: DemoSettings;
   registerSnap: (fn: (id: string) => void) => void;
   registerPoll: (read: () => any) => void;
-}> = ({ settings, registerSnap, registerPoll }) => {
+  registerEngine: (getter: () => any) => void;
+}> = ({ settings, registerSnap, registerPoll, registerEngine }) => {
   const ref = useRef<BottomSheetHandle>(null);
 
   useEffect(() => {
@@ -165,7 +162,8 @@ const ReactSheet: FC<{
       void ref.current?.snapTo(id);
     });
     registerPoll(() => ref.current?.state ?? null);
-  }, [registerSnap, registerPoll]);
+    registerEngine(() => ref.current?.getEngine?.() ?? null);
+  }, [registerSnap, registerPoll, registerEngine]);
 
   const remountKey = `${settings.mode}-${settings.stiffness}-${settings.damping}-${settings.focusTrap}-${settings.closeOnEscape}-${settings.rubberBand}`;
 
@@ -217,14 +215,13 @@ export const mountReactDemo = (
 
   let snapFn: (id: string) => void = () => {};
   let pollFn: () => any = () => null;
+  let engineGetter: () => any = () => null;
   let updateCb: ((s: any) => void) | null = null;
   let velocityCb: ((v: number) => void) | null = null;
   let interval: number | null = null;
   let lastSize = 0;
   let lastTs = performance.now();
 
-  // Overlay mode renders an entirely different component — non-draggable
-  // bottom-anchored slide-up panel matching the monitoring app pattern.
   const isOverlay = (settings.mode as string) === "overlay";
   root.render(
     isOverlay ? (
@@ -245,11 +242,13 @@ export const mountReactDemo = (
         registerPoll={fn => {
           pollFn = fn;
         }}
+        registerEngine={getter => {
+          engineGetter = getter;
+        }}
       />
     ),
   );
 
-  // Single page-level polling loop — always reads via the latest registered fn.
   interval = window.setInterval(() => {
     const state = pollFn();
     if (!state) return;
@@ -273,5 +272,6 @@ export const mountReactDemo = (
     onVelocity: fn => {
       velocityCb = fn;
     },
+    getEngine: () => engineGetter() ?? null,
   };
 };

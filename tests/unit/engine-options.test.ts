@@ -100,9 +100,6 @@ describe("resolveEngineOptions — initial id chain", () => {
 });
 
 describe("resolveEngineOptions — persist override", () => {
-  // happy-dom's localStorage stub is unreliable across versions — the
-  // engine-features suite uses the same fake-storage pattern for its persist
-  // tests. Mirror that here so the persist branch is actually exercised.
   let store: Record<string, string>;
   let original: PropertyDescriptor | undefined;
   beforeEach(() => {
@@ -255,7 +252,6 @@ describe("resolveEngineOptions — pass-through option bags", () => {
     expect(r.lifecycle.closeOnEscape).toBe(false);
     expect(r.lifecycle.lockBodyScroll).toBe(false);
     expect(r.lifecycle.inertSiblings).toBe(true);
-    // No extras → controller uses its own default predicate.
     expect(r.lifecycle.shouldApplyInertSiblings).toBeUndefined();
   });
 });
@@ -272,8 +268,6 @@ describe("resolveEngineOptions — extras pass-through", () => {
       },
       { shouldApplyInertSiblings: predicate },
     );
-    // Identity preserved — same closure reference, no wrapping. Engine's
-    // body-descendant check stays cheap (no extra call indirection).
     expect(r.lifecycle.shouldApplyInertSiblings).toBe(predicate);
   });
 
@@ -303,7 +297,6 @@ describe("resolveEngineOptions — purity", () => {
       JSON.stringify({ ...opts, snapPoints: opts.snapPoints }),
     );
     resolveEngineOptions(opts);
-    // element/handle have circular refs from DOM so compare the JSON-safe slice.
     expect(JSON.parse(JSON.stringify({ snapPoints: opts.snapPoints }))).toEqual(
       { snapPoints: snapshot.snapPoints },
     );

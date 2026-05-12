@@ -1,11 +1,3 @@
-/**
- * Multi-sheet z-index orchestration.
- *
- * When you have a sheet that itself opens another sheet (e.g. menu → detail),
- * naive rendering stacks them at the same z-index and the second one is
- * obscured. The stack assigns ascending z-indices and notifies the topmost
- * sheet so it can render its backdrop while inner sheets skip theirs.
- */
 export type StackEntry = {
   id: string;
   setZIndex: (z: number) => void;
@@ -47,13 +39,8 @@ class SheetStack {
   }
 }
 
-/** Process-wide singleton so any adapter can reach the same stack. */
 export const sheetStack = new SheetStack();
 
-/**
- * Test helper: clear all entries. Singleton state would otherwise leak across
- * tests in the same vitest worker.
- */
 export const __resetSheetStackForTests = (): void => {
   sheetStack.clear();
 };

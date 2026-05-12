@@ -218,8 +218,12 @@
   bottom:0;
   left:0;
   pointer-events:none;
-  display:none;
+
   z-index:calc(var(--bs-z-sheet) - 1)
+}
+.bs-scrim-overlay {
+  z-index: calc(var(--bs-z-sheet) + 1);
+  pointer-events: none;
 }
 .bs-button-slot {
   position:absolute;
@@ -1797,10 +1801,6 @@ kbd {
   }
 }
 
-/* ===== floating-action overlay (injected by setScrimOverlay) =====
-   Lives inside the scrim wrapper that the engine creates on demand.
-   Styling is self-contained — no .bs-* dependency so the demo stays
-   shippable as a static showcase. */
 .floating-action {
   appearance: none;
   background: var(--vermillion);
@@ -1814,8 +1814,7 @@ kbd {
   text-transform: uppercase;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(193, 45, 28, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  /* Smooth fade-in when injected by setScrimOverlay; removed via teardown.
-     Animation runs once on mount — no flicker on subsequent prop changes. */
+
   animation: floating-action-in 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
   transition: transform 0.15s ease, background 0.15s ease;
 }
@@ -1825,6 +1824,3 @@ kbd {
   from { opacity: 0; transform: translateY(-8px) scale(0.92); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-/* When scrim is "off", screenComponent gets display:none — but the floating
-   action wrapper (.bs-scrim-overlay) lives inside it, so it disappears too.
-   Acceptable: floating actions don't make sense without a scrim. */

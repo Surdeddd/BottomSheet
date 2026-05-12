@@ -28,17 +28,16 @@
     onstate,
   }: Props = $props();
 
-  // Imperative handle to the underlying BottomSheet SFC.
   let sheet = $state<{
     snapTo: (id: string) => Promise<void>;
     getState: () => EngineState;
+    getEngine: () => any | null;
   } | undefined>();
 
-  // Re-export the slice the demo orchestrator polls. Returning `undefined`
-  // before mount is intentional — the polling loop guards on null.
   export const snapTo = (id: string): Promise<void> =>
     sheet?.snapTo(id) ?? Promise.resolve();
   export const getState = (): EngineState | undefined => sheet?.getState();
+  export const getEngine = (): any | null => sheet?.getEngine() ?? null;
 </script>
 
 <BottomSheet

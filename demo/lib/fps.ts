@@ -1,11 +1,5 @@
 import { $ } from "./types";
 
-/**
- * Lightweight FPS meter that only reports while the sheet is actively
- * dragging or animating — otherwise the readout shows `—`. We attach the
- * RAF loop once at boot; the cost is one timestamp diff + a counter
- * increment per frame.
- */
 export const startFpsLoop = (): void => {
   const fpsOut = $<HTMLElement>("#ro-fps");
   const flDragging = $<HTMLElement>("#fl-dragging");

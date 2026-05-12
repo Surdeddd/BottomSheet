@@ -12,12 +12,6 @@ export type PresetResolution = {
   easing?: (t: number) => number;
 };
 
-/**
- * Map an `animation` option to a base kind + curated default config. The two
- * raw kinds (`"spring"`, `"tween"`) pass through with empty config; the four
- * named presets prefill spring/duration/easing. Consumer-supplied overrides
- * still win — engine layers user values on top of preset defaults.
- */
 export function resolveAnimationPreset(
   animation: AnimationOption | undefined,
 ): PresetResolution {

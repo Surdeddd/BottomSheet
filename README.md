@@ -11,6 +11,12 @@ A framework-agnostic bottom-sheet primitive. Spring physics, Pointer Events,
 GPU-only motion, full keyboard a11y, hardware-back interception, multi-sheet
 stacking — and the exact same engine behind every adapter.
 
+## 🚀 [Live demo → bottom-sheet-demo.vercel.app](https://bottom-sheet-demo.vercel.app)
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/gifs/01-drag-to-close.gif" alt="drag to close — spring physics" width="380" />
+</p>
+
 ```
 
                        ┌───────────────────────────────────────┐

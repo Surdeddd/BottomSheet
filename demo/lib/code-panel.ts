@@ -6,11 +6,6 @@ import {
 import { snapPoints as resolveSnapPoints } from "../apps/shared";
 import { announce, type AdapterKey, type Settings } from "./types";
 
-/**
- * Walk a tokenized snippet and append matching `<span class="c-X">` /
- * text-node children to `target`. Built-up via createElement to keep the
- * code-panel free of innerHTML — the demo's CSP-conservative posture.
- */
 const paintCode = (target: HTMLElement, code: string): void => {
   while (target.firstChild) target.removeChild(target.firstChild);
   for (const tok of tokenize(code)) {

@@ -14,24 +14,6 @@ import type {
   SheetMode,
 } from "../core/types";
 
-/**
- * Props for the Solid `BottomSheet` component. Optionally narrows to a
- * literal-id union `TId` when the consumer pins `snapPoints` with `as const`
- * and explicitly types the call site:
- *
- * ```tsx
- * const points = [
- *   { id: "min", size: 96 },
- *   { id: "full", size: "85%" },
- * ] as const;
- * <BottomSheet<"min" | "full"> snapPoints={points} onSnap={id => ...} />
- * ```
- *
- * Without an explicit type argument `TId` defaults to `string` so existing
- * call sites compile unchanged. The underlying engine stays `string`-typed;
- * the literal narrowing is a TS-only convenience layered on top of the
- * runtime.
- */
 export type BottomSheetProps<TId extends string = string> = {
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
@@ -54,31 +36,22 @@ export type BottomSheetProps<TId extends string = string> = {
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
-  /** Fires when the active snap settles. */
   onSnap?: (id: TId) => void;
-  /** Fires on every state-affecting engine event (snap/dragstart/dragend). */
   onChange?: (state: EngineState & { activeId: TId }) => void;
-  /**
-   * Imperative escape hatch. Invoked once after the engine is constructed
-   * inside `onMount` (and once with `null` on cleanup). Use this to subscribe
-   * to per-frame events the adapter intentionally skips, e.g.
-   * `engineRef={(e) => e?.on("progress", ...)}`. Mirrors React's
-   * `useBottomSheet` engine handle.
-   */
   engineRef?: (engine: BottomSheetEngine | null) => void;
-  /** Header content rendered inside the drag handle. */
   header?: JSX.Element;
+  screen?: JSX.Element;
   children?: JSX.Element;
 };
 
 export const BottomSheet = <TId extends string = string>(
   props: BottomSheetProps<TId>,
 ): JSX.Element => {
-  // Ref callbacks run synchronously during render; populated by onMount.
   let sheetEl: HTMLElement | undefined;
   let handleEl: HTMLElement | undefined;
   let contentEl: HTMLElement | undefined;
   let backdropEl: HTMLElement | undefined;
+  let scrimEl: HTMLElement | undefined;
 
   const initialActive = (): TId =>
     (props.initial ?? props.snapPoints[0]?.id ?? "default") as TId;
@@ -101,9 +74,8 @@ export const BottomSheet = <TId extends string = string>(
       handle: handleEl,
       scrollContainer: contentEl,
       backdrop: props.backdrop !== false ? backdropEl : undefined,
+      scrim: scrimEl,
       mode: props.mode ?? "bottom",
-      // Widen literal-id back to string at the engine boundary — the engine
-      // is string-typed at runtime, the TId narrowing is a TS-only veneer.
       snapPoints: props.snapPoints as unknown as SnapPointDef[],
       allowed: props.allowed as unknown as string[] | undefined,
       initial: props.initial,
@@ -118,14 +90,11 @@ export const BottomSheet = <TId extends string = string>(
     };
 
     engine = new BottomSheetEngine(engineOpts);
-    // Expose engine to consumer once: lets them subscribe to per-frame events
-    // (e.g. "progress") that the adapter omits, without forking.
     props.engineRef?.(engine);
 
     const sync = (): void => {
       if (!engine) return;
       const s = engine.state;
-      // New object identity ensures Solid signal subscribers re-run.
       setState({ ...s } as EngineState & { activeId: TId });
       props.onChange?.(s as EngineState & { activeId: TId });
     };
@@ -137,12 +106,6 @@ export const BottomSheet = <TId extends string = string>(
     });
     engine.on("dragstart", sync);
     engine.on("dragend", sync);
-    // Intentionally NOT subscribing to "progress": that event fires every
-    // animation frame (60-120 Hz) and a `setState({ ...engine.state })` per
-    // tick busts memoisation across the Solid component tree. Consumers who
-    // need per-frame progress should subscribe via the `engineRef` prop
-    // (`engineRef={(e) => e?.on("progress", ...)}`). This matches the
-    // React/Vue/Svelte adapters' explicit "settled-state only" contract.
 
     if (
       props.backdrop !== false &&
@@ -162,7 +125,6 @@ export const BottomSheet = <TId extends string = string>(
   onCleanup(() => {
     engine?.destroy();
     engine = null;
-    // Notify consumer the engine is gone so they can drop their reference.
     props.engineRef?.(null);
   });
 
@@ -175,6 +137,9 @@ export const BottomSheet = <TId extends string = string>(
       {showBackdrop() ? (
         <div class="bs-backdrop" ref={el => (backdropEl = el)} />
       ) : null}
+      <div class="bs-screen" ref={el => (scrimEl = el)}>
+        {props.screen}
+      </div>
       <section
         class="bs-sheet"
         ref={el => (sheetEl = el)}

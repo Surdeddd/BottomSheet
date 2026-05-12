@@ -17,7 +17,11 @@ export const mountVueDemo = (
   const mountPoint = document.createElement("div");
   host.firstElementChild!.appendChild(mountPoint);
 
-  let sheetHandle: { snapTo: (id: string) => Promise<void>; state: any } | null = null;
+  let sheetHandle: {
+    snapTo: (id: string) => Promise<void>;
+    state: any;
+    getEngine?: () => any | null;
+  } | null = null;
   let updateCb: ((s: any) => void) | null = null;
   let velocityCb: ((v: number) => void) | null = null;
   let interval: number | null = null;
@@ -104,5 +108,6 @@ export const mountVueDemo = (
     onVelocity: (fn: (v: number) => void) => {
       velocityCb = fn;
     },
+    getEngine: () => sheetHandle?.getEngine?.() ?? null,
   };
 };

@@ -1,7 +1,6 @@
 import type { Theme, ThemePreset } from "./types";
 import { startViewTransition } from "./view-transition";
 
-// ----- light/dark page theme (data-theme attribute) -----
 
 export const detectTheme = (): Theme =>
   (localStorage.getItem("bs-demo-theme") as Theme | null) ??
@@ -31,18 +30,12 @@ export const wireThemeToggle = (): void => {
   if (themeToggleWired) return;
   themeToggleWired = true;
   document.getElementById("theme-toggle")?.addEventListener("click", () => {
-    // Wrap in View Transition — the body's color/background CSS already
-    // crossfades via transition; VT additionally captures the topbar +
-    // device-frame so the whole page swaps coherently rather than the
-    // body fading at 240ms while the device-frame just hard-cuts.
     startViewTransition(() => {
       applyTheme(currentTheme === "light" ? "dark" : "light");
     });
   });
 };
 
-// ----- bottom-sheet theme preset (ios / material / vercel / default) -----
-// Loaded lazily via dynamic CSS import — only the chosen theme is fetched.
 
 const presetLoaders: Record<
   Exclude<ThemePreset, "default">,
@@ -63,9 +56,6 @@ export const getThemePreset = (): ThemePreset => currentPreset;
 export const applyThemePreset = (preset: ThemePreset): void => {
   currentPreset = preset;
   localStorage.setItem("bs-demo-theme-preset", preset);
-  // Strip any previous bs-theme-* classes from every mounted root, then
-  // add the new one. .bs-root may live inside multiple shadow / light
-  // hosts depending on the active adapter — querySelectorAll covers them.
   document.querySelectorAll<HTMLElement>(".bs-root").forEach(root => {
     root.classList.forEach(cls => {
       if (cls.startsWith("bs-theme-")) root.classList.remove(cls);
@@ -98,8 +88,6 @@ export const wireThemePresetChips = (): void => {
     .querySelectorAll<HTMLButtonElement>("#theme-chips .chip")
     .forEach(btn => {
       btn.addEventListener("click", () => {
-        // Theme preset swap mutates `.bs-root` classes — wrap in VT so
-        // tokens (colors, radii, shadows) crossfade rather than hard-cut.
         startViewTransition(() => {
           applyThemePreset(btn.dataset.themePreset as ThemePreset);
         });

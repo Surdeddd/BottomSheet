@@ -1,6 +1,3 @@
-/* Vercel-style theme — minimal flat surface, sharp radius, mono handle.
-   Activate by adding `bs-theme-vercel` to the `.bs-root` element. */
-
 .bs-theme-vercel {
   --bs-surface: #ffffff;
   --bs-surface-border: #eaeaea;

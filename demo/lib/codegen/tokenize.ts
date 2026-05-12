@@ -1,14 +1,3 @@
-// Tiny token-based syntax painter. Designed to be CSP-conservative — the
-// caller assembles DOM via `createElement`/`createTextNode`, so this module
-// only classifies substrings and never emits HTML strings.
-//
-// Classes mirror the demo's syntax-highlight palette:
-//   "c-c" — comment
-//   "c-k" — keyword (declaration / control flow / built-in type)
-//   "c-i" — identifier starting with capital (class / component)
-//   "c-s" — string / template literal / quoted attribute value
-//   "c-a" — attribute / prop name (followed by `=`)
-//   ""    — punctuation / whitespace / regular identifier
 
 export type Token = {
   text: string;

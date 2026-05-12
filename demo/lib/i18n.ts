@@ -179,18 +179,11 @@ const DICT: Record<Lang, Record<string, string>> = {
 };
 
 export const detectLang = (): Lang => {
-  // Validate against the enum — a same-origin XSS earlier in the page's life
-  // (or a malicious extension) could plant `localStorage["bs-demo-lang"]` as
-  // an arbitrary string. Casting blindly to `Lang` then doing `DICT[lang]`
-  // would throw on `dict[key]` access. Validate; fall back to navigator.
   const stored = localStorage.getItem("bs-demo-lang");
   if (stored === "ru" || stored === "en") return stored;
   return navigator.language.startsWith("ru") ? "ru" : "en";
 };
 
-// Expand `data-i18n-html` strings into a small whitelist of inline tags
-// (<em>, <code>) plus the literal escapes `&lt;` / `&gt;`. Hand-rolled DOM
-// builder — innerHTML is forbidden in the demo so we walk tokens manually.
 const renderInlineMarkup = (el: HTMLElement, html: string): void => {
   el.textContent = "";
   const tokens = html.split(/(<\/?(?:em|code)>|&lt;|&gt;)/g);
@@ -218,10 +211,6 @@ let currentLang: Lang = detectLang();
 
 export const getLang = (): Lang => currentLang;
 
-// Lookup helper for code paths that build DOM text outside the data-i18n
-// declarative pipeline (e.g. dynamically-injected buttons via setScrimOverlay).
-// Falls back to the key itself so a missing translation is visible in dev
-// instead of producing a silent empty string.
 export const t = (key: string): string => DICT[currentLang][key] ?? key;
 
 export const applyLang = (lang: Lang): void => {
@@ -244,7 +233,6 @@ export const applyLang = (lang: Lang): void => {
   document
     .getElementById("lang-ru")
     ?.classList.toggle("topbar-active", lang === "ru");
-  // Dynamic aria-label so screen readers announce the active language.
   document
     .getElementById("lang-toggle")
     ?.setAttribute(
@@ -253,15 +241,11 @@ export const applyLang = (lang: Lang): void => {
     );
 };
 
-// Wire the topbar toggle once. Subsequent calls are no-ops.
 let langToggleWired = false;
 export const wireLangToggle = (): void => {
   if (langToggleWired) return;
   langToggleWired = true;
   document.getElementById("lang-toggle")?.addEventListener("click", () => {
-    // View Transition crossfades all visible text mutations — UI labels +
-    // help text + JSDoc snippets in the demo all swap simultaneously
-    // without flashing.
     startViewTransition(() => {
       applyLang(currentLang === "en" ? "ru" : "en");
     });

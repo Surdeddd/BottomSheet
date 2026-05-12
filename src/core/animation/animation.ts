@@ -23,11 +23,6 @@ export type TweenOptions = {
   onUpdate: (value: number) => void;
 };
 
-/**
- * rAF tween. Promise resolves both on natural completion AND on cancel so
- * callers awaiting it always settle; they're expected to cycle-nonce-check
- * after the await before running post-settle effects.
- */
 export const tween = ({
   from,
   to,

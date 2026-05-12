@@ -13,11 +13,7 @@ export const resolveSnapList = (
   points
     .map(p => {
       const raw = resolveSnap(p.size, mode, measureFit);
-      // Defensive clamp: malformed CSS strings ("asdf"), negative calc()
-      // results, or environments where the probe element fails to mount can
-      // yield NaN or negative sizes. Both poison `applySize` (NaN → silently-
-      // rejected `transform: translate3d(0, NaNpx, 0)`; negative → sheet
-      // off-axis). Fall back to 0 + warn so the consumer can fix the input.
+
       if (!Number.isFinite(raw) || raw < 0) {
         // eslint-disable-next-line no-console
         console.warn(
@@ -29,20 +25,8 @@ export const resolveSnapList = (
     })
     .sort((a, b) => a.size - b.size);
 
-// Matches `vh` but not `dvh`/`lvh`/`svh`. We avoid lookbehind here because
-// Safari < 16.4 / older WebViews throw a SyntaxError when parsing the regex
-// literal — that would surface as a hard `new BottomSheetEngine()` failure on
-// otherwise-supported browsers. Instead: capture an optional preceding letter
-// and reject when it's present at the call site.
 const VH_NOT_DVH = /(^|[^a-z])vh\b/i;
 
-/**
- * Warn on snap sizes that use legacy `vh` — on iOS Safari it resolves to
- * the LARGE viewport height, which goes stale when the URL bar reappears
- * and leaves the sheet in the wrong place. Call once per engine init; the
- * engine's recompute path skips this so resize/orientationchange doesn't
- * spam the console.
- */
 export const auditVhUsage = (points: SnapPointDef[]): void => {
   for (const p of points) {
     if (typeof p.size !== "string") continue;
@@ -56,11 +40,6 @@ export const auditVhUsage = (points: SnapPointDef[]): void => {
   }
 };
 
-/**
- * Finds the snap point closest to `size`, optionally biased by drag
- * direction (positive = expanding) so flicks settle on the next-up snap
- * even when geometrically closer to the previous one.
- */
 export const findNearest = (
   size: number,
   resolved: ResolvedSnap[],
@@ -101,22 +80,6 @@ export const findById = (
   resolved: ResolvedSnap[],
 ): ResolvedSnap | null => resolved.find(p => p.id === id) ?? null;
 
-/**
- * Pure drag-settle target resolution. Given a drag-end's `delta`, `velocity`,
- * and `pointerKind`, plus the engine's current snap state, returns the snap
- * the gesture should settle on — OR `null` to indicate "stay where you are"
- * (sub-threshold drag with no directional intent).
- *
- * Extracted from `BottomSheetEngine.settleAfterDrag` so the policy is unit-
- * testable in isolation. The engine wraps the result with side-effectful
- * pieces (before-snap emit, scroll-cache, animateTo, snap event, haptic,
- * open/close lifecycle) — those stay engine-internal because they're tied
- * to mutable engine state.
- *
- * Velocity sign convention: positive = sheet GREW (drag opened it).
- * Direction sign convention matches the input direction parameter of
- * `findNearest` — positive = expanding, negative = collapsing.
- */
 export type SettleTargetInput = {
   delta: number;
   velocity: number;
@@ -126,9 +89,9 @@ export type SettleTargetInput = {
   allowed: string[];
   activeId: string;
   maxAxisSize: number;
-  /** Touch threshold in px/ms (mouse uses 0.4 hardcoded). */
+
   flickVelocity: number;
-  /** Touch drag threshold in px (mouse uses 12 hardcoded). */
+
   dragThreshold: number;
 };
 
@@ -140,7 +103,7 @@ export const findDragSettleTarget = (
   input: SettleTargetInput,
 ): ResolvedSnap | null => {
   const speed = Math.abs(input.velocity);
-  // Mouse/trackpad has finer pixel control than touch, so lower thresholds.
+
   const flickThreshold =
     input.pointerKind === "mouse"
       ? MOUSE_FLICK_VELOCITY
@@ -155,13 +118,10 @@ export const findDragSettleTarget = (
     direction = input.velocity > 0 ? 1 : -1;
   }
 
-  // Sub-threshold drag with no directional intent — stay on current snap.
   if (Math.abs(input.delta) < dragThresh && direction === 0) {
     return findById(input.activeId, input.resolved);
   }
 
-  // Above-threshold OR directional intent — find nearest with optional
-  // speed-bias so a flick "carries" past geometrically closer snaps.
   const speedBias =
     speed > flickThreshold ? Math.min(speed * 180, input.maxAxisSize) : 0;
   return findNearest(

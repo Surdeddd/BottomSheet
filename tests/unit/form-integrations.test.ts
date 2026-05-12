@@ -1,17 +1,3 @@
-/**
- * Form-integration smoke tests.
- *
- * Both adapters use type-only imports for `react-hook-form` / `formik`, so
- * the modules under test are always resolvable. The tests construct a fake
- * `BottomSheetEngine`-shaped target and verify that the `before-snap`
- * listener cancels at the documented points.
- *
- * NB: rendering the hooks needs a React renderer, so we exercise the
- * effect manually by calling the hook's effect-body equivalent — i.e. we
- * register the listener directly via the same `target.on(...)` contract.
- * That keeps the test runtime free of `react-hook-form` and `formik` and
- * avoids pulling in `@testing-library/react-hooks` for a 50-line check.
- */
 import { describe, expect, it, vi } from "vitest";
 import { renderHook } from "./_renderHook";
 import { useFormGuard } from "../../src/integrations/react-hook-form";
@@ -107,17 +93,11 @@ describe("useFormGuard (react-hook-form)", () => {
     const methods = {
       formState: { isDirty: true, isSubmitting: true, isSubmitSuccessful: false },
     };
-    // Just don't throw.
     expect(() =>
       renderHook(() => useFormGuard(sheetRef, methods)),
     ).not.toThrow();
   });
 
-  // Sug-1 / Min-1: regression test for the M3 ref-pattern fix. Without the
-  // internal `methodsRef`, a parent rerendering with a freshly-created
-  // `methods` object (e.g. wizard step swap) would leave the listener
-  // pointing at the original closure-captured form-state. This test would
-  // have failed before the M3 fix.
   it("ref-pattern: rerender with new methods sees fresh state (no stale closure)", () => {
     const target = makeFakeTarget();
     const sheetRef = { current: target } as unknown as Parameters<typeof useFormGuard>[0];
@@ -125,16 +105,12 @@ describe("useFormGuard (react-hook-form)", () => {
       formState: { isDirty: false, isSubmitting: false, isSubmitSuccessful: false },
     };
     const handle = renderHook(() => useFormGuard(sheetRef, methods));
-    // Initial state — clean, close should NOT cancel.
     let cancel = target.fire("closed");
     expect(cancel).not.toHaveBeenCalled();
-    // Parent rerenders with a fresh methods object that's now dirty (wizard
-    // step that owned the form remounted with new data).
     methods = {
       formState: { isDirty: true, isSubmitting: false, isSubmitSuccessful: false },
     };
     handle.rerender(() => useFormGuard(sheetRef, methods));
-    // After rerender, the listener must see the new dirty state via the ref.
     cancel = target.fire("closed");
     expect(cancel).toHaveBeenCalledOnce();
   });

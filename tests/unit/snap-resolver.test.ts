@@ -3,15 +3,6 @@ import { SnapResolver } from "../../src/core/primitives/snap-resolver";
 import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
 import type { SnapPointDef } from "../../src/core/types";
 
-/**
- * Unit tests for the SnapResolver primitive in isolation (no engine, no DOM
- * beyond what `resolveSnap` needs for the probe element). Engine-driven
- * integration through resize-observer / visual-viewport features covers the
- * end-to-end paths; these tests lock in the primitive's contract so a
- * regression in the wrapper is caught here without relying on the integration
- * to cascade.
- */
-
 const flush = (): void => __resetCssLengthProbeForTests();
 
 const numericSnaps: SnapPointDef[] = [
@@ -62,19 +53,15 @@ describe("SnapResolver", () => {
     it("does NOT invalidate the range cache (viewport clamp doesn't shift range)", () => {
       flush();
       const r = new SnapResolver(numericSnaps, undefined, "bottom");
-      // Warm the cache.
       const before = r.getAllowedRange();
-      // Shrink maxAxis (e.g. address-bar collapse).
       r.setMaxAxisSize(500);
       const after = r.getAllowedRange();
-      // Same object identity → cache hit, not recomputed.
       expect(after).toBe(before);
     });
 
     it("does not fire callback when no callback was provided at construction", () => {
       flush();
       const r = new SnapResolver(numericSnaps, undefined, "bottom");
-      // No callback wired — setMaxAxisSize must be a no-throw.
       expect(() => r.setMaxAxisSize(500)).not.toThrow();
       expect(r.getMaxAxisSize()).toBe(500);
     });
@@ -104,7 +91,6 @@ describe("SnapResolver", () => {
         { id: "max", size: 200 },
       ]);
       const after = r.getAllowedRange();
-      // Cache invalidated → fresh object identity returned.
       expect(after).not.toBe(before);
     });
   });
@@ -117,12 +103,10 @@ describe("SnapResolver", () => {
       cb.mockClear();
       const before = r.getAllowedRange();
       r.setAllowedIds(["min", "half"]);
-      // Callback NOT fired — allow-list change doesn't move the layout axis.
       expect(cb).not.toHaveBeenCalled();
-      // Range cache invalidated.
       const after = r.getAllowedRange();
       expect(after).not.toBe(before);
-      expect(after.max).toBe(400); // half, not full
+      expect(after.max).toBe(400);
     });
   });
 

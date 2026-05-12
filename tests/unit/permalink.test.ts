@@ -1,10 +1,4 @@
 // @vitest-environment node
-//
-// Round-trip + adversarial-input tests for the demo's permalink encoder.
-// Critical because permalink.ts is the only module ingesting user-controlled
-// input (URL hash) — every parse path needs a guard that we can pin behavior
-// against.
-
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { encode, decode } from "../../demo/lib/permalink";
 import type { DemoSettings } from "../../demo/apps/shared";
@@ -18,6 +12,10 @@ const sample: DemoSettings = {
   closeOnEscape: true,
   haptic: true,
   rubberBand: true,
+  scrimPreset: "monitoring",
+  scrimAboveSheet: true,
+  scrimTapToClose: false,
+  scrimFloatingAction: true,
 };
 
 describe("permalink encode/decode round-trip", () => {
@@ -39,7 +37,14 @@ describe("permalink encode/decode round-trip", () => {
     const hash = encode(sample, "svelte");
     const out = decode(hash);
     expect(out.adapter).toBe("svelte");
-    expect(out.settings).toMatchObject(sample);
+    const {
+      scrimPreset: _sp,
+      scrimAboveSheet: _sa,
+      scrimTapToClose: _st,
+      scrimFloatingAction: _sf,
+      ...structural
+    } = sample;
+    expect(out.settings).toMatchObject(structural);
   });
 
   it("round-trips edge values (low stiffness, zero damping)", () => {
@@ -54,7 +59,14 @@ describe("permalink encode/decode round-trip", () => {
     };
     const out = decode(encode(edge, "vue"));
     expect(out.adapter).toBe("vue");
-    expect(out.settings).toMatchObject(edge);
+    const {
+      scrimPreset: _sp,
+      scrimAboveSheet: _sa,
+      scrimTapToClose: _st,
+      scrimFloatingAction: _sf,
+      ...structural
+    } = edge;
+    expect(out.settings).toMatchObject(structural);
   });
 });
 
@@ -68,7 +80,7 @@ describe("permalink decode — adversarial input is rejected", () => {
   it("drops unknown adapter values silently", () => {
     expect(decode("#adapter=evil-injection").adapter).toBeUndefined();
     expect(decode("#adapter=").adapter).toBeUndefined();
-    expect(decode("#adapter=qwik").adapter).toBeUndefined(); // qwik not in demo whitelist
+    expect(decode("#adapter=qwik").adapter).toBeUndefined();
   });
 
   it("drops unknown mode values silently", () => {
@@ -78,7 +90,6 @@ describe("permalink decode — adversarial input is rejected", () => {
   });
 
   it("validates `initial` against XSS attribute injection", () => {
-    // Only [a-z0-9_-] of length 1–32 allowed.
     expect(decode("#initial=<script>").settings.initial).toBeUndefined();
     expect(decode("#initial=" + "x".repeat(33)).settings.initial).toBeUndefined();
     expect(decode("#initial=name with space").settings.initial).toBeUndefined();
@@ -89,7 +100,7 @@ describe("permalink decode — adversarial input is rejected", () => {
     expect(decode("#stiff=49").settings.stiffness).toBeUndefined();
     expect(decode("#stiff=1001").settings.stiffness).toBeUndefined();
     expect(decode("#stiff=NaN").settings.stiffness).toBeUndefined();
-    expect(decode("#stiff=420.5").settings.stiffness).toBe(420); // parseInt truncates
+    expect(decode("#stiff=420.5").settings.stiffness).toBe(420);
     expect(decode("#stiff=420").settings.stiffness).toBe(420);
   });
 
@@ -134,14 +145,9 @@ describe("permalink encode — output stable for identical input", () => {
   });
 });
 
-// `writeHash` uses setTimeout — the throttle behavior is hard to test in a
-// node env without a `window`/`history` shim. We just verify it doesn't throw
-// and that consumers can install a stub.
 describe("writeHash — throttle delay (250ms)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    // Install minimal window + history stubs so the throttled write doesn't
-    // crash in Node. The real one is exercised by the demo via Playwright.
     (globalThis as { window?: unknown }).window = {
       clearTimeout: globalThis.clearTimeout,
       setTimeout: globalThis.setTimeout,

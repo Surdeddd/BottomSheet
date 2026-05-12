@@ -21,6 +21,9 @@ export const mountVanillaDemo = (
   const backdrop = document.createElement("div");
   backdrop.className = "bs-backdrop";
 
+  const scrim = document.createElement("div");
+  scrim.className = "bs-screen";
+
   const sheet = document.createElement("section");
   sheet.className = "bs-sheet";
   sheet.dataset.mode = settings.mode;
@@ -50,7 +53,7 @@ export const mountVanillaDemo = (
   for (const [title, sub] of demoRows) content.append(buildItem(title, sub));
 
   sheet.append(handle, content);
-  root.append(backdrop, sheet);
+  root.append(backdrop, scrim, sheet);
   shell.append(root);
 
   const engine = new BottomSheetEngine({
@@ -58,6 +61,7 @@ export const mountVanillaDemo = (
     handle,
     scrollContainer: content,
     backdrop,
+    scrim,
     mode: settings.mode as "bottom" | "top" | "left" | "right",
     snapPoints: snapPoints(settings.mode),
     allowed: allowedFromSnaps(settings.mode),
@@ -72,6 +76,11 @@ export const mountVanillaDemo = (
   });
 
   backdrop.addEventListener("click", () => void engine.close());
+
+  sheet.dataset.active = engine.state.activeId;
+  engine.on("snap", payload => {
+    sheet.dataset.active = String(payload.id);
+  });
 
   let updateCb: ((s: any) => void) | null = null;
   let velocityCb: ((v: number) => void) | null = null;

@@ -192,7 +192,7 @@
     "dev": "tsup --watch",
     "demo": "vite",
     "demo:build": "vite build",
-    "demo:preview": "vite preview",
+    "demo:preview": "vite build && vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -2,31 +2,6 @@ import { test, expect } from "@playwright/test";
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-/**
- * Head-to-head benchmark: `@surdeddd/bottom-sheet` vs `vaul` vs
- * `react-modal-sheet` under identical 1000-item load.
- *
- * Methodology:
- * - Each fixture is a standalone HTML page that loads its library via esm.sh
- *   (no npm install required) and exposes `window.__bench.runDrag()` /
- *   `runSettle()` returning numeric metrics.
- * - Spec navigates to each fixture, runs each metric 5 times, takes median.
- * - Output: `tests/benchmark/results.json` + auto-generated `report.md`.
- *
- * Run: `npx playwright test tests/benchmark/headtohead.spec.ts --project=mobile-chrome`.
- * Skipped from default `npm run e2e` — opt-in via explicit path.
- *
- * Honest disclosures:
- * - Surdeddd uses a real spring solver. Vaul + react-modal-sheet animate via
- *   Framer Motion / CSS transitions. Settle latency comparison is approximate
- *   because the three libs don't expose "animation complete" identically; we
- *   pad each library's settle window to its own internal animation duration.
- * - All three render 1000 plain DOM items. Virtualization is OFF for all.
- * - Drag FPS is measured during a programmatic snap (not a real pointer drag).
- *   Real-pointer drag would also include gesture-detection overhead, which is
- *   library-specific and harder to factor out.
- */
-
 const RUNS = 5;
 const FIXTURE_BASE = "/bench";
 
@@ -73,10 +48,6 @@ const benchOne = async (
   };
 };
 
-// Opt-in only: this spec hits esm.sh CDN for vaul/react-modal-sheet, takes
-// ~30s with 5-run medians, and is fragile vs network outages. Default
-// `npx playwright test` skips it; run via `RUN_BENCHMARK=1 npx playwright
-// test tests/e2e/headtohead.spec.ts` to opt in.
 test.describe.configure({ mode: "serial" });
 test.skip(
   !process.env.RUN_BENCHMARK,
@@ -103,7 +74,6 @@ test.describe("head-to-head: surdeddd vs vaul vs react-modal-sheet", () => {
       rms = { error: String(e) };
     }
 
-    // Persist raw + write report.md
     const out = resolve(process.cwd(), "tests/benchmark");
     if (!existsSync(out)) mkdirSync(out, { recursive: true });
     writeFileSync(
@@ -124,7 +94,6 @@ test.describe("head-to-head: surdeddd vs vaul vs react-modal-sheet", () => {
     writeFileSync(resolve(out, "report.md"), report);
     console.log(`\n${report}\n`);
 
-    // Sanity: surdeddd's drag FPS should be > 30 (lenient — CI is slow)
     expect(surdeddd.dragFpsMedian).toBeGreaterThan(30);
   });
 });

@@ -8,7 +8,6 @@ export type AutoCollapseEngine = {
 };
 
 export type AutoCollapseDeps = {
-  /** Idle window in ms. `undefined` or `<= 0` disables the feature. */
   ms: number | undefined;
   isDestroyed: () => boolean;
   isDragging: () => boolean;
@@ -19,10 +18,6 @@ export type AutoCollapseDeps = {
   on: AutoCollapseEngine["on"];
 };
 
-/**
- * Snaps the sheet to its first non-zero allowed snap after `ms` of no `snap`
- * activity. Any drag/programmatic snap resets the countdown.
- */
 export function installAutoCollapse(deps: AutoCollapseDeps): () => void {
   const { ms } = deps;
   if (ms === undefined || ms <= 0) {

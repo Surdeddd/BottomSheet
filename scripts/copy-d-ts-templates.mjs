@@ -1,8 +1,3 @@
-// Copies hand-written d.ts templates for SFC subpaths (vue, svelte) into dist/.
-// tsup's onSuccess hook ran the same copies, but dts emission can race with it
-// and the templates would silently disappear from dist/. Running this as a
-// postbuild step (after tsup fully exits) is deterministic.
-
 import { copyFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";

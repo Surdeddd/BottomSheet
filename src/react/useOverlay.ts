@@ -18,11 +18,6 @@ export type UseOverlayReturn = {
   open: () => Promise<void>;
   close: () => Promise<void>;
   toggle: () => Promise<void>;
-  /**
-   * Lazy accessor for the underlying engine. Returns null on SSR or before
-   * the layout effect mounts the engine. Use this — not a snapshot — so you
-   * always read the current instance.
-   */
   getEngine: () => OverlayEngine | null;
 };
 

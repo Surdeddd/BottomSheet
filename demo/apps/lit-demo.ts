@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
-import "@surdeddd/bottom-sheet/element"; // registers <bottom-sheet>
+import "@surdeddd/bottom-sheet/element";
 import type { BottomSheetElement } from "@surdeddd/bottom-sheet/element";
 import type { EngineState } from "@surdeddd/bottom-sheet";
 import {
@@ -12,19 +12,6 @@ import {
   type DemoSettings,
 } from "./shared";
 
-/**
- * LitElement wrapper around the existing <bottom-sheet> custom element.
- *
- * We deliberately disable Shadow DOM for this host (createRenderRoot returns
- * `this`). Reasons:
- *   1. The inner <bottom-sheet> already owns its own shadow root; nesting it
- *      inside ours would block page CSS from styling the slotted content
- *      (the demo's `.sheet-header`, `.sheet-list`, `.sheet-item` rules live
- *      in /style.css and target light-DOM children).
- *   2. We need to query the inner sheet from outside (`getSheet()`) to poll
- *      `sheetState` for the live readouts — easier without an extra shadow
- *      boundary in the way.
- */
 class LitDemoSheet extends LitElement {
   static override properties = {
     settings: { attribute: false },
@@ -97,8 +84,6 @@ export const mountLitDemo = (
   let lastTs = performance.now();
   let interval: number | null = null;
 
-  // Wait one frame so Lit renders and the inner <bottom-sheet> is connected
-  // to the DOM (and therefore has its engine wired up + sheetState available).
   requestAnimationFrame(() => {
     interval = window.setInterval(() => {
       const sheet = litRoot.getSheet();
@@ -127,5 +112,6 @@ export const mountLitDemo = (
     onVelocity: (fn: (v: number) => void) => {
       velocityCb = fn;
     },
+    getEngine: () => litRoot.getSheet()?.getEngine() ?? null,
   };
 };

@@ -1,25 +1,8 @@
 #!/usr/bin/env node
-// Measures gzipped size of selected dist/ entries and (optionally) compares
-// against a baseline JSON file. Used by .github/workflows/bundle-size.yml.
-//
-// Usage:
-//   node scripts/check-bundle-size.mjs measure --out=bundle-sizes.json
-//   node scripts/check-bundle-size.mjs compare --base=base.json --head=head.json \
-//        --threshold=5 --out=delta.md
-//
-// The "compare" subcommand exits 1 if any tracked entry grew by more than the
-// configured percentage threshold (default 5%). The threshold is configurable
-// via --threshold=<percent>.
-
 import { gzipSync } from "node:zlib";
 import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
-// Files we track. Add/remove entries here to evolve the budget.
-// Cover every published entry — a 50% growth in any adapter (the surface
-// most consumers actually pay for) was previously invisible because only
-// `index.js` and `element.js` were checked. Theme CSS files are tracked
-// separately so a regression in the base styles doesn't slip past the gate.
 const TRACKED = [
   "dist/index.js",
   "dist/react.js",
@@ -113,7 +96,6 @@ function compare(opts) {
     rows.push({ rel, baseGz: b, headGz: h, delta, pct, overBudget });
   }
 
-  // Build markdown table for PR comment.
   const lines = [];
   lines.push(`### Bundle size report (gzip, threshold ${threshold}%)`);
   lines.push("");

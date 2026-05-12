@@ -13,8 +13,6 @@ const FOCUSABLE = [
 ].join(",");
 
 const isVisible = (el: HTMLElement): boolean => {
-  // checkVisibility is supported in all evergreens (Chrome 105+, Safari 17.4+,
-  // Firefox 125+) and avoids the position:fixed false-negative of offsetParent.
   if (typeof el.checkVisibility === "function") {
     return el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
   }
@@ -29,13 +27,6 @@ const focusables = (root: HTMLElement): HTMLElement[] =>
       !el.matches("[aria-hidden='true']"),
   );
 
-/**
- * Trap Tab focus inside `container`. Calls `onEscape` when Esc is pressed
- * (caller decides whether to close the sheet). Returns a teardown function
- * that releases the trap and restores focus to the previously-active element.
- *
- * SSR-safe: if `document` is unavailable, returns a no-op teardown.
- */
 export const installFocusTrap = (
   container: HTMLElement,
   options: {
@@ -78,7 +69,6 @@ export const installFocusTrap = (
     }
   };
 
-  // Catch focus that escapes via clicks / programmatic moves.
   const handleFocusIn = (e: FocusEvent) => {
     const target = e.target as Node | null;
     if (target && !container.contains(target)) {
@@ -96,9 +86,6 @@ export const installFocusTrap = (
     released = true;
     document.removeEventListener("keydown", handleKey, true);
     document.removeEventListener("focusin", handleFocusIn, true);
-    // If the originator was removed from the DOM while the trap was active,
-    // .focus() silently no-ops and the user is left on <body>. Fall back to
-    // a documented anchor or the document root for a saner orientation.
     if (previouslyFocused && document.contains(previouslyFocused)) {
       previouslyFocused.focus({ preventScroll: true });
     } else {

@@ -23,7 +23,6 @@ describe("lockBodyScroll", () => {
     const release2 = lockBodyScroll();
     expect(document.body.style.overflow).toBe("hidden");
     release1();
-    // Still locked because release2 hasn't fired
     expect(document.body.style.overflow).toBe("hidden");
     release2();
     expect(document.body.style.overflow).toBe("");

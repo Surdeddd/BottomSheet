@@ -1,10 +1,6 @@
-// URL-hash encoder/decoder for the demo's settings + active adapter.
-// Format:  #mode=bottom&initial=minimized&stiff=260&damp=28&trap=1&esc=1&rubber=1&haptic=1&adapter=react
 import type { DemoSettings } from "../apps/shared";
-import { ADAPTERS, type AdapterKey } from "./types";
+import { ADAPTERS, type AdapterKey, type ScrimPresetKey } from "./types";
 
-// Re-export so existing import sites that pulled `AdapterKey` from this
-// module continue to work. The single source of truth now lives in `types.ts`.
 export type { AdapterKey };
 
 export type Permalink = {
@@ -18,6 +14,14 @@ const MODES: DemoSettings["mode"][] = [
   "left",
   "right",
   "overlay",
+];
+
+const SCRIM_PRESETS: ScrimPresetKey[] = [
+  "off",
+  "subtle",
+  "standard",
+  "monitoring",
+  "cinematic",
 ];
 
 const intInRange = (raw: string | null, lo: number, hi: number): number | null => {
@@ -41,6 +45,10 @@ export function encode(settings: DemoSettings, adapter: AdapterKey): string {
   p.set("esc", settings.closeOnEscape ? "1" : "0");
   p.set("rubber", settings.rubberBand ? "1" : "0");
   p.set("haptic", settings.haptic ? "1" : "0");
+  p.set("scrim", settings.scrimPreset);
+  p.set("scrimA", settings.scrimAboveSheet ? "1" : "0");
+  p.set("scrimT", settings.scrimTapToClose ? "1" : "0");
+  p.set("scrimF", settings.scrimFloatingAction ? "1" : "0");
   return "#" + p.toString();
 }
 
@@ -70,16 +78,20 @@ export function decode(hash: string): Permalink {
     ["esc", "closeOnEscape"],
     ["rubber", "rubberBand"],
     ["haptic", "haptic"],
+    ["scrimA", "scrimAboveSheet"],
+    ["scrimT", "scrimTapToClose"],
+    ["scrimF", "scrimFloatingAction"],
   ] as const) {
     const v = flag(p.get(k));
     if (v != null) out.settings[prop] = v;
   }
+  const scrim = p.get("scrim");
+  if (scrim && (SCRIM_PRESETS as readonly string[]).includes(scrim)) {
+    out.settings.scrimPreset = scrim as ScrimPresetKey;
+  }
   return out;
 }
 
-// Throttled hash writer — slider drags can fire 60 times/sec. We don't want
-// every input event to push a history entry. Use replaceState so the back
-// button still goes to where the user came from.
 let writeTimer: number | null = null;
 export function writeHash(hash: string): void {
   if (writeTimer != null) window.clearTimeout(writeTimer);

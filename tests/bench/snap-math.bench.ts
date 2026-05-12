@@ -6,8 +6,6 @@ import {
   type ResolvedSnap,
 } from "../../src/core/primitives/snap-points";
 
-// Pre-resolved snaps mirroring a typical 4-stop sheet config (closed/min/half/full).
-// Real API expects them sorted ascending by size (resolveSnapList sorts them).
 const snaps: ResolvedSnap[] = [
   { id: "closed", size: 0 },
   { id: "min", size: 100 },

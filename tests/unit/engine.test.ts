@@ -48,7 +48,7 @@ describe("BottomSheetEngine", () => {
       initial: "b",
       respectReducedMotion: false,
     });
-    expect(engine.state.progress).toBe(0.2); // 100 / 500
+    expect(engine.state.progress).toBe(0.2);
     engine.destroy();
   });
 
@@ -111,7 +111,6 @@ describe("BottomSheetEngine", () => {
       respectReducedMotion: false,
     });
     engine.setAllowed(["a", "c"]);
-    // wait microtask for snapTo to resolve
     await new Promise(r => setTimeout(r, 30));
     expect(engine.state.activeId).toBe("a");
     engine.destroy();
@@ -145,8 +144,6 @@ describe("BottomSheetEngine", () => {
   });
 
   it("destroy() during active drag releases all listeners cleanly", () => {
-    // Tests audit #6: drag-cancel mid-flight must not leak listeners or throw
-    // when the consumer tears down between pointerdown and pointerup.
     const { sheet, handle } = makeDom();
     const engine = new BottomSheetEngine({
       element: sheet,
@@ -167,8 +164,6 @@ describe("BottomSheetEngine", () => {
       new PointerEvent("pointermove", { clientY: 80, pointerId: 1 }),
     );
     expect(() => engine.destroy()).not.toThrow();
-    // Subsequent pointer events on the now-detached handle must be no-ops —
-    // the destroyed-flag guard short-circuits before any snapTo/animate call.
     expect(() =>
       handle.dispatchEvent(
         new PointerEvent("pointerup", { clientY: 80, pointerId: 1 }),
@@ -192,9 +187,6 @@ describe("BottomSheetEngine", () => {
     });
     const snapPromise = engine.snapTo("b");
     engine.destroy();
-    // Without C1 + C2 (destroyed flag + cycleNonce guard), this would hang
-    // because animateTo's tween is cancelled by destroy() but the post-await
-    // continuation still runs against torn-down state.
     await Promise.race([
       snapPromise,
       new Promise((_, rej) => setTimeout(() => rej(new Error("snap hung")), 500)),
@@ -220,14 +212,11 @@ describe("BottomSheetEngine", () => {
 
     const ctl = new AbortController();
     const inFlight = engine.snapTo("b", { signal: ctl.signal });
-    // Yield once so animateTo's first rAF lands and isAnimating flips on.
     await Promise.resolve();
     expect(engine.state.isAnimating).toBe(true);
     ctl.abort();
 
     await inFlight;
-    // Aborted snap MUST NOT emit "snap" — the captured signal in snapTo flips
-    // to aborted via newCycle() and the post-await guard short-circuits.
     expect(onSnap).not.toHaveBeenCalled();
     engine.destroy();
   });
@@ -255,8 +244,6 @@ describe("BottomSheetEngine", () => {
     ctl.abort();
     await engine.snapTo("b", { signal: ctl.signal });
 
-    // Pre-aborted signal short-circuits before before-snap fires — matches
-    // standard AbortController contract (no listener observes a stale call).
     expect(onBefore).not.toHaveBeenCalled();
     expect(onSnap).not.toHaveBeenCalled();
     expect(engine.state.activeId).toBe("a");
@@ -279,25 +266,18 @@ describe("BottomSheetEngine", () => {
     });
     const onSnap = vi.fn();
     engine.on("snap", onSnap);
-    // Start a snap to "b" but don't await — replace snap geometry mid-flight.
     const inFlight = engine.snapTo("b");
     engine.setSnapPoints([
       { id: "a", size: 100 },
       { id: "c", size: 400 },
     ]);
     await inFlight;
-    // The "b" snap was cancelled by setSnapPoints. Without M3 (cancel + cycle
-    // bump), the prior cycle's .then() would fire emit("snap", { id: "b" })
-    // even though "b" no longer exists in the new snap geometry.
     const emittedIds = onSnap.mock.calls.map(c => c[0].id);
     expect(emittedIds).not.toContain("b");
     engine.destroy();
   });
 
   it("orientationchange mid-flight aborts prior snap without emitting stale event", async () => {
-    // Covers the AbortController path through onResize (BottomSheetEngine
-    // attach() — orientationchange listener calls newCycle() which flips the
-    // captured signal to aborted; post-await guard short-circuits emit("snap").
     const { sheet, handle } = makeDom();
     const engine = new BottomSheetEngine({
       element: sheet,
@@ -315,11 +295,6 @@ describe("BottomSheetEngine", () => {
     engine.on("snap", onSnap);
 
     const inFlight = engine.snapTo("b");
-    // Yield once so animateTo's first rAF lands and isAnimating flips on —
-    // the test premise is "resize during in-flight snap", so lock down that
-    // the snap is genuinely in flight before dispatching the orientation
-    // change. A future change to animateTo that resolves synchronously when
-    // target===current would otherwise turn this assertion into a no-op.
     await Promise.resolve();
     expect(engine.state.isAnimating).toBe(true);
 
@@ -333,9 +308,6 @@ describe("BottomSheetEngine", () => {
   });
 
   it("visualViewport.resize triggers recompute when keyboard appears", async () => {
-    // Mock visualViewport on happy-dom (which doesn't ship one). We re-create
-    // it per-test; if the host environment ever provides a real one, this
-    // override still applies for the duration of the test.
     type VVListener = (e: Event) => void;
     const vvListeners: Record<string, Set<VVListener>> = { resize: new Set() };
     const fakeVV = {
@@ -371,14 +343,10 @@ describe("BottomSheetEngine", () => {
       });
       expect(engine.state.size).toBe(900);
 
-      // Simulate soft keyboard: visualViewport shrinks to 500px while
-      // window.innerHeight stays at 1000px.
       fakeVV.height = 500;
       vvListeners.resize!.forEach(fn => fn(new Event("resize")));
-      // Wait one rAF for the throttled handler to fire.
       await new Promise(r => requestAnimationFrame(() => r(undefined)));
 
-      // Sheet should be clamped to visualViewport height minus the safety pad.
       expect(engine.state.size).toBeLessThanOrEqual(500 - 8);
       engine.destroy();
     } finally {
@@ -409,7 +377,6 @@ describe("BottomSheetEngine", () => {
     });
     const onSnap = vi.fn();
     const onBefore = vi.fn((p: { cancel: () => void; id: string; previousId: string }) => {
-      // Listener gates the transition — once cancelled, no animation, no snap event.
       expect(p.id).toBe("b");
       expect(p.previousId).toBe("a");
       p.cancel();
@@ -454,8 +421,6 @@ describe("BottomSheetEngine", () => {
   });
 
   it("before-snap.cancel() called asynchronously logs warning and is ignored", async () => {
-    // Locks down the `frozen` flag contract: cancel() captured into a closure
-    // and invoked AFTER the listener returns must be a no-op + console.warn.
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { sheet, handle } = makeDom();
     const engine = new BottomSheetEngine({
@@ -474,15 +439,12 @@ describe("BottomSheetEngine", () => {
     const onSnap = vi.fn();
     engine.on("before-snap", p => {
       stashedCancel = p.cancel;
-      // Intentionally don't call cancel synchronously — frozen flips to true
-      // immediately after this listener returns.
     });
     engine.on("snap", onSnap);
 
     await engine.snapTo("b");
     expect(onSnap).toHaveBeenCalledTimes(1);
 
-    // Now invoke the captured cancel — frozen=true so it should warn + ignore.
     stashedCancel?.();
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy.mock.calls[0]?.[0]).toContain(
@@ -495,7 +457,6 @@ describe("BottomSheetEngine", () => {
 
   it("respects reduced motion by snapping instantly", async () => {
     const { sheet, handle } = makeDom();
-    // Force prefers-reduced-motion to match
     window.matchMedia = vi.fn().mockReturnValue({ matches: true, media: "" } as any);
     const engine = new BottomSheetEngine({
       element: sheet,

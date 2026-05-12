@@ -24,7 +24,6 @@ describe("sheetStack", () => {
     expect(a.calls.isTop.at(-1)).toBe(false);
     expect(b.calls.isTop.at(-1)).toBe(true);
     releaseB();
-    // a is now topmost
     expect(a.calls.isTop.at(-1)).toBe(true);
     releaseA();
   });
@@ -37,8 +36,7 @@ describe("sheetStack", () => {
     const releaseB = sheetStack.push(b);
     const releaseC = sheetStack.push(c);
     expect(c.calls.z.at(-1)).toBe(120);
-    releaseB(); // remove the middle entry
-    // c should now be at z=110 (second of two)
+    releaseB();
     expect(c.calls.z.at(-1)).toBe(110);
     releaseA();
     releaseC();

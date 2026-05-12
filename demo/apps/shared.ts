@@ -6,11 +6,16 @@ import type {
 
 declare global {
   interface Window {
-    /** Snap-point editor side-channel: returns the user-edited snap list,
-     *  or null when no edits are active. Defined in `demo/main.ts`. */
     __bsCustomSnaps?: () => Array<{ id: string; size: number }> | null;
   }
 }
+
+export type ScrimPresetKey =
+  | "off"
+  | "subtle"
+  | "standard"
+  | "monitoring"
+  | "cinematic";
 
 export type DemoSettings = {
   mode: "bottom" | "top" | "left" | "right" | "overlay";
@@ -21,6 +26,10 @@ export type DemoSettings = {
   closeOnEscape: boolean;
   haptic: boolean;
   rubberBand: boolean;
+  scrimPreset: ScrimPresetKey;
+  scrimAboveSheet: boolean;
+  scrimTapToClose: boolean;
+  scrimFloatingAction: boolean;
 };
 
 export type DemoController = {
@@ -28,45 +37,15 @@ export type DemoController = {
   snapTo: (id: string) => void;
   onUpdate: (fn: (state: EngineState) => void) => void;
   onVelocity: (fn: (v: number) => void) => void;
-  /**
-   * Live-tweak hook for the Scrim Studio panel. Adapters that hold a direct
-   * `BottomSheetEngine` reference return it here; framework adapters that
-   * own the engine lifecycle return null (panel renders read-only state).
-   */
   getEngine?: () => BottomSheetEngine | null;
 };
 
-/**
- * Snap points sized to the device-frame (~720×360). Absolute px because the
- * sheet's "%" resolver reads `window.innerHeight`, not the bezel — passing
- * "85%" would overflow the frame on desktop.
- *
- * The advanced playground's snap-point editor exposes a getter at
- * `window.__bsCustomSnaps`. When the user edits snaps live, this returns
- * the user-edited list **as-is** — we deliberately do NOT auto-prepend a
- * `closed` snap. The user is in control: if they want close-on-drag-down
- * they add a `closed: 0` row in the editor themselves. Auto-prepending used
- * to break the "remove all snaps except `full`" case where drag-down would
- * still settle to the synthetic closed snap and the sheet vanished.
- *
- * **Empty / null semantics** — `customSnaps === null` (editor untouched)
- * returns the per-mode defaults; `customSnaps === []` (every row removed)
- * also falls back to defaults via the `length > 0` guard. The editor's
- * `apply`/`remove` callbacks deliberately collapse `[]` back to `null` so
- * the fallback is consistent.
- */
 export const snapPoints = (mode: DemoSettings["mode"]): SnapPointDef[] => {
   const custom =
     typeof window !== "undefined" ? window.__bsCustomSnaps?.() : null;
   if (custom && custom.length > 0) {
-    // Don't auto-prepend a `closed` snap — if the user edits the list, they
-    // are in charge. Auto-prepending would let drag-down settle to size 0
-    // (sheet disappears) even when the user kept only `full`. They can add
-    // a `closed` row in the editor themselves to enable close-on-drag-down.
     return custom;
   }
-  // Sized for the 360×720 device bezel. Side modes resolve "%" against
-  // window.innerWidth; we hard-code px so the sheet stays contained.
   if (mode === "left" || mode === "right") {
     return [
       { id: "closed", size: 0 },
@@ -91,12 +70,9 @@ export const snapPoints = (mode: DemoSettings["mode"]): SnapPointDef[] => {
   ];
 };
 
-/** Derive the `allowed` list from snap points so custom snaps from the
- *  editor are activatable without re-coding each adapter. */
 export const allowedFromSnaps = (mode: DemoSettings["mode"]): string[] =>
   snapPoints(mode).map(s => s.id);
 
-/** Demo content rows used inside every adapter's sheet body. */
 export const demoRows: Array<[title: string, sub: string]> = [
   ["Truck #4023 · westbound", "Munich → Vienna · ETA 2h 18m"],
   ["Sensor cluster β-7", "Pressure 2.4 bar · stable"],
@@ -114,7 +90,6 @@ export const demoRows: Array<[title: string, sub: string]> = [
   ["Inbound checkpoint", "4 km · pre-arrival queue"],
 ];
 
-/** Builds the device-frame chrome (status bar, banner, floating card). */
 export const buildShell = (host: HTMLElement, kicker: string): HTMLElement => {
   while (host.firstChild) host.removeChild(host.firstChild);
   const shell = document.createElement("div");
@@ -167,7 +142,6 @@ export const buildShell = (host: HTMLElement, kicker: string): HTMLElement => {
   return shell;
 };
 
-/** Build a list-item DOM node for the sheet body. */
 export const buildItem = (title: string, sub: string): HTMLElement => {
   const item = document.createElement("div");
   item.className = "sheet-item";

@@ -1,6 +1,3 @@
-/* iOS theme — soft surface, restrained shadow, generous radius. Activate by
-   adding `bs-theme-ios` to the `.bs-root` element. */
-
 .bs-theme-ios {
   --bs-surface: #f2f2f7;
   --bs-surface-border: rgba(60, 60, 67, 0.12);

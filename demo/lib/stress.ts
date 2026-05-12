@@ -1,16 +1,9 @@
 import { $ } from "./types";
 
 export type StressDeps = {
-  // Engine handle gives `snapTo` directly. We pull it via getter so the
-  // stress loop always targets the currently-mounted adapter, not a stale
-  // controller from the moment the button was wired.
   getController: () => { snapTo: (id: string) => void } | null;
 };
 
-/**
- * Stress test: cycles min↔full at progressively shorter intervals over 8s.
- * Click the button to stop early. Status text updates live for the user.
- */
 export const wireStressTest = (deps: StressDeps): void => {
   const status = $<HTMLElement>("#stress-status");
   let timer: number | null = null;

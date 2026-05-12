@@ -1,8 +1,4 @@
 // @vitest-environment node
-//
-// Smoke test for the `/svelte` subpath. We don't actually render —
-// Svelte 5's runtime needs the matching client/server build flags + DOM;
-// hydration is covered in adapters.spec.ts.
 
 import { describe, expect, it, beforeAll } from "vitest";
 import { existsSync } from "node:fs";
@@ -36,9 +32,6 @@ describe("@surdeddd/bottom-sheet/svelte", () => {
 
   it("exports `BottomSheet` as a callable (Svelte 5 client-mode component)", async () => {
     const mod = await import(resolve(distDir, "svelte.js"));
-    // Svelte 5 client-mode compiles a component to a function with signature
-    // ($$anchor, $$props) => void. Older Svelte 4 components are objects with
-    // a `render` method, but our dist is Svelte 5 (see package.json deps).
     const cmp = mod.BottomSheet;
     expect(["function", "object"]).toContain(typeof cmp);
   });

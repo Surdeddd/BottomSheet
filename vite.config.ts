@@ -8,10 +8,6 @@ import { resolve } from "node:path";
 export default defineConfig({
   root: resolve(__dirname, "demo"),
   plugins: [
-    // Solid first + scoped to its demo file plus the new bundled adapter
-    // (`src/solid/index.tsx`) so its JSX transform claims those files before
-    // React's plugin sees them. Two TSX-aware JSX plugins both processing the
-    // same file would conflict.
     solid({ include: ["**/solid-demo.tsx", "**/src/solid/**/*.tsx"] }),
     react({ exclude: [/solid-demo\.tsx$/, /src\/solid\/.*\.tsx$/] }),
     vue(),
@@ -50,9 +46,6 @@ export default defineConfig({
     port: 5173,
   },
   optimizeDeps: {
-    // Benchmark HTML files self-load `vaul` and `react-modal-sheet` from
-    // esm.sh via importmap — they are NOT npm dependencies. Excluding them
-    // here stops Vite's pre-bundler from trying to resolve them locally.
     exclude: ["vaul", "react-modal-sheet"],
   },
 });

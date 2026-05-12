@@ -13,6 +13,7 @@ import {
 type SvelteAppHandle = {
   snapTo: (id: string) => Promise<void>;
   getState: () => EngineState | undefined;
+  getEngine?: () => any | null;
 };
 
 export const mountSvelteDemo = (
@@ -23,12 +24,7 @@ export const mountSvelteDemo = (
   const mountPoint = document.createElement("div");
   shell.append(mountPoint);
 
-  // The Svelte SFC fires onchange on every snap/drag transition. Cache the
-  // last value so the polling loop can read without round-tripping into
-  // Svelte's reactive graph each tick.
   let lastState: EngineState | null = null;
-  // `overlay` mode in the demo settings is sugar for a non-draggable bottom
-  // sheet — collapse it to "bottom" for the engine.
   const mode: SheetMode = settings.mode === "overlay" ? "bottom" : settings.mode;
 
   const app = mount(SvelteDemoApp, {
@@ -80,5 +76,6 @@ export const mountSvelteDemo = (
     onVelocity: fn => {
       velocityCb = fn;
     },
+    getEngine: () => app.getEngine?.() ?? null,
   };
 };

@@ -1,8 +1,3 @@
-/**
- * Demo orchestrator. Most concerns live in `demo/lib/*` modules — this
- * file wires them together and owns the cross-module state (settings +
- * activeAdapter) plus the device-frame remount loop.
- */
 import "@surdeddd/bottom-sheet/element";
 import { mountReactDemo, type DemoController } from "./apps/react-demo";
 import { mountVueDemo } from "./apps/vue-demo";
@@ -35,7 +30,6 @@ import { wireStressTest } from "./lib/stress";
 import { startViewTransition } from "./lib/view-transition";
 import { wireScrimControls } from "./lib/scrim-controls";
 
-// ===== state =====
 const defaults: Settings = {
   mode: "bottom",
   initial: "minimized",
@@ -45,6 +39,10 @@ const defaults: Settings = {
   closeOnEscape: true,
   haptic: true,
   rubberBand: true,
+  scrimPreset: "monitoring",
+  scrimAboveSheet: true,
+  scrimTapToClose: false,
+  scrimFloatingAction: false,
 };
 const settings: Settings = { ...defaults };
 
@@ -63,6 +61,7 @@ const mounters: Record<
 
 let activeAdapter: AdapterKey = "react";
 let activeController: DemoController | null = null;
+let scrimControlsSync: (() => void) | null = null;
 
 const ro = {
   active: $<HTMLElement>("#ro-active"),
@@ -83,7 +82,6 @@ const syncHash = (): void => {
 const renderActiveCode = (): void =>
   renderCode({ settings, getActiveAdapter: () => activeAdapter });
 
-// ===== adapter mount/unmount =====
 const mountAdapter = (key: AdapterKey): void => {
   startViewTransition(() => {
     if (activeController) {
@@ -111,15 +109,13 @@ const mountAdapter = (key: AdapterKey): void => {
       ro.velocity.textContent = v.toFixed(3);
     });
 
-    // Re-apply the theme preset onto whatever .bs-root the adapter just
-    // mounted — adapter swaps rebuild the DOM so the class would be dropped.
     applyThemePreset(getThemePreset());
+    scrimControlsSync?.();
     renderActiveCode();
     syncHash();
   });
 };
 
-// ===== adapter tabs =====
 document.querySelectorAll<HTMLButtonElement>(".adapter").forEach(btn => {
   btn.addEventListener("click", () => {
     const key = btn.dataset.adapter as AdapterKey;
@@ -141,7 +137,6 @@ document.querySelectorAll<HTMLButtonElement>(".adapter").forEach(btn => {
   });
 });
 
-// ===== snap chips (current-mode appropriate) =====
 const wireChipRow = (
   rowId: string,
   onClick: (btn: HTMLButtonElement) => void,
@@ -168,8 +163,6 @@ const wireChipRow = (
 
 wireChipRow("snap-chips", btn => activeController?.snapTo(btn.dataset.snap!));
 
-// In overlay mode the snap chips become open/close action chips because
-// the engine treats the sheet as a modal rather than a draggable surface.
 const updateChipsForMode = (): void => {
   const snapChips = $<HTMLElement>("#snap-chips");
   while (snapChips.firstChild) snapChips.removeChild(snapChips.firstChild);
@@ -198,7 +191,6 @@ const updateChipsForMode = (): void => {
     snapChips.append(make("open", false), make("close", false));
     return;
   }
-  // Reflect actual snap geometry — including user edits via the editor.
   const custom = window.__bsCustomSnaps?.();
   const ids = custom ? custom.map(s => s.id) : ["minimized", "half", "full", "closed"];
   for (const id of ids) {
@@ -206,7 +198,6 @@ const updateChipsForMode = (): void => {
   }
 };
 
-// ===== mode chips =====
 wireChipRow("mode-chips", btn => {
   settings.mode = btn.dataset.mode as Settings["mode"];
   $<HTMLElement>("#cap-mode").textContent = settings.mode;
@@ -215,7 +206,6 @@ wireChipRow("mode-chips", btn => {
   mountAdapter(activeAdapter);
 });
 
-// ===== sliders (debounced remount — engine-level config doesn't hot-swap) =====
 const slStiff = $<HTMLInputElement>("#sl-stiff");
 const slDamp = $<HTMLInputElement>("#sl-damp");
 const lblStiff = $<HTMLElement>("#lbl-stiff");
@@ -241,7 +231,6 @@ slDamp.addEventListener("input", () => {
   debouncedRemount();
 });
 
-// ===== behavior toggles =====
 const tgTrap = $<HTMLInputElement>("#tg-trap");
 const tgEsc = $<HTMLInputElement>("#tg-esc");
 const tgHaptic = $<HTMLInputElement>("#tg-haptic");
@@ -269,7 +258,6 @@ tgRubber.addEventListener("change", () => {
 ro.flTrap.classList.toggle("is-on", settings.focusTrap);
 ro.flHaptic.classList.toggle("is-on", settings.haptic);
 
-// ===== FPS meter, i18n, theme, snap editor, stress test, copy =====
 startFpsLoop();
 applyLang(getLang());
 applyTheme(getTheme());
@@ -285,23 +273,16 @@ mountSnapEditor({
 wireStressTest({ getController: () => activeController });
 wireCopyButton(() => activeAdapter);
 
-// Scrim chip-row + 3 toggles (above / tap / floating) in the bottom controls
-// section. Lazy `getEngine()` so adapter remounts (mode/snap changes) never
-// write to a destroyed instance. All scrim toggles flow through runtime
-// setters now (setScrimMode / setScrimTapToClose / setScrimEnabled /
-// setScrimOverlay) — no adapter remount required for any scrim change, which
-// removes the visible flash on toggle.
-wireScrimControls({
+const scrimControls = wireScrimControls({
   getEngine: () => activeController?.getEngine?.() ?? null,
+  settings,
+  onChange: () => renderActiveCode(),
 });
+scrimControlsSync = scrimControls.syncToEngine;
 
-// ===== boot — apply permalink before initial mount =====
 const initial = decode(location.hash);
 if (initial.adapter) activeAdapter = initial.adapter;
 Object.assign(settings, initial.settings);
-// A stale permalink may carry an `initial=` id that no longer exists in the
-// current snap list. Run the same reconcile we use after editor mutations
-// so the engine never boots with an unresolvable activeId.
 reconcileInitialSnap(
   settings,
   resolveSnapPoints(settings.mode).map(s => ({
@@ -310,7 +291,6 @@ reconcileInitialSnap(
   })),
 );
 
-// Reflect restored values back into the controls so toggle/slider state matches.
 slStiff.value = String(settings.stiffness);
 lblStiff.textContent = String(settings.stiffness);
 slDamp.value = String(settings.damping);
@@ -331,13 +311,8 @@ document
 const snipTag = document.querySelector<HTMLElement>("#snip-tag");
 if (snipTag) snipTag.textContent = activeAdapter;
 
-// Mode-driven chip-row reflects current settings.mode (which may have been
-// restored from the URL hash above) — call AFTER the boot decode so the
-// custom-snap getter sees the real settings.initial.
 updateChipsForMode();
 
 mountAdapter(activeAdapter);
 
-// `defaultSnaps` re-export keeps the snap-editor seed list discoverable
-// to consumers reading `main.ts` for orientation.
 export { defaultSnaps };

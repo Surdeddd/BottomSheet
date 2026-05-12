@@ -12,17 +12,11 @@ export type GestureCallbacks = {
 
 const isAxisVertical = (mode: SheetMode) => mode === "bottom" || mode === "top";
 
-/**
- * Fixed-capacity ring buffer of {t,v} samples. Pre-allocates all slots so
- * `push` never produces garbage during a drag — relevant on low-end Android
- * where 120 short-lived objects/sec for several seconds creates noticeable
- * GC pause risk during the gesture.
- */
 class SampleRing {
   private readonly slots: PointerSample[];
   private readonly capacity: number;
-  private head = 0; // next write index
-  private size = 0; // current count, ≤ capacity
+  private head = 0;
+  private size = 0;
 
   constructor(capacity: number) {
     this.capacity = capacity;
@@ -38,12 +32,6 @@ class SampleRing {
     if (this.size < this.capacity) this.size++;
   }
 
-  /**
-   * Drop oldest entries whose timestamp is below `cutoff`, but never shrink
-   * below `minKeep`. Mirrors the original
-   *   `while (samples.length > minKeep && samples[0].t < cutoff) samples.shift()`
-   * but without copying — just advances the logical tail.
-   */
   pruneBefore(cutoff: number, minKeep: number): void {
     while (this.size > minKeep) {
       const oldestIdx =
@@ -73,13 +61,6 @@ class SampleRing {
   }
 }
 
-/**
- * Pointer Events handler with velocity tracking. Listens on `handle` for the
- * initial press, then captures the pointer so movement outside the element is
- * still tracked. Multi-touch is ignored: only the first pointer drives the gesture.
- *
- * Velocity is computed from the last ~80ms of samples for stable flick detection.
- */
 export const installGestures = (
   handle: HTMLElement,
   mode: SheetMode,
@@ -89,14 +70,8 @@ export const installGestures = (
   let activePointerType: PointerKind = "touch";
   let startCoord = 0;
   let lastCoord = 0;
-  // Pointer-type-tuned velocity window. Mouse pointers (especially trackpad
-  // inertia) carry low-velocity sustained motion — needs a longer look-back.
-  // Touch flicks are punchier and benefit from a tighter window.
   const VELOCITY_WINDOW_MS = (kind: PointerKind) =>
     kind === "mouse" ? 160 : 120;
-  // Ring capacity: at 120Hz with the longest (160ms mouse) window we collect
-  // ~20 samples. 32 leaves headroom for super-sampled pointers without ever
-  // allocating during a drag.
   const MAX_SAMPLES = 32;
   const samples = new SampleRing(MAX_SAMPLES);
 
@@ -108,7 +83,7 @@ export const installGestures = (
 
   const onPointerDown = (e: PointerEvent) => {
     if (activePointerId !== null) return;
-    if (e.button !== undefined && e.button !== 0) return; // ignore right/middle click
+    if (e.button !== undefined && e.button !== 0) return;
     activePointerId = e.pointerId;
     activePointerType =
       (e.pointerType as PointerKind) || "touch";
@@ -116,12 +91,9 @@ export const installGestures = (
     lastCoord = startCoord;
     samples.reset();
     samples.push(e.timeStamp, startCoord);
-    // iOS WebKit < 14.5 silently drops capture if the touched element
-    // re-renders. Wrap so a capture failure doesn't crash the gesture.
     try {
       handle.setPointerCapture(e.pointerId);
     } catch {
-      /* ignore — gesture still works without capture */
     }
     callbacks.onStart(startCoord, activePointerType);
   };
@@ -135,8 +107,6 @@ export const installGestures = (
     samples.push(e.timeStamp, coord);
     const cutoff = e.timeStamp - VELOCITY_WINDOW_MS(activePointerType);
     samples.pruneBefore(cutoff, 2);
-    // No MAX_SAMPLES guard needed: the ring overwrites the oldest slot once
-    // capacity is reached, which matches the prior `samples.shift()` behavior.
     callbacks.onMove(delta);
   };
 
@@ -145,8 +115,6 @@ export const installGestures = (
     const rawDelta = lastCoord - startCoord;
     const delta = rawDelta * sign;
     let velocity = 0;
-    // Require at least 3 samples for a stable velocity reading — a single
-    // stutter on low-end Android pushes 2-sample velocity to ~0.
     if (samples.length >= 3) {
       const first = samples.oldest()!;
       const last = samples.newest()!;
@@ -161,7 +129,6 @@ export const installGestures = (
         handle.releasePointerCapture(e.pointerId);
       }
     } catch {
-      /* ignore */
     }
     callbacks.onEnd(delta, velocity, finishedKind);
   };
@@ -190,9 +157,4 @@ export const installGestures = (
   };
 };
 
-/**
- * @deprecated Renamed to `installGestures` for naming consistency with the
- * other `installX` feature factories. Will be removed in v2 — see
- * `docs/migration-v2.md`.
- */
 export const attachGestures = installGestures;
