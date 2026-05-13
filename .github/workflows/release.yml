@@ -102,7 +102,7 @@ jobs:
       # d.ts templates + fix-preact-dist + strip-icloud-dupes). Calling
       # `tsup` directly would skip those side-effecting scripts and ship
       # a broken tarball.
-      - name: Build library (lifecycle: prebuild → build → postbuild)
+      - name: "Build library (lifecycle: prebuild → build → postbuild)"
         run: npm run build
 
       - name: Bundle-size budget (size-limit)
