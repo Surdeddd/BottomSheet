@@ -29,6 +29,7 @@ import { startFpsLoop } from "./lib/fps";
 import { wireStressTest } from "./lib/stress";
 import { startViewTransition } from "./lib/view-transition";
 import { wireScrimControls } from "./lib/scrim-controls";
+import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
 
 const defaults: Settings = {
   mode: "bottom",
@@ -62,6 +63,7 @@ const mounters: Record<
 let activeAdapter: AdapterKey = "react";
 let activeController: DemoController | null = null;
 let scrimControlsSync: (() => void) | null = null;
+let floatingUiSync: (() => void) | null = null;
 
 const ro = {
   active: $<HTMLElement>("#ro-active"),
@@ -110,7 +112,13 @@ const mountAdapter = (key: AdapterKey): void => {
     });
 
     applyThemePreset(getThemePreset());
-    scrimControlsSync?.();
+    whenEngineReady(
+      () => activeController?.getEngine?.() ?? null,
+      () => {
+        scrimControlsSync?.();
+        floatingUiSync?.();
+      },
+    );
     renderActiveCode();
     syncHash();
   });
@@ -279,6 +287,11 @@ const scrimControls = wireScrimControls({
   onChange: () => renderActiveCode(),
 });
 scrimControlsSync = scrimControls.syncToEngine;
+
+const floatingUi = wireFloatingUi({
+  getEngine: () => activeController?.getEngine?.() ?? null,
+});
+floatingUiSync = floatingUi.syncToEngine;
 
 const initial = decode(location.hash);
 if (initial.adapter) activeAdapter = initial.adapter;

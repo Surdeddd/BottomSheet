@@ -57,6 +57,14 @@ export default defineConfig({
       timeout: 60_000,
       use: devices["iPhone 13"],
     },
+    {
+      name: "firefox",
+      testIgnore:
+        /(visual-regression|headtohead|benchmark|pull-to-refresh|soft-keyboard)\.spec\.ts/,
+      retries: 3,
+      timeout: 60_000,
+      use: devices["Desktop Firefox"],
+    },
     ...VISUAL_BREAKPOINTS.map(bp => ({
       name: bp.name,
       testMatch: /visual-regression\.spec\.ts/,

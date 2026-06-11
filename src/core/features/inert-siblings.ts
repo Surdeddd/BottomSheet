@@ -10,11 +10,21 @@ export function createInertSiblings(
   return {
     apply() {
       if (typeof document === "undefined") return;
-      const root = rootProvider();
-      const parent = root.parentElement ?? document.body;
+      let top = rootProvider();
+      while (top.parentElement && top.parentElement !== document.body) {
+        top = top.parentElement;
+      }
+      const parent = top.parentElement ?? document.body;
       for (const child of Array.from(parent.children)) {
-        if (child === root) continue;
+        if (child === top) continue;
         if (child.hasAttribute("inert")) continue;
+        if (
+          child.classList.contains("bs-backdrop") ||
+          child.classList.contains("bs-screen") ||
+          child.classList.contains("bs-root")
+        ) {
+          continue;
+        }
         child.setAttribute("inert", "");
         tracked.push(child as HTMLElement);
       }

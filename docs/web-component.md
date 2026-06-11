@@ -39,12 +39,13 @@ npm i @surdeddd/bottom-sheet
 | `allowed` | comma list | all ids | `"min,half,full"` |
 | `initial` | string | first allowed | starting snap id |
 | `mode` | enum | `"bottom"` | `bottom \| top \| left \| right` |
-| `animation` | enum | `"spring"` | `spring \| tween` |
+| `animation` | enum | `"spring"` | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy` |
 | `focus-trap` | bool | `false` | `"true"` to enable |
 | `close-on-escape` | bool | `true` | set `"false"` to disable |
 | `lock-body-scroll` | bool | `true` | set `"false"` for in-page sheets |
 | `backdrop` | bool | `true` | set `"false"` to omit backdrop |
 | `stylesheet` | url | — | inject a stylesheet into the shadow root |
+| `sheet-label` | string | `"Bottom sheet"` | accessible name of the dialog |
 
 ## Slots
 
@@ -54,6 +55,34 @@ npm i @surdeddd/bottom-sheet
 | (default) | Scrollable content |
 | `leftButton` / `rightButton` | Docked above the sheet |
 | `screen` | Background fading by progress |
+| `anchor` | Anchored elements riding the sheet (see below) |
+
+## Anchored elements
+
+Any light-DOM child with `slot="anchor"` becomes an anchor — it is moved into
+a fixed wrapper that rides the sheet edge:
+
+```html
+<bottom-sheet snap-points="min:96,full:85%">
+  <button
+    slot="anchor"
+    data-position="sheet-top-right"
+    data-show-on="full"
+    data-animation="pop"
+  >
+    ✕
+  </button>
+  <nav slot="anchor" data-position="dock-bottom">…tab bar…</nav>
+  <p>content…</p>
+</bottom-sheet>
+```
+
+Supported data attributes: `data-position` (12 positions plus
+`dock-bottom | dock-top`), `data-show-on` (comma list of snap ids),
+`data-animation` (`fade | scale | slide | pop | none`), `data-inset`,
+`data-fade-range="0.4,1"`, `data-interactive="false"`. The element-level
+`addAnchor()` / `setScrimStages()` methods mirror the
+[engine API](anchors.md).
 
 ## Events
 

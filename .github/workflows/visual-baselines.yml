@@ -1,0 +1,30 @@
+name: Visual baselines (linux)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Generate linux snapshots
+        run: npx playwright test tests/e2e/visual-regression.spec.ts --update-snapshots
+        env:
+          BS_FORCE_VISUAL: "1"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines-linux
+          path: tests/e2e/visual-regression.spec.ts-snapshots/
+          retention-days: 14

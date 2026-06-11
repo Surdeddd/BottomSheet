@@ -15,6 +15,8 @@ export type ResizeObserverDeps = {
   applySize: (size: number) => void;
   cancelInFlight: () => void;
   newCycle: () => void;
+  isAnimating?: () => boolean;
+  resyncAfterCancel?: () => void;
 };
 
 export function installResizeObserver(deps: ResizeObserverDeps): () => void {
@@ -34,6 +36,7 @@ export function installResizeObserver(deps: ResizeObserverDeps): () => void {
     if (viewportSize > 0 && viewportSize < max) {
       deps.setMaxAxisSize(viewportSize);
     }
+    const wasAnimating = deps.isAnimating?.() ?? false;
     deps.cancelInFlight();
     deps.newCycle();
 
@@ -43,7 +46,10 @@ export function installResizeObserver(deps: ResizeObserverDeps): () => void {
       ? Math.min(current.size, newMax)
       : Math.min(deps.getSize(), newMax);
     deps.setSize(targetSize);
-    if (current && !deps.isDragging()) deps.applySize(targetSize);
+    if (current && !deps.isDragging()) {
+      deps.applySize(targetSize);
+      if (wasAnimating) deps.resyncAfterCancel?.();
+    }
   };
 
   let resizeObserver: ResizeObserver | null = null;

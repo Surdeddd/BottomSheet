@@ -2,9 +2,13 @@ import { BottomSheetEngine } from "../core/BottomSheetEngine";
 import type {
   EngineOptions,
   EngineState,
+  ScrimOverlayOptions,
+  ScrimUpdate,
   SheetEventMap,
   SnapPointDef,
 } from "../core/types";
+import type { AnchorOptions } from "../core/features/sheet-anchors";
+import type { ScrimStagesOptions } from "../core/features/scrim-stages";
 
 export type SvelteBottomSheetOpts<TId extends string = string> = Omit<
   EngineOptions,
@@ -42,6 +46,14 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   open: (id?: TId) => Promise<void>;
   close: () => Promise<void>;
   setAllowed: (ids: TId[], snap?: TId) => void;
+  setSnapPoints: (
+    points: EngineOptions["snapPoints"],
+    allowed?: string[],
+  ) => void;
+  setScrim: (opts: ScrimUpdate) => void;
+  setScrimOverlay: (opts: ScrimOverlayOptions) => () => void;
+  addAnchor: (opts: AnchorOptions) => () => void;
+  setScrimStages: (opts: ScrimStagesOptions | null) => () => void;
   destroy: () => void;
   getEngine: () => BottomSheetEngine | null;
 };
@@ -68,23 +80,24 @@ export function createBottomSheet<TId extends string = string>(
   const attach = (refs: SvelteAttachRefs) => {
     if (engine) engine.destroy();
     const { onSnap, ...engineOpts } = opts;
-    engine = new BottomSheetEngine({
+    const created = new BottomSheetEngine({
       ...(engineOpts as Omit<
         EngineOptions,
         "element" | "handle" | "scrollContainer" | "backdrop" | "scrim"
       >),
       ...refs,
     });
+    engine = created;
     if (onSnap) {
-      engine.on("snap", payload => onSnap(payload.id as TId));
+      created.on("snap", payload => onSnap(payload.id as TId));
     }
     for (const entry of pending) {
-      entry.engineUnsub = engine.on(entry.event, entry.fn);
+      entry.engineUnsub = created.on(entry.event, entry.fn);
     }
     pending.length = 0;
     return () => {
-      engine?.destroy();
-      engine = null;
+      created.destroy();
+      if (engine === created) engine = null;
     };
   };
 
@@ -118,6 +131,15 @@ export function createBottomSheet<TId extends string = string>(
     close: () => engine?.close() ?? Promise.resolve(),
     setAllowed: (ids: TId[], snap?: TId) =>
       engine?.setAllowed(ids as unknown as string[], snap),
+    setSnapPoints: (points: EngineOptions["snapPoints"], allowed?: string[]) =>
+      engine?.setSnapPoints(points, allowed),
+    setScrim: (scrimOpts: ScrimUpdate) => engine?.setScrim(scrimOpts),
+    setScrimOverlay: (overlayOpts: ScrimOverlayOptions) =>
+      engine?.setScrimOverlay(overlayOpts) ?? (() => {}),
+    addAnchor: (anchorOpts: AnchorOptions) =>
+      engine?.addAnchor(anchorOpts) ?? (() => {}),
+    setScrimStages: (stagesOpts: ScrimStagesOptions | null) =>
+      engine?.setScrimStages(stagesOpts) ?? (() => {}),
     destroy: () => {
       engine?.destroy();
       engine = null;

@@ -1,15 +1,17 @@
 import type { Component, Snippet } from "svelte";
 import type {
+  AnchorOptions,
+  BottomSheetEngine,
   EngineOptions,
   EngineState,
+  SheetEventMap,
   SheetMode,
   SnapPoint,
   SnapPointDef,
+  ScrimStagesOptions,
   ScrimUpdate,
   ScrimOverlayOptions,
-} from "../core/types";
-import type { SheetEventMap } from "../core/types";
-import type { BottomSheetEngine } from "../core/BottomSheetEngine";
+} from "./index.js";
 
 export type SvelteBottomSheetOpts<TId extends string = string> = Omit<
   EngineOptions,
@@ -50,6 +52,8 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
   setScrim(opts: ScrimUpdate): void;
   setScrimOverlay(opts: ScrimOverlayOptions): () => void;
+  addAnchor(opts: AnchorOptions): () => void;
+  setScrimStages(opts: ScrimStagesOptions | null): () => void;
   getEngine(): BottomSheetEngine | null;
   destroy(): void;
 };

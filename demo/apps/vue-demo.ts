@@ -54,7 +54,11 @@ export const mountVueDemo = (
               sheetRef.value = el;
               if (el && !interval) startPolling();
             },
-            mode: settings.mode as "bottom" | "top" | "left" | "right",
+            mode: (settings.mode === "overlay" ? "bottom" : settings.mode) as
+      | "bottom"
+      | "top"
+      | "left"
+      | "right",
             snapPoints: snapPoints(settings.mode),
             allowed: allowedFromSnaps(settings.mode),
             initial: settings.initial,

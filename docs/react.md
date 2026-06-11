@@ -69,8 +69,39 @@ type BottomSheetHandle = {
   open(id?: string): Promise<void>;
   close(): Promise<void>;
   setAllowed(ids: string[], snap?: string): void;
+  setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
+  setScrim(opts: ScrimUpdate): void;
+  setScrimOverlay(opts: ScrimOverlayOptions): () => void;
+  addAnchor(opts: AnchorOptions): () => void;
+  setScrimStages(opts: ScrimStagesOptions | null): () => void;
+  getEngine(): BottomSheetEngine | null;
   state: EngineState;        // settled-only snapshot
 };
+```
+
+### Anchors & scrim stages (declarative)
+
+```tsx
+<BottomSheet
+  anchors={[
+    { position: "sheet-top-right", showOn: ["half", "full"], animation: "pop",
+      node: <CloseButton /> },
+    { position: "dock-bottom", node: <TabBar /> },
+  ]}
+  scrimStages={{
+    stages: [
+      { for: "peek", node: <Teaser /> },
+      { forRange: [0.5, 1], node: <Expanded /> },
+    ],
+  }}
+  ...
+/>
+```
+
+See [anchors & stages docs](anchors.md) for positions, `showOn`, `fadeRange`
+and the animation spec.
+
+```ts
 ```
 
 ## Headless hook

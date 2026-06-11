@@ -54,6 +54,18 @@ describe("runSpring", () => {
     expect(updates).toBe(updatesAtCancel);
   });
 
+  it("settles instead of hanging when the config diverges to NaN", async () => {
+    let last = -1;
+    const handle = runSpring({
+      from: 0,
+      to: 100,
+      config: { mass: 0 },
+      onUpdate: v => (last = v),
+    });
+    await handle.promise;
+    expect(last).toBe(100);
+  });
+
   it("uses overdamped config without overshoot", async () => {
     const samples: number[] = [];
     const handle = runSpring({

@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, beforeAll } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -53,10 +53,15 @@ describe("SSR — no browser globals at module import", () => {
     expect((globalThis as { window?: unknown }).window).toBeUndefined();
   });
 
-  it("imports `@surdeddd/bottom-sheet/solid` without throwing", async () => {
-    const mod = await import(resolve(distDir, "solid.js"));
-    expect(mod.BottomSheet).toBeTypeOf("function");
-    expect((globalThis as { window?: unknown }).window).toBeUndefined();
+  it("ships a `solid` export condition with preserved-JSX source for SSR consumers", () => {
+    const sourcePath = resolve(distDir, "solid.source.jsx");
+    expect(existsSync(sourcePath)).toBe(true);
+    const pkg = JSON.parse(
+      readFileSync(resolve(distDir, "..", "package.json"), "utf8"),
+    ) as { exports: Record<string, { solid?: string }> };
+    expect(pkg.exports["./solid"]!.solid).toBe("./dist/solid.source.jsx");
+    const source = readFileSync(sourcePath, "utf8");
+    expect(source).toContain("<section");
   });
 
   it.skip(
@@ -68,18 +73,15 @@ describe("SSR — no browser globals at module import", () => {
     },
   );
 
-  it.skip(
-    "imports `@surdeddd/bottom-sheet/element` without throwing [GAP: extends HTMLElement at top level]",
-    async () => {
-      const mod = await import(resolve(distDir, "element.js"));
-      expect(mod.BottomSheetElement).toBeTypeOf("function");
-      expect(mod.defineBottomSheet).toBeTypeOf("function");
-      expect((globalThis as { window?: unknown }).window).toBeUndefined();
-      expect(
-        (globalThis as { customElements?: unknown }).customElements,
-      ).toBeUndefined();
-    },
-  );
+  it("imports `@surdeddd/bottom-sheet/element` without throwing", async () => {
+    const mod = await import(resolve(distDir, "element.js"));
+    expect(mod.BottomSheetElement).toBeTypeOf("function");
+    expect(mod.defineBottomSheet).toBeTypeOf("function");
+    expect((globalThis as { window?: unknown }).window).toBeUndefined();
+    expect(
+      (globalThis as { customElements?: unknown }).customElements,
+    ).toBeUndefined();
+  });
 
   it("does not pollute `globalThis` with DOM-ish keys after all imports", () => {
     const forbidden = ["window", "document", "customElements", "HTMLElement"];

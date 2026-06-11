@@ -36,14 +36,17 @@ export function installAutoCollapse(deps: AutoCollapseDeps): () => void {
   const fire = (): void => {
     if (deps.isDestroyed()) return;
     if (deps.isDragging()) return;
-    const allowed = deps.getAllowedIds();
-    const target = allowed.find(id => {
+    const active = deps.resolveSnap(deps.getActiveId());
+    if (!active || active.size === 0) return;
+    let target: { id: string; size: number } | null = null;
+    for (const id of deps.getAllowedIds()) {
       const snap = deps.resolveSnap(id);
-      return snap !== null && snap.size > 0;
-    });
+      if (!snap || snap.size <= 0) continue;
+      if (!target || snap.size < target.size) target = snap;
+    }
     if (!target) return;
-    if (target === deps.getActiveId()) return;
-    deps.snapTo(target);
+    if (target.id === active.id || target.size >= active.size) return;
+    deps.snapTo(target.id);
   };
 
   const reset = (): void => {
@@ -56,6 +59,7 @@ export function installAutoCollapse(deps: AutoCollapseDeps): () => void {
   };
 
   const unsubscribe = deps.on("snap", () => reset());
+  if ((deps.resolveSnap(deps.getActiveId())?.size ?? 0) > 0) reset();
 
   return () => {
     clearTimer();

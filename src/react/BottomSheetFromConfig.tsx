@@ -202,52 +202,38 @@ export const BottomSheetFromConfig = forwardRef<
     [],
   );
 
-  const lastActiveIdRef = useRef<string | null>(null);
-
-  const handleChange = (state: { activeId: string }) => {
-    const prev = lastActiveIdRef.current;
-    const next = state.activeId;
-    lastActiveIdRef.current = next;
-
-    const evs = eventsRef.current;
-    const hs = handlersRef.current;
-
-    if (evs.onSnap) {
-      const fn = hs[evs.onSnap];
-      if (typeof fn === "function") {
-        fn(next);
-      } else {
-        console.warn(
-          `[BottomSheetFromConfig] eventHandlers["${evs.onSnap}"] is not a function; onSnap is a no-op.`,
-        );
-      }
-    }
-
-    const isClosedNext = next === "" || next === "closed";
-    const isClosedPrev = prev === null || prev === "" || prev === "closed";
-
-    if (isClosedPrev && !isClosedNext && evs.onOpen) {
-      const fn = hs[evs.onOpen];
-      if (typeof fn === "function") {
-        fn(next);
-      } else {
-        console.warn(
-          `[BottomSheetFromConfig] eventHandlers["${evs.onOpen}"] is not a function; onOpen is a no-op.`,
-        );
-      }
-    }
-
-    if (!isClosedPrev && isClosedNext && evs.onClose) {
-      const fn = hs[evs.onClose];
-      if (typeof fn === "function") {
+  const invoke = (
+    key: "onSnap" | "onOpen" | "onClose",
+    arg?: string,
+  ): void => {
+    const evName = eventsRef.current[key];
+    if (!evName) return;
+    const fn = handlersRef.current[evName];
+    if (typeof fn === "function") {
+      if (arg === undefined) {
         (fn as () => void)();
       } else {
-        console.warn(
-          `[BottomSheetFromConfig] eventHandlers["${evs.onClose}"] is not a function; onClose is a no-op.`,
-        );
+        fn(arg);
       }
+    } else {
+      console.warn(
+        `[BottomSheetFromConfig] eventHandlers["${evName}"] is not a function; ${key} is a no-op.`,
+      );
     }
   };
+  const invokeRef = useRef(invoke);
+  invokeRef.current = invoke;
+
+  useEffect(() => {
+    const engine = sheetRef.current?.getEngine();
+    if (!engine) return;
+    const offs = [
+      engine.on("snap", p => invokeRef.current("onSnap", p.id)),
+      engine.on("open", p => invokeRef.current("onOpen", p.id)),
+      engine.on("close", () => invokeRef.current("onClose")),
+    ];
+    return () => offs.forEach(off => off());
+  }, []);
 
   return (
     <BottomSheet
@@ -263,7 +249,6 @@ export const BottomSheetFromConfig = forwardRef<
       closeOnBackdrop={derived.behavior.closeOnBackdrop}
       lockBodyScroll={derived.behavior.lockBodyScroll}
       rubberBand={derived.behavior.rubberBand}
-      onChange={handleChange}
       header={slotContent?.header}
     >
       {slotContent?.body}

@@ -159,6 +159,7 @@ export type EngineOptions = {
   linkedSheets?: BottomSheetEngineLike[];
 
   viewTransitions?: boolean;
+  stackEffect?: boolean;
 };
 
 import type { BottomSheetEngine } from "./BottomSheetEngine";

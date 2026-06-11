@@ -8,6 +8,7 @@
     />
     <meta name="theme-color" content="#1a1614" />
     <title>@surdeddd/bottom-sheet — universal sheet engine</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -534,6 +535,26 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
             ⚡ stress 8s
           </button>
           <p class="recorder-status mono" id="stress-status">idle</p>
+        </div>
+
+        <div class="advanced-card">
+          <h3 class="advanced-card-title">Floating UI</h3>
+          <p class="advanced-card-sub">
+            Anchored elements ride the sheet edge on the compositor; scrim
+            stages swap content per state.
+          </p>
+          <label class="toggle">
+            <input type="checkbox" id="tg-anchor-btn" />
+            <span>anchored close button</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="tg-scrim-stages" />
+            <span>scrim stages (per-state content)</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="tg-dock-bar" />
+            <span>docked tab bar (sheet slides under)</span>
+          </label>
         </div>
 
         <div class="advanced-card">

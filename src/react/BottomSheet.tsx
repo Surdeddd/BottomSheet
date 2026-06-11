@@ -7,9 +7,15 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { useBottomSheet } from "./useBottomSheet";
 import type { BottomSheetEngine } from "../core/BottomSheetEngine";
 import type { EngineOptions, EngineState } from "../core/types";
+import type { AnchorOptions } from "../core/features/sheet-anchors";
+import type {
+  ScrimStageDef,
+  ScrimStagesOptions,
+} from "../core/features/scrim-stages";
 
 const useHasMounted = () => {
   const [mounted, setMounted] = useState(false);
@@ -24,6 +30,18 @@ type EngineOptionsForProps = Omit<
 
 export type HeaderProp = ReactNode | ((state: EngineState) => ReactNode);
 
+export type BottomSheetAnchorProp = Omit<AnchorOptions, "element"> & {
+  node: ReactNode;
+};
+
+export type BottomSheetScrimStageProp = Omit<ScrimStageDef, "element"> & {
+  node: ReactNode;
+};
+
+export type BottomSheetScrimStagesProp = Omit<ScrimStagesOptions, "stages"> & {
+  stages: BottomSheetScrimStageProp[];
+};
+
 export type BottomSheetProps = EngineOptionsForProps & {
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
@@ -34,6 +52,8 @@ export type BottomSheetProps = EngineOptionsForProps & {
   leftButton?: ReactNode;
   rightButton?: ReactNode;
   screen?: ReactNode;
+  anchors?: BottomSheetAnchorProp[];
+  scrimStages?: BottomSheetScrimStagesProp;
   onChange?: (state: EngineState) => void;
   ariaLabel?: string;
   ariaLabelledBy?: string;
@@ -53,6 +73,8 @@ export type BottomSheetHandle<TId extends string = string> = {
   setScrimOverlay: (
     opts: import("../core/types").ScrimOverlayOptions,
   ) => () => void;
+  addAnchor: (opts: AnchorOptions) => () => void;
+  setScrimStages: (opts: ScrimStagesOptions | null) => () => void;
   state: EngineState & { activeId: TId };
   getEngine: () => BottomSheetEngine | null;
 };
@@ -69,6 +91,8 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       leftButton,
       rightButton,
       screen,
+      anchors,
+      scrimStages,
       onChange,
       ariaLabel = "Bottom sheet",
       ariaLabelledBy,
@@ -91,13 +115,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       getEngine,
     } = useBottomSheet(engineOpts);
 
-    const isVerticalAxis =
-      (engineOpts.mode ?? "bottom") === "bottom" ||
-      (engineOpts.mode ?? "bottom") === "top";
     const ariaModal = engineOpts.focusTrap === true;
-    const allowedIds =
-      engineOpts.allowed ?? engineOpts.snapPoints.map(p => p.id);
-    const activeIdx = allowedIds.indexOf(state.activeId);
 
     const lastAnnouncedRef = useRef<string>("");
     const [announce, setAnnounce] = useState("");
@@ -119,6 +137,8 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           getEngine()?.setSnapPoints(points, allowed),
         setScrim: opts => getEngine()?.setScrim(opts),
         setScrimOverlay: opts => getEngine()?.setScrimOverlay(opts) ?? (() => {}),
+        addAnchor: opts => getEngine()?.addAnchor(opts) ?? (() => {}),
+        setScrimStages: opts => getEngine()?.setScrimStages(opts) ?? (() => {}),
         getEngine,
         get state() {
           return getEngine()?.state ?? state;
@@ -130,6 +150,75 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     useEffect(() => {
       onChange?.(state);
     }, [state, onChange]);
+
+    const [anchorHosts, setAnchorHosts] = useState<HTMLElement[]>([]);
+    const anchorsKey = anchors
+      ? JSON.stringify(
+          anchors.map(a => [
+            a.position,
+            a.inset,
+            Array.isArray(a.showOn) ? a.showOn : a.showOn ? "fn" : null,
+            a.fadeRange,
+            a.interactive,
+            typeof a.animation === "string"
+              ? a.animation
+              : a.animation
+                ? "custom"
+                : null,
+          ]),
+        )
+      : "";
+    useEffect(() => {
+      const engine = getEngine();
+      if (!engine || !anchors || anchors.length === 0) return;
+      const hosts: HTMLElement[] = [];
+      const detachers = anchors.map(a => {
+        const host = document.createElement("div");
+        hosts.push(host);
+        const { node: _node, ...rest } = a;
+        return engine.addAnchor({ ...rest, element: host });
+      });
+      setAnchorHosts(hosts);
+      return () => {
+        detachers.forEach(d => d());
+        setAnchorHosts([]);
+      };
+    }, [getEngine, anchorsKey]);
+
+    const [stageHosts, setStageHosts] = useState<HTMLElement[]>([]);
+    const stagesKey = scrimStages
+      ? JSON.stringify(
+          scrimStages.stages.map(s => [
+            s.for,
+            s.forRange,
+            s.position,
+            s.inset,
+            s.interactive,
+            typeof s.animation === "string"
+              ? s.animation
+              : s.animation
+                ? "custom"
+                : null,
+          ]),
+        )
+      : "";
+    useEffect(() => {
+      const engine = getEngine();
+      if (!engine || !scrimStages || scrimStages.stages.length === 0) return;
+      const hosts: HTMLElement[] = [];
+      const defs = scrimStages.stages.map(s => {
+        const host = document.createElement("div");
+        hosts.push(host);
+        const { node: _node, ...rest } = s;
+        return { ...rest, element: host };
+      });
+      const detach = engine.setScrimStages({ ...scrimStages, stages: defs });
+      setStageHosts(hosts);
+      return () => {
+        detach();
+        setStageHosts([]);
+      };
+    }, [getEngine, stagesKey]);
 
     if (noSSR && !mounted) return null;
 
@@ -174,11 +263,6 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             className="bs-handle"
             role="slider"
             tabIndex={0}
-            aria-orientation={isVerticalAxis ? "vertical" : "horizontal"}
-            aria-valuemin={0}
-            aria-valuemax={Math.max(0, allowedIds.length - 1)}
-            aria-valuenow={Math.max(0, activeIdx)}
-            aria-valuetext={state.activeId}
             aria-label="Resize sheet"
           >
             {typeof header === "function" ? header(state) : header}
@@ -196,6 +280,14 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             {announce}
           </span>
         </section>
+        {anchorHosts.map((host, i) =>
+          anchors?.[i] ? createPortal(anchors[i]!.node, host) : null,
+        )}
+        {stageHosts.map((host, i) =>
+          scrimStages?.stages[i]
+            ? createPortal(scrimStages.stages[i]!.node, host)
+            : null,
+        )}
       </div>
     );
   },

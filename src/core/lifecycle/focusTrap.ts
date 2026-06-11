@@ -27,6 +27,8 @@ const focusables = (root: HTMLElement): HTMLElement[] =>
       !el.matches("[aria-hidden='true']"),
   );
 
+const trapStack: object[] = [];
+
 export const installFocusTrap = (
   container: HTMLElement,
   options: {
@@ -35,6 +37,9 @@ export const installFocusTrap = (
   } = {},
 ): (() => void) => {
   if (typeof document === "undefined") return () => {};
+  const token = {};
+  trapStack.push(token);
+  const isActive = (): boolean => trapStack[trapStack.length - 1] === token;
   const previouslyFocused = document.activeElement as HTMLElement | null;
 
   const focusInitial = () => {
@@ -47,6 +52,7 @@ export const installFocusTrap = (
   focusInitial();
 
   const handleKey = (e: KeyboardEvent) => {
+    if (!isActive()) return;
     if (e.key === "Escape" && options.onEscape) {
       options.onEscape();
       return;
@@ -70,6 +76,7 @@ export const installFocusTrap = (
   };
 
   const handleFocusIn = (e: FocusEvent) => {
+    if (!isActive()) return;
     const target = e.target as Node | null;
     if (target && !container.contains(target)) {
       const list = focusables(container);
@@ -84,6 +91,8 @@ export const installFocusTrap = (
   return () => {
     if (released) return;
     released = true;
+    const idx = trapStack.indexOf(token);
+    if (idx !== -1) trapStack.splice(idx, 1);
     document.removeEventListener("keydown", handleKey, true);
     document.removeEventListener("focusin", handleFocusIn, true);
     if (previouslyFocused && document.contains(previouslyFocused)) {

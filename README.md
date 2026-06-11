@@ -2,8 +2,8 @@
 
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
-![bundle](https://img.shields.io/badge/core-15.8%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-327%20unit-2ea44f?style=flat-square)
+![bundle](https://img.shields.io/badge/core-16.8%20KB%20gzip-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-392%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -47,7 +47,7 @@ stacking — and the exact same engine behind every adapter.
 | WCAG 2.1 AA keyboard slider          | partial |         —         |     **✓**     |
 | Multi-sheet stacking                 |    —    |         —         |     **✓**     |
 | Sheet-manager registry (typed)       |    —    |         —         |     **✓**     |
-| Tests (unit + e2e)                   | partial |      partial      | **253 + 32**  |
+| Tests (unit + e2e)                   | partial |      partial      | **392 + 164**  |
 
 ## Install
 
@@ -170,7 +170,7 @@ Drop-in usage from a static HTML page. The IIFE bundle registers
   rel="stylesheet"
   href="https://unpkg.com/@surdeddd/bottom-sheet/dist/styles.css"
 />
-<script src="https://unpkg.com/@surdeddd/bottom-sheet/dist/element.iife.js"></script>
+<script src="https://unpkg.com/@surdeddd/bottom-sheet/dist/element.iife.global.js"></script>
 <bottom-sheet
   snap-points='[{"id":"min","size":96},{"id":"full","size":"85%"}]'
   initial="min"
@@ -217,23 +217,53 @@ type SnapPoint =
 
 ### Engine options
 
-| Option           | Default       | What it does                                       |
-| ---------------- | ------------- | -------------------------------------------------- |
-| `snapPoints`     | required      | Ordered list of `{ id, size }`                     |
-| `allowed`        | all ids       | Subset the sheet may settle on right now           |
-| `initial`        | first allowed | Snap id to start at                                |
-| `mode`           | `"bottom"`    | `bottom \| top \| left \| right`                   |
-| `animation`      | `"spring"`    | `spring \| tween`                                  |
-| `spring`         | snappy        | `{ stiffness, damping, mass }`                     |
-| `flickVelocity`  | `0.65 px/ms`  | Mobile flick threshold                             |
-| `dragThreshold`  | `18 px`       | Below this, drag snaps back                        |
-| `rubberBand`     | `true`        | iOS-style soft over-drag                           |
-| `backdropRange`  | `[0, 1]`      | Progress range over which backdrop fades           |
-| `focusTrap`      | `false`       | Trap Tab focus inside the sheet when open          |
-| `closeOnEscape`  | `true`        | Listen for Escape and close                        |
-| `closeOnBack`    | `false`       | Intercept Android back button (history.popstate)   |
-| `lockBodyScroll` | `true`        | iOS-safe body lock (`position: fixed`)             |
-| `inertSiblings`  | `false`       | Mark page siblings `inert` while open (full modal) |
+| Option           | Default       | What it does                                                           |
+| ---------------- | ------------- | ---------------------------------------------------------------------- |
+| `snapPoints`     | required      | Ordered list of `{ id, size }`                                         |
+| `allowed`        | all ids       | Subset the sheet may settle on right now                               |
+| `initial`        | first allowed | Snap id to start at                                                    |
+| `mode`           | `"bottom"`    | `bottom`, `top`, `left`, `right`                                       |
+| `animation`      | `"spring"`    | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy` |
+| `spring`         | snappy        | `{ stiffness, damping, mass }`                                         |
+| `flickVelocity`  | `0.65 px/ms`  | Mobile flick threshold                                                 |
+| `dragThreshold`  | `18 px`       | Below this, drag snaps back                                            |
+| `rubberBand`     | `true`        | iOS-style soft over-drag                                               |
+| `backdropRange`  | `[0, 1]`      | Progress range over which backdrop fades                               |
+| `focusTrap`      | `false`       | Trap Tab focus inside the sheet when open                              |
+| `closeOnEscape`  | `true`        | Listen for Escape and close                                            |
+| `closeOnBack`    | `false`       | Intercept Android back button (history.popstate)                       |
+| `lockBodyScroll` | `true`        | iOS-safe body lock (`position: fixed`)                                 |
+| `stackEffect`    | `false`       | iOS card-stack: back sheets scale down per depth                       |
+| `inertSiblings`  | `false`       | Mark page siblings `inert` while open (full modal)                     |
+
+### Anchored elements, docked bars & scrim stages
+
+Pin UI around the sheet — it rides the motion on the compositor (zero JS per
+frame) and shows/hides per state with configurable animations:
+
+```ts
+engine.addAnchor({
+  element: closeBtn,
+  position: 'sheet-top-right', // rides the sheet edge; 9 screen positions too
+  showOn: ['half', 'full'],    // snap ids or a predicate
+  animation: 'pop',            // fade | scale | slide | pop | custom keyframes
+});
+
+engine.addAnchor({
+  element: tabBar,
+  position: 'dock-bottom',     // full-width bar; the sheet slides under it
+});
+
+engine.setScrimStages({
+  stages: [
+    { for: 'peek', element: teaser },
+    { forRange: [0.5, 1], element: expanded },
+  ],
+  animation: 'fade',
+});
+```
+
+[Full anchors & stages docs →](docs/anchors.md)
 
 ### Events
 

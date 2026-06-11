@@ -194,6 +194,67 @@ describe("BottomSheetEngine — persistKey", () => {
   });
 });
 
+describe("BottomSheetEngine — resize mid-animation resync", () => {
+  beforeEach(() => resetGlobals());
+
+  it("re-emits snap/open and installs lifecycle when a resize cancels an opening animation", async () => {
+    const { sheet, handle } = makeDom();
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 800 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 300,
+      respectReducedMotion: false,
+    });
+    const events: string[] = [];
+    engine.on("snap", p => events.push(`snap:${p.id}`));
+    engine.on("open", p => events.push(`open:${p.id}`));
+    void engine.open("full");
+    await new Promise(r => setTimeout(r, 60));
+    window.dispatchEvent(new Event("orientationchange"));
+    await new Promise(r => setTimeout(r, 60));
+    expect(events).toContain("snap:full");
+    expect(events).toContain("open:full");
+    expect(engine.state.size).toBe(800);
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+    await new Promise(r => setTimeout(r, 400));
+    expect(engine.state.activeId).toBe("closed");
+    engine.destroy();
+  });
+
+  it("idle resize emits no spurious events", async () => {
+    const { sheet, handle } = makeDom();
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 800 },
+      ],
+      initial: "full",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    await new Promise(r => setTimeout(r, 20));
+    const events: string[] = [];
+    engine.on("snap", p => events.push(`snap:${p.id}`));
+    engine.on("open", p => events.push(`open:${p.id}`));
+    engine.on("close", () => events.push("close"));
+    window.dispatchEvent(new Event("orientationchange"));
+    await new Promise(r => setTimeout(r, 30));
+    expect(events).toEqual([]);
+    engine.destroy();
+  });
+});
+
 describe("BottomSheetEngine — autoCollapseAfter", () => {
   beforeEach(() => {
     resetGlobals();
@@ -1288,7 +1349,7 @@ describe("BottomSheetEngine — scrim options", () => {
     engine.destroy();
   });
 
-  it("scrimTapToClose: true → click on screen snaps to first non-zero allowed snap", async () => {
+  it("scrimTapToClose: true → click on screen closes the sheet", async () => {
     const { sheet, handle, screen } = makeDomWithScreen();
     const engine = new BottomSheetEngine({
       element: sheet,
@@ -1307,13 +1368,9 @@ describe("BottomSheetEngine — scrim options", () => {
       respectReducedMotion: false,
     });
     expect(engine.state.activeId).toBe("full");
-    const firstAllowed = engine
-      .getAllowedIds()
-      .find(id => id !== "closed");
-    expect(firstAllowed).toBe("min");
     screen.dispatchEvent(new Event("click", { bubbles: true }));
     await new Promise(r => setTimeout(r, 30));
-    expect(engine.state.activeId).toBe("min");
+    expect(engine.state.activeId).toBe("closed");
     engine.destroy();
   });
 
@@ -1337,7 +1394,7 @@ describe("BottomSheetEngine — scrim options", () => {
     expect(screen.style.pointerEvents).toBe("auto");
     screen.dispatchEvent(new Event("click", { bubbles: true }));
     await new Promise(r => setTimeout(r, 30));
-    expect(engine.state.activeId).toBe("min");
+    expect(engine.state.activeId).toBe("closed");
     engine.destroy();
   });
 });
@@ -1648,7 +1705,7 @@ describe("scrim runtime mode + enabled + overlay slot", () => {
     engine.destroy();
   });
 
-  it("setScrimTapToClose(true) after construction installs listener; click snaps to first allowed", async () => {
+  it("setScrimTapToClose(true) after construction installs listener; click closes the sheet", async () => {
     const { sheet, handle, screen } = makeDomWithScrim();
     const engine = new BottomSheetEngine({
       element: sheet,
@@ -1668,7 +1725,7 @@ describe("scrim runtime mode + enabled + overlay slot", () => {
     engine.setScrimTapToClose(true);
     screen.dispatchEvent(new Event("click", { bubbles: true }));
     await new Promise(r => setTimeout(r, 30));
-    expect(engine.state.activeId).toBe("min");
+    expect(engine.state.activeId).toBe("closed");
     engine.destroy();
   });
 

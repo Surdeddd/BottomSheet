@@ -14,6 +14,7 @@ import {
 } from "../primitives/hot-path-thresholds";
 import { WriteSentinel } from "../primitives/opacity-dedup";
 import { devWarn } from "../primitives/devWarn";
+import { applyOverlayPosition } from "../primitives/overlay-position";
 
 const VALID_CSS_LENGTH = /^-?\d+(?:\.\d+)?(?:px|em|rem|%)$/;
 
@@ -26,6 +27,7 @@ export type ScrimControllerDeps = {
   getAllowedIds: () => string[];
   getResolvedSnaps: () => ResolvedSnap[];
   snapTo: (id: string) => void;
+  close?: () => void;
 };
 
 export type ScrimControllerOptions = {
@@ -49,6 +51,8 @@ export class ScrimController {
   private getAllowedIds: () => string[];
   private getResolvedSnaps: () => ResolvedSnap[];
   private snapToFn: (id: string) => void;
+  private closeFn: (() => void) | undefined;
+  private scrimInteractive = false;
 
   scrimMode: "full" | "above-sheet" | "off";
   backdropRange: [number, number];
@@ -84,6 +88,7 @@ export class ScrimController {
     this.getAllowedIds = deps.getAllowedIds;
     this.getResolvedSnaps = deps.getResolvedSnaps;
     this.snapToFn = deps.snapTo;
+    this.closeFn = deps.close;
 
     this.scrimMode = opts.scrimMode ?? "full";
     const preset = opts.scrimPreset ? SCRIM_PRESETS[opts.scrimPreset] : null;
@@ -245,11 +250,15 @@ export class ScrimController {
       }
       const onClick = (): void => {
         if (this.isDestroyed()) return;
+        if (this.closeFn) {
+          this.closeFn();
+          return;
+        }
         const allowed = this.getAllowedIds();
         const snaps = this.getResolvedSnaps();
         const fallback = allowed.find(id => {
           const snap = findById(id, snaps);
-          return snap !== null && snap.size > 0;
+          return snap !== null && snap.size === 0;
         });
         if (fallback) this.snapToFn(fallback);
       };
@@ -267,6 +276,7 @@ export class ScrimController {
     if (this.isDestroyed()) return;
     if (enabled === this.scrimEnabled) return;
     this.scrimEnabled = enabled;
+    this.invalidateOpacityCache();
     if (!enabled) {
       this.savedScrimRanges = {
         screen: this.screenRange,
@@ -291,7 +301,12 @@ export class ScrimController {
         blur: cfg.blur ?? null,
         interactive: cfg.interactive,
       });
-      this.screenRange = cfg.range;
+      if (!this.scrimEnabled && this.savedScrimRanges) {
+        this.savedScrimRanges = { screen: cfg.range, backdrop: cfg.range };
+      } else {
+        this.screenRange = cfg.range;
+        this.backdropRange = cfg.range;
+      }
     }
     const noop = (): void => {};
     if (opts.mode !== undefined) this.setScrimMode(opts.mode, noop);
@@ -347,59 +362,7 @@ export class ScrimController {
     wrapper.className = "bs-scrim-overlay";
     const ws = wrapper.style;
     ws.position = "absolute";
-    switch (position) {
-      case "top-left":
-        ws.top = inset;
-        ws.left = inset;
-        break;
-      case "top-center":
-        ws.top = inset;
-        ws.left = "50%";
-        ws.transform = "translateX(-50%)";
-        break;
-      case "top-right":
-        ws.top = inset;
-        ws.right = inset;
-        break;
-      case "center-left":
-        ws.top = "50%";
-        ws.left = inset;
-        ws.transform = "translateY(-50%)";
-        break;
-      case "center":
-        ws.top = "50%";
-        ws.left = "50%";
-        ws.transform = "translate(-50%, -50%)";
-        break;
-      case "center-right":
-        ws.top = "50%";
-        ws.right = inset;
-        ws.transform = "translateY(-50%)";
-        break;
-      case "bottom-left":
-        ws.bottom = inset;
-        ws.left = inset;
-        break;
-      case "bottom-center":
-        ws.bottom = inset;
-        ws.left = "50%";
-        ws.transform = "translateX(-50%)";
-        break;
-      case "bottom-right":
-        ws.bottom = inset;
-        ws.right = inset;
-        break;
-      case "sheet-top-left":
-      case "sheet-top-center":
-      case "sheet-top-right":
-        applySheetAnchoredPosition(
-          ws,
-          this.mode,
-          position,
-          inset,
-        );
-        break;
-    }
+    applyOverlayPosition(ws, this.mode, position, inset);
     if (interactive) {
       ws.pointerEvents = "auto";
     }
@@ -466,6 +429,7 @@ export class ScrimController {
       }
     }
     if (opts.interactive !== undefined) {
+      this.scrimInteractive = opts.interactive;
       s.pointerEvents = opts.interactive ? "auto" : "none";
     }
   }
@@ -481,54 +445,12 @@ export class ScrimController {
     const s = this.screenComponent.style;
     s.position = "fixed";
     s.inset = insetByMode[this.mode];
-    s.pointerEvents = "none";
+    s.pointerEvents =
+      this.scrimInteractive || this.scrimTapToCloseEnabled ? "auto" : "none";
   }
 }
 
-export type SheetAnchoredStyle = {
-  top?: string;
-  bottom?: string;
-  left?: string;
-  right?: string;
-  transform?: string;
-};
-
-export function resolveSheetAnchoredStyle(
-  mode: SheetMode,
-  position: "sheet-top-left" | "sheet-top-center" | "sheet-top-right",
-  inset: string,
-): SheetAnchoredStyle {
-  const sizeOffset = `calc(var(--bs-size, 0px) + ${inset})`;
-  switch (mode) {
-    case "bottom":
-      if (position === "sheet-top-left") return { bottom: sizeOffset, left: inset };
-      if (position === "sheet-top-right") return { bottom: sizeOffset, right: inset };
-      return { bottom: sizeOffset, left: "50%", transform: "translateX(-50%)" };
-    case "top":
-      if (position === "sheet-top-left") return { top: sizeOffset, left: inset };
-      if (position === "sheet-top-right") return { top: sizeOffset, right: inset };
-      return { top: sizeOffset, left: "50%", transform: "translateX(-50%)" };
-    case "left":
-      if (position === "sheet-top-left") return { left: sizeOffset, top: inset };
-      if (position === "sheet-top-right") return { left: sizeOffset, bottom: inset };
-      return { left: sizeOffset, top: "50%", transform: "translateY(-50%)" };
-    case "right":
-      if (position === "sheet-top-left") return { right: sizeOffset, top: inset };
-      if (position === "sheet-top-right") return { right: sizeOffset, bottom: inset };
-      return { right: sizeOffset, top: "50%", transform: "translateY(-50%)" };
-  }
-}
-
-function applySheetAnchoredPosition(
-  ws: CSSStyleDeclaration,
-  mode: SheetMode,
-  position: "sheet-top-left" | "sheet-top-center" | "sheet-top-right",
-  inset: string,
-): void {
-  const style = resolveSheetAnchoredStyle(mode, position, inset);
-  if (style.top !== undefined) ws.top = style.top;
-  if (style.bottom !== undefined) ws.bottom = style.bottom;
-  if (style.left !== undefined) ws.left = style.left;
-  if (style.right !== undefined) ws.right = style.right;
-  if (style.transform !== undefined) ws.transform = style.transform;
-}
+export {
+  resolveSheetAnchoredStyle,
+  type SheetAnchoredStyle,
+} from "../primitives/overlay-position";

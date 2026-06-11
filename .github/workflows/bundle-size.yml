@@ -5,7 +5,6 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
 
-# A second push to the same PR cancels the in-flight measure.
 concurrency:
   group: bundle-size-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -50,7 +49,6 @@ jobs:
         run: |
           git fetch origin main --depth=1
           git checkout origin/main -- .
-          # Restore the comparison script in case main lacks it.
           cp /tmp/bundle-size/check-bundle-size.mjs scripts/check-bundle-size.mjs
 
       - name: Install deps (main)

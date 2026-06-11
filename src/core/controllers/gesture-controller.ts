@@ -104,6 +104,10 @@ export class GestureController {
         this.isDragging_ = false;
         this.keyboardDismissed = false;
         this.deps.getRoot()?.removeAttribute("data-dragging");
+        this.deps.emit("dragend", {
+          size: this.deps.getDragContext().size,
+          velocity: 0,
+        });
         const restoreTo = this.dragStartSize;
         void this.deps.animateTo(restoreTo, 0);
       },

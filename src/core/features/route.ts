@@ -52,8 +52,7 @@ export function installRoute(deps: RouteDeps): () => void {
         if (deps.isDestroyed()) return;
         const state = event.state as Record<string, unknown> | null;
         if (
-          state &&
-          state.__bsRouted === target &&
+          (!state || state.__bsRouted !== target) &&
           deps.getSize() > 0
         ) {
           routePushed = false;

@@ -3,7 +3,11 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -22,13 +26,33 @@
     "outDir": "./dist",
     "rootDir": ".",
     "paths": {
-      "@surdeddd/bottom-sheet": ["./src/index.ts"],
-      "@surdeddd/bottom-sheet/react": ["./src/react/index.ts"],
-      "@surdeddd/bottom-sheet/vue": ["./src/vue/index.ts"],
-      "@surdeddd/bottom-sheet/element": ["./src/web-component/index.ts"],
-      "@surdeddd/bottom-sheet/solid": ["./src/solid/index.tsx"]
+      "@surdeddd/bottom-sheet": [
+        "./src/index.ts"
+      ],
+      "@surdeddd/bottom-sheet/react": [
+        "./src/react/index.ts"
+      ],
+      "@surdeddd/bottom-sheet/vue": [
+        "./src/vue/index.ts"
+      ],
+      "@surdeddd/bottom-sheet/element": [
+        "./src/web-component/index.ts"
+      ],
+      "@surdeddd/bottom-sheet/solid": [
+        "./src/solid/index.tsx"
+      ]
     }
   },
-  "include": ["src/**/*", "demo/**/*", "tests/**/*"],
-  "exclude": ["node_modules", "dist", "examples", "patches"]
+  "include": [
+    "src/**/*",
+    "demo/**/*",
+    "tests/**/*",
+    "*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "examples",
+    "patches"
+  ]
 }

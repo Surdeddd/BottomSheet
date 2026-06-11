@@ -52,13 +52,20 @@ export const runSpring = ({
       const dt = Math.min((now - lastTime) / 1000, MAX_DT);
       lastTime = now;
 
-      const subDt = Math.min(dt, 1 / 240);
-      let stepsLeft = Math.max(1, Math.ceil(dt / subDt));
+      const steps = Math.max(1, Math.ceil(dt * 240));
+      const subDt = dt / steps;
+      let stepsLeft = steps;
       while (stepsLeft-- > 0) {
         const force = -cfg.stiffness * (x - to) - cfg.damping * v;
         const accel = force / cfg.mass;
         v += accel * subDt;
         x += v * subDt;
+      }
+
+      if (!Number.isFinite(x) || !Number.isFinite(v)) {
+        onUpdate(to, 0);
+        resolve();
+        return;
       }
       onUpdate(x, v);
 

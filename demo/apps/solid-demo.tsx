@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 import { render } from "solid-js/web";
-import { onMount, onCleanup, For } from "solid-js";
+import { createSignal, onMount, onCleanup, For } from "solid-js";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import {
   allowedFromSnaps,
@@ -20,8 +20,10 @@ const SolidSheet = (props: {
   let handleEl!: HTMLDivElement;
   let contentEl!: HTMLDivElement;
   let backdropEl!: HTMLDivElement;
+  let screenEl!: HTMLDivElement;
   let engine: BottomSheetEngine | null = null;
   let detachBackdrop: (() => void) | null = null;
+  const [activeId, setActiveId] = createSignal(props.settings.initial);
 
   onMount(() => {
     const dataMode =
@@ -31,6 +33,7 @@ const SolidSheet = (props: {
       handle: handleEl,
       scrollContainer: contentEl,
       backdrop: backdropEl,
+      scrim: screenEl,
       mode: dataMode as "bottom" | "top" | "left" | "right",
       snapPoints: snapPoints(props.settings.mode),
       allowed: allowedFromSnaps(props.settings.mode),
@@ -46,6 +49,9 @@ const SolidSheet = (props: {
       backdropRange: [0.4, 1],
       lockBodyScroll: false,
     });
+
+    engine.on("snap", p => setActiveId(p.id));
+    setActiveId(engine.state.activeId);
 
     const onBackdropClick = () => void engine!.close();
     backdropEl.addEventListener("click", onBackdropClick);
@@ -68,9 +74,11 @@ const SolidSheet = (props: {
   return (
     <div class="bs-root">
       <div class="bs-backdrop" ref={backdropEl!} />
+      <div class="bs-screen" ref={screenEl!} />
       <section
         class="bs-sheet"
         data-mode={dataMode}
+        data-active={activeId()}
         role="dialog"
         ref={sheetEl!}
       >

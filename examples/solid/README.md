@@ -1,8 +1,10 @@
 # Solid example — `@surdeddd/bottom-sheet`
 
 Minimal Solid + Vite playground using the headless `BottomSheetEngine` directly
-against Solid refs. There is no `@surdeddd/bottom-sheet/solid` adapter — Solid
-users wire the engine to raw DOM refs (mirroring the vanilla example).
+against Solid refs. A ready-made `@surdeddd/bottom-sheet/solid` adapter also
+exists — this example shows the lower-level engine wiring (mirroring the
+vanilla example); for the component API import `BottomSheet` from
+`@surdeddd/bottom-sheet/solid`.
 
 ## Run locally
 

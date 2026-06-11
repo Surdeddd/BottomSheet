@@ -1,5 +1,12 @@
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
 import type { EngineOptions, EngineState, SnapPointDef } from "../core/types";
+import type {
+  AnchorOptions,
+  AnchorPosition,
+} from "../core/features/sheet-anchors";
+import type { ScrimStagesOptions } from "../core/features/scrim-stages";
+import type { AnchorAnimationPreset } from "../core/primitives/anchor-animations";
+import type { ScrimOverlayPosition } from "../core/types";
 import { baseStyles } from "./baseStyles";
 
 const ATTR_SNAP_POINTS = "snap-points";
@@ -12,6 +19,8 @@ const ATTR_ANIMATION = "animation";
 const ATTR_FOCUS_TRAP = "focus-trap";
 const ATTR_CLOSE_ON_ESCAPE = "close-on-escape";
 const ATTR_LOCK_BODY_SCROLL = "lock-body-scroll";
+const ATTR_SHEET_LABEL = "sheet-label";
+const ATTR_STACK_EFFECT = "stack-effect";
 
 const isValidSnapPoint = (p: unknown): p is SnapPointDef =>
   !!p &&
@@ -76,6 +85,59 @@ const parseAnimation = (raw: string | null): EngineOptions["animation"] =>
 
 const parseList = (raw: string | null): string[] | undefined =>
   raw ? raw.split(",").map(s => s.trim()).filter(Boolean) : undefined;
+
+const ANCHOR_POSITIONS: ReadonlyArray<AnchorPosition> = [
+  "top-left",
+  "top-center",
+  "top-right",
+  "center-left",
+  "center",
+  "center-right",
+  "bottom-left",
+  "bottom-center",
+  "bottom-right",
+  "sheet-top-left",
+  "sheet-top-center",
+  "sheet-top-right",
+  "dock-bottom",
+  "dock-top",
+];
+
+const ANCHOR_ANIMATIONS: ReadonlyArray<AnchorAnimationPreset> = [
+  "fade",
+  "scale",
+  "slide",
+  "pop",
+  "none",
+];
+
+const parseAnchorOptions = (el: HTMLElement): Omit<AnchorOptions, "element"> => {
+  const position = el.getAttribute("data-position");
+  const animation = el.getAttribute("data-animation");
+  const showOn = parseList(el.getAttribute("data-show-on"));
+  const fadeRangeRaw = parseList(el.getAttribute("data-fade-range"));
+  const fadeRange =
+    fadeRangeRaw?.length === 2 &&
+    fadeRangeRaw.every(v => Number.isFinite(Number(v)))
+      ? ([Number(fadeRangeRaw[0]), Number(fadeRangeRaw[1])] as [number, number])
+      : undefined;
+  return {
+    position:
+      position &&
+      (ANCHOR_POSITIONS as readonly string[]).includes(position)
+        ? (position as AnchorPosition)
+        : undefined,
+    inset: el.getAttribute("data-inset") ?? undefined,
+    showOn,
+    fadeRange,
+    interactive: el.getAttribute("data-interactive") !== "false",
+    animation:
+      animation &&
+      (ANCHOR_ANIMATIONS as readonly string[]).includes(animation)
+        ? (animation as AnchorAnimationPreset)
+        : undefined,
+  };
+};
 
 const buildSlot = (name: string): HTMLSlotElement => {
   const slot = document.createElement("slot");
@@ -173,7 +235,11 @@ const buildShadowTree = (): {
   };
 };
 
-export class BottomSheetElement extends HTMLElement {
+const BaseHTMLElement = (
+  typeof HTMLElement !== "undefined" ? HTMLElement : class {}
+) as typeof HTMLElement;
+
+export class BottomSheetElement extends BaseHTMLElement {
   static get observedAttributes(): string[] {
     return [
       ATTR_SNAP_POINTS,
@@ -185,6 +251,8 @@ export class BottomSheetElement extends HTMLElement {
       ATTR_FOCUS_TRAP,
       ATTR_CLOSE_ON_ESCAPE,
       ATTR_LOCK_BODY_SCROLL,
+      ATTR_SHEET_LABEL,
+      ATTR_STACK_EFFECT,
     ];
   }
 
@@ -193,6 +261,8 @@ export class BottomSheetElement extends HTMLElement {
   private offHandlers: Array<() => void> = [];
   private refs!: ReturnType<typeof buildShadowTree>["refs"];
   private backdropClickHandler: (() => void) | null = null;
+  private stylesheetLinked = false;
+  private declarativeAnchors: HTMLElement[] = [];
 
   constructor() {
     super();
@@ -202,13 +272,6 @@ export class BottomSheetElement extends HTMLElement {
     baseStyle.textContent = baseStyles;
     this.root.appendChild(baseStyle);
 
-    const stylesheet = this.getAttribute(ATTR_STYLESHEET);
-    if (stylesheet) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = stylesheet;
-      this.root.appendChild(link);
-    }
     const inlineStyle = document.createElement("style");
     inlineStyle.textContent = [
       ":host { display: contents; }",
@@ -228,6 +291,16 @@ export class BottomSheetElement extends HTMLElement {
   }
 
   connectedCallback(): void {
+    if (!this.stylesheetLinked) {
+      this.stylesheetLinked = true;
+      const stylesheet = this.getAttribute(ATTR_STYLESHEET);
+      if (stylesheet) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = stylesheet;
+        this.root.appendChild(link);
+      }
+    }
     this.initEngine();
   }
 
@@ -254,6 +327,10 @@ export class BottomSheetElement extends HTMLElement {
     }
     this.engine?.destroy();
     this.engine = null;
+    for (const el of this.declarativeAnchors) {
+      this.appendChild(el);
+    }
+    this.declarativeAnchors = [];
   }
 
   private initEngine(): void {
@@ -269,6 +346,11 @@ export class BottomSheetElement extends HTMLElement {
     } else {
       sheet.removeAttribute("aria-modal");
     }
+
+    sheet.setAttribute(
+      "aria-label",
+      this.getAttribute(ATTR_SHEET_LABEL) ?? "Bottom sheet",
+    );
 
     const showBackdrop = this.getAttribute(ATTR_BACKDROP) !== "false";
     backdrop.style.display = showBackdrop ? "" : "none";
@@ -291,13 +373,22 @@ export class BottomSheetElement extends HTMLElement {
       focusTrap,
       closeOnEscape: this.getAttribute(ATTR_CLOSE_ON_ESCAPE) !== "false",
       lockBodyScroll: this.getAttribute(ATTR_LOCK_BODY_SCROLL) !== "false",
+      stackEffect: this.getAttribute(ATTR_STACK_EFFECT) === "true",
     };
 
     this.engine = new BottomSheetEngine(opts);
+    sheet.setAttribute("data-active", this.engine.state.activeId);
+
+    for (const el of Array.from(
+      this.querySelectorAll<HTMLElement>('[slot="anchor"]'),
+    )) {
+      this.declarativeAnchors.push(el);
+      this.engine.addAnchor({ ...parseAnchorOptions(el), element: el });
+    }
 
     this.offHandlers = [
       this.engine.on("snap", payload => {
-
+        sheet.setAttribute("data-active", payload.id);
         announcer.textContent = payload.id;
         this.dispatchEvent(new CustomEvent("snap", { detail: payload }));
       }),
@@ -325,6 +416,12 @@ export class BottomSheetElement extends HTMLElement {
   setAllowed(ids: string[], snap?: string): void {
     this.engine?.setAllowed(ids, snap);
   }
+  addAnchor(opts: AnchorOptions): () => void {
+    return this.engine?.addAnchor(opts) ?? (() => {});
+  }
+  setScrimStages(opts: ScrimStagesOptions | null): () => void {
+    return this.engine?.setScrimStages(opts) ?? (() => {});
+  }
   get sheetState(): EngineState | null {
     return this.engine?.state ?? null;
   }
@@ -339,9 +436,7 @@ export type TypedBottomSheetElement<TId extends string = string> =
     readonly sheetState: (EngineState & { activeId: TId }) | null;
   };
 
-let registered = false;
 export const defineBottomSheet = (tag = "bottom-sheet"): void => {
-  if (registered || customElements.get(tag)) return;
-  customElements.define(tag, BottomSheetElement);
-  registered = true;
+  if (typeof customElements === "undefined" || customElements.get(tag)) return;
+  customElements.define(tag, class extends BottomSheetElement {});
 };

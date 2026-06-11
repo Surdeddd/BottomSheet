@@ -26,6 +26,15 @@ import {
   SIZE_WRITE_EPSILON,
 } from "./primitives/hot-path-thresholds";
 import { createScrollCache, type ScrollCache } from "./features/scroll-cache";
+import {
+  attachAnchor,
+  type AnchorHandle,
+  type AnchorOptions,
+} from "./features/sheet-anchors";
+import {
+  installScrimStages,
+  type ScrimStagesOptions,
+} from "./features/scrim-stages";
 import { resolveEngineOptions } from "./primitives/engine-options";
 import { WriteSentinel } from "./primitives/opacity-dedup";
 import type {
@@ -119,6 +128,12 @@ export class BottomSheetEngine {
   private linkedSheets: BottomSheetEngine[] = [];
   private scrollCache!: ScrollCache;
   private teardowns = new TeardownStack();
+  private anchors: AnchorHandle[] = [];
+  private anchorHost: HTMLElement | null = null;
+  private stackZ = 100;
+  private detachScrimStages: (() => void) | null = null;
+  private stackEffectEnabled = false;
+  private stackEffectPrimed = false;
 
   private transformTemplate!: (offset: number) => string;
 
@@ -157,6 +172,9 @@ export class BottomSheetEngine {
         snapTo: (id: string) => {
           void this.snapTo(id);
         },
+        close: () => {
+          void this.close();
+        },
       },
       resolved.scrim,
     );
@@ -179,6 +197,7 @@ export class BottomSheetEngine {
     );
     this.closeOnBack = resolved.closeOnBack;
     this.routedTo = opts.routedTo;
+    this.stackEffectEnabled = opts.stackEffect ?? false;
 
     this.snapPointsRaw = opts.snapPoints;
     this.persistKey = opts.persistKey;
@@ -195,7 +214,10 @@ export class BottomSheetEngine {
       this.snapPointsRaw,
       resolved.initialAllowed,
       this.mode,
-      () => this.handle.offsetHeight,
+      () =>
+        layoutAxis(this.mode as TransformAxis) === "width"
+          ? this.handle.offsetWidth
+          : this.handle.offsetHeight,
       maxAxisSize => {
         this.element.style[layoutAxis(this.mode as TransformAxis)] =
           `${maxAxisSize}px`;
@@ -454,13 +476,6 @@ export class BottomSheetEngine {
 
   setAllowed(ids: string[], snap?: string): void {
     if (this.destroyed) return;
-    const willSnap =
-      (snap !== undefined && ids.includes(snap)) ||
-      (!ids.includes(this.activeId) && ids.length > 0);
-    if (!willSnap) {
-      this.animation.cancel();
-      this.newCycle();
-    }
     this.snaps.setAllowedIds(ids);
     this.updateAriaSlider();
     if (snap && ids.includes(snap)) {
@@ -509,6 +524,78 @@ export class BottomSheetEngine {
 
   setScrimOverlay(opts: ScrimOverlayOptions): () => void {
     return this.scrim.setScrimOverlay(opts);
+  }
+
+  addAnchor(opts: AnchorOptions): () => void {
+    if (this.destroyed || typeof document === "undefined") return () => {};
+    if (!this.anchorHost) {
+      this.anchorHost =
+        this.rootEl ?? this.element.parentElement ?? document.body;
+      this.anchorHost.style.setProperty("--bs-size", `${this.size}px`);
+      this.anchorHost.style.setProperty(
+        "--bs-progress",
+        String(this.computeProgress(this.size)),
+      );
+    }
+    const handle = attachAnchor(
+      {
+        mode: this.mode,
+        host: this.anchorHost,
+        getState: () => ({
+          activeId: this.activeId,
+          size: this.size,
+          progress: this.computeProgress(this.size),
+        }),
+        on: (event, fn) => this.on(event, fn),
+        isDestroyed: () => this.destroyed,
+      },
+      opts,
+    );
+    handle.syncZ(this.stackZ + 1);
+    this.anchors.push(handle);
+    const detach = (): void => {
+      const idx = this.anchors.indexOf(handle);
+      if (idx === -1) return;
+      this.anchors.splice(idx, 1);
+      handle.detach();
+    };
+    this.teardowns.add(detach);
+    return detach;
+  }
+
+  setScrimStages(opts: ScrimStagesOptions | null): () => void {
+    if (this.destroyed || typeof document === "undefined") return () => {};
+    this.detachScrimStages?.();
+    this.detachScrimStages = null;
+    if (!opts) return () => {};
+    const host = this.screenComponent?.parentElement;
+    if (!host) {
+      console.warn(
+        "[BottomSheet] setScrimStages: no scrim element mounted — pass `scrim` to the engine first.",
+      );
+      return () => {};
+    }
+    const detachInstalled = installScrimStages(
+      {
+        mode: this.mode,
+        host,
+        getState: () => ({
+          activeId: this.activeId,
+          size: this.size,
+          progress: this.computeProgress(this.size),
+        }),
+        on: (event, fn) => this.on(event, fn),
+        isDestroyed: () => this.destroyed,
+      },
+      opts,
+    );
+    const detach = (): void => {
+      if (this.detachScrimStages === detach) this.detachScrimStages = null;
+      detachInstalled();
+    };
+    this.detachScrimStages = detach;
+    this.teardowns.add(() => this.detachScrimStages?.());
+    return detach;
   }
 
   getScrimState(): {
@@ -614,16 +701,29 @@ export class BottomSheetEngine {
     return this.snaps.getAllowedRange();
   }
 
+  private allowedIdsBySize(): string[] {
+    return this.snaps
+      .getAllowedIds()
+      .slice()
+      .sort(
+        (a, b) =>
+          (this.snaps.findById(a)?.size ?? 0) -
+          (this.snaps.findById(b)?.size ?? 0),
+      );
+  }
+
   private updateAriaSlider(): void {
-    this.aria.setValue(this.snaps.getAllowedIds(), this.activeId);
+    this.aria.setValue(this.allowedIdsBySize(), this.activeId);
   }
 
   private registerInStack(): void {
     this.teardowns.add(sheetStack.push({
       id: this.id,
       setZIndex: z => {
+        this.stackZ = z;
         this.element.style.zIndex = String(z);
         if (this.backdrop) this.backdrop.style.zIndex = String(z - 1);
+        for (const anchor of this.anchors) anchor.syncZ(z + 1);
       },
       setIsTop: isTop => {
         this.isTopSheet = isTop;
@@ -631,7 +731,25 @@ export class BottomSheetEngine {
           this.backdrop.style.display = isTop ? "" : "none";
         }
       },
+      isOpen: () => this.size > 0,
+      setDepth: depth => this.applyStackDepth(depth),
     }));
+  }
+
+  private applyStackDepth(depth: number): void {
+    if (!this.stackEffectEnabled) return;
+    this.element.setAttribute("data-stack-depth", String(depth));
+    if (!this.stackEffectPrimed) {
+      this.stackEffectPrimed = true;
+      const isVertical = this.mode === "bottom" || this.mode === "top";
+      this.element.style.transformOrigin = isVertical
+        ? "50% 100%"
+        : "0% 50%";
+      this.element.style.transition =
+        "scale 320ms cubic-bezier(0.29, 1.04, 0.84, 0.99)";
+    }
+    const scale = Math.max(1 - depth * 0.04, 0.86);
+    this.element.style.scale = scale === 1 ? "" : String(scale);
   }
 
   private attach(): void {
@@ -696,7 +814,7 @@ export class BottomSheetEngine {
         container: this.scrollContainer,
         isDragging: () => this.gesture?.isDragging ?? false,
         isAnimating: () => this.animation.isAnimating,
-        getAllowedIds: () => this.snaps.getAllowedIds() as string[],
+        getAllowedIds: () => this.allowedIdsBySize(),
         getActiveId: () => this.activeId,
         snapTo: id => {
           void this.snapTo(id);
@@ -727,11 +845,13 @@ export class BottomSheetEngine {
         newCycle: () => {
           this.newCycle();
         },
+        isAnimating: () => this.animation.isAnimating,
+        resyncAfterCancel: () => this.resyncAfterResize(),
       }));
 
       if (this.lifecycle.closeOnEscape) {
         const onKey = (e: KeyboardEvent) => {
-          if (this.destroyed) return;
+          if (this.destroyed || e.defaultPrevented) return;
           if (e.key === "Escape" && this.isTopSheet && this.size > 0) {
             void this.close();
           }
@@ -766,7 +886,7 @@ export class BottomSheetEngine {
       handle: this.handle,
       mode: this.mode as TransformAxis,
       isDestroyed: () => this.destroyed,
-      getAllowedIds: () => this.snaps.getAllowedIds() as string[],
+      getAllowedIds: () => this.allowedIdsBySize(),
       getActiveId: () => this.activeId,
       snapTo: id => {
         void this.snapTo(id);
@@ -794,6 +914,7 @@ export class BottomSheetEngine {
     if (!target) return;
 
     const previousId = this.activeId;
+    if (target.id === previousId && target.size === this.size) return;
     if (this.emitBeforeSnap(target, previousId)) {
       const restore = this.snaps.findById(previousId);
       if (restore) {
@@ -802,6 +923,7 @@ export class BottomSheetEngine {
       return;
     }
     const previousSize = this.size;
+    const previousSnapSize = this.snaps.findById(previousId)?.size;
     this.scrollCache.cache(previousId, previousSize, target.size);
     this.activeId = target.id;
     void this.animation.animateTo(target.size, velocity).then(() => {
@@ -810,9 +932,10 @@ export class BottomSheetEngine {
       this.updateAriaSlider();
       this.emit("snap", { id: target!.id, size: target!.size });
       this.haptic();
-      if (previousId === "closed" && target!.size > 0) {
+      if (previousSnapSize === 0 && target!.size > 0) {
         this.emit("open", { id: target!.id });
         this.handleOpen();
+        notifyLinkedSheets(this.linkedSheets, this);
       }
       if (target!.size === 0) {
         this.emit("close", undefined);
@@ -841,6 +964,9 @@ export class BottomSheetEngine {
       if (this.scrimParent) {
         this.scrimParent.style.setProperty("--bs-size", `${size}px`);
       }
+      if (this.anchorHost && this.anchorHost !== this.scrimParent) {
+        this.anchorHost.style.setProperty("--bs-size", `${size}px`);
+      }
     }
     const progress = this.computeProgress(size);
     const progressChanged = this.progressWriteSentinel.shouldWrite(
@@ -849,6 +975,9 @@ export class BottomSheetEngine {
     );
     if (progressChanged) {
       style.setProperty("--bs-progress", String(progress));
+      if (this.anchorHost) {
+        this.anchorHost.style.setProperty("--bs-progress", String(progress));
+      }
     }
 
     this.scrim.applyOpacity(progress, progressChanged);
@@ -866,6 +995,7 @@ export class BottomSheetEngine {
   }
 
   private handleOpen(): void {
+    sheetStack.promote(this.id);
     try {
       this.lifecycle.install();
     } catch (err) {
@@ -881,7 +1011,24 @@ export class BottomSheetEngine {
     }
   }
 
+  private resyncAfterResize(): void {
+    if (this.destroyed) return;
+    const target = this.snaps.findById(this.activeId);
+    if (!target) return;
+    this.updateAriaSlider();
+    this.emit("snap", { id: target.id, size: target.size });
+    if (target.size > 0 && !this.lifecycle.isInstalled) {
+      this.emit("open", { id: target.id });
+      this.handleOpen();
+      notifyLinkedSheets(this.linkedSheets, this);
+    } else if (target.size === 0 && this.lifecycle.isInstalled) {
+      this.emit("close", undefined);
+      this.handleClose();
+    }
+  }
+
   private handleClose(): void {
     this.lifecycle.release();
+    sheetStack.update();
   }
 }

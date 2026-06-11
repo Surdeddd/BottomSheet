@@ -56,7 +56,7 @@ export const Overlay = forwardRef<OverlayHandle, OverlayProps>(function Overlay(
     if (openProp && !state.isOpen) void open();
     else if (!openProp && state.isOpen) void close();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openProp]);
+  }, [openProp, state.isOpen]);
 
   useEffect(() => {
     onChange?.(state);

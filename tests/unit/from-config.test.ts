@@ -176,15 +176,14 @@ describe("BottomSheetFromConfig", () => {
     });
 
     await flushAsync();
-    expect(logger).toHaveBeenCalledWith("min");
-
-    logger.mockClear();
+    expect(logger).not.toHaveBeenCalled();
 
     await act(async () => {
       await ref.current?.snapTo("full");
     });
     await flushAsync();
 
+    expect(logger).toHaveBeenCalledTimes(1);
     expect(logger).toHaveBeenCalledWith("full");
   });
 });

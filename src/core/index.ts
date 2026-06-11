@@ -63,3 +63,22 @@ export type {
 } from "./animation/spring";
 export type { StackEntry } from "./lifecycle/sheetStack";
 export type { SheetConfig, SheetManager } from "./lifecycle/sheetManager";
+export type {
+  AnchorOptions,
+  AnchorPosition,
+  AnchorState,
+  AnchorHandle,
+} from "./features/sheet-anchors";
+export type {
+  ScrimStageDef,
+  ScrimStagesOptions,
+} from "./features/scrim-stages";
+export type {
+  AnchorAnimationSpec,
+  AnchorAnimationPreset,
+} from "./primitives/anchor-animations";
+export { runAnchorTransition } from "./primitives/anchor-animations";
+export {
+  applyOverlayPosition,
+  resolveSheetAnchoredStyle,
+} from "./primitives/overlay-position";

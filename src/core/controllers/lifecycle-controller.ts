@@ -22,7 +22,6 @@ export type LifecycleControllerOptions = {
 
 export class LifecycleController {
   private element: HTMLElement;
-  private closeFn: () => Promise<void> | void;
 
   readonly focusTrapEnabled: boolean;
   readonly initialFocus?: string | HTMLElement;
@@ -38,9 +37,12 @@ export class LifecycleController {
   private installed = false;
   private destroyed = false;
 
+  get isInstalled(): boolean {
+    return this.installed;
+  }
+
   constructor(deps: LifecycleControllerDeps, opts: LifecycleControllerOptions) {
     this.element = deps.element;
-    this.closeFn = deps.close;
     this.focusTrapEnabled = opts.focusTrap ?? false;
     this.initialFocus = opts.initialFocus;
     this.closeOnEscape = opts.closeOnEscape ?? true;
@@ -60,7 +62,6 @@ export class LifecycleController {
     if (this.focusTrapEnabled && !this.releaseFocusTrap) {
       this.releaseFocusTrap = installFocusTrap(this.element, {
         initialFocus: this.initialFocus,
-        onEscape: this.closeOnEscape ? () => void this.closeFn() : undefined,
       });
     }
     if (this.inertSiblingsEnabled && this.shouldApplyInertSiblings()) {

@@ -39,7 +39,16 @@ const activate = async (
         `.device-screen[data-screen="${adapter}"]`,
       );
       if (!screen || screen.hasAttribute("hidden")) return false;
-      const sheet = screen.querySelector(".bs-sheet") as HTMLElement | null;
+      let sheet = screen.querySelector(".bs-sheet") as HTMLElement | null;
+      if (!sheet) {
+        for (const el of Array.from(screen.querySelectorAll("*"))) {
+          const s = (el as HTMLElement).shadowRoot?.querySelector(".bs-sheet");
+          if (s) {
+            sheet = s as HTMLElement;
+            break;
+          }
+        }
+      }
       if (!sheet) return false;
       const raw = sheet.style.getPropertyValue("--bs-size");
       return raw ? parseFloat(raw) > 0 : false;
@@ -62,9 +71,24 @@ const waitForSnap = async (
   snap: string,
 ) => {
   await page.waitForFunction(
-    ({ sel, snap }) =>
-      document.querySelector(sel)?.getAttribute("data-active") === snap,
-    { sel: sheetSelector(adapter), snap },
+    ({ adapter, snap }) => {
+      const screen = document.querySelector(
+        `.device-screen[data-screen="${adapter}"]`,
+      );
+      if (!screen) return false;
+      let sheet = screen.querySelector(".bs-sheet");
+      if (!sheet) {
+        for (const el of Array.from(screen.querySelectorAll("*"))) {
+          const s = (el as HTMLElement).shadowRoot?.querySelector(".bs-sheet");
+          if (s) {
+            sheet = s;
+            break;
+          }
+        }
+      }
+      return sheet?.getAttribute("data-active") === snap;
+    },
+    { adapter, snap },
     { timeout: 8000 },
   );
 };
@@ -83,10 +107,6 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
     test(`${adapter}: FAB renders inside .bs-root, NOT inside .bs-screen`, async ({
       page,
     }, testInfo) => {
-      test.fixme(
-        testInfo.project.name.startsWith("mobile-"),
-        "TODO: mobile FAB+adapter timing — pre-existing flake",
-      );
       await activate(page, adapter);
       await page.locator(cinematicPresetChip).first().click({ force: true });
       await clickSnap(page, "half");
@@ -97,7 +117,18 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       await expect(page.locator(overlaySelector)).toHaveCount(1);
 
       const parents = await page.evaluate(() => {
-        const overlay = document.querySelector(".bs-scrim-overlay");
+        let overlay = document.querySelector(".bs-scrim-overlay");
+        if (!overlay) {
+          for (const host of Array.from(document.querySelectorAll("*"))) {
+            const o = (host as HTMLElement).shadowRoot?.querySelector(
+              ".bs-scrim-overlay",
+            );
+            if (o) {
+              overlay = o;
+              break;
+            }
+          }
+        }
         if (!overlay || !overlay.parentElement) return null;
         return {
           isBsRoot: overlay.parentElement.classList.contains("bs-root"),
@@ -115,10 +146,6 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
     test(`${adapter}: FAB stays at full opacity while scrim dims`, async ({
       page,
     }, testInfo) => {
-      test.fixme(
-        testInfo.project.name.startsWith("mobile-"),
-        "TODO: mobile FAB opacity timing — pre-existing flake",
-      );
       await activate(page, adapter);
       await page.locator(cinematicPresetChip).first().click({ force: true });
       await page.locator(floatingToggle).check();
@@ -135,8 +162,27 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       expect(parseFloat(fabOpacity)).toBeGreaterThan(0.95);
 
       await page.waitForFunction(
-        sel => parseFloat(getComputedStyle(document.querySelector(sel)!).opacity) > 0.15,
-        bsScreenSelector(adapter),
+        sel => {
+          const screen = document.querySelector(
+            `.device-screen[data-screen="${sel}"]`,
+          );
+          if (!screen) return false;
+          let el = screen.querySelector(".bs-screen");
+          if (!el) {
+            for (const host of Array.from(screen.querySelectorAll("*"))) {
+              const s = (host as HTMLElement).shadowRoot?.querySelector(
+                ".bs-screen",
+              );
+              if (s) {
+                el = s;
+                break;
+              }
+            }
+          }
+          if (!el) return false;
+          return parseFloat(getComputedStyle(el as HTMLElement).opacity) > 0.15;
+        },
+        adapter,
         { timeout: 4000 },
       );
       const scrimOpacity = await page
@@ -148,10 +194,6 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
     test(`${adapter}: FAB rides the sheet (sheet-top-right anchored to --bs-size)`, async ({
       page,
     }, testInfo) => {
-      test.fixme(
-        testInfo.project.name.startsWith("mobile-"),
-        "TODO: mobile --bs-size sync timing — pre-existing flake",
-      );
       await activate(page, adapter);
       await page.locator(cinematicPresetChip).first().click({ force: true });
       await page.locator(floatingToggle).check();
@@ -160,11 +202,23 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       await waitForSnap(page, adapter, "minimized");
       await page.waitForFunction(
         sel => {
-          const el = document.querySelector(sel) as HTMLElement | null;
+          const screen = document.querySelector(
+            `.device-screen[data-screen="${sel}"]`,
+          );
+          let el = (screen?.querySelector(".bs-sheet") ?? null) as HTMLElement | null;
+          if (!el && screen) {
+            for (const host of Array.from(screen.querySelectorAll("*"))) {
+              const s = (host as HTMLElement).shadowRoot?.querySelector(".bs-sheet");
+              if (s) {
+                el = s as HTMLElement;
+                break;
+              }
+            }
+          }
           const raw = el?.style.getPropertyValue("--bs-size");
           return raw ? parseFloat(raw) > 50 && parseFloat(raw) < 200 : false;
         },
-        sheetSelector(adapter),
+        adapter,
         { timeout: 8000 },
       );
       await expect(page.locator(fabSelector)).toBeVisible();
@@ -176,11 +230,23 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       await waitForSnap(page, adapter, "full");
       await page.waitForFunction(
         sel => {
-          const el = document.querySelector(sel) as HTMLElement | null;
+          const screen = document.querySelector(
+            `.device-screen[data-screen="${sel}"]`,
+          );
+          let el = (screen?.querySelector(".bs-sheet") ?? null) as HTMLElement | null;
+          if (!el && screen) {
+            for (const host of Array.from(screen.querySelectorAll("*"))) {
+              const s = (host as HTMLElement).shadowRoot?.querySelector(".bs-sheet");
+              if (s) {
+                el = s as HTMLElement;
+                break;
+              }
+            }
+          }
           const raw = el?.style.getPropertyValue("--bs-size");
           return raw ? parseFloat(raw) > 400 : false;
         },
-        sheetSelector(adapter),
+        adapter,
         { timeout: 8000 },
       );
       const topFull = await page
@@ -196,10 +262,6 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
     test(`${adapter}: FAB renders above the sheet (z-index > sheet)`, async ({
       page,
     }, testInfo) => {
-      test.fixme(
-        testInfo.project.name.startsWith("mobile-"),
-        "TODO: mobile FAB z-index timing — pre-existing flake",
-      );
       await activate(page, adapter);
       await page.locator(cinematicPresetChip).first().click({ force: true });
       await page.locator(floatingToggle).check();
@@ -231,10 +293,6 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
     test(`${adapter}: unchecking the floating toggle removes overlay from DOM`, async ({
       page,
     }, testInfo) => {
-      test.fixme(
-        testInfo.project.name.startsWith("mobile-"),
-        "TODO: mobile floating-toggle timing — pre-existing flake",
-      );
       await activate(page, adapter);
       await page.locator(cinematicPresetChip).first().click({ force: true });
       await clickSnap(page, "half");

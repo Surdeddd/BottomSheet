@@ -26,7 +26,7 @@ export const mountVanillaDemo = (
 
   const sheet = document.createElement("section");
   sheet.className = "bs-sheet";
-  sheet.dataset.mode = settings.mode;
+  sheet.dataset.mode = settings.mode === "overlay" ? "bottom" : settings.mode;
   sheet.setAttribute("role", "dialog");
 
   const handle = document.createElement("div");
@@ -62,7 +62,11 @@ export const mountVanillaDemo = (
     scrollContainer: content,
     backdrop,
     scrim,
-    mode: settings.mode as "bottom" | "top" | "left" | "right",
+    mode: (settings.mode === "overlay" ? "bottom" : settings.mode) as
+      | "bottom"
+      | "top"
+      | "left"
+      | "right",
     snapPoints: snapPoints(settings.mode),
     allowed: allowedFromSnaps(settings.mode),
     initial: settings.initial,

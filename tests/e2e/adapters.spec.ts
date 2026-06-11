@@ -94,10 +94,6 @@ test.describe("All adapters mount and respond", () => {
       browserName,
     }, testInfo) => {
       test.fixme(
-        testInfo.project.name.startsWith("mobile-"),
-        "TODO: mobile cold-mount flake — pre-existing, see fb65efa",
-      );
-      test.fixme(
         (adapter === "lit" || adapter === "element") &&
           browserName === "webkit",
         "Shadow-DOM adapter slow first paint on WebKit",
@@ -204,10 +200,6 @@ test.describe("Adapter-specific identity assertions", () => {
   test("solid: light-DOM .bs-sheet renders with bs-handle child", async ({
     page,
   }, testInfo) => {
-    test.fixme(
-      testInfo.project.name.startsWith("mobile-"),
-      "TODO: mobile solid mount flake — pre-existing",
-    );
     await activate(page, "solid");
     const handleCount = await page
       .locator(
@@ -232,10 +224,6 @@ test.describe("Adapter-specific identity assertions", () => {
   test("lit: <bottom-sheet> custom element is registered and exposes sheetState", async ({
     page,
   }, testInfo) => {
-    test.fixme(
-      testInfo.project.name.startsWith("mobile-"),
-      "TODO: mobile lit custom-element timing — pre-existing flake",
-    );
     await activate(page, "lit");
     const customElCount = await page
       .locator(`.device-screen[data-screen="lit"] bottom-sheet`)

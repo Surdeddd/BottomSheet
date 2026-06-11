@@ -2,6 +2,8 @@
 import {
   createSignal,
   createMemo,
+  createEffect,
+  on,
   onCleanup,
   onMount,
   type JSX,
@@ -127,6 +129,31 @@ export const BottomSheet = <TId extends string = string>(
     engine = null;
     props.engineRef?.(null);
   });
+
+  createEffect(
+    on(
+      () => props.snapPoints,
+      (points, prev) => {
+        if (!engine || prev === undefined) return;
+        engine.setSnapPoints(
+          points as unknown as EngineOptions["snapPoints"],
+          props.allowed as unknown as string[] | undefined,
+        );
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.allowed,
+      (allowed, prev) => {
+        if (!engine || prev === undefined) return;
+        if (allowed) engine.setAllowed(allowed as unknown as string[]);
+      },
+      { defer: true },
+    ),
+  );
 
   const showBackdrop = createMemo(() => props.backdrop !== false);
   const mode = createMemo<SheetMode>(() => props.mode ?? "bottom");

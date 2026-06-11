@@ -2,7 +2,6 @@
 
   --bs-surface: #ffffff;
   --bs-surface-border: rgba(225, 227, 237, 1);
-  --bs-shadow: 0 -3px 12px rgba(0, 0, 0, 0.12);
   --bs-radius: 20px;
 
   --bs-handle-color: #b5b3a8;
@@ -42,7 +41,7 @@
 .bs-sheet {
   position: fixed;
   background: var(--bs-surface);
-  box-shadow: var(--bs-shadow);
+  box-shadow: var(--bs-shadow, var(--bs-shadow-auto, none));
   z-index: var(--bs-z-sheet);
   overflow: hidden;
   display: flex;
@@ -65,10 +64,10 @@
 
   padding-bottom: env(safe-area-inset-bottom);
 
-  box-shadow: 0
-              calc(var(--bs-progress, 0) * -2px - 3px)
-              calc(var(--bs-progress, 0) * 18px + 12px)
-              rgba(0, 0, 0, calc(var(--bs-progress, 0) * 0.15 + 0.12));
+  --bs-shadow-auto: 0
+    calc(var(--bs-progress, 0) * -2px - 3px)
+    calc(var(--bs-progress, 0) * 18px + 12px)
+    rgba(0, 0, 0, calc(var(--bs-progress, 0) * 0.15 + 0.12));
 }
 .bs-sheet[data-mode="top"] {
   left: 0;
@@ -79,7 +78,7 @@
   border-bottom-right-radius: var(--bs-radius);
   border-bottom: 1px solid var(--bs-surface-border);
   flex-direction: column-reverse;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+  --bs-shadow-auto: 0 3px 12px rgba(0, 0, 0, 0.12);
   padding-top: env(safe-area-inset-top);
 }
 .bs-sheet[data-mode="left"] {
@@ -91,7 +90,7 @@
   border-bottom-right-radius: var(--bs-radius);
   border-right: 1px solid var(--bs-surface-border);
 
-  box-shadow: 3px 0 12px rgba(0, 0, 0, 0.12);
+  --bs-shadow-auto: 3px 0 12px rgba(0, 0, 0, 0.12);
 }
 .bs-sheet[data-mode="right"] {
   top: 0;
@@ -101,7 +100,7 @@
   border-top-left-radius: var(--bs-radius);
   border-bottom-left-radius: var(--bs-radius);
   border-left: 1px solid var(--bs-surface-border);
-  box-shadow: -3px 0 12px rgba(0, 0, 0, 0.12);
+  --bs-shadow-auto: -3px 0 12px rgba(0, 0, 0, 0.12);
 }
 
 .bs-sheet[data-mode="left"] .bs-content {
@@ -250,6 +249,7 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  user-select: text;
   padding: 0 16px 16px;
 }
 
@@ -313,7 +313,7 @@
     --bs-surface-border: rgba(255, 255, 255, 0.08);
 
     --bs-handle-color: rgba(255, 255, 255, 0.45);
-    --bs-shadow: 0 -3px 16px rgba(0, 0, 0, 0.5);
+    --bs-shadow-auto: 0 -3px 16px rgba(0, 0, 0, 0.5);
   }
 }
 

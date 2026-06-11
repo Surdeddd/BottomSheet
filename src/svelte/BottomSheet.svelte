@@ -1,5 +1,5 @@
 <script lang="ts" generics="TId extends string = string">
-  import { onMount, onDestroy, type Snippet } from "svelte";
+  import { onMount, onDestroy, untrack, type Snippet } from "svelte";
   import { BottomSheetEngine } from "../core/BottomSheetEngine";
   import type {
     EngineState,
@@ -72,7 +72,9 @@
 
   let viewState: EngineState & { activeId: TId } = $state({
     size: 0,
-    activeId: (initial ?? snapPoints[0]?.id ?? "default") as TId,
+    activeId: untrack(
+      () => (initial ?? snapPoints[0]?.id ?? "default") as TId,
+    ),
     isDragging: false,
     isAnimating: false,
     progress: 0,
@@ -151,9 +153,6 @@
 
 <div class="bs-root">
   {#if backdrop}
-    <!-- The backdrop is a pointer-only target; keyboard users dismiss the
-         sheet via Escape (handled by the engine's `closeOnEscape`). Marking
-         it `aria-hidden` keeps SR users from hearing a stray "button". -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
@@ -163,11 +162,6 @@
       onclick={closeOnBackdrop ? () => engine?.close() : undefined}
     ></div>
   {/if}
-  <!--
-    Scrim surface always renders so the engine can host scrim presets, overlay
-    injections, and progress-driven opacity. The `screen` snippet, when
-    provided, renders inside as user content.
-  -->
   <div class="bs-screen" bind:this={screenEl}>
     {#if screen}{@render screen()}{/if}
   </div>

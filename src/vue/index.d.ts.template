@@ -1,15 +1,17 @@
 import type { DefineComponent } from "vue";
 import type {
+  AnchorOptions,
+  BottomSheetEngine,
   EngineOptions,
   EngineState,
   SheetEventMap,
   SheetMode,
   SnapPoint,
   SnapPointDef,
+  ScrimStagesOptions,
   ScrimUpdate,
   ScrimOverlayOptions,
-} from "../core/types";
-import type { BottomSheetEngine } from "../core/BottomSheetEngine";
+} from "./index.js";
 
 export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   EngineOptions,
@@ -45,6 +47,8 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   ) => void;
   setScrim: (opts: ScrimUpdate) => void;
   setScrimOverlay: (opts: ScrimOverlayOptions) => () => void;
+  addAnchor: (opts: AnchorOptions) => () => void;
+  setScrimStages: (opts: ScrimStagesOptions | null) => () => void;
   on: <K extends keyof SheetEventMap>(
     event: K,
     fn: (payload: SheetEventMap[K]) => void,

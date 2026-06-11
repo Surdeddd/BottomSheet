@@ -1,7 +1,4 @@
 #!/usr/bin/env sh
-# Pre-commit quality gate. Mirrors the CI checks that block PRs.
-# Escape hatch: HUSKY=0 git commit ... (skip via husky's own env, see below)
-# or SKIP_PRECOMMIT=1 to bypass just this hook while still running others.
 
 if [ "${HUSKY:-}" = "0" ] || [ "${SKIP_PRECOMMIT:-}" = "1" ]; then
   echo "[pre-commit] skipped via env"

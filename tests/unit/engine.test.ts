@@ -277,7 +277,7 @@ describe("BottomSheetEngine", () => {
     engine.destroy();
   });
 
-  it("orientationchange mid-flight aborts prior snap without emitting stale event", async () => {
+  it("orientationchange mid-flight settles the cycle with exactly one terminal snap", async () => {
     const { sheet, handle } = makeDom();
     const engine = new BottomSheetEngine({
       element: sheet,
@@ -302,8 +302,11 @@ describe("BottomSheetEngine", () => {
     window.dispatchEvent(new Event("orientationchange"));
 
     await inFlight;
+    await new Promise(r => setTimeout(r, 80));
 
-    expect(onSnap).not.toHaveBeenCalled();
+    expect(onSnap).toHaveBeenCalledTimes(1);
+    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 600 });
+    expect(engine.state.activeId).toBe("b");
     engine.destroy();
   });
 

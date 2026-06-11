@@ -28,6 +28,12 @@ export type UseBottomSheetReturn<TId extends string = string> =
     open: (id?: TId) => Promise<void>;
     close: () => Promise<void>;
     setAllowed: (ids: TId[], snap?: TId) => void;
+    addAnchor: (
+      opts: import("../core/features/sheet-anchors").AnchorOptions,
+    ) => () => void;
+    setScrimStages: (
+      opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
+    ) => () => void;
     engine: BottomSheetEngine | null;
     getEngine: () => BottomSheetEngine | null;
   };
@@ -157,6 +163,20 @@ export function useBottomSheet<TId extends string = string>(
 
   const getEngine = useCallback(() => engineRef.current, []);
 
+  const addAnchor = useCallback(
+    (anchorOpts: import("../core/features/sheet-anchors").AnchorOptions) =>
+      engineRef.current?.addAnchor(anchorOpts) ?? (() => {}),
+    [],
+  );
+  const setScrimStages = useCallback(
+    (
+      stagesOpts:
+        | import("../core/features/scrim-stages").ScrimStagesOptions
+        | null,
+    ) => engineRef.current?.setScrimStages(stagesOpts) ?? (() => {}),
+    [],
+  );
+
   return useMemo(
     () =>
       ({
@@ -170,9 +190,11 @@ export function useBottomSheet<TId extends string = string>(
         open,
         close,
         setAllowed,
+        addAnchor,
+        setScrimStages,
         engine: engineRef.current,
         getEngine,
       }) as unknown as UseBottomSheetReturn<TId>,
-    [state, snapTo, open, close, setAllowed, getEngine],
+    [state, snapTo, open, close, setAllowed, addAnchor, setScrimStages, getEngine],
   );
 }

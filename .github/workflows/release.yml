@@ -1,14 +1,9 @@
 name: Release
 
-# Triggered ONLY by version tags (e.g. v0.1.0, v1.2.3, v1.0.0-beta.1).
-# We deliberately do NOT trigger on branch pushes or manual dispatch:
-# the source of truth for "what should ship" is the tag, period.
 on:
   push:
     tags: ["v*"]
 
-# Repo-default permissions are read-only; the publish job opts in to
-# the minimal write scopes it actually needs.
 permissions:
   contents: read
 
@@ -17,15 +12,13 @@ jobs:
     name: Build · verify · publish to npm
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # softprops/action-gh-release creates a GH Release
-      id-token: write   # OIDC token for npm provenance attestation
+      contents: write
+      id-token: write
     timeout-minutes: 20
     steps:
       - name: Checkout (full history for release notes)
         uses: actions/checkout@v4
         with:
-          # Full history so action-gh-release can auto-generate notes
-          # by walking from the previous tag to this one.
           fetch-depth: 0
 
       - name: Set up Node 20 + npm registry auth
@@ -33,31 +26,17 @@ jobs:
         with:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
-          # Scope passed to setup-node so the auth line written into
-          # ~/.npmrc binds NODE_AUTH_TOKEN to our scope only.
           scope: "@surdeddd"
           cache: npm
 
-      # npm 9.5+ is required for `--provenance`. ubuntu-latest ships a
-      # recent npm out of the box, but we pin a known-good floor and
-      # surface the version in logs for debugging.
       - name: Verify npm version (>= 9.5 for --provenance)
         run: |
           npm --version
           node -e "const v = process.versions; console.log('node', v.node, 'npm', require('child_process').execSync('npm --version').toString().trim());"
 
-      # `npm ci --legacy-peer-deps` matches local + ci.yml convention.
-      # The repo's `examples/*` workspaces declare framework peer deps
-      # that intentionally don't all resolve cleanly together — that's
-      # a feature of the multi-adapter design, not a bug to fix.
       - name: Install dependencies (npm ci)
         run: npm ci --legacy-peer-deps
 
-      # ─── Tag ↔ package.json version sanity ────────────────────────────
-      # Catches the classic footgun: someone runs `git tag v0.2.0` without
-      # bumping package.json (or vice versa). Without this check, npm
-      # would happily publish whatever package.json says, ignoring the
-      # tag — silent semver drift.
       - name: Assert tag matches package.json version
         run: |
           set -euo pipefail
@@ -72,14 +51,8 @@ jobs:
             echo "::error::bump package.json (npm version <patch|minor|major>) and re-tag, or delete the bad tag."
             exit 1
           fi
-          # Export for later steps without re-parsing.
           echo "PKG_VERSION=${PKG_VERSION}" >> "$GITHUB_ENV"
 
-      # ─── Duplicate-publish guard ──────────────────────────────────────
-      # `npm publish` would itself reject a duplicate, but only AFTER
-      # build + tests have run for ~5min. Failing fast keeps the signal
-      # clean and avoids a half-broken release where notes get drafted
-      # but publish fails.
       - name: Refuse to re-publish an existing version
         run: |
           set -euo pipefail
@@ -91,32 +64,21 @@ jobs:
           fi
           echo "ok: ${PKG_NAME}@${PKG_VERSION} not yet published."
 
+      - name: "Build library (lifecycle: prebuild → build → postbuild)"
+        run: npm run build
+
       - name: Type check
         run: npx tsc --noEmit
 
       - name: Unit tests
         run: npx vitest run
 
-      # `npm run build` runs the full lifecycle: prebuild (clean-dist +
-      # inline-base-css) → build (tsup + tsup IIFE) → postbuild (copy
-      # d.ts templates + fix-preact-dist + strip-icloud-dupes). Calling
-      # `tsup` directly would skip those side-effecting scripts and ship
-      # a broken tarball.
-      - name: "Build library (lifecycle: prebuild → build → postbuild)"
-        run: npm run build
-
       - name: Bundle-size budget (size-limit)
         run: npm run size
 
-      # Surface the exact tarball contents in CI logs. If a publish ever
-      # ships unexpected files (or omits expected ones), this is where
-      # you debug it post-mortem without re-running the job.
       - name: npm pack --dry-run (tarball contents preview)
         run: npm pack --dry-run
 
-      # `npm publish` also runs `prepublishOnly` which calls `npm run
-      # build` again — that's defensive and idempotent (build is
-      # deterministic), so we leave it alone.
       - name: Publish to npm (with provenance)
         run: npm publish --provenance --access public
         env:
@@ -128,7 +90,5 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
           generate_release_notes: true
-          # `prerelease` auto-detected by softprops from semver suffix
-          # (-alpha, -beta, -rc) on the tag.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

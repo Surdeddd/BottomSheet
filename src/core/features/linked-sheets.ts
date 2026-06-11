@@ -1,6 +1,6 @@
 export type LinkedSheet = {
   getAllowedIds(): string[];
-  readonly state: { activeId: string };
+  readonly state: { activeId: string; size: number };
   snapTo(id: string): Promise<void> | void;
 };
 
@@ -12,6 +12,7 @@ export function notifyLinkedSheets(
   for (const linked of sheets) {
     if ((linked as unknown) === self) continue;
     try {
+      if (linked.state.size === 0) continue;
       const ids = linked.getAllowedIds();
       const target = ids.find(id => id !== "closed");
       if (target && target !== linked.state.activeId) {

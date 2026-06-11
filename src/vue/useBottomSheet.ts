@@ -43,6 +43,12 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   setScrimOverlay: (
     opts: import("../core/types").ScrimOverlayOptions,
   ) => () => void;
+  addAnchor: (
+    opts: import("../core/features/sheet-anchors").AnchorOptions,
+  ) => () => void;
+  setScrimStages: (
+    opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
+  ) => () => void;
   on: <K extends keyof SheetEventMap>(
     event: K,
     fn: (payload: SheetEventMap[K]) => void,
@@ -136,6 +142,12 @@ export function useBottomSheet<TId extends string = string>(
       engine?.setScrim(opts),
     setScrimOverlay: (opts: import("../core/types").ScrimOverlayOptions) =>
       engine?.setScrimOverlay(opts) ?? (() => {}),
+    addAnchor: (
+      opts: import("../core/features/sheet-anchors").AnchorOptions,
+    ) => engine?.addAnchor(opts) ?? (() => {}),
+    setScrimStages: (
+      opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
+    ) => engine?.setScrimStages(opts) ?? (() => {}),
     on: <K extends keyof SheetEventMap>(
       event: K,
       fn: (payload: SheetEventMap[K]) => void,

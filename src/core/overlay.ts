@@ -4,6 +4,7 @@ import { resolveSnap } from "./primitives/cssLength";
 import { nextInstanceId } from "./primitives/instance-id";
 import { createEventBus, type EventBus } from "./primitives/event-bus";
 import { LifecycleController } from "./controllers/lifecycle-controller";
+import { prefersReducedMotion } from "./animation/animation";
 
 export type OverlayEdge = TransformAxis;
 
@@ -75,6 +76,12 @@ export type OverlayUpdate = {
   enterAnimation?: OverlayAnimation;
   exitAnimation?: OverlayAnimation;
   preset?: OverlayPreset;
+  duration?: number;
+  enterEasing?: string;
+  exitEasing?: string;
+  closeOnEscape?: boolean;
+  closeOnBackdrop?: boolean;
+  closeOnOutsidePointer?: boolean;
   children?: HTMLElement | DocumentFragment | (() => HTMLElement | DocumentFragment) | null;
 };
 
@@ -103,6 +110,7 @@ export type OverlayOptions = {
   peek?: number | string;
   closeOnOutsidePointer?: boolean;
   preset?: OverlayPreset;
+  respectReducedMotion?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
 };
@@ -180,6 +188,10 @@ export class OverlayEngine {
   private closeOnOutsidePointerEnabled: boolean;
   private detachOutsidePointer: (() => void) | null = null;
   private detachSwipe: (() => void) | null = null;
+  private respectReducedMotionEnabled: boolean;
+  private isTop = true;
+  private backPushed = false;
+  private movedToTarget = false;
   private onOpenCb?: () => void;
   private onCloseCb?: () => void;
 
@@ -227,6 +239,7 @@ export class OverlayEngine {
     this.mountTarget = opts.mountTo;
     this.peekRaw = opts.peek;
     this.closeOnOutsidePointerEnabled = opts.closeOnOutsidePointer ?? false;
+    this.respectReducedMotionEnabled = opts.respectReducedMotion ?? true;
     this.onOpenCb = opts.onOpen;
     this.onCloseCb = opts.onClose;
 
@@ -281,16 +294,18 @@ export class OverlayEngine {
     this.emit("before-open", undefined);
     this.isOpen_ = true;
     this.isAnimating_ = true;
+    sheetStack.promote(this.id);
     this.element.removeAttribute("hidden");
     this.element.setAttribute("data-state", "entering");
     if (this.focusTrapEnabled) {
       this.element.setAttribute("aria-modal", "true");
     }
 
-    const transitionStr = `transform ${this.duration}ms ${this.enterEasing}, opacity ${this.duration}ms ease-out`;
+    const dur = this.effectiveDuration();
+    const transitionStr = `transform ${dur}ms ${this.enterEasing}, opacity ${dur}ms ease-out`;
     this.element.style.transition = transitionStr;
     if (this.backdrop) {
-      this.backdrop.style.transition = `opacity ${this.duration}ms ease-out`;
+      this.backdrop.style.transition = `opacity ${dur}ms ease-out`;
     }
 
     const cycle = ++this.cycleNonce;
@@ -303,7 +318,8 @@ export class OverlayEngine {
           this.element.style.opacity = "1";
           if (this.backdrop) {
             this.backdrop.style.opacity = String(this.backdropOpacity);
-            this.backdrop.style.pointerEvents = "auto";
+            this.backdrop.style.pointerEvents =
+              this.backdropOpacity > 0 ? "auto" : "none";
             if (this.backdropFilter) {
               this.backdrop.style.backdropFilter = this.backdropFilter;
               (this.backdrop.style as CSSStyleDeclaration & {
@@ -343,7 +359,10 @@ export class OverlayEngine {
             });
             return resolve();
           }
-          this.awaitTransition(cycle).then(() => {
+          this.awaitTransition(
+            cycle,
+            this.enterAnimation === "fade" ? "opacity" : "transform",
+          ).then(() => {
             if (this.destroyed || cycle !== this.cycleNonce) return resolve();
             this.isAnimating_ = false;
             this.element.setAttribute("data-state", "open");
@@ -361,12 +380,15 @@ export class OverlayEngine {
     this.emit("before-close", undefined);
     this.isOpen_ = false;
     this.isAnimating_ = true;
+    sheetStack.update();
+    this.popBackMarker(reason);
     this.element.setAttribute("data-state", "exiting");
 
-    const transitionStr = `transform ${this.duration}ms ${this.exitEasing}, opacity ${this.duration}ms ease-in`;
+    const dur = this.effectiveDuration();
+    const transitionStr = `transform ${dur}ms ${this.exitEasing}, opacity ${dur}ms ease-in`;
     this.element.style.transition = transitionStr;
     if (this.backdrop) {
-      this.backdrop.style.transition = `opacity ${this.duration}ms ease-in`;
+      this.backdrop.style.transition = `opacity ${dur}ms ease-in`;
     }
 
     const cycle = ++this.cycleNonce;
@@ -378,7 +400,7 @@ export class OverlayEngine {
           this.exitAnimation,
           this.peekPx,
         );
-        this.element.style.opacity = "0";
+        this.element.style.opacity = this.peekPx !== undefined ? "1" : "0";
         if (this.backdrop) {
           this.backdrop.style.opacity = "0";
           this.backdrop.style.pointerEvents = "none";
@@ -390,7 +412,10 @@ export class OverlayEngine {
           }
         }
         this.releaseInteractiveListeners();
-        this.awaitTransition(cycle).then(() => {
+        this.awaitTransition(
+          cycle,
+          this.exitAnimation === "fade" ? "opacity" : "transform",
+        ).then(() => {
           if (this.destroyed || cycle !== this.cycleNonce) return resolve();
           this.isAnimating_ = false;
           if (this.peekPx === undefined) {
@@ -420,7 +445,15 @@ export class OverlayEngine {
     this.releaseInteractiveListeners();
     this.releaseStackEntry?.();
     this.releaseStackEntry = null;
+    const hadOriginalParent = this.originalParent !== null;
     this.restoreMount();
+    if (
+      this.movedToTarget &&
+      !hadOriginalParent &&
+      this.element.parentNode
+    ) {
+      this.element.parentNode.removeChild(this.element);
+    }
   }
 
   setBackdropOpacity(opacity: number): void {
@@ -547,6 +580,37 @@ export class OverlayEngine {
       }
     }
 
+    if (opts.duration !== undefined) this.duration = opts.duration;
+    if (opts.enterEasing !== undefined) this.enterEasing = opts.enterEasing;
+    if (opts.exitEasing !== undefined) this.exitEasing = opts.exitEasing;
+    if (opts.closeOnEscape !== undefined) {
+      this.closeOnEscape = opts.closeOnEscape;
+      if (!opts.closeOnEscape) {
+        this.detachEscape?.();
+        this.detachEscape = null;
+      } else if (this.isOpen_) {
+        this.installInteractiveListeners();
+      }
+    }
+    if (opts.closeOnBackdrop !== undefined) {
+      this.closeOnBackdropEnabled = opts.closeOnBackdrop;
+      if (!opts.closeOnBackdrop) {
+        this.detachBackdrop?.();
+        this.detachBackdrop = null;
+      } else if (this.isOpen_) {
+        this.installInteractiveListeners();
+      }
+    }
+    if (opts.closeOnOutsidePointer !== undefined) {
+      this.closeOnOutsidePointerEnabled = opts.closeOnOutsidePointer;
+      if (!opts.closeOnOutsidePointer) {
+        this.detachOutsidePointer?.();
+        this.detachOutsidePointer = null;
+      } else if (this.isOpen_) {
+        this.installInteractiveListeners();
+      }
+    }
+
     if (opts.children !== undefined) {
       if (opts.children === null) {
         this.clearOverlayChildren();
@@ -592,6 +656,26 @@ export class OverlayEngine {
     this.bus.emit(event, payload);
   }
 
+  private effectiveDuration(): number {
+    return this.respectReducedMotionEnabled && prefersReducedMotion()
+      ? 0
+      : this.duration;
+  }
+
+  private popBackMarker(reason: OverlayCloseReason): void {
+    if (!this.backPushed) return;
+    this.backPushed = false;
+    if (reason === "back") return;
+    const state = history.state as Record<string, unknown> | null;
+    if (state && state.__bsOverlay === this.id) {
+      try {
+        history.back();
+      } catch {
+        return;
+      }
+    }
+  }
+
   private resolvePeekPx(raw: number | string): number {
     if (typeof raw === "number") return Math.max(0, raw);
     try {
@@ -615,6 +699,7 @@ export class OverlayEngine {
     this.originalParent = this.element.parentNode;
     this.originalNextSibling = this.element.nextSibling;
     target.appendChild(this.element);
+    this.movedToTarget = true;
     this.mounted = true;
   }
 
@@ -654,7 +739,10 @@ export class OverlayEngine {
     }
   }
 
-  private awaitTransition(cycle: number): Promise<void> {
+  private awaitTransition(
+    cycle: number,
+    property: "transform" | "opacity" = "transform",
+  ): Promise<void> {
     return new Promise(resolve => {
       let done = false;
       const finish = () => {
@@ -669,10 +757,10 @@ export class OverlayEngine {
           finish();
           return;
         }
-        if (e.propertyName === "transform") finish();
+        if (e.target === this.element && e.propertyName === property) finish();
       };
       this.element.addEventListener("transitionend", onEnd);
-      const timer = window.setTimeout(finish, this.duration + 50);
+      const timer = window.setTimeout(finish, this.effectiveDuration() + 50);
     });
   }
 
@@ -683,7 +771,10 @@ export class OverlayEngine {
     }
     if (this.closeOnEscape && !this.detachEscape) {
       const handler = (e: KeyboardEvent) => {
-        if (e.key === "Escape" && this.isOpen_) void this.close("escape");
+        if (e.defaultPrevented) return;
+        if (e.key === "Escape" && this.isOpen_ && this.isTop) {
+          void this.close("escape");
+        }
       };
       document.addEventListener("keydown", handler);
       this.detachEscape = () => document.removeEventListener("keydown", handler);
@@ -705,10 +796,14 @@ export class OverlayEngine {
     ) {
       try {
         history.pushState({ __bsOverlay: this.id }, "");
+        this.backPushed = true;
       } catch {
       }
       const onPop = () => {
-        if (this.isOpen_) void this.close("back");
+        if (this.isOpen_ && this.isTop) {
+          this.backPushed = false;
+          void this.close("back");
+        }
       };
       window.addEventListener("popstate", onPop);
       this.detachHardwareBack = () =>
@@ -748,45 +843,56 @@ export class OverlayEngine {
     const edge = this.edge;
     const isVertical = edge === "bottom" || edge === "top";
     const sign = edge === "bottom" || edge === "right" ? 1 : -1;
-    const threshold = this.swipeThreshold;
-    const velocityThreshold = this.swipeVelocityThreshold;
+    const SLOP = 8;
     let startX = 0;
     let startY = 0;
     let startT = 0;
+    let tracking = false;
     let dragging = false;
     let pointerId: number | null = null;
+    const previousTouchAction = el.style.touchAction;
+    el.style.touchAction = isVertical ? "pan-x" : "pan-y";
     const onDown = (e: PointerEvent): void => {
       if (e.button !== undefined && e.button !== 0) return;
       pointerId = e.pointerId;
       startX = e.clientX;
       startY = e.clientY;
       startT = performance.now();
-      dragging = true;
-      el.style.transition = "none";
-      try {
-        el.setPointerCapture(e.pointerId);
-      } catch {
-      }
+      tracking = true;
+      dragging = false;
     };
     const onMove = (e: PointerEvent): void => {
-      if (!dragging || e.pointerId !== pointerId) return;
+      if (!tracking || e.pointerId !== pointerId) return;
       const delta = isVertical ? e.clientY - startY : e.clientX - startX;
+      if (!dragging) {
+        if (Math.abs(delta) < SLOP) return;
+        dragging = true;
+        el.style.transition = "none";
+        try {
+          el.setPointerCapture(e.pointerId);
+        } catch {
+        }
+      }
       const offset = Math.max(0, sign * delta);
       el.style.transform = isVertical
         ? `translate3d(0, ${sign * offset}px, 0)`
         : `translate3d(${sign * offset}px, 0, 0)`;
     };
     const finish = (e: PointerEvent): void => {
-      if (!dragging || e.pointerId !== pointerId) return;
-      dragging = false;
+      if (!tracking || e.pointerId !== pointerId) return;
+      tracking = false;
       pointerId = null;
+      if (!dragging) return;
+      dragging = false;
       const dt = performance.now() - startT || 1;
       const delta = isVertical ? e.clientY - startY : e.clientX - startX;
       const offset = Math.max(0, sign * delta);
       const velocity = (sign * delta) / dt;
       const size = isVertical ? el.offsetHeight : el.offsetWidth;
-      const past = offset > size * threshold || velocity > velocityThreshold;
-      el.style.transition = `transform ${this.duration}ms ${this.exitEasing}`;
+      const past =
+        offset > size * this.swipeThreshold ||
+        velocity > this.swipeVelocityThreshold;
+      el.style.transition = `transform ${this.effectiveDuration()}ms ${this.exitEasing}`;
       if (past) {
         void this.close("swipe");
       } else {
@@ -798,6 +904,7 @@ export class OverlayEngine {
     el.addEventListener("pointerup", finish);
     el.addEventListener("pointercancel", finish);
     return () => {
+      el.style.touchAction = previousTouchAction;
       el.removeEventListener("pointerdown", onDown);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerup", finish);
@@ -813,10 +920,12 @@ export class OverlayEngine {
         if (this.backdrop) this.backdrop.style.zIndex = String(z - 1);
       },
       setIsTop: isTop => {
+        this.isTop = isTop;
         if (this.backdrop) {
           this.backdrop.style.display = isTop ? "" : "none";
         }
       },
+      isOpen: () => this.isOpen_,
     });
   }
 

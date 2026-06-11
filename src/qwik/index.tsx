@@ -1,10 +1,13 @@
 /** @jsxImportSource @builder.io/qwik */
 import {
   component$,
+  noSerialize,
   useSignal,
   useStore,
+  useTask$,
   useVisibleTask$,
   Slot,
+  type NoSerialize,
   type QRL,
 } from "@builder.io/qwik";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
@@ -54,6 +57,9 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     isAnimating: false,
     progress: 0,
   });
+  const engineStore = useStore<{
+    engine: NoSerialize<BottomSheetEngine>;
+  }>({ engine: undefined });
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ cleanup }) => {
@@ -87,6 +93,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     };
 
     const engine = new BottomSheetEngine(engineOpts);
+    engineStore.engine = noSerialize(engine);
 
     const sync = () => {
       const s = engine.state;
@@ -106,7 +113,21 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     engine.on("dragstart", sync);
     engine.on("dragend", sync);
 
-    cleanup(() => engine.destroy());
+    cleanup(() => {
+      engineStore.engine = undefined;
+      engine.destroy();
+    });
+  });
+
+  useTask$(({ track }) => {
+    const points = track(() => props.snapPoints);
+    const allowed = track(() => props.allowed);
+    const engine = engineStore.engine;
+    if (!engine) return;
+    engine.setSnapPoints(
+      points as unknown as EngineOptions["snapPoints"],
+      allowed as unknown as string[] | undefined,
+    );
   });
 
   const showBackdrop = props.backdrop !== false;
