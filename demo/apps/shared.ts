@@ -66,7 +66,7 @@ export const snapPoints = (mode: DemoSettings["mode"]): SnapPointDef[] => {
     { id: "closed", size: 0 },
     { id: "minimized", size: 110 },
     { id: "half", size: 320 },
-    { id: "full", size: 620 },
+    { id: "full", size: 520 },
   ];
 };
 

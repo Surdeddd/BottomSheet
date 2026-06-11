@@ -88,6 +88,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "adv.stress.title": "Stress test",
     "adv.stress.sub": "Cycle min↔full at decreasing intervals. Watch the FPS.",
     "adv.stress.run": "⚡ stress 8s",
+    "adv.theme.title": "Theme preset",
+    "adv.theme.sub": "Opt-in via class on .bs-root. Loads the theme CSS lazily.",
+    "adv.float.title": "Floating UI",
+    "adv.float.sub": "Anchored elements ride the sheet edge on the compositor; scrim stages swap content per state.",
+    "adv.float.anchor": "anchored close button",
+    "adv.float.stages": "scrim stages (per-state content)",
+    "adv.float.dock": "docked tab bar (sheet slides under)",
   },
   ru: {
     "hero.kicker.left": "Выпуск № 01 · Апр 2026 · MIT",
@@ -175,6 +182,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "adv.stress.title": "Стресс-тест",
     "adv.stress.sub": "Цикл min↔full с убывающим интервалом. Следите за FPS.",
     "adv.stress.run": "⚡ стресс 8с",
+    "adv.theme.title": "Тема оформления",
+    "adv.theme.sub": "Включается классом на .bs-root. CSS темы подгружается лениво.",
+    "adv.float.title": "Плавающие элементы",
+    "adv.float.sub": "Анкоры едут за кромкой шторки на компоновщике; стейджи скрима меняют контент по состоянию.",
+    "adv.float.anchor": "кнопка закрытия на кромке",
+    "adv.float.stages": "стейджи скрима (контент по состоянию)",
+    "adv.float.dock": "нижнее меню (шторка уходит под него)",
   },
 };
 

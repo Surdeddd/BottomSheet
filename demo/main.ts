@@ -101,6 +101,13 @@ const mountAdapter = (key: AdapterKey): void => {
 
     activeController.onUpdate(state => {
       ro.active.textContent = state.activeId || "—";
+      document
+        .querySelectorAll<HTMLButtonElement>("#snap-chips .chip")
+        .forEach(b => {
+          const active = b.dataset.snap === state.activeId;
+          b.classList.toggle("is-active", active);
+          b.setAttribute("aria-pressed", String(active));
+        });
       ro.progress.textContent = state.progress.toFixed(3);
       ro.bar.style.width = `${state.progress * 100}%`;
       ro.size.textContent = `${Math.round(state.size)}`;
