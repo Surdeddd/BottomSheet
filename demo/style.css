@@ -1830,10 +1830,10 @@ kbd {
   border-radius: 999px;
   padding: 8px 14px;
   font: 600 12px/1 var(--font-mono, monospace);
-  background: var(--vermillion, #dc3522);
+  background: var(--vermillion, #c12d1c);
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 .demo-anchor-btn:hover {
   filter: brightness(1.1);
@@ -1843,38 +1843,57 @@ kbd {
   border-radius: 10px;
   padding: 8px 14px;
   font: 600 12px/1.3 var(--font-mono, monospace);
-  background: rgba(20, 20, 26, 0.82);
-  color: #f5f5f5;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--ink, #1a1614) 86%, transparent);
+  color: var(--paper, #f4ede0);
+  border: 1px solid var(--hairline-strong, rgba(26, 22, 20, 0.32));
   backdrop-filter: blur(6px);
   white-space: nowrap;
 }
 .demo-stage-badge.is-expanded {
-  background: rgba(220, 53, 34, 0.88);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: var(--vermillion, #c12d1c);
+  color: #fff;
+  border-color: transparent;
 }
 
 .demo-dock-bar {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  gap: 4px;
-  padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
-  background: rgba(250, 248, 244, 0.96);
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.12);
+  gap: 2px;
+  margin: 0 14px 14px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--paper-deep, #ece2d0) 86%, transparent);
+  border: 1px solid var(--hairline, rgba(26, 22, 20, 0.14));
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
 }
 .demo-dock-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   border: none;
   background: none;
-  font: 600 11px/1.2 var(--font-mono, monospace);
-  color: #5a5650;
+  font: 600 10px/1 var(--font-mono, monospace);
+  letter-spacing: 0.14em;
+  color: var(--muted, #6b6359);
   cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 8px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  transition: color 160ms ease, background 160ms ease;
+}
+.demo-dock-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
 }
 .demo-dock-item:hover {
-  color: #dc3522;
-  background: rgba(220, 53, 34, 0.08);
+  color: var(--ink, #1a1614);
+}
+.demo-dock-item.is-active {
+  color: var(--vermillion, #c12d1c);
+  background: color-mix(in srgb, var(--vermillion, #c12d1c) 12%, transparent);
 }

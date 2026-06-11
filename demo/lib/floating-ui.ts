@@ -75,13 +75,22 @@ export const wireFloatingUi = (
   const buildDock = (engine: BottomSheetEngine): (() => void) => {
     const bar = document.createElement("nav");
     bar.className = "demo-dock-bar";
-    for (const label of ["Объекты", "Мониторинг", "Техника", "Ещё"]) {
+    ["01", "02", "03", "04"].forEach((label, i) => {
       const item = document.createElement("button");
       item.type = "button";
-      item.className = "demo-dock-item";
-      item.textContent = label;
+      item.className = i === 1 ? "demo-dock-item is-active" : "demo-dock-item";
+      const dot = document.createElement("span");
+      dot.className = "demo-dock-dot";
+      const text = document.createElement("span");
+      text.textContent = label;
+      item.append(dot, text);
+      item.addEventListener("click", () => {
+        bar.querySelectorAll(".demo-dock-item").forEach(x =>
+          x.classList.toggle("is-active", x === item),
+        );
+      });
       bar.appendChild(item);
-    }
+    });
     return engine.addAnchor({
       element: bar,
       position: "dock-bottom",
