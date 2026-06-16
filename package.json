@@ -1,6 +1,6 @@
 {
   "name": "@surdeddd/bottom-sheet",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Universal, headless bottom sheet — framework-agnostic core with React, Vue 3, Svelte, Solid, Qwik, Preact, Lit and Custom Element adapters. Pointer Events, snap points, momentum, a11y, SSR-safe.",
   "type": "module",
   "license": "MIT",
