@@ -273,16 +273,6 @@
     aria-modal={focusTrap ? "true" : undefined}
     aria-label={ariaLabel}
   >
-    {#if leftButton}
-      <div class="bs-button-slot" data-side="left">
-        {@render leftButton()}
-      </div>
-    {/if}
-    {#if rightButton}
-      <div class="bs-button-slot" data-side="right">
-        {@render rightButton()}
-      </div>
-    {/if}
     <div
       class="bs-handle"
       bind:this={handleEl}
@@ -305,4 +295,14 @@
       {viewState.activeId}
     </span>
   </section>
+  {#if leftButton}
+    <div class="bs-button-slot" data-side="left" data-mode={mode}>
+      {@render leftButton()}
+    </div>
+  {/if}
+  {#if rightButton}
+    <div class="bs-button-slot" data-side="right" data-mode={mode}>
+      {@render rightButton()}
+    </div>
+  {/if}
 </div>

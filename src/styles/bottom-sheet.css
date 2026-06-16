@@ -282,21 +282,33 @@
 }
 
 .bs-button-slot {
-  position: absolute;
+  position: fixed;
   z-index: calc(var(--bs-z-sheet) + 1);
   pointer-events: auto;
 }
 .bs-button-slot[data-side="left"] {
   left: 16px;
-  bottom: calc(100% + 12px);
+  bottom: calc(var(--bs-size, 0px) + 12px);
 }
 .bs-button-slot[data-side="right"] {
   right: 16px;
-  bottom: calc(100% + 12px);
+  bottom: calc(var(--bs-size, 0px) + 12px);
 }
-.bs-sheet[data-mode="top"] .bs-button-slot {
+.bs-button-slot[data-mode="top"] {
   bottom: auto;
-  top: calc(100% + 12px);
+  top: calc(var(--bs-size, 0px) + 12px);
+}
+.bs-button-slot[data-mode="left"] {
+  left: calc(var(--bs-size, 0px) + 12px);
+  right: auto;
+  bottom: auto;
+  top: 16px;
+}
+.bs-button-slot[data-mode="right"] {
+  right: calc(var(--bs-size, 0px) + 12px);
+  left: auto;
+  bottom: auto;
+  top: 16px;
 }
 
 @media (prefers-reduced-motion: reduce) {

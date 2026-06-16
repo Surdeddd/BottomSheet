@@ -283,16 +283,6 @@ defineExpose({
         :aria-modal="ariaModal ? 'true' : undefined"
         :aria-label="ariaLabel"
       >
-        <div v-if="$slots['button-left']" class="bs-button-slot" data-side="left">
-          <slot name="button-left" />
-        </div>
-        <div
-          v-if="$slots['button-right']"
-          class="bs-button-slot"
-          data-side="right"
-        >
-          <slot name="button-right" />
-        </div>
         <div
           ref="handleRef"
           class="bs-handle"
@@ -323,6 +313,22 @@ defineExpose({
           {{ state.activeId }}
         </span>
       </section>
+      <div
+        v-if="$slots['button-left']"
+        class="bs-button-slot"
+        data-side="left"
+        :data-mode="props.mode ?? 'bottom'"
+      >
+        <slot name="button-left" />
+      </div>
+      <div
+        v-if="$slots['button-right']"
+        class="bs-button-slot"
+        data-side="right"
+        :data-mode="props.mode ?? 'bottom'"
+      >
+        <slot name="button-right" />
+      </div>
     </div>
     <Teleport
       v-for="a in props.anchors ?? []"

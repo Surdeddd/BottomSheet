@@ -243,8 +243,8 @@ const buildShadowTree = (): {
   announcer.style.cssText =
     "position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);";
 
-  sheet.append(leftButton, rightButton, handle, content);
-  root.append(backdrop, screen, sheet, announcer);
+  sheet.append(handle, content);
+  root.append(backdrop, screen, sheet, leftButton, rightButton, announcer);
 
   const fragment = document.createDocumentFragment();
   fragment.appendChild(root);
@@ -406,6 +406,8 @@ export class BottomSheetElement extends BaseHTMLElement {
 
     const mode = parseMode(this.getAttribute(ATTR_MODE));
     sheet.setAttribute("data-mode", mode);
+    this.refs.leftButton.setAttribute("data-mode", mode);
+    this.refs.rightButton.setAttribute("data-mode", mode);
 
     const focusTrap = this.getAttribute(ATTR_FOCUS_TRAP) === "true";
 

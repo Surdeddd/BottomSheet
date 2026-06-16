@@ -1171,6 +1171,13 @@ export class BottomSheetEngine {
       if (this.anchorHost && this.anchorHost !== this.scrimParent) {
         this.anchorHost.style.setProperty("--bs-size", `${size}px`);
       }
+      if (
+        this.rootEl &&
+        this.rootEl !== this.scrimParent &&
+        this.rootEl !== this.anchorHost
+      ) {
+        this.rootEl.style.setProperty("--bs-size", `${size}px`);
+      }
     }
     const progress = this.computeProgress(size);
     const progressChanged = this.progressWriteSentinel.shouldWrite(
@@ -1181,6 +1188,9 @@ export class BottomSheetEngine {
       style.setProperty("--bs-progress", String(progress));
       if (this.anchorHost) {
         this.anchorHost.style.setProperty("--bs-progress", String(progress));
+      }
+      if (this.rootEl && this.rootEl !== this.anchorHost) {
+        this.rootEl.style.setProperty("--bs-progress", String(progress));
       }
     }
 

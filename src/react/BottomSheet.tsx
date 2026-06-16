@@ -301,16 +301,6 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           aria-label={ariaLabelledBy ? undefined : ariaLabel}
           aria-labelledby={ariaLabelledBy}
         >
-          {leftButton && (
-            <div className="bs-button-slot" data-side="left">
-              {leftButton}
-            </div>
-          )}
-          {rightButton && (
-            <div className="bs-button-slot" data-side="right">
-              {rightButton}
-            </div>
-          )}
           <div
             ref={handleRef as React.RefObject<HTMLDivElement>}
             className="bs-handle"
@@ -333,6 +323,24 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             {announce}
           </span>
         </section>
+        {leftButton && (
+          <div
+            className="bs-button-slot"
+            data-side="left"
+            data-mode={engineOpts.mode ?? "bottom"}
+          >
+            {leftButton}
+          </div>
+        )}
+        {rightButton && (
+          <div
+            className="bs-button-slot"
+            data-side="right"
+            data-mode={engineOpts.mode ?? "bottom"}
+          >
+            {rightButton}
+          </div>
+        )}
         {anchorHosts.map((host, i) =>
           anchors?.[i] ? createPortal(anchors[i]!.node, host) : null,
         )}
