@@ -48,12 +48,17 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   snapTo(id: TId): Promise<void>;
   open(id?: TId): Promise<void>;
   close(): Promise<void>;
+  expand(): Promise<void>;
+  collapse(): Promise<void>;
+  isTop(): boolean;
+  depth(): number;
   setAllowed(ids: TId[], snap?: TId): void;
   setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
   setScrim(opts: ScrimUpdate): void;
   setScrimOverlay(opts: ScrimOverlayOptions): () => void;
   addAnchor(opts: AnchorOptions): () => void;
   setScrimStages(opts: ScrimStagesOptions | null): () => void;
+  recompute(): void;
   getEngine(): BottomSheetEngine | null;
   destroy(): void;
 };
@@ -77,6 +82,17 @@ export type BottomSheetProps<TId extends string = string> = {
   backdropRange?: [number, number];
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
+  persistent?: boolean;
+  disableClose?: boolean;
+  disableDrag?: boolean;
+  closeOnRouteChange?: boolean;
+  radius?: string | number;
+  maxHeight?: string | number;
+  backdropColor?: string;
+  backdropOpacity?: number;
+  open?: boolean;
+  snap?: TId;
+  returnFocusTo?: HTMLElement | string | (() => HTMLElement | null);
   ariaLabel?: string;
   header?: Snippet<[EngineState & { activeId: TId }]>;
   leftButton?: Snippet;
@@ -86,6 +102,11 @@ export type BottomSheetProps<TId extends string = string> = {
   onsnap?: (id: TId) => void;
   onopen?: (id: TId) => void;
   onclose?: () => void;
+  onbeforeclose?: (payload: SheetEventMap["before-close"]) => void;
+  onopened?: (id: TId) => void;
+  onclosed?: () => void;
+  ondragstart?: () => void;
+  ondragend?: () => void;
   onchange?: (state: EngineState & { activeId: TId }) => void;
 };
 

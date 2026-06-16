@@ -17,6 +17,7 @@ import { devWarn } from "../primitives/devWarn";
 import { applyOverlayPosition } from "../primitives/overlay-position";
 
 const VALID_CSS_LENGTH = /^-?\d+(?:\.\d+)?(?:px|em|rem|%)$/;
+const DEFAULT_SCRIM_DIM = "rgba(0, 0, 0, 0.4)";
 
 export type ScrimControllerDeps = {
   mode: SheetMode;
@@ -96,9 +97,16 @@ export class ScrimController {
     this.screenRange = opts.screenRange ?? preset?.range ?? [0, 1];
     this.scrimTapToCloseEnabled = opts.scrimTapToClose ?? false;
 
+    const explicitColor = opts.scrimColor ?? preset?.color;
+    const effectiveColor =
+      explicitColor ??
+      (this.scrimMode !== "off" && !this.backdrop
+        ? DEFAULT_SCRIM_DIM
+        : undefined);
+
     if (this.screenComponent) {
       this.applyScrimStyles({
-        color: opts.scrimColor ?? preset?.color,
+        color: effectiveColor,
         blur: opts.scrimBlur ?? preset?.blur,
         interactive:
           opts.scrimInteractive ?? preset?.interactive ?? false,

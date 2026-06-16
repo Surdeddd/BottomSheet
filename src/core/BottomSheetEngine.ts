@@ -11,7 +11,7 @@ import { SnapResolver } from "./primitives/snap-resolver";
 import { installPersist } from "./features/persist";
 import { installAutoCollapse } from "./features/auto-collapse";
 import { notifyLinkedSheets } from "./features/linked-sheets";
-import { installRoute } from "./features/route";
+import { installRoute, installRouteChange } from "./features/route";
 import { installContentSwipe } from "./features/content-swipe";
 import { installVisualViewport } from "./features/visual-viewport";
 import { installResizeObserver } from "./features/resize-observer";
@@ -38,6 +38,7 @@ import {
 import { resolveEngineOptions } from "./primitives/engine-options";
 import { WriteSentinel } from "./primitives/opacity-dedup";
 import type {
+  CloseReason,
   EngineOptions,
   EngineState,
   Plugin,
@@ -90,6 +91,11 @@ export class BottomSheetEngine {
   private lifecycle!: LifecycleController;
   private closeOnBack: boolean;
   private routedTo: string | undefined;
+  private persistent: boolean;
+  private disableCloseFlag: boolean;
+  private disableDragFlag: boolean;
+  private closeOnRouteChange: boolean;
+  private maxHeightCap: number | undefined;
 
   private snapPointsRaw: EngineOptions["snapPoints"];
   private snaps!: SnapResolver;
@@ -107,6 +113,7 @@ export class BottomSheetEngine {
   private sizeWriteSentinel = new WriteSentinel();
   private progressWriteSentinel = new WriteSentinel();
   private isTopSheet = true;
+  private opening = false;
   private progressPayload: { value: number; size: number } = {
     value: 0,
     size: 0,
@@ -173,7 +180,8 @@ export class BottomSheetEngine {
           void this.snapTo(id);
         },
         close: () => {
-          void this.close();
+          if (!this.canDismiss()) return;
+          void this.close("backdrop");
         },
       },
       resolved.scrim,
@@ -197,6 +205,10 @@ export class BottomSheetEngine {
     );
     this.closeOnBack = resolved.closeOnBack;
     this.routedTo = opts.routedTo;
+    this.persistent = resolved.persistent;
+    this.disableCloseFlag = resolved.disableClose;
+    this.disableDragFlag = resolved.disableDrag;
+    this.closeOnRouteChange = resolved.closeOnRouteChange;
     this.stackEffectEnabled = opts.stackEffect ?? false;
 
     this.snapPointsRaw = opts.snapPoints;
@@ -214,10 +226,7 @@ export class BottomSheetEngine {
       this.snapPointsRaw,
       resolved.initialAllowed,
       this.mode,
-      () =>
-        layoutAxis(this.mode as TransformAxis) === "width"
-          ? this.handle.offsetWidth
-          : this.handle.offsetHeight,
+      () => this.measureFitSize(),
       maxAxisSize => {
         this.element.style[layoutAxis(this.mode as TransformAxis)] =
           `${maxAxisSize}px`;
@@ -260,6 +269,22 @@ export class BottomSheetEngine {
       this.teardowns.add(() => io.disconnect());
     }
 
+    this.installFitObserver();
+
+    if (resolved.radius !== undefined) this.setRadius(resolved.radius);
+    if (resolved.maxHeight !== undefined) this.setMaxHeight(resolved.maxHeight);
+    this.applyAutoAriaLabelledBy();
+
+    if (this.closeOnRouteChange) {
+      this.teardowns.add(
+        installRouteChange({
+          isDestroyed: () => this.destroyed,
+          getSize: () => this.size,
+          close: () => this.close(),
+        }),
+      );
+    }
+
     if (this.persistKey) {
       this.teardowns.add(installPersist(this, this.persistKey));
     }
@@ -286,7 +311,7 @@ export class BottomSheetEngine {
         isTopSheet: () => this.isTopSheet,
         getSize: () => this.size,
         isDestroyed: () => this.destroyed,
-        close: () => this.close(),
+        close: () => this.close("back"),
         on: (event, fn) => this.on(event, fn),
         sheetId: this.id,
       }),
@@ -396,6 +421,10 @@ export class BottomSheetEngine {
     const previousSize = this.size;
     this.scrollCache.cache(previousId, previousSize, target.size);
     this.activeId = id;
+    if (wasClosed && target.size > 0) {
+      this.opening = true;
+      sheetStack.promote(this.id);
+    }
     if (this.animation.viewTransitionsAvailable) {
       this.currentViewTransition?.skipTransition?.();
       const vt = (
@@ -417,19 +446,26 @@ export class BottomSheetEngine {
     } else {
       await this.animation.animateTo(target.size, velocityPxPerMs);
     }
+    this.opening = false;
     externalSignal?.removeEventListener("abort", onExternalAbort);
     if (signal.aborted) return;
     this.scrollCache.restore(id, previousSize, target.size);
     this.updateAriaSlider();
-    this.emit("snap", { id, size: target.size });
+    this.emit("snap", {
+      id,
+      size: target.size,
+      progress: this.computeProgress(target.size),
+    });
     if (wasClosed && target.size > 0) {
       this.emit("open", { id });
       this.handleOpen();
       notifyLinkedSheets(this.linkedSheets, this);
+      this.emit("opened", { id });
     }
     if (target.size === 0) {
       this.emit("close", undefined);
       this.handleClose();
+      this.emit("closed", undefined);
     }
   }
 
@@ -466,12 +502,84 @@ export class BottomSheetEngine {
     return this.snapTo(target);
   }
 
-  close(): Promise<void> {
+  close(reason: CloseReason = "programmatic"): Promise<void> {
     if (this.destroyed) return Promise.resolve();
+    if (this.disableCloseFlag) return Promise.resolve();
+    if (this.size > 0 && this.emitBeforeClose(reason)) return Promise.resolve();
     const closedId =
       this.snapPointsRaw.find(p => p.id === "closed")?.id ??
       this.snaps.getAllowedIds()[0];
     return this.snapTo(closedId ?? this.activeId);
+  }
+
+  canDismiss(): boolean {
+    return !this.persistent && !this.disableCloseFlag && !this.destroyed;
+  }
+
+  isTop(): boolean {
+    return this.isTopSheet;
+  }
+
+  depth(): number {
+    return sheetStack.depthOf(this.id);
+  }
+
+  expand(): Promise<void> {
+    if (this.destroyed) return Promise.resolve();
+    const ids = this.allowedIdsBySize();
+    const target = ids[ids.length - 1];
+    if (!target) return Promise.resolve();
+    return this.snapTo(target);
+  }
+
+  collapse(): Promise<void> {
+    if (this.destroyed) return Promise.resolve();
+    const ids = this.allowedIdsBySize();
+    const nonZero = ids.find(id => (this.snaps.findById(id)?.size ?? 0) > 0);
+    const target = nonZero ?? ids[0];
+    if (!target) return Promise.resolve();
+    return this.snapTo(target);
+  }
+
+  setRadius(r: string | number): void {
+    if (this.destroyed) return;
+    this.element.style.setProperty(
+      "--bs-radius",
+      typeof r === "number" ? `${r}px` : r,
+    );
+  }
+
+  setMaxHeight(h: string | number): void {
+    if (this.destroyed) return;
+    const value = typeof h === "number" ? `${h}px` : h;
+    const axis = layoutAxis(this.mode as TransformAxis);
+    this.element.style.setProperty(
+      axis === "height" ? "maxHeight" : "maxWidth",
+      value,
+    );
+    if (typeof h === "number") {
+      this.maxHeightCap = h;
+      this.clampToMaxHeight();
+    } else if (typeof window !== "undefined") {
+      const probe = document.createElement("div");
+      probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;${axis === "height" ? "height" : "width"}:${value};`;
+      document.body.appendChild(probe);
+      const measured =
+        axis === "height" ? probe.offsetHeight : probe.offsetWidth;
+      probe.remove();
+      this.maxHeightCap = measured > 0 ? measured : undefined;
+      this.clampToMaxHeight();
+    }
+  }
+
+  private clampToMaxHeight(): void {
+    if (this.maxHeightCap === undefined) return;
+    if (this.snaps.getMaxAxisSize() > this.maxHeightCap) {
+      this.snaps.setMaxAxisSize(this.maxHeightCap);
+    }
+    if (this.size > this.maxHeightCap && !this.gesture?.isDragging) {
+      this.applySize(this.maxHeightCap);
+    }
   }
 
   setAllowed(ids: string[], snap?: string): void {
@@ -622,8 +730,60 @@ export class BottomSheetEngine {
     this.updateAriaSlider();
   }
 
+  recompute(): void {
+    if (this.destroyed) return;
+    this.snaps.recompute();
+    this.scrim.invalidateOpacityCache();
+    if (this.gesture?.isDragging) return;
+    const current = this.snaps.findById(this.activeId);
+    if (current) {
+      this.size = current.size;
+      this.applySize(this.size);
+      this.updateAriaSlider();
+    }
+  }
+
+  private measureFitSize(): number {
+    const vertical = layoutAxis(this.mode as TransformAxis) === "height";
+    const handleSize = vertical
+      ? this.handle.offsetHeight
+      : this.handle.offsetWidth;
+    const content = this.scrollContainer;
+    const natural = content
+      ? handleSize + (vertical ? content.scrollHeight : content.scrollWidth)
+      : handleSize;
+    if (typeof window === "undefined") return natural;
+    const viewport = vertical ? window.innerHeight : window.innerWidth;
+    return viewport > 0 ? Math.min(natural, viewport) : natural;
+  }
+
+  private installFitObserver(): void {
+    if (typeof ResizeObserver === "undefined") return;
+    if (!this.snapPointsRaw.some(p => p.size === "fit" || p.size === "content"))
+      return;
+    const targets: HTMLElement[] = [this.handle];
+    if (this.scrollContainer && this.scrollContainer !== this.handle) {
+      targets.push(this.scrollContainer);
+    }
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (this.destroyed || this.gesture?.isDragging) return;
+        this.recompute();
+      });
+    });
+    for (const t of targets) ro.observe(t);
+    this.teardowns.add(() => {
+      ro.disconnect();
+      if (raf) cancelAnimationFrame(raf);
+    });
+  }
+
   destroy(): void {
     this.destroyed = true;
+    this.opening = false;
     this.currentAbort.abort();
     this.currentViewTransition?.skipTransition?.();
     this.currentViewTransition = null;
@@ -683,6 +843,40 @@ export class BottomSheetEngine {
     return cancelled;
   }
 
+  private emitBeforeClose(reason: CloseReason): boolean {
+    let cancelled = false;
+    let frozen = false;
+    this.emit("before-close", {
+      reason,
+      cancel: () => {
+        if (frozen) {
+          console.warn(
+            "[BottomSheet] before-close.cancel() called asynchronously — ignored. cancel() must be invoked synchronously inside the listener.",
+          );
+          return;
+        }
+        cancelled = true;
+      },
+    });
+    frozen = true;
+    return cancelled;
+  }
+
+  private applyAutoAriaLabelledBy(): void {
+    if (typeof document === "undefined") return;
+    if (!this.lifecycle.focusTrapEnabled) return;
+    if (this.element.getAttribute("aria-labelledby")) return;
+    const scope = this.handle ?? this.element;
+    const titled =
+      scope.querySelector<HTMLElement>("[data-bs-title]") ??
+      scope.querySelector<HTMLElement>("h1,h2,h3,h4,h5,h6");
+    if (!titled) return;
+    if (!titled.id) {
+      titled.id = nextInstanceId("bs-title");
+    }
+    this.element.setAttribute("aria-labelledby", titled.id);
+  }
+
   private recomputeSnaps(): void {
     const seen = new Set<string>();
     for (const p of this.snapPointsRaw) {
@@ -727,11 +921,8 @@ export class BottomSheetEngine {
       },
       setIsTop: isTop => {
         this.isTopSheet = isTop;
-        if (this.backdrop) {
-          this.backdrop.style.display = isTop ? "" : "none";
-        }
       },
-      isOpen: () => this.size > 0,
+      isOpen: () => this.size > 0 || this.opening,
       setDepth: depth => this.applyStackDepth(depth),
     }));
   }
@@ -768,6 +959,7 @@ export class BottomSheetEngine {
         buf.rubberBandEnabled = this.rubberBandEnabled;
         return buf;
       },
+      getDisableDrag: () => this.disableDragFlag,
       cancelAnimation: () => this.animation.cancel(),
       applySize: size => this.applySize(size),
       animateTo: (size, velocity) => this.animation.animateTo(size, velocity),
@@ -852,8 +1044,9 @@ export class BottomSheetEngine {
       if (this.lifecycle.closeOnEscape) {
         const onKey = (e: KeyboardEvent) => {
           if (this.destroyed || e.defaultPrevented) return;
+          if (!this.canDismiss()) return;
           if (e.key === "Escape" && this.isTopSheet && this.size > 0) {
-            void this.close();
+            void this.close("escape");
           }
         };
         document.addEventListener("keydown", onKey);
@@ -926,20 +1119,31 @@ export class BottomSheetEngine {
     const previousSnapSize = this.snaps.findById(previousId)?.size;
     this.scrollCache.cache(previousId, previousSize, target.size);
     this.activeId = target.id;
+    if (previousSnapSize === 0 && target.size > 0) {
+      this.opening = true;
+      sheetStack.promote(this.id);
+    }
     void this.animation.animateTo(target.size, velocity).then(() => {
+      this.opening = false;
       if (signal.aborted) return;
       this.scrollCache.restore(target!.id, previousSize, target!.size);
       this.updateAriaSlider();
-      this.emit("snap", { id: target!.id, size: target!.size });
+      this.emit("snap", {
+        id: target!.id,
+        size: target!.size,
+        progress: this.computeProgress(target!.size),
+      });
       this.haptic();
       if (previousSnapSize === 0 && target!.size > 0) {
         this.emit("open", { id: target!.id });
         this.handleOpen();
         notifyLinkedSheets(this.linkedSheets, this);
+        this.emit("opened", { id: target!.id });
       }
       if (target!.size === 0) {
         this.emit("close", undefined);
         this.handleClose();
+        this.emit("closed", undefined);
       }
     });
   }
@@ -1016,18 +1220,25 @@ export class BottomSheetEngine {
     const target = this.snaps.findById(this.activeId);
     if (!target) return;
     this.updateAriaSlider();
-    this.emit("snap", { id: target.id, size: target.size });
+    this.emit("snap", {
+      id: target.id,
+      size: target.size,
+      progress: this.computeProgress(target.size),
+    });
     if (target.size > 0 && !this.lifecycle.isInstalled) {
       this.emit("open", { id: target.id });
       this.handleOpen();
       notifyLinkedSheets(this.linkedSheets, this);
+      this.emit("opened", { id: target.id });
     } else if (target.size === 0 && this.lifecycle.isInstalled) {
       this.emit("close", undefined);
       this.handleClose();
+      this.emit("closed", undefined);
     }
   }
 
   private handleClose(): void {
+    this.opening = false;
     this.lifecycle.release();
     sheetStack.update();
   }

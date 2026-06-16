@@ -8,7 +8,13 @@ import {
   useSyncExternalStore,
 } from "react";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
-import type { EngineOptions, EngineState, SnapPointDef } from "../core/types";
+import type {
+  CloseReason,
+  EngineOptions,
+  EngineState,
+  SheetEventMap,
+  SnapPointDef,
+} from "../core/types";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -26,7 +32,11 @@ export type UseBottomSheetReturn<TId extends string = string> =
     state: EngineState & { activeId: TId };
     snapTo: (id: TId) => Promise<void>;
     open: (id?: TId) => Promise<void>;
-    close: () => Promise<void>;
+    close: (reason?: CloseReason) => Promise<void>;
+    expand: () => Promise<void>;
+    collapse: () => Promise<void>;
+    isTop: () => boolean;
+    depth: () => number;
     setAllowed: (ids: TId[], snap?: TId) => void;
     addAnchor: (
       opts: import("../core/features/sheet-anchors").AnchorOptions,
@@ -34,6 +44,7 @@ export type UseBottomSheetReturn<TId extends string = string> =
     setScrimStages: (
       opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
     ) => () => void;
+    recompute: () => void;
     engine: BottomSheetEngine | null;
     getEngine: () => BottomSheetEngine | null;
   };
@@ -61,6 +72,11 @@ type HookOpts<TId extends string> = Omit<
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
   onSnap?: (id: TId) => void;
+  onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
+  onOpened?: (id: TId) => void;
+  onClosed?: () => void;
+  onDragStart?: (payload: SheetEventMap["dragstart"]) => void;
+  onDragEnd?: (payload: SheetEventMap["dragend"]) => void;
 };
 
 export function useBottomSheet<TId extends string = string>(
@@ -107,8 +123,23 @@ export function useBottomSheet<TId extends string = string>(
         refresh();
         optsRef.current.onSnap?.(payload.id as TId);
       }),
-      engine.on("dragstart", refresh),
-      engine.on("dragend", refresh),
+      engine.on("before-close", payload => {
+        optsRef.current.onBeforeClose?.(payload);
+      }),
+      engine.on("opened", payload => {
+        optsRef.current.onOpened?.(payload.id as TId);
+      }),
+      engine.on("closed", () => {
+        optsRef.current.onClosed?.();
+      }),
+      engine.on("dragstart", payload => {
+        refresh();
+        optsRef.current.onDragStart?.(payload);
+      }),
+      engine.on("dragend", payload => {
+        refresh();
+        optsRef.current.onDragEnd?.(payload);
+      }),
     ];
     return () => {
       offs.forEach(off => off());
@@ -154,9 +185,20 @@ export function useBottomSheet<TId extends string = string>(
     [],
   );
   const close = useCallback(
-    () => engineRef.current?.close() ?? Promise.resolve(),
+    (reason?: CloseReason) =>
+      engineRef.current?.close(reason) ?? Promise.resolve(),
     [],
   );
+  const expand = useCallback(
+    () => engineRef.current?.expand() ?? Promise.resolve(),
+    [],
+  );
+  const collapse = useCallback(
+    () => engineRef.current?.collapse() ?? Promise.resolve(),
+    [],
+  );
+  const isTop = useCallback(() => engineRef.current?.isTop() ?? false, []);
+  const depth = useCallback(() => engineRef.current?.depth() ?? 0, []);
   const setAllowed = useCallback((ids: string[], snap?: string) => {
     engineRef.current?.setAllowed(ids, snap);
   }, []);
@@ -176,6 +218,7 @@ export function useBottomSheet<TId extends string = string>(
     ) => engineRef.current?.setScrimStages(stagesOpts) ?? (() => {}),
     [],
   );
+  const recompute = useCallback(() => engineRef.current?.recompute(), []);
 
   return useMemo(
     () =>
@@ -189,12 +232,31 @@ export function useBottomSheet<TId extends string = string>(
         snapTo,
         open,
         close,
+        expand,
+        collapse,
+        isTop,
+        depth,
         setAllowed,
         addAnchor,
         setScrimStages,
+        recompute,
         engine: engineRef.current,
         getEngine,
       }) as unknown as UseBottomSheetReturn<TId>,
-    [state, snapTo, open, close, setAllowed, addAnchor, setScrimStages, getEngine],
+    [
+      state,
+      snapTo,
+      open,
+      close,
+      expand,
+      collapse,
+      isTop,
+      depth,
+      setAllowed,
+      addAnchor,
+      setScrimStages,
+      recompute,
+      getEngine,
+    ],
   );
 }

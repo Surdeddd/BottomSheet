@@ -44,6 +44,7 @@ export type {
   SnapId,
   SheetMode,
   SheetEventMap,
+  CloseReason,
   EngineOptions,
   EngineState,
   ScrimPreset,

@@ -2,6 +2,7 @@ import type { DefineComponent } from "vue";
 import type {
   AnchorOptions,
   BottomSheetEngine,
+  CloseReason,
   EngineOptions,
   EngineState,
   SheetEventMap,
@@ -39,7 +40,7 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   state: EngineState & { activeId: TId };
   snapTo: (id: TId) => Promise<void>;
   open: (id?: TId) => Promise<void>;
-  close: () => Promise<void>;
+  close: (reason?: CloseReason) => Promise<void>;
   setAllowed: (ids: TId[], snap?: TId) => void;
   setSnapPoints: (
     points: EngineOptions["snapPoints"],
@@ -49,6 +50,16 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   setScrimOverlay: (opts: ScrimOverlayOptions) => () => void;
   addAnchor: (opts: AnchorOptions) => () => void;
   setScrimStages: (opts: ScrimStagesOptions | null) => () => void;
+  recompute: () => void;
+  setScrimColor: (color: string | undefined | null) => void;
+  setBackdropRange: (range: [number, number]) => void;
+  setRadius: (r: string | number) => void;
+  setMaxHeight: (h: string | number) => void;
+  expand: () => Promise<void>;
+  collapse: () => Promise<void>;
+  isTop: () => boolean;
+  depth: () => number;
+  canDismiss: () => boolean;
   on: <K extends keyof SheetEventMap>(
     event: K,
     fn: (payload: SheetEventMap[K]) => void,
@@ -60,14 +71,51 @@ export function useBottomSheet<TId extends string = string>(
   opts: UseBottomSheetVueOptions<TId>,
 ): UseBottomSheetVueReturn<TId>;
 
+export type VueAnchor<TId extends string = string> = Omit<
+  AnchorOptions,
+  "element"
+> & { id: string };
+
 export type BottomSheetProps<TId extends string = string> =
   UseBottomSheetVueOptions<TId> & {
     backdrop?: boolean;
     closeOnBackdrop?: boolean;
     ariaLabel?: string;
+    open?: boolean;
+    snap?: TId;
+    teleport?: boolean;
+    teleportTo?: string | HTMLElement;
+    anchors?: VueAnchor<TId>[];
+    scrimStages?: ScrimStagesOptions | null;
+    backdropColor?: string;
+    backdropOpacity?: number;
   };
 
-export const BottomSheet: DefineComponent<BottomSheetProps>;
+export const BottomSheet: DefineComponent<
+  BottomSheetProps,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  {
+    change: (state: EngineState) => void;
+    snap: (id: string) => void;
+    open: (id: string) => void;
+    close: () => void;
+    opened: (id: string) => void;
+    closed: () => void;
+    "before-close": (payload: {
+      reason: CloseReason;
+      cancel: () => void;
+    }) => void;
+    "drag-start": (payload: { size: number }) => void;
+    "drag-end": (payload: { size: number; velocity: number }) => void;
+    "update:open": (open: boolean) => void;
+    "update:snap": (id: string) => void;
+  }
+>;
 
 export type {
   SnapPoint,
@@ -75,4 +123,5 @@ export type {
   SheetMode,
   EngineState,
   EngineOptions,
+  CloseReason,
 };

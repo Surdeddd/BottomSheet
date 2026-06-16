@@ -8,6 +8,7 @@
     ScrimUpdate,
     ScrimOverlayOptions,
     EngineOptions,
+    SheetEventMap,
   } from "../core/types";
 
   type Props = {
@@ -25,6 +26,17 @@
     backdropRange?: [number, number];
     backdrop?: boolean;
     closeOnBackdrop?: boolean;
+    persistent?: boolean;
+    disableClose?: boolean;
+    disableDrag?: boolean;
+    closeOnRouteChange?: boolean;
+    radius?: string | number;
+    maxHeight?: string | number;
+    backdropColor?: string;
+    backdropOpacity?: number;
+    open?: boolean;
+    snap?: TId;
+    returnFocusTo?: HTMLElement | string | (() => HTMLElement | null);
     ariaLabel?: string;
     header?: Snippet<[EngineState & { activeId: TId }]>;
     leftButton?: Snippet;
@@ -34,6 +46,11 @@
     onsnap?: (id: TId) => void;
     onopen?: (id: TId) => void;
     onclose?: () => void;
+    onbeforeclose?: (payload: SheetEventMap["before-close"]) => void;
+    onopened?: (id: TId) => void;
+    onclosed?: () => void;
+    ondragstart?: () => void;
+    ondragend?: () => void;
     onchange?: (state: EngineState & { activeId: TId }) => void;
   };
 
@@ -52,6 +69,17 @@
     backdropRange,
     backdrop = true,
     closeOnBackdrop = true,
+    persistent = false,
+    disableClose = false,
+    disableDrag = false,
+    closeOnRouteChange = false,
+    radius,
+    maxHeight,
+    backdropColor,
+    backdropOpacity,
+    open: openProp = $bindable(),
+    snap = $bindable(),
+    returnFocusTo,
     ariaLabel = "Bottom sheet",
     header,
     leftButton,
@@ -61,6 +89,11 @@
     onsnap,
     onopen,
     onclose,
+    onbeforeclose,
+    onopened,
+    onclosed,
+    ondragstart,
+    ondragend,
     onchange,
   }: Props = $props();
 
@@ -102,6 +135,13 @@
       lockBodyScroll,
       rubberBand,
       backdropRange,
+      persistent,
+      disableClose,
+      disableDrag,
+      closeOnRouteChange,
+      radius,
+      maxHeight,
+      returnFocusTo,
     });
     const sync = () => {
       if (!engine) return;
@@ -109,14 +149,33 @@
       onchange?.(viewState);
     };
     sync();
+    if (backdropColor !== undefined) engine.setScrimColor(backdropColor);
+    if (backdropOpacity !== undefined)
+      engine.setBackdropRange([0, backdropOpacity]);
     engine.on("snap", payload => {
       sync();
+      snap = payload.id as TId;
       onsnap?.(payload.id as TId);
     });
-    engine.on("open", payload => onopen?.(payload.id as TId));
-    engine.on("close", () => onclose?.());
-    engine.on("dragstart", sync);
-    engine.on("dragend", sync);
+    engine.on("open", payload => {
+      openProp = true;
+      onopen?.(payload.id as TId);
+    });
+    engine.on("close", () => {
+      openProp = false;
+      onclose?.();
+    });
+    engine.on("before-close", payload => onbeforeclose?.(payload));
+    engine.on("opened", payload => onopened?.(payload.id as TId));
+    engine.on("closed", () => onclosed?.());
+    engine.on("dragstart", () => {
+      sync();
+      ondragstart?.();
+    });
+    engine.on("dragend", () => {
+      sync();
+      ondragend?.();
+    });
   });
 
   onDestroy(() => {
@@ -129,6 +188,10 @@
   export const open = (id?: TId) =>
     engine?.open(id) ?? Promise.resolve();
   export const close = () => engine?.close() ?? Promise.resolve();
+  export const expand = () => engine?.expand() ?? Promise.resolve();
+  export const collapse = () => engine?.collapse() ?? Promise.resolve();
+  export const isTop = (): boolean => engine?.isTop() ?? false;
+  export const depth = (): number => engine?.depth() ?? 0;
   export const setAllowed = (ids: TId[], snap?: TId) =>
     engine?.setAllowed(ids as unknown as string[], snap);
   export const setSnapPoints = (
@@ -138,9 +201,40 @@
   export const setScrim = (opts: ScrimUpdate) => engine?.setScrim(opts);
   export const setScrimOverlay = (opts: ScrimOverlayOptions): (() => void) =>
     engine?.setScrimOverlay(opts) ?? (() => {});
+  export const setRadius = (r: string | number) => engine?.setRadius(r);
+  export const setMaxHeight = (h: string | number) => engine?.setMaxHeight(h);
+  export const canDismiss = (): boolean => engine?.canDismiss() ?? false;
   export const getState = (): EngineState & { activeId: TId } =>
     (engine?.state ?? viewState) as EngineState & { activeId: TId };
   export const getEngine = (): BottomSheetEngine | null => engine;
+
+  $effect(() => {
+    if (radius !== undefined) engine?.setRadius(radius);
+  });
+  $effect(() => {
+    if (maxHeight !== undefined) engine?.setMaxHeight(maxHeight);
+  });
+  $effect(() => {
+    if (backdropColor !== undefined) engine?.setScrimColor(backdropColor);
+  });
+  $effect(() => {
+    if (backdropOpacity !== undefined)
+      engine?.setBackdropRange([0, backdropOpacity]);
+  });
+  $effect(() => {
+    if (snap === undefined) return;
+    const next = snap;
+    if (!engine || untrack(() => viewState.activeId) === next) return;
+    void engine.snapTo(next);
+  });
+  $effect(() => {
+    if (openProp === undefined) return;
+    const next = openProp;
+    if (!engine) return;
+    const isOpen = untrack(() => viewState.size) > 0;
+    if (next && !isOpen) void engine.open();
+    else if (!next && isOpen) void engine.close();
+  });
 
   let allowedIds = $derived(
     allowed && allowed.length > 0
@@ -159,7 +253,11 @@
       class="bs-backdrop"
       bind:this={backdropEl}
       aria-hidden="true"
-      onclick={closeOnBackdrop ? () => engine?.close() : undefined}
+      onclick={closeOnBackdrop
+        ? () => {
+            if (engine?.canDismiss()) void engine.close("backdrop");
+          }
+        : undefined}
     ></div>
   {/if}
   <div class="bs-screen" bind:this={screenEl}>

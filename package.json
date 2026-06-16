@@ -175,13 +175,13 @@
     {
       "name": "core (engine + types)",
       "path": "dist/index.js",
-      "limit": "20 KB",
+      "limit": "22 KB",
       "gzip": true
     },
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "23 KB",
+      "limit": "25 KB",
       "gzip": true
     },
     {
@@ -193,13 +193,13 @@
     {
       "name": "svelte adapter",
       "path": "dist/svelte.js",
-      "limit": "19 KB",
+      "limit": "21 KB",
       "gzip": true
     },
     {
       "name": "solid adapter",
       "path": "dist/solid.js",
-      "limit": "18 KB",
+      "limit": "20 KB",
       "gzip": true
     },
     {
@@ -226,7 +226,7 @@
     {
       "name": "web component (IIFE / CDN)",
       "path": "dist/element.iife.global.js",
-      "limit": "21 KB",
+      "limit": "24 KB",
       "gzip": true
     },
     {

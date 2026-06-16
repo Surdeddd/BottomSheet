@@ -34,6 +34,8 @@ export type BottomSheetProps<TId extends string = string> = {
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
+  radius?: string | number;
+  maxHeight?: string | number;
 
   onSnap$?: QRL<(id: TId) => void>;
 
@@ -90,6 +92,8 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       lockBodyScroll: props.lockBodyScroll,
       rubberBand: props.rubberBand,
       backdropRange: props.backdropRange,
+      radius: props.radius,
+      maxHeight: props.maxHeight,
     };
 
     const engine = new BottomSheetEngine(engineOpts);
@@ -128,6 +132,15 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       points as unknown as EngineOptions["snapPoints"],
       allowed as unknown as string[] | undefined,
     );
+  });
+
+  useTask$(({ track }) => {
+    const radius = track(() => props.radius);
+    const maxHeight = track(() => props.maxHeight);
+    const engine = engineStore.engine;
+    if (!engine) return;
+    if (radius !== undefined) engine.setRadius(radius);
+    if (maxHeight !== undefined) engine.setMaxHeight(maxHeight);
   });
 
   const showBackdrop = props.backdrop !== false;

@@ -1,5 +1,10 @@
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
-import type { EngineOptions, EngineState, SnapPointDef } from "../core/types";
+import type {
+  CloseReason,
+  EngineOptions,
+  EngineState,
+  SnapPointDef,
+} from "../core/types";
 import type {
   AnchorOptions,
   AnchorPosition,
@@ -21,6 +26,24 @@ const ATTR_CLOSE_ON_ESCAPE = "close-on-escape";
 const ATTR_LOCK_BODY_SCROLL = "lock-body-scroll";
 const ATTR_SHEET_LABEL = "sheet-label";
 const ATTR_STACK_EFFECT = "stack-effect";
+const ATTR_PERSISTENT = "persistent";
+const ATTR_DISABLE_CLOSE = "disable-close";
+const ATTR_DISABLE_DRAG = "disable-drag";
+const ATTR_CLOSE_ON_ROUTE_CHANGE = "close-on-route-change";
+const ATTR_RADIUS = "radius";
+const ATTR_MAX_HEIGHT = "max-height";
+const ATTR_RETURN_FOCUS_TO = "return-focus-to";
+const ATTR_BACKDROP_COLOR = "backdrop-color";
+const ATTR_SCRIM_COLOR = "scrim-color";
+const ATTR_SNAP = "snap";
+
+const LIVE_ATTRS: ReadonlySet<string> = new Set([
+  ATTR_RADIUS,
+  ATTR_MAX_HEIGHT,
+  ATTR_BACKDROP_COLOR,
+  ATTR_SCRIM_COLOR,
+  ATTR_SNAP,
+]);
 
 const isValidSnapPoint = (p: unknown): p is SnapPointDef =>
   !!p &&
@@ -85,6 +108,12 @@ const parseAnimation = (raw: string | null): EngineOptions["animation"] =>
 
 const parseList = (raw: string | null): string[] | undefined =>
   raw ? raw.split(",").map(s => s.trim()).filter(Boolean) : undefined;
+
+const parseDimension = (raw: string | null): string | number | undefined => {
+  if (raw === null) return undefined;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && raw.trim() !== "" ? numeric : raw;
+};
 
 const ANCHOR_POSITIONS: ReadonlyArray<AnchorPosition> = [
   "top-left",
@@ -253,6 +282,16 @@ export class BottomSheetElement extends BaseHTMLElement {
       ATTR_LOCK_BODY_SCROLL,
       ATTR_SHEET_LABEL,
       ATTR_STACK_EFFECT,
+      ATTR_PERSISTENT,
+      ATTR_DISABLE_CLOSE,
+      ATTR_DISABLE_DRAG,
+      ATTR_CLOSE_ON_ROUTE_CHANGE,
+      ATTR_RADIUS,
+      ATTR_MAX_HEIGHT,
+      ATTR_RETURN_FOCUS_TO,
+      ATTR_BACKDROP_COLOR,
+      ATTR_SCRIM_COLOR,
+      ATTR_SNAP,
     ];
   }
 
@@ -308,10 +347,39 @@ export class BottomSheetElement extends BaseHTMLElement {
     this.teardownEngine();
   }
 
-  attributeChangedCallback(): void {
+  attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
     if (!this.engine) return;
+    if (LIVE_ATTRS.has(name)) {
+      this.applyLiveAttribute(name, value);
+      return;
+    }
     this.teardownEngine();
     this.initEngine();
+  }
+
+  private applyLiveAttribute(name: string, value: string | null): void {
+    if (!this.engine) return;
+    switch (name) {
+      case ATTR_RADIUS: {
+        const r = parseDimension(value);
+        if (r !== undefined) this.engine.setRadius(r);
+        break;
+      }
+      case ATTR_MAX_HEIGHT: {
+        const h = parseDimension(value);
+        if (h !== undefined) this.engine.setMaxHeight(h);
+        break;
+      }
+      case ATTR_BACKDROP_COLOR:
+      case ATTR_SCRIM_COLOR:
+        this.engine.setScrimColor(value);
+        break;
+      case ATTR_SNAP:
+        if (value && value !== this.engine.state.activeId) {
+          void this.engine.snapTo(value);
+        }
+        break;
+    }
   }
 
   getEngine(): BottomSheetEngine | null {
@@ -355,7 +423,9 @@ export class BottomSheetElement extends BaseHTMLElement {
     const showBackdrop = this.getAttribute(ATTR_BACKDROP) !== "false";
     backdrop.style.display = showBackdrop ? "" : "none";
     if (showBackdrop) {
-      this.backdropClickHandler = () => void this.engine?.close();
+      this.backdropClickHandler = () => {
+        if (this.engine?.canDismiss()) void this.engine.close("backdrop");
+      };
       backdrop.addEventListener("click", this.backdropClickHandler);
     }
 
@@ -374,10 +444,23 @@ export class BottomSheetElement extends BaseHTMLElement {
       closeOnEscape: this.getAttribute(ATTR_CLOSE_ON_ESCAPE) !== "false",
       lockBodyScroll: this.getAttribute(ATTR_LOCK_BODY_SCROLL) !== "false",
       stackEffect: this.getAttribute(ATTR_STACK_EFFECT) === "true",
+      persistent: this.getAttribute(ATTR_PERSISTENT) === "true",
+      disableClose: this.getAttribute(ATTR_DISABLE_CLOSE) === "true",
+      disableDrag: this.getAttribute(ATTR_DISABLE_DRAG) === "true",
+      closeOnRouteChange:
+        this.getAttribute(ATTR_CLOSE_ON_ROUTE_CHANGE) === "true",
+      radius: parseDimension(this.getAttribute(ATTR_RADIUS)),
+      maxHeight: parseDimension(this.getAttribute(ATTR_MAX_HEIGHT)),
+      returnFocusTo: this.getAttribute(ATTR_RETURN_FOCUS_TO) ?? undefined,
     };
 
     this.engine = new BottomSheetEngine(opts);
     sheet.setAttribute("data-active", this.engine.state.activeId);
+
+    const scrimColor =
+      this.getAttribute(ATTR_SCRIM_COLOR) ??
+      this.getAttribute(ATTR_BACKDROP_COLOR);
+    if (scrimColor !== null) this.engine.setScrimColor(scrimColor);
 
     for (const el of Array.from(
       this.querySelectorAll<HTMLElement>('[slot="anchor"]'),
@@ -401,6 +484,21 @@ export class BottomSheetElement extends BaseHTMLElement {
       this.engine.on("progress", payload =>
         this.dispatchEvent(new CustomEvent("progress", { detail: payload })),
       ),
+      this.engine.on("before-close", payload =>
+        this.dispatchEvent(new CustomEvent("before-close", { detail: payload })),
+      ),
+      this.engine.on("opened", payload =>
+        this.dispatchEvent(new CustomEvent("opened", { detail: payload })),
+      ),
+      this.engine.on("closed", () =>
+        this.dispatchEvent(new CustomEvent("closed")),
+      ),
+      this.engine.on("dragstart", payload =>
+        this.dispatchEvent(new CustomEvent("drag-start", { detail: payload })),
+      ),
+      this.engine.on("dragend", payload =>
+        this.dispatchEvent(new CustomEvent("drag-end", { detail: payload })),
+      ),
     ];
   }
 
@@ -410,8 +508,29 @@ export class BottomSheetElement extends BaseHTMLElement {
   open(id?: string): Promise<void> {
     return this.engine?.open(id) ?? Promise.resolve();
   }
-  close(): Promise<void> {
-    return this.engine?.close() ?? Promise.resolve();
+  close(reason?: CloseReason): Promise<void> {
+    return this.engine?.close(reason) ?? Promise.resolve();
+  }
+  expand(): Promise<void> {
+    return this.engine?.expand() ?? Promise.resolve();
+  }
+  collapse(): Promise<void> {
+    return this.engine?.collapse() ?? Promise.resolve();
+  }
+  isTop(): boolean {
+    return this.engine?.isTop() ?? false;
+  }
+  depth(): number {
+    return this.engine?.depth() ?? 0;
+  }
+  canDismiss(): boolean {
+    return this.engine?.canDismiss() ?? false;
+  }
+  setRadius(r: string | number): void {
+    this.engine?.setRadius(r);
+  }
+  setMaxHeight(h: string | number): void {
+    this.engine?.setMaxHeight(h);
   }
   setAllowed(ids: string[], snap?: string): void {
     this.engine?.setAllowed(ids, snap);
@@ -422,8 +541,25 @@ export class BottomSheetElement extends BaseHTMLElement {
   setScrimStages(opts: ScrimStagesOptions | null): () => void {
     return this.engine?.setScrimStages(opts) ?? (() => {});
   }
+  recompute(): void {
+    this.engine?.recompute();
+  }
   get sheetState(): EngineState | null {
     return this.engine?.state ?? null;
+  }
+  get snap(): string | null {
+    return this.engine?.state.activeId ?? this.getAttribute(ATTR_SNAP);
+  }
+  set snap(id: string | null) {
+    if (id === null) {
+      this.removeAttribute(ATTR_SNAP);
+      return;
+    }
+    if (this.engine) {
+      if (id !== this.engine.state.activeId) void this.engine.snapTo(id);
+    } else {
+      this.setAttribute(ATTR_SNAP, id);
+    }
   }
 }
 
@@ -431,8 +567,16 @@ export type TypedBottomSheetElement<TId extends string = string> =
   HTMLElement & {
     snapTo: (id: TId) => Promise<void>;
     open: (id?: TId) => Promise<void>;
-    close: () => Promise<void>;
+    close: (reason?: CloseReason) => Promise<void>;
+    expand: () => Promise<void>;
+    collapse: () => Promise<void>;
+    isTop: () => boolean;
+    depth: () => number;
+    canDismiss: () => boolean;
+    setRadius: (r: string | number) => void;
+    setMaxHeight: (h: string | number) => void;
     setAllowed: (ids: TId[], snap?: TId) => void;
+    snap: TId | null;
     readonly sheetState: (EngineState & { activeId: TId }) | null;
   };
 

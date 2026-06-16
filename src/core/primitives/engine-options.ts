@@ -20,6 +20,18 @@ export type ResolvedEngineOptions = {
 
   closeOnBack: boolean;
 
+  persistent: boolean;
+
+  disableClose: boolean;
+
+  disableDrag: boolean;
+
+  closeOnRouteChange: boolean;
+
+  radius: string | number | undefined;
+
+  maxHeight: string | number | undefined;
+
   initialAllowed: string[];
 
   initialId: string;
@@ -60,6 +72,12 @@ export function resolveEngineOptions(
     dragThreshold: opts.dragThreshold ?? DEFAULT_DRAG_THRESHOLD,
     rubberBandEnabled: opts.rubberBand ?? true,
     closeOnBack: opts.closeOnBack ?? false,
+    persistent: opts.persistent ?? false,
+    disableClose: opts.disableClose ?? false,
+    disableDrag: opts.disableDrag ?? false,
+    closeOnRouteChange: opts.closeOnRouteChange ?? false,
+    radius: opts.radius,
+    maxHeight: opts.maxHeight,
     initialAllowed,
     initialId,
     scrim: {
@@ -91,6 +109,7 @@ export function resolveEngineOptions(
       inertSiblings: opts.inertSiblings,
 
       shouldApplyInertSiblings: extras?.shouldApplyInertSiblings,
+      returnFocus: opts.returnFocusTo,
     },
   };
 }

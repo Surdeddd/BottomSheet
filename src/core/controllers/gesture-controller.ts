@@ -16,6 +16,7 @@ export type GestureControllerDeps = {
     rubberBandEnabled: boolean;
   };
 
+  getDisableDrag?: () => boolean;
   cancelAnimation: () => void;
   applySize: (size: number) => void;
   animateTo: (size: number, velocity: number) => Promise<void>;
@@ -39,6 +40,7 @@ export class GestureController {
   private dragStartSize = 0;
   private currentPointerKind: "touch" | "mouse" | "pen" = "touch";
   private keyboardDismissed = false;
+  private dragSuppressed = false;
   private dragPayload: SheetEventMap["drag"] = { size: 0, delta: 0 };
 
   constructor(deps: GestureControllerDeps) {
@@ -53,6 +55,11 @@ export class GestureController {
     if (this.detach) return this.detach;
     this.detach = installGestures(this.deps.handle, this.deps.mode, {
       onStart: (_coord, kind) => {
+        if (this.deps.getDisableDrag?.()) {
+          this.dragSuppressed = true;
+          return;
+        }
+        this.dragSuppressed = false;
         this.deps.cancelAnimation();
         this.isDragging_ = true;
         this.dragStartSize = this.deps.getDragContext().size;
@@ -63,6 +70,7 @@ export class GestureController {
         this.deps.emit("dragstart", { size: this.dragStartSize });
       },
       onMove: delta => {
+        if (this.dragSuppressed) return;
         const ctx = this.deps.getDragContext();
         const { min, max } = ctx.range;
         const maxAxis = ctx.maxAxisSize;
@@ -91,6 +99,10 @@ export class GestureController {
         }
       },
       onEnd: (delta, velocity, kind) => {
+        if (this.dragSuppressed) {
+          this.dragSuppressed = false;
+          return;
+        }
         this.isDragging_ = false;
         this.keyboardDismissed = false;
         this.deps.getRoot()?.removeAttribute("data-dragging");
@@ -101,6 +113,10 @@ export class GestureController {
         this.deps.settleAfterDrag(delta, velocity, kind);
       },
       onCancel: () => {
+        if (this.dragSuppressed) {
+          this.dragSuppressed = false;
+          return;
+        }
         this.isDragging_ = false;
         this.keyboardDismissed = false;
         this.deps.getRoot()?.removeAttribute("data-dragging");

@@ -2,6 +2,7 @@ export type SnapPoint =
   | number
   | `${number}%`
   | "fit"
+  | "content"
   | "full"
   | (string & {});
 
@@ -98,14 +99,22 @@ export type SheetEventMap = {
     cancel: () => void;
     previousId: string;
   };
-  snap: { id: string; size: number };
+  "before-close": {
+    reason: "programmatic" | "backdrop" | "escape" | "back";
+    cancel: () => void;
+  };
+  snap: { id: string; size: number; progress: number };
   progress: { value: number; size: number };
   dragstart: { size: number };
   drag: { size: number; delta: number };
   dragend: { size: number; velocity: number };
   close: void;
   open: { id: string };
+  opened: { id: string };
+  closed: undefined;
 };
+
+export type CloseReason = "programmatic" | "backdrop" | "escape" | "back";
 
 export type EngineOptions = {
   element: HTMLElement;
@@ -153,6 +162,14 @@ export type EngineOptions = {
   closeOnBack?: boolean;
   routedTo?: string;
   inertSiblings?: boolean;
+
+  persistent?: boolean;
+  disableClose?: boolean;
+  disableDrag?: boolean;
+  closeOnRouteChange?: boolean;
+  radius?: string | number;
+  maxHeight?: string | number;
+  returnFocusTo?: HTMLElement | string | (() => HTMLElement | null);
 
   persistKey?: string;
   autoCollapseAfter?: number;

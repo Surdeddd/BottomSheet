@@ -43,6 +43,16 @@ class SheetStack {
     return this.entries.length;
   }
 
+  depthOf(id: string): number {
+    const open: StackEntry[] = [];
+    for (const entry of this.entries) {
+      if (!entry.isOpen || entry.isOpen()) open.push(entry);
+    }
+    const idx = open.findIndex(e => e.id === id);
+    if (idx === -1) return 0;
+    return open.length - 1 - idx;
+  }
+
   clear(): void {
     this.entries = [];
   }

@@ -1,10 +1,10 @@
 :where(.bs-root) {
 
-  --bs-surface: #ffffff;
-  --bs-surface-border: rgba(225, 227, 237, 1);
-  --bs-radius: 20px;
+  --bs-surface-d: #ffffff;
+  --bs-surface-border-d: rgba(225, 227, 237, 1);
+  --bs-radius-d: 20px;
 
-  --bs-handle-color: #b5b3a8;
+  --bs-handle-color-d: rgba(26, 22, 20, 0.3);
   --bs-handle-width: 40px;
   --bs-handle-height: 5px;
 
@@ -12,9 +12,9 @@
   --bs-z-sheet: 100;
   --bs-header-min-height: 80px;
 
-  --bs-backdrop-color: rgba(0, 0, 0, 0.5);
+  --bs-backdrop-color-d: rgba(0, 0, 0, 0.5);
 
-  --bs-scrim-color: rgba(0, 0, 0, 0.4);
+  --bs-scrim-color-d: transparent;
   --bs-scrim-blur: 0px;
   --bs-z-scrim: calc(var(--bs-z-sheet) - 1);
 
@@ -25,12 +25,12 @@
 .bs-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--bs-backdrop-color);
+  background: var(--bs-backdrop-color, var(--bs-backdrop-color-d));
   opacity: 0;
   pointer-events: none;
   z-index: var(--bs-z-backdrop);
 
-  transition: opacity 0.15s linear;
+  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity;
 }
 .bs-root[data-dragging="true"] .bs-backdrop,
@@ -40,9 +40,10 @@
 
 .bs-sheet {
   position: fixed;
-  background: var(--bs-surface);
+  background: var(--bs-surface, var(--bs-surface-d));
   box-shadow: var(--bs-shadow, var(--bs-shadow-auto, none));
   z-index: var(--bs-z-sheet);
+  pointer-events: auto;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -58,9 +59,9 @@
   right: 0;
   bottom: 0;
   width: 100%;
-  border-top-left-radius: var(--bs-radius);
-  border-top-right-radius: var(--bs-radius);
-  border-top: 1px solid var(--bs-surface-border);
+  border-top-left-radius: var(--bs-radius, var(--bs-radius-d));
+  border-top-right-radius: var(--bs-radius, var(--bs-radius-d));
+  border-top: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
 
   padding-bottom: env(safe-area-inset-bottom);
 
@@ -74,9 +75,9 @@
   right: 0;
   top: 0;
   width: 100%;
-  border-bottom-left-radius: var(--bs-radius);
-  border-bottom-right-radius: var(--bs-radius);
-  border-bottom: 1px solid var(--bs-surface-border);
+  border-bottom-left-radius: var(--bs-radius, var(--bs-radius-d));
+  border-bottom-right-radius: var(--bs-radius, var(--bs-radius-d));
+  border-bottom: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
   flex-direction: column-reverse;
   --bs-shadow-auto: 0 3px 12px rgba(0, 0, 0, 0.12);
   padding-top: env(safe-area-inset-top);
@@ -86,9 +87,9 @@
   bottom: 0;
   left: 0;
   height: 100%;
-  border-top-right-radius: var(--bs-radius);
-  border-bottom-right-radius: var(--bs-radius);
-  border-right: 1px solid var(--bs-surface-border);
+  border-top-right-radius: var(--bs-radius, var(--bs-radius-d));
+  border-bottom-right-radius: var(--bs-radius, var(--bs-radius-d));
+  border-right: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
 
   --bs-shadow-auto: 3px 0 12px rgba(0, 0, 0, 0.12);
 }
@@ -97,9 +98,9 @@
   bottom: 0;
   right: 0;
   height: 100%;
-  border-top-left-radius: var(--bs-radius);
-  border-bottom-left-radius: var(--bs-radius);
-  border-left: 1px solid var(--bs-surface-border);
+  border-top-left-radius: var(--bs-radius, var(--bs-radius-d));
+  border-bottom-left-radius: var(--bs-radius, var(--bs-radius-d));
+  border-left: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
   --bs-shadow-auto: -3px 0 12px rgba(0, 0, 0, 0.12);
 }
 
@@ -121,7 +122,7 @@
   cursor: grab;
   touch-action: none;
   user-select: none;
-  background: var(--bs-surface);
+  background: var(--bs-surface, var(--bs-surface-d));
   -webkit-tap-highlight-color: transparent;
   outline: none;
 
@@ -133,7 +134,7 @@
 .bs-handle:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: -2px;
-  border-radius: var(--bs-radius);
+  border-radius: var(--bs-radius, var(--bs-radius-d));
 }
 
 .bs-handle::before {
@@ -141,7 +142,7 @@
   display: block;
   width: var(--bs-handle-width);
   height: var(--bs-handle-height);
-  background: var(--bs-handle-color);
+  background: var(--bs-handle-color, var(--bs-handle-color-d));
   border-radius: calc(var(--bs-handle-height) / 2);
   margin: 0 auto 8px;
   transition: width 0.15s ease, background 0.15s ease, transform 0.15s ease;
@@ -161,7 +162,7 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  background: var(--bs-surface);
+  background: var(--bs-surface, var(--bs-surface-d));
   z-index: 1;
   overflow: hidden;
 }
@@ -171,11 +172,11 @@
 }
 .bs-sheet[data-mode="left"] .bs-handle {
   right: 0;
-  border-left: 1px solid var(--bs-surface-border);
+  border-left: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
 }
 .bs-sheet[data-mode="right"] .bs-handle {
   left: 0;
-  border-right: 1px solid var(--bs-surface-border);
+  border-right: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
 }
 
 .bs-sheet[data-mode="left"] .bs-handle::before,
@@ -186,10 +187,10 @@
 }
 
 .bs-sheet:hover .bs-handle::before {
-  background: color-mix(in oklab, var(--bs-handle-color), #000 15%);
+  background: color-mix(in oklab, var(--bs-handle-color, var(--bs-handle-color-d)), #000 15%);
 }
 .bs-handle:active::before {
-  background: color-mix(in oklab, var(--bs-handle-color), #000 35%);
+  background: color-mix(in oklab, var(--bs-handle-color, var(--bs-handle-color-d)), #000 35%);
   transform: scaleX(1.15);
 }
 
@@ -206,7 +207,7 @@
 
   background-image: radial-gradient(
     circle,
-    var(--bs-handle-color) 0 1.5px,
+    var(--bs-handle-color, var(--bs-handle-color-d)) 0 1.5px,
     transparent 1.6px
   );
   background-size: 8px 3px;
@@ -253,33 +254,31 @@
   padding: 0 16px 16px;
 }
 
+.bs-footer {
+  flex: 0 0 auto;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
+  background: var(--bs-surface, var(--bs-surface-d));
+}
+
 .bs-screen {
   position: absolute;
   inset: 0;
   pointer-events: none;
-
   z-index: var(--bs-z-scrim);
+
+  background: var(--bs-scrim-color, var(--bs-scrim-color-d));
+  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
+}
+.bs-root[data-dragging="true"] .bs-screen,
+.bs-root[data-animating="true"] .bs-screen {
+  transition: none;
 }
 
 .bs-scrim-overlay {
   z-index: calc(var(--bs-z-sheet) + 1);
   pointer-events: none;
-}
-
-.bs-scrim {
-  background: var(--bs-scrim-color);
-
-  transition: opacity 0.15s linear;
-  will-change: opacity;
-}
-.bs-root[data-dragging="true"] .bs-scrim,
-.bs-root[data-animating="true"] .bs-scrim {
-  transition: none;
-}
-
-.bs-scrim {
-  backdrop-filter: blur(var(--bs-scrim-blur));
-  -webkit-backdrop-filter: blur(var(--bs-scrim-blur));
 }
 
 .bs-button-slot {
@@ -289,13 +288,15 @@
 }
 .bs-button-slot[data-side="left"] {
   left: 16px;
-  bottom: calc(var(--bs-size, 0px) + 12px);
-  transition: bottom 0.15s ease;
+  bottom: calc(100% + 12px);
 }
 .bs-button-slot[data-side="right"] {
   right: 16px;
-  bottom: calc(var(--bs-size, 0px) + 12px);
-  transition: bottom 0.15s ease;
+  bottom: calc(100% + 12px);
+}
+.bs-sheet[data-mode="top"] .bs-button-slot {
+  bottom: auto;
+  top: calc(100% + 12px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -309,10 +310,10 @@
 
 @media (prefers-color-scheme: dark) {
   :where(.bs-root) {
-    --bs-surface: #1a1a1d;
-    --bs-surface-border: rgba(255, 255, 255, 0.08);
+    --bs-surface-d: #1a1a1d;
+    --bs-surface-border-d: rgba(255, 255, 255, 0.08);
 
-    --bs-handle-color: rgba(255, 255, 255, 0.45);
+    --bs-handle-color-d: rgba(255, 255, 255, 0.45);
     --bs-shadow-auto: 0 -3px 16px rgba(0, 0, 0, 0.5);
   }
 }
@@ -330,10 +331,10 @@
 }
 
 :where(.ovl-root) {
-  --ovl-surface: var(--bs-surface, #ffffff);
-  --ovl-surface-border: var(--bs-surface-border, rgba(0, 0, 0, 0.08));
+  --ovl-surface: var(--bs-surface, var(--bs-surface-d, #ffffff));
+  --ovl-surface-border: var(--bs-surface-border, var(--bs-surface-border-d, rgba(0, 0, 0, 0.08)));
   --ovl-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
-  --ovl-radius: var(--bs-radius, 20px);
+  --ovl-radius: var(--bs-radius, var(--bs-radius-d, 20px));
   --ovl-backdrop-color: rgba(0, 0, 0, 0.5);
   --ovl-z-backdrop: 200;
   --ovl-z-panel: 201;

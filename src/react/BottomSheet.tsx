@@ -10,7 +10,12 @@ import {
 import { createPortal } from "react-dom";
 import { useBottomSheet } from "./useBottomSheet";
 import type { BottomSheetEngine } from "../core/BottomSheetEngine";
-import type { EngineOptions, EngineState } from "../core/types";
+import type {
+  CloseReason,
+  EngineOptions,
+  EngineState,
+  SheetEventMap,
+} from "../core/types";
 import type { AnchorOptions } from "../core/features/sheet-anchors";
 import type {
   ScrimStageDef,
@@ -55,6 +60,11 @@ export type BottomSheetProps = EngineOptionsForProps & {
   anchors?: BottomSheetAnchorProp[];
   scrimStages?: BottomSheetScrimStagesProp;
   onChange?: (state: EngineState) => void;
+  onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
+  onOpened?: (id: string) => void;
+  onClosed?: () => void;
+  onDragStart?: (payload: SheetEventMap["dragstart"]) => void;
+  onDragEnd?: (payload: SheetEventMap["dragend"]) => void;
   ariaLabel?: string;
   ariaLabelledBy?: string;
   noSSR?: boolean;
@@ -63,7 +73,11 @@ export type BottomSheetProps = EngineOptionsForProps & {
 export type BottomSheetHandle<TId extends string = string> = {
   snapTo: (id: TId) => Promise<void>;
   open: (id?: TId) => Promise<void>;
-  close: () => Promise<void>;
+  close: (reason?: CloseReason) => Promise<void>;
+  expand: () => Promise<void>;
+  collapse: () => Promise<void>;
+  isTop: () => boolean;
+  depth: () => number;
   setAllowed: (ids: TId[], snap?: TId) => void;
   setSnapPoints: (
     points: import("../core/types").EngineOptions["snapPoints"],
@@ -75,6 +89,7 @@ export type BottomSheetHandle<TId extends string = string> = {
   ) => () => void;
   addAnchor: (opts: AnchorOptions) => () => void;
   setScrimStages: (opts: ScrimStagesOptions | null) => () => void;
+  recompute: () => void;
   state: EngineState & { activeId: TId };
   getEngine: () => BottomSheetEngine | null;
 };
@@ -94,6 +109,11 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       anchors,
       scrimStages,
       onChange,
+      onBeforeClose,
+      onOpened,
+      onClosed,
+      onDragStart,
+      onDragEnd,
       ariaLabel = "Bottom sheet",
       ariaLabelledBy,
       noSSR = false,
@@ -111,9 +131,20 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       snapTo,
       open,
       close,
+      expand,
+      collapse,
+      isTop,
+      depth,
       setAllowed,
       getEngine,
-    } = useBottomSheet(engineOpts);
+    } = useBottomSheet({
+      ...engineOpts,
+      onBeforeClose,
+      onOpened,
+      onClosed,
+      onDragStart,
+      onDragEnd,
+    });
 
     const ariaModal = engineOpts.focusTrap === true;
 
@@ -132,6 +163,10 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
         snapTo,
         open,
         close,
+        expand,
+        collapse,
+        isTop,
+        depth,
         setAllowed,
         setSnapPoints: (points, allowed) =>
           getEngine()?.setSnapPoints(points, allowed),
@@ -139,12 +174,24 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
         setScrimOverlay: opts => getEngine()?.setScrimOverlay(opts) ?? (() => {}),
         addAnchor: opts => getEngine()?.addAnchor(opts) ?? (() => {}),
         setScrimStages: opts => getEngine()?.setScrimStages(opts) ?? (() => {}),
+        recompute: () => getEngine()?.recompute(),
         getEngine,
         get state() {
           return getEngine()?.state ?? state;
         },
       }),
-      [snapTo, open, close, setAllowed, getEngine, state],
+      [
+        snapTo,
+        open,
+        close,
+        expand,
+        collapse,
+        isTop,
+        depth,
+        setAllowed,
+        getEngine,
+        state,
+      ],
     );
 
     useEffect(() => {
@@ -228,7 +275,13 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           <div
             ref={backdropRef as React.RefObject<HTMLDivElement>}
             className="bs-backdrop"
-            onClick={closeOnBackdrop ? () => void close() : undefined}
+            onClick={
+              closeOnBackdrop
+                ? () => {
+                    if (getEngine()?.canDismiss()) void close("backdrop");
+                  }
+                : undefined
+            }
           />
         )}
         <div

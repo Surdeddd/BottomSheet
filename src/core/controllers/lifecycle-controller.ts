@@ -17,7 +17,7 @@ export type LifecycleControllerOptions = {
   lockBodyScroll?: boolean;
   inertSiblings?: boolean;
   shouldApplyInertSiblings?: () => boolean;
-  returnFocus?: HTMLElement | (() => HTMLElement | null);
+  returnFocus?: HTMLElement | string | (() => HTMLElement | null);
 };
 
 export class LifecycleController {
@@ -31,7 +31,7 @@ export class LifecycleController {
 
   private inertSiblings: InertSiblingsHandle;
   private shouldApplyInertSiblings: () => boolean;
-  private returnFocus?: HTMLElement | (() => HTMLElement | null);
+  private returnFocus?: HTMLElement | string | (() => HTMLElement | null);
   private releaseFocusTrap: (() => void) | null = null;
   private releaseScrollLock: (() => void) | null = null;
   private installed = false;
@@ -70,7 +70,7 @@ export class LifecycleController {
   }
 
   setReturnFocus(
-    target: HTMLElement | (() => HTMLElement | null) | undefined,
+    target: HTMLElement | string | (() => HTMLElement | null) | undefined,
   ): void {
     if (this.destroyed) return;
     this.returnFocus = target;
@@ -88,7 +88,11 @@ export class LifecycleController {
       const target =
         typeof this.returnFocus === "function"
           ? this.returnFocus()
-          : this.returnFocus;
+          : typeof this.returnFocus === "string"
+            ? typeof document !== "undefined"
+              ? document.querySelector<HTMLElement>(this.returnFocus)
+              : null
+            : this.returnFocus;
       target?.focus?.();
     }
   }

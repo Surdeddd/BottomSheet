@@ -3,6 +3,7 @@ import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
 import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
 import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetRouteCoordinatorForTests } from "../../src/core/features/route";
 import type { Plugin } from "../../src/core/types";
 import { makeDom } from "./_helpers/makeDom";
 
@@ -10,6 +11,7 @@ const resetGlobals = () => {
   __resetSheetStackForTests();
   __resetScrollLockForTests();
   __resetCssLengthProbeForTests();
+  __resetRouteCoordinatorForTests();
   Object.defineProperty(window, "innerHeight", {
     value: 1000,
     configurable: true,
@@ -2470,5 +2472,119 @@ describe("BottomSheetEngine — inertSiblings body-descendant predicate (E5 regr
     expect(sib.hasAttribute("inert")).toBe(true);
     engine.destroy();
     expect(sib.hasAttribute("inert")).toBe(false);
+  });
+});
+
+describe("BottomSheetEngine — 'fit' snap (content-aware)", () => {
+  beforeEach(resetGlobals);
+
+  const stub = (el: HTMLElement, prop: "offsetHeight" | "scrollHeight", v: number) =>
+    Object.defineProperty(el, prop, { value: v, configurable: true });
+
+  it("measures handle + content scrollHeight, not just the handle", () => {
+    const { sheet, handle, content } = makeDom();
+    stub(handle, "offsetHeight", 44);
+    stub(content, "scrollHeight", 300);
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      scrollContainer: content,
+      snapPoints: [{ id: "fit", size: "fit" }],
+      initial: "fit",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    expect(engine.state.size).toBe(344);
+    engine.destroy();
+  });
+
+  it("caps the fit size at the viewport", () => {
+    const { sheet, handle, content } = makeDom();
+    stub(handle, "offsetHeight", 44);
+    stub(content, "scrollHeight", 5000);
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      scrollContainer: content,
+      snapPoints: [{ id: "fit", size: "fit" }],
+      initial: "fit",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    expect(engine.state.size).toBe(1000);
+    engine.destroy();
+  });
+
+  it("recompute() picks up a content size change", () => {
+    const { sheet, handle, content } = makeDom();
+    stub(handle, "offsetHeight", 44);
+    stub(content, "scrollHeight", 200);
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      scrollContainer: content,
+      snapPoints: [{ id: "fit", size: "fit" }],
+      initial: "fit",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    expect(engine.state.size).toBe(244);
+    Object.defineProperty(content, "scrollHeight", {
+      value: 380,
+      configurable: true,
+    });
+    engine.recompute();
+    expect(engine.state.size).toBe(424);
+    engine.destroy();
+  });
+});
+
+describe("BottomSheetEngine — scrim default dim (no scrimColor)", () => {
+  beforeEach(resetGlobals);
+
+  it("dims by default when a scrim element exists and no backdrop is provided", () => {
+    const { sheet, handle } = makeDom();
+    const screen = document.createElement("div");
+    document.body.appendChild(screen);
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      scrim: screen,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 400 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    expect(screen.style.background).not.toBe("");
+    engine.destroy();
+  });
+
+  it("leaves the scrim transparent by default when a backdrop is present (no double-dim)", () => {
+    const { sheet, handle, backdrop } = makeDom();
+    const screen = document.createElement("div");
+    document.body.appendChild(screen);
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      backdrop,
+      scrim: screen,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 400 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    expect(screen.style.background).toBe("");
+    engine.destroy();
   });
 });

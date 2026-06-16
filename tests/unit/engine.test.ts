@@ -69,7 +69,7 @@ describe("BottomSheetEngine", () => {
     const onSnap = vi.fn();
     engine.on("snap", onSnap);
     await engine.snapTo("b");
-    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 400 });
+    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 400, progress: 1 });
     engine.destroy();
   });
 
@@ -305,7 +305,7 @@ describe("BottomSheetEngine", () => {
     await new Promise(r => setTimeout(r, 80));
 
     expect(onSnap).toHaveBeenCalledTimes(1);
-    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 600 });
+    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 600, progress: 1 });
     expect(engine.state.activeId).toBe("b");
     engine.destroy();
   });
@@ -418,7 +418,7 @@ describe("BottomSheetEngine", () => {
     await engine.snapTo("b");
 
     expect(onBefore).toHaveBeenCalledTimes(1);
-    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 400 });
+    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 400, progress: 1 });
     expect(engine.state.activeId).toBe("b");
     engine.destroy();
   });

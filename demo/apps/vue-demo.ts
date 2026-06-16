@@ -69,6 +69,7 @@ export const mountVueDemo = (
             rubberBand: settings.rubberBand,
             backdropRange: [0.4, 1] as [number, number],
             lockBodyScroll: false,
+            teleport: false,
           },
           {
             header: () =>

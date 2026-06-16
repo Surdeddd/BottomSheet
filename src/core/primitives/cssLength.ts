@@ -46,7 +46,9 @@ export const resolveSnap = (
 ): number => {
   if (typeof point === "number") return Math.max(0, point);
   if (point === "full") return viewportSize(mode);
-  if (point === "fit") return Math.max(0, measureFit?.() ?? 0);
+  if (point === "fit" || point === "content") {
+    return Math.max(0, measureFit?.() ?? 0);
+  }
 
   const pctMatch = point.match(PERCENT);
   if (pctMatch) {

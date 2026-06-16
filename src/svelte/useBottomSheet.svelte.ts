@@ -45,6 +45,10 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   snapTo: (id: TId) => Promise<void>;
   open: (id?: TId) => Promise<void>;
   close: () => Promise<void>;
+  expand: () => Promise<void>;
+  collapse: () => Promise<void>;
+  isTop: () => boolean;
+  depth: () => number;
   setAllowed: (ids: TId[], snap?: TId) => void;
   setSnapPoints: (
     points: EngineOptions["snapPoints"],
@@ -54,6 +58,7 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   setScrimOverlay: (opts: ScrimOverlayOptions) => () => void;
   addAnchor: (opts: AnchorOptions) => () => void;
   setScrimStages: (opts: ScrimStagesOptions | null) => () => void;
+  recompute: () => void;
   destroy: () => void;
   getEngine: () => BottomSheetEngine | null;
 };
@@ -129,6 +134,10 @@ export function createBottomSheet<TId extends string = string>(
     snapTo: (id: TId) => engine?.snapTo(id) ?? Promise.resolve(),
     open: (id?: TId) => engine?.open(id) ?? Promise.resolve(),
     close: () => engine?.close() ?? Promise.resolve(),
+    expand: () => engine?.expand() ?? Promise.resolve(),
+    collapse: () => engine?.collapse() ?? Promise.resolve(),
+    isTop: () => engine?.isTop() ?? false,
+    depth: () => engine?.depth() ?? 0,
     setAllowed: (ids: TId[], snap?: TId) =>
       engine?.setAllowed(ids as unknown as string[], snap),
     setSnapPoints: (points: EngineOptions["snapPoints"], allowed?: string[]) =>
@@ -140,6 +149,7 @@ export function createBottomSheet<TId extends string = string>(
       engine?.addAnchor(anchorOpts) ?? (() => {}),
     setScrimStages: (stagesOpts: ScrimStagesOptions | null) =>
       engine?.setScrimStages(stagesOpts) ?? (() => {}),
+    recompute: () => engine?.recompute(),
     destroy: () => {
       engine?.destroy();
       engine = null;

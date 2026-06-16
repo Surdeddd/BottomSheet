@@ -33,7 +33,7 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   state: EngineState & { activeId: TId };
   snapTo: (id: TId) => Promise<void>;
   open: (id?: TId) => Promise<void>;
-  close: () => Promise<void>;
+  close: (reason?: import("../core/types").CloseReason) => Promise<void>;
   setAllowed: (ids: TId[], snap?: TId) => void;
   setSnapPoints: (
     points: EngineOptions["snapPoints"],
@@ -49,6 +49,16 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   setScrimStages: (
     opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
   ) => () => void;
+  recompute: () => void;
+  setScrimColor: (color: string | undefined | null) => void;
+  setBackdropRange: (range: [number, number]) => void;
+  setRadius: (r: string | number) => void;
+  setMaxHeight: (h: string | number) => void;
+  expand: () => Promise<void>;
+  collapse: () => Promise<void>;
+  isTop: () => boolean;
+  depth: () => number;
+  canDismiss: () => boolean;
   on: <K extends keyof SheetEventMap>(
     event: K,
     fn: (payload: SheetEventMap[K]) => void,
@@ -131,7 +141,8 @@ export function useBottomSheet<TId extends string = string>(
     state,
     snapTo: (id: TId) => engine?.snapTo(id) ?? Promise.resolve(),
     open: (id?: TId) => engine?.open(id) ?? Promise.resolve(),
-    close: () => engine?.close() ?? Promise.resolve(),
+    close: (reason?: import("../core/types").CloseReason) =>
+      engine?.close(reason) ?? Promise.resolve(),
     setAllowed: (ids: TId[], snap?: TId) =>
       engine?.setAllowed(ids as unknown as string[], snap),
     setSnapPoints: (
@@ -148,6 +159,18 @@ export function useBottomSheet<TId extends string = string>(
     setScrimStages: (
       opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
     ) => engine?.setScrimStages(opts) ?? (() => {}),
+    recompute: () => engine?.recompute(),
+    setScrimColor: (color: string | undefined | null) =>
+      engine?.setScrimColor(color),
+    setBackdropRange: (range: [number, number]) =>
+      engine?.setBackdropRange(range),
+    setRadius: (r: string | number) => engine?.setRadius(r),
+    setMaxHeight: (h: string | number) => engine?.setMaxHeight(h),
+    expand: () => engine?.expand() ?? Promise.resolve(),
+    collapse: () => engine?.collapse() ?? Promise.resolve(),
+    isTop: () => engine?.isTop() ?? false,
+    depth: () => engine?.depth() ?? 0,
+    canDismiss: () => engine?.canDismiss() ?? false,
     on: <K extends keyof SheetEventMap>(
       event: K,
       fn: (payload: SheetEventMap[K]) => void,

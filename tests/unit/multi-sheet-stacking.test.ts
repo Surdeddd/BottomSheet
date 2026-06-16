@@ -58,7 +58,7 @@ describe("BottomSheetEngine — multi-sheet stacking", () => {
     const zB = parseInt(b.sheet.style.zIndex, 10);
     expect(zA).toBeGreaterThan(zB);
     expect(a.backdrop.style.display).not.toBe("none");
-    expect(b.backdrop.style.display).toBe("none");
+    expect(b.backdrop.style.display).not.toBe("none");
     engineA.destroy();
     engineB.destroy();
   });
