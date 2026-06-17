@@ -9,6 +9,11 @@ import type {
 } from "../core/types";
 import type { AnchorOptions } from "../core/features/sheet-anchors";
 import type { ScrimStagesOptions } from "../core/features/scrim-stages";
+import {
+  resolveTeleportTarget,
+  teleportElements,
+  type TeleportTarget,
+} from "../core/features/teleport";
 
 export type SvelteBottomSheetOpts<TId extends string = string> = Omit<
   EngineOptions,
@@ -24,6 +29,9 @@ export type SvelteBottomSheetOpts<TId extends string = string> = Omit<
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
+  teleportTo?: TeleportTarget;
+  backdropColor?: string;
+  backdropOpacity?: number;
   onSnap?: (id: TId) => void;
 };
 
@@ -84,7 +92,8 @@ export function createBottomSheet<TId extends string = string>(
 
   const attach = (refs: SvelteAttachRefs) => {
     if (engine) engine.destroy();
-    const { onSnap, ...engineOpts } = opts;
+    const { onSnap, teleportTo, backdropColor, backdropOpacity, ...engineOpts } =
+      opts;
     const created = new BottomSheetEngine({
       ...(engineOpts as Omit<
         EngineOptions,
@@ -93,6 +102,16 @@ export function createBottomSheet<TId extends string = string>(
       ...refs,
     });
     engine = created;
+
+    const target = resolveTeleportTarget(teleportTo);
+    const restoreTeleport = target
+      ? teleportElements([refs.backdrop, refs.scrim, refs.element], target)
+      : null;
+    if (backdropColor !== undefined) created.setScrimColor(backdropColor);
+    if (backdropOpacity !== undefined) {
+      created.setBackdropRange([0, backdropOpacity]);
+    }
+
     if (onSnap) {
       created.on("snap", payload => onSnap(payload.id as TId));
     }
@@ -101,6 +120,7 @@ export function createBottomSheet<TId extends string = string>(
     }
     pending.length = 0;
     return () => {
+      restoreTeleport?.();
       created.destroy();
       if (engine === created) engine = null;
     };

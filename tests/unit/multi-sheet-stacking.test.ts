@@ -63,6 +63,25 @@ describe("BottomSheetEngine — multi-sheet stacking", () => {
     engineB.destroy();
   });
 
+  it("nested open promotes the new sheet to top z synchronously (no behind-flash frame)", async () => {
+    const a = makeSheet();
+    const b = makeSheet();
+    const engineA = new BottomSheetEngine(opts(a));
+    const engineB = new BottomSheetEngine(opts(b));
+    await engineA.open("full");
+    // open B but DO NOT await: the z-promote must happen synchronously at the
+    // start of open/snapTo, before the first paint — not on the later `open`
+    // event — so B is never one frame behind A.
+    const opening = engineB.open("full");
+    const zA = parseInt(a.sheet.style.zIndex, 10);
+    const zB = parseInt(b.sheet.style.zIndex, 10);
+    expect(zB).toBeGreaterThan(zA);
+    expect(parseInt(b.backdrop.style.zIndex, 10)).toBeGreaterThan(zA);
+    await opening;
+    engineA.destroy();
+    engineB.destroy();
+  });
+
   it("closing the top sheet returns top status to the one below", async () => {
     const a = makeSheet();
     const b = makeSheet();

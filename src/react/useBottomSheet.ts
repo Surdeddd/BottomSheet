@@ -8,6 +8,11 @@ import {
   useSyncExternalStore,
 } from "react";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import {
+  resolveTeleportTarget,
+  teleportElements,
+  type TeleportTarget,
+} from "../core/features/teleport";
 import type {
   CloseReason,
   EngineOptions,
@@ -71,6 +76,9 @@ type HookOpts<TId extends string> = Omit<
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
+  teleportTo?: TeleportTarget;
+  backdropColor?: string;
+  backdropOpacity?: number;
   onSnap?: (id: TId) => void;
   onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
   onOpened?: (id: TId) => void;
@@ -111,6 +119,22 @@ export function useBottomSheet<TId extends string = string>(
       scrim: screenRef.current ?? undefined,
     });
     engineRef.current = engine;
+
+    const target = resolveTeleportTarget(optsRef.current.teleportTo);
+    const restoreTeleport = target
+      ? teleportElements(
+          [backdropRef.current, screenRef.current, sheetRef.current],
+          target,
+        )
+      : null;
+
+    if (optsRef.current.backdropColor !== undefined) {
+      engine.setScrimColor(optsRef.current.backdropColor);
+    }
+    if (optsRef.current.backdropOpacity !== undefined) {
+      engine.setBackdropRange([0, optsRef.current.backdropOpacity]);
+    }
+
     cachedSnapshotRef.current = { ...engine.state };
     setMounted(n => n + 1);
 
@@ -143,6 +167,7 @@ export function useBottomSheet<TId extends string = string>(
     ];
     return () => {
       offs.forEach(off => off());
+      restoreTeleport?.();
       engine.destroy();
       engineRef.current = null;
       cachedSnapshotRef.current = SSR_STATE;
@@ -163,6 +188,20 @@ export function useBottomSheet<TId extends string = string>(
     engineRef.current.setAllowed(ids);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowedKey, snapKey]);
+
+  useEffect(() => {
+    if (!engineRef.current) return;
+    if (opts.backdropColor !== undefined) {
+      engineRef.current.setScrimColor(opts.backdropColor);
+    }
+  }, [opts.backdropColor]);
+
+  useEffect(() => {
+    if (!engineRef.current) return;
+    if (opts.backdropOpacity !== undefined) {
+      engineRef.current.setBackdropRange([0, opts.backdropOpacity]);
+    }
+  }, [opts.backdropOpacity]);
 
   const subscribe = useCallback((fn: () => void) => {
     subscribersRef.current.add(fn);

@@ -1,5 +1,10 @@
 import { onBeforeUnmount, onMounted, reactive, ref, type Ref } from "vue";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import {
+  resolveTeleportTarget,
+  teleportElements,
+  type TeleportTarget,
+} from "../core/features/teleport";
 import type {
   EngineOptions,
   EngineState,
@@ -21,6 +26,9 @@ export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
+  teleportTo?: TeleportTarget;
+  backdropColor?: string;
+  backdropOpacity?: number;
   onSnap?: (id: TId) => void;
 };
 
@@ -90,6 +98,8 @@ export function useBottomSheet<TId extends string = string>(
     progress: 0,
   });
 
+  let restoreTeleport: (() => void) | null = null;
+
   const sync = (): void => {
     if (!engine) return;
     Object.assign(state, engine.state);
@@ -97,7 +107,13 @@ export function useBottomSheet<TId extends string = string>(
 
   onMounted(() => {
     if (!sheetRef.value) return;
-    const { onSnap, ...engineOpts } = opts;
+    const {
+      onSnap,
+      teleportTo,
+      backdropColor,
+      backdropOpacity,
+      ...engineOpts
+    } = opts;
     engine = new BottomSheetEngine({
       ...(engineOpts as Omit<
         EngineOptions,
@@ -110,6 +126,18 @@ export function useBottomSheet<TId extends string = string>(
       scrim: screenRef.value ?? undefined,
     });
     sync();
+
+    const target = resolveTeleportTarget(teleportTo);
+    if (target) {
+      restoreTeleport = teleportElements(
+        [backdropRef.value, screenRef.value, sheetRef.value],
+        target,
+      );
+    }
+    if (backdropColor !== undefined) engine.setScrimColor(backdropColor);
+    if (backdropOpacity !== undefined) {
+      engine.setBackdropRange([0, backdropOpacity]);
+    }
 
     engine.on("snap", payload => {
       sync();
@@ -128,6 +156,8 @@ export function useBottomSheet<TId extends string = string>(
   });
 
   onBeforeUnmount(() => {
+    restoreTeleport?.();
+    restoreTeleport = null;
     engine?.destroy();
     engine = null;
   });
