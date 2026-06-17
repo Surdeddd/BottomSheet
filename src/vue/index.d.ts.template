@@ -28,6 +28,9 @@ export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
+  teleportTo?: string | HTMLElement | null;
+  backdropColor?: string;
+  backdropOpacity?: number;
   onSnap?: (id: TId) => void;
 };
 

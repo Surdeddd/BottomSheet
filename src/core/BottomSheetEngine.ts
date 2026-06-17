@@ -421,7 +421,9 @@ export class BottomSheetEngine {
     const previousSize = this.size;
     this.scrollCache.cache(previousId, previousSize, target.size);
     this.activeId = id;
-    if (wasClosed && target.size > 0) {
+    const rawTargetSize = this.snapPointsRaw.find(p => p.id === id)?.size;
+    const opensToRest = id === "closed" || rawTargetSize === 0;
+    if (wasClosed && !opensToRest) {
       this.opening = true;
       sheetStack.promote(this.id);
     }

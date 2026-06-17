@@ -82,6 +82,30 @@ describe("BottomSheetEngine — multi-sheet stacking", () => {
     engineB.destroy();
   });
 
+  it("promotes synchronously even when the target snap measures 0 at open time (content/fit)", async () => {
+    const a = makeSheet();
+    const b = makeSheet();
+    const engineA = new BottomSheetEngine(opts(a));
+    const engineB = new BottomSheetEngine({
+      ...opts(b),
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "cnt", size: "content" },
+      ],
+      initial: "closed",
+    });
+    await engineA.open("full");
+    // "cnt" measures 0 here (no laid-out content), but it is an open intent —
+    // the promote must NOT be gated on the measured size, or B flashes behind A.
+    const opening = engineB.snapTo("cnt");
+    const zA = parseInt(a.sheet.style.zIndex, 10);
+    const zB = parseInt(b.sheet.style.zIndex, 10);
+    expect(zB).toBeGreaterThan(zA);
+    await opening;
+    engineA.destroy();
+    engineB.destroy();
+  });
+
   it("closing the top sheet returns top status to the one below", async () => {
     const a = makeSheet();
     const b = makeSheet();
