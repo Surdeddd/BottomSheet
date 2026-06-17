@@ -82,7 +82,7 @@ describe("BottomSheetFromConfig", () => {
     expect(sheet).not.toBeNull();
     expect(sheet?.getAttribute("data-active")).toBe("min");
 
-    const header = container.querySelector(".bs-handle h2");
+    const header = container.querySelector(".bs-header h2");
     expect(header?.textContent).toBe("Configured");
 
     const body = container.querySelector('[data-testid="body"]');

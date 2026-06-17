@@ -743,6 +743,53 @@ export class BottomSheetEngine {
     }
   }
 
+  private contentTargets(): Element[] {
+    const scroller = this.scrollContainer;
+    if (!scroller) return [];
+    const hasSlot = typeof HTMLSlotElement !== "undefined";
+    const out: Element[] = [];
+    for (const child of Array.from(scroller.children)) {
+      if (hasSlot && child instanceof HTMLSlotElement) {
+        for (const el of child.assignedElements()) out.push(el);
+      } else {
+        out.push(child);
+      }
+    }
+    return out;
+  }
+
+  private measureContentExtent(vertical: boolean): number {
+    const content = this.scrollContainer;
+    if (!content) return 0;
+    const targets = this.contentTargets();
+    if (targets.length === 0) {
+      return vertical ? content.scrollHeight : content.scrollWidth;
+    }
+    let min = Infinity;
+    let max = -Infinity;
+    for (const el of targets) {
+      const r = el.getBoundingClientRect();
+      if (vertical) {
+        if (r.top < min) min = r.top;
+        if (r.bottom > max) max = r.bottom;
+      } else {
+        if (r.left < min) min = r.left;
+        if (r.right > max) max = r.right;
+      }
+    }
+    if (!isFinite(min) || !isFinite(max) || max <= min) {
+      return vertical ? content.scrollHeight : content.scrollWidth;
+    }
+    let pad = 0;
+    if (typeof getComputedStyle !== "undefined") {
+      const cs = getComputedStyle(content);
+      pad = vertical
+        ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)
+        : (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    }
+    return max - min + pad;
+  }
+
   private measureFitSize(): number {
     const vertical = layoutAxis(this.mode as TransformAxis) === "height";
     const handleSize = vertical
@@ -750,7 +797,7 @@ export class BottomSheetEngine {
       : this.handle.offsetWidth;
     const content = this.scrollContainer;
     const natural = content
-      ? handleSize + (vertical ? content.scrollHeight : content.scrollWidth)
+      ? handleSize + this.measureContentExtent(vertical)
       : handleSize;
     if (typeof window === "undefined") return natural;
     const viewport = vertical ? window.innerHeight : window.innerWidth;
@@ -761,22 +808,62 @@ export class BottomSheetEngine {
     if (typeof ResizeObserver === "undefined") return;
     if (!this.snapPointsRaw.some(p => p.size === "fit" || p.size === "content"))
       return;
-    const targets: HTMLElement[] = [this.handle];
-    if (this.scrollContainer && this.scrollContainer !== this.handle) {
-      targets.push(this.scrollContainer);
-    }
     let raf = 0;
-    const ro = new ResizeObserver(() => {
+    const schedule = (): void => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
         if (this.destroyed || this.gesture?.isDragging) return;
         this.recompute();
       });
-    });
-    for (const t of targets) ro.observe(t);
+    };
+    const ro = new ResizeObserver(schedule);
+    ro.observe(this.handle);
+    const scroller = this.scrollContainer;
+    const observed = new Set<Element>();
+    const slots = new Set<HTMLSlotElement>();
+    const hasSlot = typeof HTMLSlotElement !== "undefined";
+    const onSlotChange = (): void => resync();
+    const trackSlots = (): void => {
+      if (!scroller || !hasSlot) return;
+      for (const child of Array.from(scroller.children)) {
+        if (child instanceof HTMLSlotElement && !slots.has(child)) {
+          child.addEventListener("slotchange", onSlotChange);
+          slots.add(child);
+        }
+      }
+    };
+    const resync = (): void => {
+      trackSlots();
+      const targets = this.contentTargets();
+      for (const el of observed) {
+        if (!targets.includes(el)) {
+          ro.unobserve(el);
+          observed.delete(el);
+        }
+      }
+      for (const el of targets) {
+        if (!observed.has(el)) {
+          ro.observe(el);
+          observed.add(el);
+        }
+      }
+      schedule();
+    };
+    let mo: MutationObserver | undefined;
+    if (scroller) {
+      resync();
+      if (typeof MutationObserver !== "undefined") {
+        mo = new MutationObserver(resync);
+        mo.observe(scroller, { childList: true });
+      }
+    }
     this.teardowns.add(() => {
       ro.disconnect();
+      mo?.disconnect();
+      for (const slot of slots) {
+        slot.removeEventListener("slotchange", onSlotChange);
+      }
       if (raf) cancelAnimationFrame(raf);
     });
   }

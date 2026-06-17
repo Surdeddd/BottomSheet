@@ -53,6 +53,7 @@ export type BottomSheetProps = EngineOptionsForProps & {
   className?: string;
   style?: CSSProperties;
   header?: HeaderProp;
+  footer?: HeaderProp;
   children?: ReactNode;
   leftButton?: ReactNode;
   rightButton?: ReactNode;
@@ -102,6 +103,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       className = "",
       style,
       header,
+      footer,
       children,
       leftButton,
       rightButton,
@@ -307,9 +309,12 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             role="slider"
             tabIndex={0}
             aria-label="Resize sheet"
-          >
-            {typeof header === "function" ? header(state) : header}
-          </div>
+          />
+          {header != null && header !== false && (
+            <div className="bs-header">
+              {typeof header === "function" ? header(state) : header}
+            </div>
+          )}
           <div
             ref={contentRef as React.RefObject<HTMLDivElement>}
             className="bs-content"
@@ -319,6 +324,11 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           >
             {children}
           </div>
+          {footer != null && footer !== false && (
+            <div className="bs-footer">
+              {typeof footer === "function" ? footer(state) : footer}
+            </div>
+          )}
           <span className="bs-sr-only" role="status" aria-live="polite">
             {announce}
           </span>

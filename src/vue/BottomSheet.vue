@@ -294,7 +294,8 @@ defineExpose({
           :aria-valuenow="activeIdx"
           :aria-valuetext="state.activeId"
           aria-label="Resize sheet"
-        >
+        />
+        <div v-if="$slots.header" class="bs-header">
           <slot name="header" :state="state" />
         </div>
         <div

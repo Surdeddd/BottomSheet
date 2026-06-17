@@ -6,6 +6,7 @@ import {
   on,
   onCleanup,
   onMount,
+  Show,
   type JSX,
 } from "solid-js";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
@@ -42,6 +43,7 @@ export type BottomSheetProps<TId extends string = string> = {
   onChange?: (state: EngineState & { activeId: TId }) => void;
   engineRef?: (engine: BottomSheetEngine | null) => void;
   header?: JSX.Element;
+  footer?: JSX.Element;
   screen?: JSX.Element;
   children?: JSX.Element;
 };
@@ -182,9 +184,10 @@ export const BottomSheet = <TId extends string = string>(
           role="slider"
           tabIndex={0}
           aria-label="Resize sheet"
-        >
-          {props.header}
-        </div>
+        />
+        <Show when={props.header}>
+          <div class="bs-header">{props.header}</div>
+        </Show>
         <div
           class="bs-content"
           ref={el => (contentEl = el)}
@@ -194,6 +197,9 @@ export const BottomSheet = <TId extends string = string>(
         >
           {props.children}
         </div>
+        <Show when={props.footer}>
+          <div class="bs-footer">{props.footer}</div>
+        </Show>
         <span class="bs-sr-only" role="status" aria-live="polite">
           {state().activeId}
         </span>

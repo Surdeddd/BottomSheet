@@ -43,7 +43,7 @@ describe("React: per-snap header function", () => {
     root = createRoot(container);
   });
 
-  it("renders a static header node (backward compat)", async () => {
+  it("renders a static header node in .bs-header, separate from the grabber", async () => {
     await act(async () => {
       root.render(
         jsx(BottomSheet, {
@@ -60,7 +60,38 @@ describe("React: per-snap header function", () => {
       );
     });
     const handle = container.querySelector(".bs-handle");
-    expect(handle?.textContent).toBe("Static Title");
+    const headerRegion = container.querySelector(".bs-header");
+    expect(headerRegion?.textContent).toBe("Static Title");
+    expect(handle?.textContent).toBe("");
+    expect(headerRegion?.closest(".bs-handle")).toBeNull();
+  });
+
+  it("renders a footer node in .bs-footer, after the scroll content", async () => {
+    await act(async () => {
+      root.render(
+        jsx(BottomSheet, {
+          snapPoints: [
+            { id: "min", size: 100 },
+            { id: "full", size: 800 },
+          ],
+          initial: "min",
+          animation: "tween",
+          duration: 0,
+          respectReducedMotion: false,
+          footer: jsx("button", { children: "Confirm" }),
+        }),
+      );
+    });
+    const sheet = container.querySelector(".bs-sheet")!;
+    const footer = sheet.querySelector(".bs-footer");
+    const content = sheet.querySelector(".bs-content")!;
+    expect(footer?.textContent).toBe("Confirm");
+    expect(footer?.closest(".bs-content")).toBeNull();
+    // footer comes after content in DOM order
+    expect(
+      content.compareDocumentPosition(footer!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("calls the header function with engine state and re-renders on snap", async () => {

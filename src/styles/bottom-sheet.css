@@ -244,6 +244,12 @@
   margin-left: calc(-1 * (var(--bs-handle-height) + 6px));
 }
 
+.bs-header {
+  flex: 0 0 auto;
+  padding: 0 16px 8px;
+  background: var(--bs-surface, var(--bs-surface-d));
+}
+
 .bs-content {
   flex: 1;
   min-height: 0;
@@ -259,6 +265,17 @@
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
   background: var(--bs-surface, var(--bs-surface-d));
+}
+
+.bs-sheet[data-mode="bottom"]:has(.bs-footer:not([hidden]):has(*)) {
+  padding-bottom: 0;
+}
+
+.bs-header:not(:has(*)),
+.bs-footer:not(:has(*)),
+.bs-header[hidden],
+.bs-footer[hidden] {
+  display: none;
 }
 
 .bs-screen {

@@ -170,11 +170,15 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
           role="slider"
           tabIndex={0}
           aria-label="Resize sheet"
-        >
+        />
+        <div class="bs-header">
           <Slot name="header" />
         </div>
         <div class="bs-content" ref={contentRef}>
           <Slot />
+        </div>
+        <div class="bs-footer">
+          <Slot name="footer" />
         </div>
         <span class="bs-sr-only" role="status" aria-live="polite">
           {state.activeId}

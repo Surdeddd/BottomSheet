@@ -95,6 +95,7 @@ export type BottomSheetProps<TId extends string = string> = {
   returnFocusTo?: HTMLElement | string | (() => HTMLElement | null);
   ariaLabel?: string;
   header?: Snippet<[EngineState & { activeId: TId }]>;
+  footer?: Snippet<[EngineState & { activeId: TId }]>;
   leftButton?: Snippet;
   rightButton?: Snippet;
   screen?: Snippet;

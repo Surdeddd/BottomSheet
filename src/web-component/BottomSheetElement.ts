@@ -174,12 +174,28 @@ const buildSlot = (name: string): HTMLSlotElement => {
   return slot;
 };
 
+const buildSlotRegion = (name: string, className: string): HTMLElement => {
+  const region = document.createElement("div");
+  region.className = className;
+  region.setAttribute("part", name);
+  const slot = buildSlot(name);
+  region.appendChild(slot);
+  const sync = (): void => {
+    region.hidden = slot.assignedNodes({ flatten: true }).length === 0;
+  };
+  slot.addEventListener("slotchange", sync);
+  sync();
+  return region;
+};
+
 const buildShadowTree = (): {
   fragment: DocumentFragment;
   refs: {
     sheet: HTMLElement;
     handle: HTMLElement;
+    header: HTMLElement;
     content: HTMLElement;
+    footer: HTMLElement;
     backdrop: HTMLElement;
     screen: HTMLElement;
     leftButton: HTMLElement;
@@ -223,7 +239,8 @@ const buildShadowTree = (): {
   handle.setAttribute("role", "slider");
   handle.setAttribute("tabindex", "0");
   handle.setAttribute("aria-label", "Resize sheet");
-  handle.appendChild(buildSlot("header"));
+
+  const header = buildSlotRegion("header", "bs-header");
 
   const content = document.createElement("div");
   content.className = "bs-content";
@@ -235,6 +252,8 @@ const buildShadowTree = (): {
   const defaultSlot = document.createElement("slot");
   content.appendChild(defaultSlot);
 
+  const footer = buildSlotRegion("footer", "bs-footer");
+
   const announcer = document.createElement("span");
   announcer.className = "bs-sr-announce";
   announcer.setAttribute("role", "status");
@@ -243,7 +262,7 @@ const buildShadowTree = (): {
   announcer.style.cssText =
     "position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);";
 
-  sheet.append(handle, content);
+  sheet.append(handle, header, content, footer);
   root.append(backdrop, screen, sheet, leftButton, rightButton, announcer);
 
   const fragment = document.createDocumentFragment();
@@ -254,7 +273,9 @@ const buildShadowTree = (): {
     refs: {
       sheet,
       handle,
+      header,
       content,
+      footer,
       backdrop,
       screen,
       leftButton,

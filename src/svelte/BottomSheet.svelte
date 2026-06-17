@@ -39,6 +39,7 @@
     returnFocusTo?: HTMLElement | string | (() => HTMLElement | null);
     ariaLabel?: string;
     header?: Snippet<[EngineState & { activeId: TId }]>;
+    footer?: Snippet<[EngineState & { activeId: TId }]>;
     leftButton?: Snippet;
     rightButton?: Snippet;
     screen?: Snippet;
@@ -82,6 +83,7 @@
     returnFocusTo,
     ariaLabel = "Bottom sheet",
     header,
+    footer,
     leftButton,
     rightButton,
     screen,
@@ -284,13 +286,13 @@
       aria-valuemax={Math.max(0, allowedIds.length - 1)}
       aria-valuenow={Math.max(0, activeIdx)}
       aria-valuetext={viewState.activeId}
-    >
-      {#if header}{@render header(viewState)}{/if}
-    </div>
+    ></div>
+    {#if header}<div class="bs-header">{@render header(viewState)}</div>{/if}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div class="bs-content" bind:this={contentEl} tabindex="0" role="region" aria-label="Sheet content">
       {#if children}{@render children()}{/if}
     </div>
+    {#if footer}<div class="bs-footer">{@render footer(viewState)}</div>{/if}
     <span class="bs-sr-only" role="status" aria-live="polite">
       {viewState.activeId}
     </span>
