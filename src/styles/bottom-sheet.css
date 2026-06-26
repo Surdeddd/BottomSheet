@@ -118,7 +118,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 8px 16px 4px;
+  padding: var(--bs-handle-padding, 8px 16px 4px);
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -246,7 +246,7 @@
 
 .bs-header {
   flex: 0 0 auto;
-  padding: 0 16px 8px;
+  padding: var(--bs-header-padding, 0 16px 8px);
   background: var(--bs-surface, var(--bs-surface-d));
 }
 
@@ -257,12 +257,12 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   user-select: text;
-  padding: 0 16px 16px;
+  padding: var(--bs-content-padding, 0 16px 16px);
 }
 
 .bs-footer {
   flex: 0 0 auto;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: var(--bs-footer-padding, 12px 16px calc(12px + env(safe-area-inset-bottom)));
   border-top: 1px solid var(--bs-surface-border, var(--bs-surface-border-d));
   background: var(--bs-surface, var(--bs-surface-d));
 }

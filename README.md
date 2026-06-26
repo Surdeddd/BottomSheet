@@ -3,7 +3,7 @@
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
 ![bundle](https://img.shields.io/badge/core-16.8%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-392%20unit-2ea44f?style=flat-square)
+![tests](https://img.shields.io/badge/tests-452%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -47,7 +47,7 @@ stacking — and the exact same engine behind every adapter.
 | WCAG 2.1 AA keyboard slider          | partial |         —         |     **✓**     |
 | Multi-sheet stacking                 |    —    |         —         |     **✓**     |
 | Sheet-manager registry (typed)       |    —    |         —         |     **✓**     |
-| Tests (unit + e2e)                   | partial |      partial      | **392 + 164**  |
+| Tests (unit + e2e)                   | partial |      partial      | **452 + 164**  |
 
 ## Install
 
@@ -379,6 +379,34 @@ element — drive any CSS animation from drag without touching JS:
 }
 ```
 
+### Padding & layout
+
+Every region's padding is a token — override or zero it to go edge-to-edge.
+Defaults match the built-in look. Set the variable on the host / `.bs-root` /
+`:root`; custom properties inherit through the Web Component's shadow boundary,
+so the same override works for every adapter:
+
+| Token                  | Default                | Region              |
+| ---------------------- | ---------------------- | ------------------- |
+| `--bs-content-padding` | `0 16px 16px`          | scrollable body     |
+| `--bs-handle-padding`  | `8px 16px 4px`         | grabber strip (top) |
+| `--bs-header-padding`  | `0 16px 8px`           | header slot         |
+| `--bs-footer-padding`  | `12px 16px (+ inset)`  | footer slot         |
+
+(The footer default is `12px 16px calc(12px + env(safe-area-inset-bottom))` — it
+keeps action buttons clear of the home indicator.)
+
+```css
+.bs-root { --bs-content-padding: 0; }               /* full-bleed content */
+.bs-root { --bs-content-padding: 0 24px 24px; }      /* custom insets        */
+bottom-sheet { --bs-handle-padding: 0; }             /* Web Component, from the host */
+```
+
+A `maxHeight` (prop, or `max-height` attribute on the element) caps the sheet:
+a `'content'` / `'fit'` snap taller than the cap settles flush against the edge
+and the body scrolls internally — the sheet never lifts off its anchor and
+`--bs-size` always equals the rendered height.
+
 ## Demo
 
 ```bash
@@ -393,7 +421,7 @@ snap, progress, velocity, FPS). EN/RU and light/dark toggles in the corner.
 ## Testing
 
 ```bash
-npm test                 # 253 unit tests via vitest + happy-dom (~6s)
+npm test                 # 452 unit tests via vitest + happy-dom (~6s)
 npx playwright test      # 32 e2e via Playwright on mobile-Chrome (~25s)
 npm run typecheck        # TypeScript --noEmit
 ```

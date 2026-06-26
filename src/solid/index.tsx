@@ -36,6 +36,8 @@ export type BottomSheetProps<TId extends string = string> = {
   lockBodyScroll?: boolean;
   rubberBand?: boolean;
   backdropRange?: [number, number];
+  radius?: string | number;
+  maxHeight?: string | number;
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
@@ -91,6 +93,8 @@ export const BottomSheet = <TId extends string = string>(
       lockBodyScroll: props.lockBodyScroll,
       rubberBand: props.rubberBand,
       backdropRange: props.backdropRange,
+      radius: props.radius,
+      maxHeight: props.maxHeight,
     };
 
     engine = new BottomSheetEngine(engineOpts);

@@ -455,8 +455,8 @@ export class BottomSheetEngine {
     this.updateAriaSlider();
     this.emit("snap", {
       id,
-      size: target.size,
-      progress: this.computeProgress(target.size),
+      size: this.size,
+      progress: this.computeProgress(this.size),
     });
     if (wasClosed && target.size > 0) {
       this.emit("open", { id });
@@ -556,12 +556,12 @@ export class BottomSheetEngine {
     const value = typeof h === "number" ? `${h}px` : h;
     const axis = layoutAxis(this.mode as TransformAxis);
     this.element.style.setProperty(
-      axis === "height" ? "maxHeight" : "maxWidth",
+      axis === "height" ? "max-height" : "max-width",
       value,
     );
     if (typeof h === "number") {
       this.maxHeightCap = h;
-      this.clampToMaxHeight();
+      this.recompute();
     } else if (typeof window !== "undefined") {
       const probe = document.createElement("div");
       probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;${axis === "height" ? "height" : "width"}:${value};`;
@@ -570,7 +570,7 @@ export class BottomSheetEngine {
         axis === "height" ? probe.offsetHeight : probe.offsetWidth;
       probe.remove();
       this.maxHeightCap = measured > 0 ? measured : undefined;
-      this.clampToMaxHeight();
+      this.recompute();
     }
   }
 
@@ -578,9 +578,6 @@ export class BottomSheetEngine {
     if (this.maxHeightCap === undefined) return;
     if (this.snaps.getMaxAxisSize() > this.maxHeightCap) {
       this.snaps.setMaxAxisSize(this.maxHeightCap);
-    }
-    if (this.size > this.maxHeightCap && !this.gesture?.isDragging) {
-      this.applySize(this.maxHeightCap);
     }
   }
 
@@ -735,6 +732,7 @@ export class BottomSheetEngine {
   recompute(): void {
     if (this.destroyed) return;
     this.snaps.recompute();
+    this.clampToMaxHeight();
     this.scrim.invalidateOpacityCache();
     if (this.gesture?.isDragging) return;
     const current = this.snaps.findById(this.activeId);
@@ -801,9 +799,13 @@ export class BottomSheetEngine {
     const natural = content
       ? handleSize + this.measureContentExtent(vertical)
       : handleSize;
-    if (typeof window === "undefined") return natural;
+    const capped =
+      this.maxHeightCap !== undefined
+        ? Math.min(natural, this.maxHeightCap)
+        : natural;
+    if (typeof window === "undefined") return capped;
     const viewport = vertical ? window.innerHeight : window.innerWidth;
-    return viewport > 0 ? Math.min(natural, viewport) : natural;
+    return viewport > 0 ? Math.min(capped, viewport) : capped;
   }
 
   private installFitObserver(): void {
@@ -1219,8 +1221,8 @@ export class BottomSheetEngine {
       this.updateAriaSlider();
       this.emit("snap", {
         id: target!.id,
-        size: target!.size,
-        progress: this.computeProgress(target!.size),
+        size: this.size,
+        progress: this.computeProgress(this.size),
       });
       this.haptic();
       if (previousSnapSize === 0 && target!.size > 0) {
@@ -1248,27 +1250,30 @@ export class BottomSheetEngine {
 
 
   private applySize(size: number): void {
-    this.size = size;
-    const offset = this.snaps.getMaxAxisSize() - size;
+    const cap = this.snaps.getMaxAxisSize();
+    const clamped =
+      cap > 0 && size > cap && !this.gesture?.isDragging ? cap : size;
+    this.size = clamped;
+    const offset = cap - clamped;
     const style = this.element.style;
     style.transform = this.transformTemplate(offset);
-    if (this.sizeWriteSentinel.shouldWrite(size, SIZE_WRITE_EPSILON)) {
-      style.setProperty("--bs-size", `${size}px`);
+    if (this.sizeWriteSentinel.shouldWrite(clamped, SIZE_WRITE_EPSILON)) {
+      style.setProperty("--bs-size", `${clamped}px`);
       if (this.scrimParent) {
-        this.scrimParent.style.setProperty("--bs-size", `${size}px`);
+        this.scrimParent.style.setProperty("--bs-size", `${clamped}px`);
       }
       if (this.anchorHost && this.anchorHost !== this.scrimParent) {
-        this.anchorHost.style.setProperty("--bs-size", `${size}px`);
+        this.anchorHost.style.setProperty("--bs-size", `${clamped}px`);
       }
       if (
         this.rootEl &&
         this.rootEl !== this.scrimParent &&
         this.rootEl !== this.anchorHost
       ) {
-        this.rootEl.style.setProperty("--bs-size", `${size}px`);
+        this.rootEl.style.setProperty("--bs-size", `${clamped}px`);
       }
     }
-    const progress = this.computeProgress(size);
+    const progress = this.computeProgress(clamped);
     const progressChanged = this.progressWriteSentinel.shouldWrite(
       progress,
       OPACITY_WRITE_EPSILON,
@@ -1286,15 +1291,16 @@ export class BottomSheetEngine {
     this.scrim.applyOpacity(progress, progressChanged);
     if (progressChanged && this.bus.listenerCount("progress") > 0) {
       this.progressPayload.value = progress;
-      this.progressPayload.size = size;
+      this.progressPayload.size = clamped;
       this.emit("progress", this.progressPayload);
     }
   }
 
   private computeProgress(size: number): number {
     const { min, max } = this.getAllowedRange();
-    if (max <= min) return 0;
-    return Math.min(Math.max((size - min) / (max - min), 0), 1);
+    const reachableMax = Math.min(max, this.snaps.getMaxAxisSize());
+    if (reachableMax <= min) return 0;
+    return Math.min(Math.max((size - min) / (reachableMax - min), 0), 1);
   }
 
   private handleOpen(): void {
@@ -1321,8 +1327,8 @@ export class BottomSheetEngine {
     this.updateAriaSlider();
     this.emit("snap", {
       id: target.id,
-      size: target.size,
-      progress: this.computeProgress(target.size),
+      size: this.size,
+      progress: this.computeProgress(this.size),
     });
     if (target.size > 0 && !this.lifecycle.isInstalled) {
       this.emit("open", { id: target.id });

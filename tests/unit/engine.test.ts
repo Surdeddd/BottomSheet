@@ -305,8 +305,9 @@ describe("BottomSheetEngine", () => {
     await new Promise(r => setTimeout(r, 80));
 
     expect(onSnap).toHaveBeenCalledTimes(1);
-    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 600, progress: 1 });
+    expect(onSnap).toHaveBeenCalledWith({ id: "b", size: 500, progress: 1 });
     expect(engine.state.activeId).toBe("b");
+    expect(engine.state.size).toBe(500);
     engine.destroy();
   });
 
