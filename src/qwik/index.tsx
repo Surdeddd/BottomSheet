@@ -33,6 +33,11 @@ export type BottomSheetProps<TId extends string = string> = {
   backdropRange?: [number, number];
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
+  persistent?: boolean;
+  disableClose?: boolean;
+  disableDrag?: boolean;
+  closeOnRouteChange?: boolean;
+  returnFocusTo?: EngineOptions["returnFocusTo"];
   ariaLabel?: string;
   radius?: string | number;
   maxHeight?: string | number;
@@ -48,6 +53,8 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
   const contentRef = useSignal<HTMLElement>();
   const backdropRef = useSignal<HTMLElement>();
   const scrimRef = useSignal<HTMLElement>();
+  const headerRef = useSignal<HTMLElement>();
+  const footerRef = useSignal<HTMLElement>();
 
   const initialActive =
     props.initial ?? props.snapPoints[0]?.id ?? "default";
@@ -92,6 +99,11 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       lockBodyScroll: props.lockBodyScroll,
       rubberBand: props.rubberBand,
       backdropRange: props.backdropRange,
+      persistent: props.persistent,
+      disableClose: props.disableClose,
+      disableDrag: props.disableDrag,
+      closeOnRouteChange: props.closeOnRouteChange,
+      returnFocusTo: props.returnFocusTo,
       radius: props.radius,
       maxHeight: props.maxHeight,
     };
@@ -117,7 +129,31 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     engine.on("dragstart", sync);
     engine.on("dragend", sync);
 
+    let onBackdropClick: (() => void) | undefined;
+    if (
+      props.backdrop !== false &&
+      props.closeOnBackdrop !== false &&
+      backdropRef.value
+    ) {
+      onBackdropClick = () => {
+        if (engine.canDismiss()) void engine.close("backdrop");
+      };
+      backdropRef.value.addEventListener("click", onBackdropClick);
+    }
+
+    const collapseEmpty = (el: HTMLElement | undefined) => {
+      if (!el) return;
+      const empty = el.children.length === 0 && el.textContent?.trim() === "";
+      if (empty) el.setAttribute("hidden", "");
+      else el.removeAttribute("hidden");
+    };
+    collapseEmpty(headerRef.value);
+    collapseEmpty(footerRef.value);
+
     cleanup(() => {
+      if (onBackdropClick && backdropRef.value) {
+        backdropRef.value.removeEventListener("click", onBackdropClick);
+      }
       engineStore.engine = undefined;
       engine.destroy();
     });
@@ -171,13 +207,13 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
           tabIndex={0}
           aria-label="Resize sheet"
         />
-        <div class="bs-header">
+        <div class="bs-header" ref={headerRef}>
           <Slot name="header" />
         </div>
         <div class="bs-content" ref={contentRef}>
           <Slot />
         </div>
-        <div class="bs-footer">
+        <div class="bs-footer" ref={footerRef}>
           <Slot name="footer" />
         </div>
         <span class="bs-sr-only" role="status" aria-live="polite">

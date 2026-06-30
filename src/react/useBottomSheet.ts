@@ -203,6 +203,20 @@ export function useBottomSheet<TId extends string = string>(
     }
   }, [opts.backdropOpacity]);
 
+  useEffect(() => {
+    if (!engineRef.current) return;
+    if (opts.radius !== undefined) {
+      engineRef.current.setRadius(opts.radius);
+    }
+  }, [opts.radius]);
+
+  useEffect(() => {
+    if (!engineRef.current) return;
+    if (opts.maxHeight !== undefined) {
+      engineRef.current.setMaxHeight(opts.maxHeight);
+    }
+  }, [opts.maxHeight]);
+
   const subscribe = useCallback((fn: () => void) => {
     subscribersRef.current.add(fn);
     return () => subscribersRef.current.delete(fn);

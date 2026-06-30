@@ -81,8 +81,7 @@ describe("BottomSheetEngine — maxHeight clamp (no upward gap when a snap excee
     const { sheet, handle } = makeDom();
     const content = document.createElement("div");
     sheet.appendChild(content);
-    Object.defineProperty(handle, "offsetHeight", { value: 0, configurable: true });
-    Object.defineProperty(content, "scrollHeight", { value: 900, configurable: true });
+    Object.defineProperty(sheet, "offsetHeight", { value: 900, configurable: true });
     const engine = new BottomSheetEngine({
       element: sheet,
       handle,
@@ -99,6 +98,18 @@ describe("BottomSheetEngine — maxHeight clamp (no upward gap when a snap excee
     });
     expect(engine.state.size).toBe(600);
     expect(sheet.style.transform).toBe("translate3d(0, 0px, 0)");
+    expect(sheet.style.getPropertyValue("--bs-size")).toBe("600px");
+    engine.destroy();
+  });
+
+  it("keeps the numeric maxHeight cap after a window resize (does not revert to the natural max)", async () => {
+    const { sheet, handle } = makeDom();
+    const engine = new BottomSheetEngine(base(sheet, handle, 900));
+    await engine.open("open");
+    expect(engine.state.size).toBe(600);
+    window.dispatchEvent(new Event("resize"));
+    await new Promise(r => setTimeout(r, 30));
+    expect(engine.state.size).toBe(600);
     expect(sheet.style.getPropertyValue("--bs-size")).toBe("600px");
     engine.destroy();
   });

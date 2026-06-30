@@ -114,6 +114,7 @@ export class BottomSheetEngine {
   private progressWriteSentinel = new WriteSentinel();
   private isTopSheet = true;
   private opening = false;
+  private allowOvershoot = false;
   private progressPayload: { value: number; size: number } = {
     value: 0,
     size: 0,
@@ -758,47 +759,33 @@ export class BottomSheetEngine {
     return out;
   }
 
-  private measureContentExtent(vertical: boolean): number {
+  private measureSheetNatural(vertical: boolean): number {
+    const el = this.element;
     const content = this.scrollContainer;
-    if (!content) return 0;
-    const targets = this.contentTargets();
-    if (targets.length === 0) {
-      return vertical ? content.scrollHeight : content.scrollWidth;
+    if (!content) {
+      return vertical ? el.offsetHeight : el.offsetWidth;
     }
-    let min = Infinity;
-    let max = -Infinity;
-    for (const el of targets) {
-      const r = el.getBoundingClientRect();
-      if (vertical) {
-        if (r.top < min) min = r.top;
-        if (r.bottom > max) max = r.bottom;
-      } else {
-        if (r.left < min) min = r.left;
-        if (r.right > max) max = r.right;
-      }
-    }
-    if (!isFinite(min) || !isFinite(max) || max <= min) {
-      return vertical ? content.scrollHeight : content.scrollWidth;
-    }
-    let pad = 0;
-    if (typeof getComputedStyle !== "undefined") {
-      const cs = getComputedStyle(content);
-      pad = vertical
-        ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)
-        : (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-    }
-    return max - min + pad;
+    const axis = vertical ? "height" : "width";
+    const sheetStyle = el.style;
+    const cs = content.style;
+    const prevSheet = sheetStyle[axis];
+    const prevFlex = cs.flex;
+    const prevContent = vertical ? cs.height : cs.width;
+    sheetStyle[axis] = "auto";
+    cs.flex = "none";
+    if (vertical) cs.height = "auto";
+    else cs.width = "auto";
+    const natural = vertical ? el.offsetHeight : el.offsetWidth;
+    sheetStyle[axis] = prevSheet;
+    cs.flex = prevFlex;
+    if (vertical) cs.height = prevContent;
+    else cs.width = prevContent;
+    return natural;
   }
 
   private measureFitSize(): number {
     const vertical = layoutAxis(this.mode as TransformAxis) === "height";
-    const handleSize = vertical
-      ? this.handle.offsetHeight
-      : this.handle.offsetWidth;
-    const content = this.scrollContainer;
-    const natural = content
-      ? handleSize + this.measureContentExtent(vertical)
-      : handleSize;
+    const natural = this.measureSheetNatural(vertical);
     const capped =
       this.maxHeightCap !== undefined
         ? Math.min(natural, this.maxHeightCap)
@@ -889,6 +876,10 @@ export class BottomSheetEngine {
       this.backdrop.style.opacity = "";
       this.backdrop.style.pointerEvents = "";
     }
+    if (this.anchorHost) {
+      this.anchorHost.style.removeProperty("--bs-size");
+      this.anchorHost.style.removeProperty("--bs-progress");
+    }
     if (this.screenComponent) {
       this.screenComponent.style.opacity = "";
       this.screenComponent.style.display = "";
@@ -905,6 +896,7 @@ export class BottomSheetEngine {
   }
 
   private newCycle(): AbortSignal {
+    this.allowOvershoot = false;
     this.currentAbort.abort();
     this.currentAbort = new AbortController();
     return this.currentAbort.signal;
@@ -979,6 +971,7 @@ export class BottomSheetEngine {
       seen.add(p.id);
     }
     this.snaps.setRaw(this.snapPointsRaw);
+    this.clampToMaxHeight();
     this.scrim.invalidateOpacityCache();
   }
 
@@ -1214,9 +1207,14 @@ export class BottomSheetEngine {
       this.opening = true;
       sheetStack.promote(this.id);
     }
-    void this.animation.animateTo(target.size, velocity).then(() => {
-      this.opening = false;
+    const settleCap = this.snaps.getMaxAxisSize();
+    const settleSize =
+      settleCap > 0 ? Math.min(target.size, settleCap) : target.size;
+    this.allowOvershoot = true;
+    void this.animation.animateTo(settleSize, velocity).then(() => {
       if (signal.aborted) return;
+      this.allowOvershoot = false;
+      this.opening = false;
       this.scrollCache.restore(target!.id, previousSize, target!.size);
       this.updateAriaSlider();
       this.emit("snap", {
@@ -1252,7 +1250,9 @@ export class BottomSheetEngine {
   private applySize(size: number): void {
     const cap = this.snaps.getMaxAxisSize();
     const clamped =
-      cap > 0 && size > cap && !this.gesture?.isDragging ? cap : size;
+      cap > 0 && size > cap && !this.gesture?.isDragging && !this.allowOvershoot
+        ? cap
+        : size;
     this.size = clamped;
     const offset = cap - clamped;
     const style = this.element.style;

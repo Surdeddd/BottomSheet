@@ -2481,10 +2481,9 @@ describe("BottomSheetEngine — 'fit' snap (content-aware)", () => {
   const stub = (el: HTMLElement, prop: "offsetHeight" | "scrollHeight", v: number) =>
     Object.defineProperty(el, prop, { value: v, configurable: true });
 
-  it("measures handle + content scrollHeight, not just the handle", () => {
+  it("measures the sheet's natural height (handle + content + slots)", () => {
     const { sheet, handle, content } = makeDom();
-    stub(handle, "offsetHeight", 44);
-    stub(content, "scrollHeight", 300);
+    stub(sheet, "offsetHeight", 344);
     const engine = new BottomSheetEngine({
       element: sheet,
       handle,
@@ -2501,8 +2500,7 @@ describe("BottomSheetEngine — 'fit' snap (content-aware)", () => {
 
   it("caps the fit size at the viewport", () => {
     const { sheet, handle, content } = makeDom();
-    stub(handle, "offsetHeight", 44);
-    stub(content, "scrollHeight", 5000);
+    stub(sheet, "offsetHeight", 5000);
     const engine = new BottomSheetEngine({
       element: sheet,
       handle,
@@ -2519,8 +2517,7 @@ describe("BottomSheetEngine — 'fit' snap (content-aware)", () => {
 
   it("recompute() picks up a content size change", () => {
     const { sheet, handle, content } = makeDom();
-    stub(handle, "offsetHeight", 44);
-    stub(content, "scrollHeight", 200);
+    stub(sheet, "offsetHeight", 244);
     const engine = new BottomSheetEngine({
       element: sheet,
       handle,
@@ -2532,8 +2529,8 @@ describe("BottomSheetEngine — 'fit' snap (content-aware)", () => {
       respectReducedMotion: false,
     });
     expect(engine.state.size).toBe(244);
-    Object.defineProperty(content, "scrollHeight", {
-      value: 380,
+    Object.defineProperty(sheet, "offsetHeight", {
+      value: 424,
       configurable: true,
     });
     engine.recompute();

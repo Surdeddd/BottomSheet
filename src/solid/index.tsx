@@ -38,6 +38,11 @@ export type BottomSheetProps<TId extends string = string> = {
   backdropRange?: [number, number];
   radius?: string | number;
   maxHeight?: string | number;
+  persistent?: boolean;
+  disableClose?: boolean;
+  disableDrag?: boolean;
+  closeOnRouteChange?: boolean;
+  returnFocusTo?: string;
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
@@ -95,6 +100,11 @@ export const BottomSheet = <TId extends string = string>(
       backdropRange: props.backdropRange,
       radius: props.radius,
       maxHeight: props.maxHeight,
+      persistent: props.persistent,
+      disableClose: props.disableClose,
+      disableDrag: props.disableDrag,
+      closeOnRouteChange: props.closeOnRouteChange,
+      returnFocusTo: props.returnFocusTo,
     };
 
     engine = new BottomSheetEngine(engineOpts);
@@ -121,7 +131,7 @@ export const BottomSheet = <TId extends string = string>(
       backdropEl
     ) {
       const onBackdropClick = (): void => {
-        void engine?.close();
+        if (engine?.canDismiss()) void engine.close("backdrop");
       };
       backdropEl.addEventListener("click", onBackdropClick);
       onCleanup(() => {

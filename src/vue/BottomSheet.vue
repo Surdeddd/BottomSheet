@@ -224,15 +224,6 @@ const isVerticalAxis = computed(() => {
   const mode = props.mode ?? "bottom";
   return mode === "bottom" || mode === "top";
 });
-const allowedIds = computed(
-  () => props.allowed ?? props.snapPoints.map(p => p.id),
-);
-const activeIdx = computed(() => {
-  const idx = (allowedIds.value as ReadonlyArray<string>).indexOf(
-    state.activeId,
-  );
-  return idx === -1 ? 0 : idx;
-});
 const ariaModal = computed(() => props.focusTrap === true);
 
 defineExpose({
@@ -289,10 +280,6 @@ defineExpose({
           role="slider"
           tabindex="0"
           :aria-orientation="isVerticalAxis ? 'vertical' : 'horizontal'"
-          aria-valuemin="0"
-          :aria-valuemax="Math.max(0, allowedIds.length - 1)"
-          :aria-valuenow="activeIdx"
-          :aria-valuetext="state.activeId"
           aria-label="Resize sheet"
         />
         <div v-if="$slots.header" class="bs-header">

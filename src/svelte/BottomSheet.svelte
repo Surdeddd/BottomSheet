@@ -238,12 +238,6 @@
     else if (!next && isOpen) void engine.close();
   });
 
-  let allowedIds = $derived(
-    allowed && allowed.length > 0
-      ? allowed
-      : snapPoints.map(s => s.id),
-  );
-  let activeIdx = $derived(allowedIds.indexOf(viewState.activeId));
   let isVerticalAxis = $derived(mode === "bottom" || mode === "top");
 </script>
 
@@ -282,10 +276,6 @@
       tabindex="0"
       aria-label="Resize sheet"
       aria-orientation={isVerticalAxis ? "vertical" : "horizontal"}
-      aria-valuemin={0}
-      aria-valuemax={Math.max(0, allowedIds.length - 1)}
-      aria-valuenow={Math.max(0, activeIdx)}
-      aria-valuetext={viewState.activeId}
     ></div>
     {#if header}<div class="bs-header">{@render header(viewState)}</div>{/if}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
