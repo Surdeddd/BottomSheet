@@ -276,6 +276,9 @@
       tabindex="0"
       aria-label="Resize sheet"
       aria-orientation={isVerticalAxis ? "vertical" : "horizontal"}
+      aria-valuemin="0"
+      aria-valuemax="0"
+      aria-valuenow="0"
     ></div>
     {#if header}<div class="bs-header">{@render header(viewState)}</div>{/if}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->

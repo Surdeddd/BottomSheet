@@ -775,7 +775,16 @@ export class BottomSheetEngine {
     cs.flex = "none";
     if (vertical) cs.height = "auto";
     else cs.width = "auto";
-    const natural = vertical ? el.offsetHeight : el.offsetWidth;
+    // Whole-sheet natural height — covers header/footer slots and shrink. But
+    // if app CSS pins the scroll container's size (a more specific / !important
+    // rule that defeats the inline height:auto above), this alone undercounts
+    // an in-flow `position:sticky` footer. scrollHeight always reports the full
+    // sticky-inclusive content, so also reconstruct the extent as
+    // (non-content chrome + content.scrollHeight) and take the larger.
+    const poked = vertical ? el.offsetHeight : el.offsetWidth;
+    const contentBox = vertical ? content.clientHeight : content.clientWidth;
+    const contentScroll = vertical ? content.scrollHeight : content.scrollWidth;
+    const natural = Math.max(poked, poked - contentBox + contentScroll);
     sheetStyle[axis] = prevSheet;
     cs.flex = prevFlex;
     if (vertical) cs.height = prevContent;
@@ -791,8 +800,21 @@ export class BottomSheetEngine {
         ? Math.min(natural, this.maxHeightCap)
         : natural;
     if (typeof window === "undefined") return capped;
-    const viewport = vertical ? window.innerHeight : window.innerWidth;
+    const viewport = this.containingExtent(vertical);
     return viewport > 0 ? Math.min(capped, viewport) : capped;
+  }
+
+  // The fit cap is the sheet's containing block, not always the window: a
+  // position:fixed sheet nested under a transform/filter/will-change ancestor
+  // is clipped to that ancestor, so capping by window.innerHeight oversizes the
+  // sheet and the content/footer get clipped. offsetParent resolves to that
+  // ancestor when present, and is null (→ viewport) for a plain fixed sheet.
+  private containingExtent(vertical: boolean): number {
+    const op = this.element.offsetParent as HTMLElement | null;
+    if (op && op !== document.body && op !== document.documentElement) {
+      return vertical ? op.clientHeight : op.clientWidth;
+    }
+    return vertical ? window.innerHeight : window.innerWidth;
   }
 
   private installFitObserver(): void {

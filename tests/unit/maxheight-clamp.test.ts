@@ -102,6 +102,62 @@ describe("BottomSheetEngine — maxHeight clamp (no upward gap when a snap excee
     engine.destroy();
   });
 
+  it("counts an in-flow sticky footer via scrollHeight even when the height:auto poke is defeated (pinned scroll container)", () => {
+    const { sheet, handle } = makeDom();
+    const content = document.createElement("div");
+    sheet.appendChild(content);
+    // poke can't grow the container (app CSS / framework inline style pins it):
+    // sheet.offsetHeight reflects only the clamped body, but scrollHeight still
+    // reports the full sticky-inclusive content.
+    Object.defineProperty(sheet, "offsetHeight", { value: 184, configurable: true });
+    Object.defineProperty(content, "clientHeight", { value: 164, configurable: true });
+    Object.defineProperty(content, "scrollHeight", { value: 232, configurable: true });
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      scrollContainer: content,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "open", size: "fit" },
+      ],
+      initial: "open",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    // max(184, 184 - 164 + 232) = 252 — the footer's reserved space is recovered
+    expect(engine.state.size).toBe(252);
+    engine.destroy();
+  });
+
+  it("caps a 'fit' snap by the containing block (offsetParent), not the window, when nested under a transformed ancestor", () => {
+    const { sheet, handle } = makeDom();
+    const content = document.createElement("div");
+    sheet.appendChild(content);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    container.appendChild(sheet);
+    Object.defineProperty(sheet, "offsetHeight", { value: 900, configurable: true });
+    Object.defineProperty(sheet, "offsetParent", { value: container, configurable: true });
+    Object.defineProperty(container, "clientHeight", { value: 300, configurable: true });
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      scrollContainer: content,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "open", size: "fit" },
+      ],
+      initial: "open",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    // natural 900, window 1000, but the containing block is only 300 → cap at 300
+    expect(engine.state.size).toBe(300);
+    engine.destroy();
+  });
+
   it("keeps the numeric maxHeight cap after a window resize (does not revert to the natural max)", async () => {
     const { sheet, handle } = makeDom();
     const engine = new BottomSheetEngine(base(sheet, handle, 900));
