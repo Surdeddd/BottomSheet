@@ -491,6 +491,13 @@ kbd {
   border-radius:4px;
   background:#fffaf099
 }
+/* Dark theme: the translucent light keycap composites to a light grey that
+   clashes with inherited --muted text (1.12:1). Give it an opaque dark cap
+   with light ink so the keycap stays legible (WCAG AA). */
+:root[data-theme=dark] kbd {
+  background:var(--paper-deep);
+  color:var(--ink-2)
+}
 .hero {
   max-width:1320px;
   margin:0 auto;

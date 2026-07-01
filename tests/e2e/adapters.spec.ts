@@ -48,7 +48,13 @@ const readSize = ({
 };
 
 const activate = async (page: import("@playwright/test").Page, key: AdapterKey) => {
-  await page.locator(`.adapter[data-adapter="${key}"]`).click({ force: true });
+  // scrollIntoViewIfNeeded before the force-click: on mobile viewports the
+  // adapter buttons can sit below the fold, and force:true skips auto-scroll,
+  // so the synthesized click lands off-screen and the adapter never switches
+  // (mobile-safari/WebKit). Scrolling first keeps the click on target.
+  const adapterBtn = page.locator(`.adapter[data-adapter="${key}"]`);
+  await adapterBtn.scrollIntoViewIfNeeded();
+  await adapterBtn.click({ force: true });
   await page.waitForFunction(
     ({ adapter, shadow }) => {
       const screen = document.querySelector(

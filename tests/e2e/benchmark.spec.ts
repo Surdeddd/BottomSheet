@@ -81,6 +81,17 @@ test.describe("benchmark — bottom-sheet under 1000-item load", () => {
 
   test("settle latency: snapTo → DOM reflects target", async ({ page }) => {
     const samples: number[] = [];
+    // 'full' (3rd chip) settles well below a fixed 600px on framed mobile
+    // viewports (the device frame caps it ~520px), which made the old hardcoded
+    // threshold never resolve → empty samples → NaN. Derive the real target for
+    // this device and wait for the sheet to reach ~95% of it.
+    await page.click('#snap-chips .chip:nth-child(3)');
+    await page.waitForTimeout(700);
+    const fullTarget = await page.evaluate(sel => {
+      const el = document.querySelector<HTMLElement>(sel);
+      return el ? parseFloat(el.style.getPropertyValue("--bs-size")) || 0 : 0;
+    }, sheetSelector);
+    const reach = Math.max(200, fullTarget * 0.95);
     for (let r = 0; r < RUNS; r++) {
       await page.click('#snap-chips .chip:has-text("minimized")');
       await page.waitForFunction(
@@ -92,7 +103,7 @@ test.describe("benchmark — bottom-sheet under 1000-item load", () => {
         sheetSelector,
         { timeout: 2000 },
       );
-      const ms = await page.evaluate(async sel => {
+      const ms = await page.evaluate(async ({ sel, reach }) => {
         const el = document.querySelector<HTMLElement>(sel);
         if (!el) return -1;
         const start = performance.now();
@@ -104,7 +115,7 @@ test.describe("benchmark — bottom-sheet under 1000-item load", () => {
           const tick = () => {
             const v =
               parseFloat(el.style.getPropertyValue("--bs-size")) || 0;
-            if (v >= 600) {
+            if (v >= reach) {
               resolve(performance.now() - start);
               return;
             }
@@ -113,7 +124,7 @@ test.describe("benchmark — bottom-sheet under 1000-item load", () => {
           requestAnimationFrame(tick);
           setTimeout(() => resolve(-1), 1000);
         });
-      }, sheetSelector);
+      }, { sel: sheetSelector, reach });
       if (ms > 0) samples.push(ms);
     }
     const med = median(samples);

@@ -27,6 +27,9 @@ export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
   teleportTo?: TeleportTarget;
+  // When false, suppress the engine-level teleport too (not just the Vue
+  // <Teleport>) so `teleport={false}` keeps the sheet fully in place.
+  teleport?: boolean;
   backdropColor?: string;
   backdropOpacity?: number;
   onSnap?: (id: TId) => void;
@@ -109,6 +112,7 @@ export function useBottomSheet<TId extends string = string>(
     if (!sheetRef.value) return;
     const {
       onSnap,
+      teleport,
       teleportTo,
       backdropColor,
       backdropOpacity,
@@ -127,7 +131,7 @@ export function useBottomSheet<TId extends string = string>(
     });
     sync();
 
-    const target = resolveTeleportTarget(teleportTo);
+    const target = teleport === false ? null : resolveTeleportTarget(teleportTo);
     if (target) {
       restoreTeleport = teleportElements(
         [backdropRef.value, screenRef.value, sheetRef.value],
