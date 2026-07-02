@@ -21,7 +21,8 @@ export type RouteDeps = {
 type BackCloser = {
   isOpen: () => boolean;
   isTop: () => boolean;
-  close: () => void;
+  close: () => Promise<void> | void;
+  restore: () => void;
   consumed: boolean;
 };
 
@@ -51,7 +52,10 @@ const ensureHandler = (): void => {
     target.consumed = true;
     const idx = closers.indexOf(target);
     if (idx !== -1) closers.splice(idx, 1);
-    target.close();
+    const settled = target;
+    void Promise.resolve(settled.close()).then(() => {
+      if (settled.isOpen()) settled.restore();
+    });
   });
 };
 
@@ -90,16 +94,7 @@ export function installRoute(deps: RouteDeps): () => void {
     }
   };
 
-  const onOpen = (): void => {
-    if (closer) return;
-    closer = {
-      isOpen: () => !deps.isDestroyed() && deps.getSize() > 0,
-      isTop: () => deps.isTopSheet(),
-      close: () => void deps.close(),
-      consumed: false,
-    };
-    ensureHandler();
-    closers.push(closer);
+  const pushEntry = (): void => {
     try {
       if (deps.routedTo !== undefined) {
         history.pushState({ __bsRouted: deps.sheetId }, "", deps.routedTo);
@@ -110,6 +105,26 @@ export function installRoute(deps: RouteDeps): () => void {
     } catch {
       pushed = false;
     }
+  };
+
+  const onOpen = (): void => {
+    if (closer) return;
+    const self: BackCloser = {
+      isOpen: () => !deps.isDestroyed() && deps.getSize() > 0,
+      isTop: () => deps.isTopSheet(),
+      close: () => deps.close(),
+      restore: () => {
+        if (deps.isDestroyed() || closer !== self) return;
+        self.consumed = false;
+        if (!closers.includes(self)) closers.push(self);
+        pushEntry();
+      },
+      consumed: false,
+    };
+    closer = self;
+    ensureHandler();
+    closers.push(self);
+    pushEntry();
   };
 
   const unsubscribeOpen = deps.on("open", onOpen);

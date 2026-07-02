@@ -46,6 +46,14 @@ const emit = defineEmits<{
   opened: [id: TId];
   closed: [];
   "before-close": [payload: { reason: CloseReason; cancel: () => void }];
+  "before-snap": [
+    payload: {
+      id: TId;
+      size: number;
+      previousId: string;
+      cancel: () => void;
+    },
+  ];
   "drag-start": [payload: { size: number }];
   "drag-end": [payload: { size: number; velocity: number }];
   "update:open": [open: boolean];
@@ -103,6 +111,14 @@ on("close", () => {
 on("opened", payload => emit("opened", payload.id as TId));
 on("closed", () => emit("closed"));
 on("before-close", payload => emit("before-close", payload));
+on("before-snap", payload =>
+  emit("before-snap", {
+    id: payload.id as TId,
+    size: payload.size,
+    previousId: payload.previousId,
+    cancel: payload.cancel,
+  }),
+);
 on("dragstart", payload => emit("drag-start", payload));
 on("dragend", payload => emit("drag-end", payload));
 
@@ -121,6 +137,26 @@ watch(
   next => {
     if (next === undefined || next === state.activeId) return;
     void snapTo(next);
+  },
+);
+
+watch(
+  () => props.snapPoints,
+  next => {
+    if (!next) return;
+    setSnapPoints(
+      next as unknown as Parameters<typeof setSnapPoints>[0],
+      props.allowed as unknown as string[] | undefined,
+    );
+  },
+  { deep: true },
+);
+
+watch(
+  () => props.allowed,
+  next => {
+    if (!next) return;
+    setAllowed(Array.from(next) as Parameters<typeof setAllowed>[0]);
   },
 );
 
@@ -153,6 +189,30 @@ watch(
   next => {
     if (next === undefined) return;
     setMaxHeight(next);
+  },
+);
+
+watch(
+  () => props.persistent,
+  next => {
+    if (next === undefined) return;
+    getEngine()?.setPersistent(next);
+  },
+);
+
+watch(
+  () => props.disableClose,
+  next => {
+    if (next === undefined) return;
+    getEngine()?.setDisableClose(next);
+  },
+);
+
+watch(
+  () => props.disableDrag,
+  next => {
+    if (next === undefined) return;
+    getEngine()?.setDisableDrag(next);
   },
 );
 

@@ -19,20 +19,48 @@ const isVisible = (el: HTMLElement): boolean => {
   return el.offsetParent !== null;
 };
 
+const collectFocusables = (root: Element): HTMLElement[] => {
+  const out = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE));
+  if (typeof HTMLSlotElement !== "undefined") {
+    for (const slot of Array.from(root.querySelectorAll("slot"))) {
+      for (const assigned of (slot as HTMLSlotElement).assignedElements()) {
+        if (assigned.matches(FOCUSABLE)) out.push(assigned as HTMLElement);
+        out.push(...collectFocusables(assigned));
+      }
+    }
+  }
+  return out;
+};
+
 const focusables = (root: HTMLElement): HTMLElement[] =>
-  Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+  collectFocusables(root).filter(
     el =>
       !el.hasAttribute("inert") &&
       isVisible(el) &&
       !el.matches("[aria-hidden='true']"),
   );
 
+const containsComposed = (container: HTMLElement, node: Node | null): boolean => {
+  let n: Node | null = node;
+  while (n) {
+    if (n === container) return true;
+    const slot = (n as Element).assignedSlot;
+    if (slot) {
+      n = slot;
+      continue;
+    }
+    const parent = n.parentNode;
+    n = parent instanceof ShadowRoot ? parent.host : parent;
+  }
+  return false;
+};
+
 const trapStack: object[] = [];
 
 export const installFocusTrap = (
   container: HTMLElement,
   options: {
-    initialFocus?: HTMLElement | string;
+    initialFocus?: HTMLElement | string | false;
     onEscape?: () => void;
   } = {},
 ): (() => void) => {
@@ -43,10 +71,16 @@ export const installFocusTrap = (
   const previouslyFocused = document.activeElement as HTMLElement | null;
 
   const focusInitial = () => {
+    const spec = options.initialFocus;
+    if (spec === false) {
+      if (!container.hasAttribute("tabindex")) container.tabIndex = -1;
+      container.focus({ preventScroll: true });
+      return;
+    }
     const initial =
-      typeof options.initialFocus === "string"
-        ? container.querySelector<HTMLElement>(options.initialFocus)
-        : options.initialFocus ?? focusables(container)[0] ?? container;
+      typeof spec === "string"
+        ? container.querySelector<HTMLElement>(spec)
+        : spec ?? focusables(container)[0] ?? container;
     initial?.focus({ preventScroll: true });
   };
   focusInitial();
@@ -78,7 +112,7 @@ export const installFocusTrap = (
   const handleFocusIn = (e: FocusEvent) => {
     if (!isActive()) return;
     const target = e.target as Node | null;
-    if (target && !container.contains(target)) {
+    if (target && !containsComposed(container, target)) {
       const list = focusables(container);
       list[0]?.focus({ preventScroll: true });
     }

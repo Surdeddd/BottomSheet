@@ -10,9 +10,15 @@ import {
   type JSX,
 } from "solid-js";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import {
+  resolveTeleportTarget,
+  teleportElements,
+  type TeleportTarget,
+} from "../core/features/teleport";
 import type {
   EngineOptions,
   EngineState,
+  SheetEventMap,
   SnapPointDef,
   SheetMode,
 } from "../core/types";
@@ -42,15 +48,21 @@ export type BottomSheetProps<TId extends string = string> = {
   disableClose?: boolean;
   disableDrag?: boolean;
   closeOnRouteChange?: boolean;
-  returnFocusTo?: string;
+  stackEffect?: boolean;
+  teleport?: boolean;
+  teleportTo?: TeleportTarget;
+  returnFocusTo?: EngineOptions["returnFocusTo"];
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
   onSnap?: (id: TId) => void;
+  onBeforeSnap?: (payload: SheetEventMap["before-snap"]) => void;
   onChange?: (state: EngineState & { activeId: TId }) => void;
   engineRef?: (engine: BottomSheetEngine | null) => void;
   header?: JSX.Element;
   footer?: JSX.Element;
+  leftButton?: JSX.Element;
+  rightButton?: JSX.Element;
   screen?: JSX.Element;
   children?: JSX.Element;
 };
@@ -76,6 +88,7 @@ export const BottomSheet = <TId extends string = string>(
   });
 
   let engine: BottomSheetEngine | null = null;
+  let restoreTeleport: (() => void) | null = null;
 
   onMount(() => {
     if (!sheetEl) return;
@@ -104,11 +117,21 @@ export const BottomSheet = <TId extends string = string>(
       disableClose: props.disableClose,
       disableDrag: props.disableDrag,
       closeOnRouteChange: props.closeOnRouteChange,
+      stackEffect: props.stackEffect,
       returnFocusTo: props.returnFocusTo,
     };
 
     engine = new BottomSheetEngine(engineOpts);
     props.engineRef?.(engine);
+
+    const teleportTarget =
+      props.teleport === false ? null : resolveTeleportTarget(props.teleportTo);
+    if (teleportTarget) {
+      restoreTeleport = teleportElements(
+        [backdropEl, scrimEl, sheetEl],
+        teleportTarget,
+      );
+    }
 
     const sync = (): void => {
       if (!engine) return;
@@ -122,6 +145,7 @@ export const BottomSheet = <TId extends string = string>(
       sync();
       props.onSnap?.(payload.id as TId);
     });
+    engine.on("before-snap", payload => props.onBeforeSnap?.(payload));
     engine.on("dragstart", sync);
     engine.on("dragend", sync);
 
@@ -141,6 +165,8 @@ export const BottomSheet = <TId extends string = string>(
   });
 
   onCleanup(() => {
+    restoreTeleport?.();
+    restoreTeleport = null;
     engine?.destroy();
     engine = null;
     props.engineRef?.(null);
@@ -166,6 +192,39 @@ export const BottomSheet = <TId extends string = string>(
       (allowed, prev) => {
         if (!engine || prev === undefined) return;
         if (allowed) engine.setAllowed(allowed as unknown as string[]);
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.persistent,
+      (value, prev) => {
+        if (!engine || prev === undefined || value === undefined) return;
+        engine.setPersistent(value);
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.disableClose,
+      (value, prev) => {
+        if (!engine || prev === undefined || value === undefined) return;
+        engine.setDisableClose(value);
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.disableDrag,
+      (value, prev) => {
+        if (!engine || prev === undefined || value === undefined) return;
+        engine.setDisableDrag(value);
       },
       { defer: true },
     ),
@@ -218,6 +277,16 @@ export const BottomSheet = <TId extends string = string>(
           {state().activeId}
         </span>
       </section>
+      <Show when={props.leftButton}>
+        <div class="bs-button-slot" data-side="left" data-mode={mode()}>
+          {props.leftButton}
+        </div>
+      </Show>
+      <Show when={props.rightButton}>
+        <div class="bs-button-slot" data-side="right" data-mode={mode()}>
+          {props.rightButton}
+        </div>
+      </Show>
     </div>
   );
 };

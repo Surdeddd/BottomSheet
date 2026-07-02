@@ -1,14 +1,18 @@
 import { sheetStack } from "./lifecycle/sheetStack";
-import { CLOSED_TRANSFORM, type TransformAxis } from "./primitives/transform";
 import { resolveSnap } from "./primitives/cssLength";
 import { nextInstanceId } from "./primitives/instance-id";
 import { createEventBus, type EventBus } from "./primitives/event-bus";
 import { LifecycleController } from "./controllers/lifecycle-controller";
 import { prefersReducedMotion } from "./animation/animation";
+import {
+  closedTransformFor,
+  openTransformFor,
+  type OverlayAnimation,
+  type OverlayEdge,
+} from "./primitives/overlay-transforms";
+import { installOverlaySwipe } from "./features/overlay-swipe";
 
-export type OverlayEdge = TransformAxis;
-
-export type OverlayAnimation = "slide" | "fade" | "scale";
+export type { OverlayAnimation, OverlayEdge };
 
 export type OverlayCloseReason =
   | "escape"
@@ -130,32 +134,6 @@ export type OverlayEventMap = {
 type Listener<K extends keyof OverlayEventMap> = (
   payload: OverlayEventMap[K],
 ) => void;
-
-const closedTransform = (edge: OverlayEdge): string => CLOSED_TRANSFORM[edge];
-
-const closedTransformFor = (
-  edge: OverlayEdge,
-  animation: OverlayAnimation,
-  peekPx?: number,
-): string => {
-  switch (animation) {
-    case "fade":
-      return "translate3d(0, 0, 0)";
-    case "scale":
-      return "translate3d(0, 0, 0) scale(0.94)";
-    case "slide":
-    default:
-      if (peekPx !== undefined && edge === "bottom") {
-        return `translate3d(0, calc(100% - ${peekPx}px), 0)`;
-      }
-      return closedTransform(edge);
-  }
-};
-
-const openTransformFor = (animation: OverlayAnimation): string =>
-  animation === "scale"
-    ? "translate3d(0, 0, 0) scale(1)"
-    : "translate3d(0, 0, 0)";
 
 export class OverlayEngine {
   private id = nextInstanceId("ovl");
@@ -307,6 +285,7 @@ export class OverlayEngine {
     if (this.backdrop) {
       this.backdrop.style.transition = `opacity ${dur}ms ease-out`;
     }
+    this.setWillChange(true);
 
     const cycle = ++this.cycleNonce;
     return new Promise<void>(resolve => {
@@ -333,6 +312,7 @@ export class OverlayEngine {
             this.releaseInteractiveListeners();
             this.isOpen_ = false;
             this.isAnimating_ = false;
+            this.setWillChange(false);
             this.element.style.transform = closedTransformFor(
               this.edge,
               this.enterAnimation,
@@ -365,6 +345,7 @@ export class OverlayEngine {
           ).then(() => {
             if (this.destroyed || cycle !== this.cycleNonce) return resolve();
             this.isAnimating_ = false;
+            this.setWillChange(false);
             this.element.setAttribute("data-state", "open");
             this.emit("open", undefined);
             this.onOpenCb?.();
@@ -390,6 +371,7 @@ export class OverlayEngine {
     if (this.backdrop) {
       this.backdrop.style.transition = `opacity ${dur}ms ease-in`;
     }
+    this.setWillChange(true);
 
     const cycle = ++this.cycleNonce;
     return new Promise<void>(resolve => {
@@ -418,6 +400,7 @@ export class OverlayEngine {
         ).then(() => {
           if (this.destroyed || cycle !== this.cycleNonce) return resolve();
           this.isAnimating_ = false;
+          this.setWillChange(false);
           if (this.peekPx === undefined) {
             this.element.setAttribute("hidden", "");
           }
@@ -442,6 +425,7 @@ export class OverlayEngine {
     this.destroyed = true;
     this.cycleNonce++;
     this.bus.clear();
+    this.setWillChange(false);
     this.releaseInteractiveListeners();
     this.releaseStackEntry?.();
     this.releaseStackEntry = null;
@@ -721,7 +705,6 @@ export class OverlayEngine {
   }
 
   private applyClosedStyles(): void {
-    this.element.style.willChange = "transform, opacity";
     this.element.style.transform = closedTransformFor(
       this.edge,
       this.enterAnimation,
@@ -735,7 +718,13 @@ export class OverlayEngine {
     if (this.backdrop) {
       this.backdrop.style.opacity = "0";
       this.backdrop.style.pointerEvents = "none";
-      this.backdrop.style.willChange = "opacity";
+    }
+  }
+
+  private setWillChange(on: boolean): void {
+    this.element.style.willChange = on ? "transform, opacity" : "";
+    if (this.backdrop) {
+      this.backdrop.style.willChange = on ? "opacity" : "";
     }
   }
 
@@ -839,77 +828,16 @@ export class OverlayEngine {
   }
 
   private installSwipeToClose(): () => void {
-    const el = this.element;
-    const edge = this.edge;
-    const isVertical = edge === "bottom" || edge === "top";
-    const sign = edge === "bottom" || edge === "right" ? 1 : -1;
-    const SLOP = 8;
-    let startX = 0;
-    let startY = 0;
-    let startT = 0;
-    let tracking = false;
-    let dragging = false;
-    let pointerId: number | null = null;
-    const previousTouchAction = el.style.touchAction;
-    el.style.touchAction = isVertical ? "pan-x" : "pan-y";
-    const onDown = (e: PointerEvent): void => {
-      if (e.button !== undefined && e.button !== 0) return;
-      pointerId = e.pointerId;
-      startX = e.clientX;
-      startY = e.clientY;
-      startT = performance.now();
-      tracking = true;
-      dragging = false;
-    };
-    const onMove = (e: PointerEvent): void => {
-      if (!tracking || e.pointerId !== pointerId) return;
-      const delta = isVertical ? e.clientY - startY : e.clientX - startX;
-      if (!dragging) {
-        if (Math.abs(delta) < SLOP) return;
-        dragging = true;
-        el.style.transition = "none";
-        try {
-          el.setPointerCapture(e.pointerId);
-        } catch {
-        }
-      }
-      const offset = Math.max(0, sign * delta);
-      el.style.transform = isVertical
-        ? `translate3d(0, ${sign * offset}px, 0)`
-        : `translate3d(${sign * offset}px, 0, 0)`;
-    };
-    const finish = (e: PointerEvent): void => {
-      if (!tracking || e.pointerId !== pointerId) return;
-      tracking = false;
-      pointerId = null;
-      if (!dragging) return;
-      dragging = false;
-      const dt = performance.now() - startT || 1;
-      const delta = isVertical ? e.clientY - startY : e.clientX - startX;
-      const offset = Math.max(0, sign * delta);
-      const velocity = (sign * delta) / dt;
-      const size = isVertical ? el.offsetHeight : el.offsetWidth;
-      const past =
-        offset > size * this.swipeThreshold ||
-        velocity > this.swipeVelocityThreshold;
-      el.style.transition = `transform ${this.effectiveDuration()}ms ${this.exitEasing}`;
-      if (past) {
-        void this.close("swipe");
-      } else {
-        el.style.transform = openTransformFor(this.enterAnimation);
-      }
-    };
-    el.addEventListener("pointerdown", onDown);
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerup", finish);
-    el.addEventListener("pointercancel", finish);
-    return () => {
-      el.style.touchAction = previousTouchAction;
-      el.removeEventListener("pointerdown", onDown);
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerup", finish);
-      el.removeEventListener("pointercancel", finish);
-    };
+    return installOverlaySwipe({
+      element: this.element,
+      edge: this.edge,
+      getThreshold: () => this.swipeThreshold,
+      getVelocityThreshold: () => this.swipeVelocityThreshold,
+      getExitTransition: () =>
+        `transform ${this.effectiveDuration()}ms ${this.exitEasing}`,
+      getOpenTransform: () => openTransformFor(this.enterAnimation),
+      close: () => void this.close("swipe"),
+    });
   }
 
   private registerInStack(): void {

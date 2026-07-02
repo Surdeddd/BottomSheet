@@ -3,287 +3,43 @@ import type {
   CloseReason,
   EngineOptions,
   EngineState,
-  SnapPointDef,
 } from "../core/types";
-import type {
-  AnchorOptions,
-  AnchorPosition,
-} from "../core/features/sheet-anchors";
+import type { AnchorOptions } from "../core/features/sheet-anchors";
 import type { ScrimStagesOptions } from "../core/features/scrim-stages";
-import type { AnchorAnimationPreset } from "../core/primitives/anchor-animations";
-import type { ScrimOverlayPosition } from "../core/types";
 import { baseStyles } from "./baseStyles";
-
-const ATTR_SNAP_POINTS = "snap-points";
-const ATTR_ALLOWED = "allowed";
-const ATTR_INITIAL = "initial";
-const ATTR_MODE = "mode";
-const ATTR_BACKDROP = "backdrop";
-const ATTR_STYLESHEET = "stylesheet";
-const ATTR_ANIMATION = "animation";
-const ATTR_FOCUS_TRAP = "focus-trap";
-const ATTR_CLOSE_ON_ESCAPE = "close-on-escape";
-const ATTR_LOCK_BODY_SCROLL = "lock-body-scroll";
-const ATTR_SHEET_LABEL = "sheet-label";
-const ATTR_STACK_EFFECT = "stack-effect";
-const ATTR_PERSISTENT = "persistent";
-const ATTR_DISABLE_CLOSE = "disable-close";
-const ATTR_DISABLE_DRAG = "disable-drag";
-const ATTR_CLOSE_ON_ROUTE_CHANGE = "close-on-route-change";
-const ATTR_RADIUS = "radius";
-const ATTR_MAX_HEIGHT = "max-height";
-const ATTR_RETURN_FOCUS_TO = "return-focus-to";
-const ATTR_BACKDROP_COLOR = "backdrop-color";
-const ATTR_SCRIM_COLOR = "scrim-color";
-const ATTR_SNAP = "snap";
-
-const LIVE_ATTRS: ReadonlySet<string> = new Set([
-  ATTR_RADIUS,
-  ATTR_MAX_HEIGHT,
+import { buildShadowTree, type ShadowRefs } from "./shadow-tree";
+import {
+  ATTR_ALLOWED,
+  ATTR_ANIMATION,
+  ATTR_BACKDROP,
   ATTR_BACKDROP_COLOR,
+  ATTR_CLOSE_ON_ESCAPE,
+  ATTR_CLOSE_ON_ROUTE_CHANGE,
+  ATTR_DISABLE_CLOSE,
+  ATTR_DISABLE_DRAG,
+  ATTR_FOCUS_TRAP,
+  ATTR_INITIAL,
+  ATTR_LOCK_BODY_SCROLL,
+  ATTR_MAX_HEIGHT,
+  ATTR_MODE,
+  ATTR_PERSISTENT,
+  ATTR_RADIUS,
+  ATTR_RETURN_FOCUS_TO,
   ATTR_SCRIM_COLOR,
+  ATTR_SHEET_LABEL,
   ATTR_SNAP,
-]);
-
-const isValidSnapPoint = (p: unknown): p is SnapPointDef =>
-  !!p &&
-  typeof p === "object" &&
-  typeof (p as SnapPointDef).id === "string" &&
-  (typeof (p as SnapPointDef).size === "number" ||
-    typeof (p as SnapPointDef).size === "string");
-
-const DEFAULT_SNAP_POINTS: SnapPointDef[] = [{ id: "full", size: "full" }];
-
-const parseSnapPoints = (raw: string | null): SnapPointDef[] => {
-  if (!raw) return DEFAULT_SNAP_POINTS;
-
-  try {
-    const parsed = JSON.parse(raw);
-
-    if (
-      Array.isArray(parsed) &&
-      parsed.length > 0 &&
-      parsed.every(isValidSnapPoint)
-    ) {
-      return parsed;
-    }
-
-    if (Array.isArray(parsed)) return DEFAULT_SNAP_POINTS;
-  } catch {
-
-  }
-  return raw
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean)
-    .map(part => {
-      const [id, size] = part.split(":").map(s => s.trim());
-      const numeric = Number(size);
-      const resolvedSize = Number.isFinite(numeric)
-        ? numeric
-        : (size as SnapPointDef["size"]);
-      return { id: id ?? "default", size: resolvedSize };
-    });
-};
-
-const VALID_MODES: ReadonlyArray<NonNullable<EngineOptions["mode"]>> = [
-  "bottom",
-  "top",
-  "left",
-  "right",
-];
-
-const VALID_ANIMATIONS: ReadonlyArray<NonNullable<EngineOptions["animation"]>> =
-  ["spring", "tween", "ios-spring", "material-bounce", "linear", "snappy"];
-
-const parseMode = (raw: string | null): NonNullable<EngineOptions["mode"]> =>
-  raw && (VALID_MODES as readonly string[]).includes(raw)
-    ? (raw as NonNullable<EngineOptions["mode"]>)
-    : "bottom";
-
-const parseAnimation = (raw: string | null): EngineOptions["animation"] =>
-  raw && (VALID_ANIMATIONS as readonly string[]).includes(raw)
-    ? (raw as EngineOptions["animation"])
-    : undefined;
-
-const parseList = (raw: string | null): string[] | undefined =>
-  raw ? raw.split(",").map(s => s.trim()).filter(Boolean) : undefined;
-
-const parseDimension = (raw: string | null): string | number | undefined => {
-  if (raw === null) return undefined;
-  const numeric = Number(raw);
-  return Number.isFinite(numeric) && raw.trim() !== "" ? numeric : raw;
-};
-
-const ANCHOR_POSITIONS: ReadonlyArray<AnchorPosition> = [
-  "top-left",
-  "top-center",
-  "top-right",
-  "center-left",
-  "center",
-  "center-right",
-  "bottom-left",
-  "bottom-center",
-  "bottom-right",
-  "sheet-top-left",
-  "sheet-top-center",
-  "sheet-top-right",
-  "dock-bottom",
-  "dock-top",
-];
-
-const ANCHOR_ANIMATIONS: ReadonlyArray<AnchorAnimationPreset> = [
-  "fade",
-  "scale",
-  "slide",
-  "pop",
-  "none",
-];
-
-const parseAnchorOptions = (el: HTMLElement): Omit<AnchorOptions, "element"> => {
-  const position = el.getAttribute("data-position");
-  const animation = el.getAttribute("data-animation");
-  const showOn = parseList(el.getAttribute("data-show-on"));
-  const fadeRangeRaw = parseList(el.getAttribute("data-fade-range"));
-  const fadeRange =
-    fadeRangeRaw?.length === 2 &&
-    fadeRangeRaw.every(v => Number.isFinite(Number(v)))
-      ? ([Number(fadeRangeRaw[0]), Number(fadeRangeRaw[1])] as [number, number])
-      : undefined;
-  return {
-    position:
-      position &&
-      (ANCHOR_POSITIONS as readonly string[]).includes(position)
-        ? (position as AnchorPosition)
-        : undefined,
-    inset: el.getAttribute("data-inset") ?? undefined,
-    showOn,
-    fadeRange,
-    interactive: el.getAttribute("data-interactive") !== "false",
-    animation:
-      animation &&
-      (ANCHOR_ANIMATIONS as readonly string[]).includes(animation)
-        ? (animation as AnchorAnimationPreset)
-        : undefined,
-  };
-};
-
-const buildSlot = (name: string): HTMLSlotElement => {
-  const slot = document.createElement("slot");
-  slot.name = name;
-  return slot;
-};
-
-const buildSlotRegion = (name: string, className: string): HTMLElement => {
-  const region = document.createElement("div");
-  region.className = className;
-  region.setAttribute("part", name);
-  const slot = buildSlot(name);
-  region.appendChild(slot);
-  const sync = (): void => {
-    region.hidden = slot.assignedNodes({ flatten: true }).length === 0;
-  };
-  slot.addEventListener("slotchange", sync);
-  sync();
-  return region;
-};
-
-const buildShadowTree = (): {
-  fragment: DocumentFragment;
-  refs: {
-    sheet: HTMLElement;
-    handle: HTMLElement;
-    header: HTMLElement;
-    content: HTMLElement;
-    footer: HTMLElement;
-    backdrop: HTMLElement;
-    screen: HTMLElement;
-    leftButton: HTMLElement;
-    rightButton: HTMLElement;
-    announcer: HTMLElement;
-  };
-} => {
-  const root = document.createElement("div");
-  root.className = "bs-root";
-
-  const backdrop = document.createElement("div");
-  backdrop.className = "bs-backdrop";
-  backdrop.setAttribute("part", "backdrop");
-
-  const screen = document.createElement("div");
-  screen.className = "bs-screen";
-  screen.setAttribute("part", "screen");
-  screen.appendChild(buildSlot("screen"));
-
-  const sheet = document.createElement("section");
-  sheet.className = "bs-sheet";
-  sheet.setAttribute("part", "sheet");
-  sheet.setAttribute("role", "dialog");
-  sheet.setAttribute("aria-modal", "false");
-
-  const leftButton = document.createElement("div");
-  leftButton.className = "bs-button-slot";
-  leftButton.setAttribute("data-side", "left");
-  leftButton.setAttribute("part", "left-button");
-  leftButton.appendChild(buildSlot("leftButton"));
-
-  const rightButton = document.createElement("div");
-  rightButton.className = "bs-button-slot";
-  rightButton.setAttribute("data-side", "right");
-  rightButton.setAttribute("part", "right-button");
-  rightButton.appendChild(buildSlot("rightButton"));
-
-  const handle = document.createElement("div");
-  handle.className = "bs-handle";
-  handle.setAttribute("part", "handle");
-  handle.setAttribute("role", "slider");
-  handle.setAttribute("tabindex", "0");
-  handle.setAttribute("aria-label", "Resize sheet");
-
-  const header = buildSlotRegion("header", "bs-header");
-
-  const content = document.createElement("div");
-  content.className = "bs-content";
-  content.setAttribute("part", "content");
-
-  content.setAttribute("tabindex", "0");
-  content.setAttribute("role", "region");
-  content.setAttribute("aria-label", "Sheet content");
-  const defaultSlot = document.createElement("slot");
-  content.appendChild(defaultSlot);
-
-  const footer = buildSlotRegion("footer", "bs-footer");
-
-  const announcer = document.createElement("span");
-  announcer.className = "bs-sr-announce";
-  announcer.setAttribute("role", "status");
-  announcer.setAttribute("aria-live", "polite");
-  announcer.setAttribute("aria-atomic", "true");
-  announcer.style.cssText =
-    "position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);";
-
-  sheet.append(handle, header, content, footer);
-  root.append(backdrop, screen, sheet, leftButton, rightButton, announcer);
-
-  const fragment = document.createDocumentFragment();
-  fragment.appendChild(root);
-
-  return {
-    fragment,
-    refs: {
-      sheet,
-      handle,
-      header,
-      content,
-      footer,
-      backdrop,
-      screen,
-      leftButton,
-      rightButton,
-      announcer,
-    },
-  };
-};
+  ATTR_SNAP_POINTS,
+  ATTR_STACK_EFFECT,
+  ATTR_STYLESHEET,
+  LIVE_ATTRS,
+  OBSERVED_ATTRS,
+  parseAnchorOptions,
+  parseAnimation,
+  parseDimension,
+  parseList,
+  parseMode,
+  parseSnapPoints,
+} from "./attributes";
 
 const BaseHTMLElement = (
   typeof HTMLElement !== "undefined" ? HTMLElement : class {}
@@ -291,38 +47,17 @@ const BaseHTMLElement = (
 
 export class BottomSheetElement extends BaseHTMLElement {
   static get observedAttributes(): string[] {
-    return [
-      ATTR_SNAP_POINTS,
-      ATTR_ALLOWED,
-      ATTR_INITIAL,
-      ATTR_MODE,
-      ATTR_BACKDROP,
-      ATTR_ANIMATION,
-      ATTR_FOCUS_TRAP,
-      ATTR_CLOSE_ON_ESCAPE,
-      ATTR_LOCK_BODY_SCROLL,
-      ATTR_SHEET_LABEL,
-      ATTR_STACK_EFFECT,
-      ATTR_PERSISTENT,
-      ATTR_DISABLE_CLOSE,
-      ATTR_DISABLE_DRAG,
-      ATTR_CLOSE_ON_ROUTE_CHANGE,
-      ATTR_RADIUS,
-      ATTR_MAX_HEIGHT,
-      ATTR_RETURN_FOCUS_TO,
-      ATTR_BACKDROP_COLOR,
-      ATTR_SCRIM_COLOR,
-      ATTR_SNAP,
-    ];
+    return OBSERVED_ATTRS.slice();
   }
 
   private engine: BottomSheetEngine | null = null;
   private root: ShadowRoot;
   private offHandlers: Array<() => void> = [];
-  private refs!: ReturnType<typeof buildShadowTree>["refs"];
+  private refs!: ShadowRefs;
   private backdropClickHandler: (() => void) | null = null;
   private stylesheetLinked = false;
   private declarativeAnchors: HTMLElement[] = [];
+  private lastActiveId: string | null = null;
 
   constructor() {
     super();
@@ -395,6 +130,15 @@ export class BottomSheetElement extends BaseHTMLElement {
       case ATTR_SCRIM_COLOR:
         this.engine.setScrimColor(value);
         break;
+      case ATTR_PERSISTENT:
+        this.engine.setPersistent(value === "true");
+        break;
+      case ATTR_DISABLE_CLOSE:
+        this.engine.setDisableClose(value === "true");
+        break;
+      case ATTR_DISABLE_DRAG:
+        this.engine.setDisableDrag(value === "true");
+        break;
       case ATTR_SNAP:
         if (value && value !== this.engine.state.activeId) {
           void this.engine.snapTo(value);
@@ -408,6 +152,7 @@ export class BottomSheetElement extends BaseHTMLElement {
   }
 
   private teardownEngine(): void {
+    this.lastActiveId = this.engine?.state.activeId ?? this.lastActiveId;
     this.offHandlers.forEach(off => off());
     this.offHandlers = [];
     if (this.backdropClickHandler) {
@@ -452,6 +197,13 @@ export class BottomSheetElement extends BaseHTMLElement {
       backdrop.addEventListener("click", this.backdropClickHandler);
     }
 
+    const snapPoints = parseSnapPoints(this.getAttribute(ATTR_SNAP_POINTS));
+    const initialAttr = this.getAttribute(ATTR_INITIAL) ?? undefined;
+    const initial =
+      this.lastActiveId && snapPoints.some(p => p.id === this.lastActiveId)
+        ? this.lastActiveId
+        : initialAttr;
+
     const opts: EngineOptions = {
       element: sheet,
       handle,
@@ -459,9 +211,9 @@ export class BottomSheetElement extends BaseHTMLElement {
       backdrop: showBackdrop ? backdrop : undefined,
       scrim: this.refs.screen,
       mode,
-      snapPoints: parseSnapPoints(this.getAttribute(ATTR_SNAP_POINTS)),
+      snapPoints,
       allowed: parseList(this.getAttribute(ATTR_ALLOWED)),
-      initial: this.getAttribute(ATTR_INITIAL) ?? undefined,
+      initial,
       animation: parseAnimation(this.getAttribute(ATTR_ANIMATION)),
       focusTrap,
       closeOnEscape: this.getAttribute(ATTR_CLOSE_ON_ESCAPE) !== "false",
@@ -497,6 +249,15 @@ export class BottomSheetElement extends BaseHTMLElement {
         sheet.setAttribute("data-active", payload.id);
         announcer.textContent = payload.id;
         this.dispatchEvent(new CustomEvent("snap", { detail: payload }));
+      }),
+      this.engine.on("before-snap", payload => {
+        const accepted = this.dispatchEvent(
+          new CustomEvent("before-snap", {
+            detail: payload,
+            cancelable: true,
+          }),
+        );
+        if (!accepted) payload.cancel();
       }),
       this.engine.on("open", payload =>
         this.dispatchEvent(new CustomEvent("open", { detail: payload })),

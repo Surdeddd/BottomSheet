@@ -12,12 +12,14 @@ export type ContentSwipeDeps = {
 export function installContentSwipe(deps: ContentSwipeDeps): () => void {
   const { container } = deps;
   let startY = 0;
+  let startScrollTop = 0;
   let moved = false;
 
   const onTouchStart = (e: TouchEvent): void => {
     const t = e.touches[0];
     if (!t) return;
     startY = t.clientY;
+    startScrollTop = container.scrollTop;
     moved = false;
   };
   const onTouchMove = (e: TouchEvent): void => {
@@ -28,6 +30,7 @@ export function installContentSwipe(deps: ContentSwipeDeps): () => void {
   const onTouchEnd = (e: TouchEvent): void => {
     if (!moved) return;
     if (deps.isDragging() || deps.isAnimating()) return;
+    if (container.scrollTop !== startScrollTop) return;
     const t = e.changedTouches[0];
     if (!t) return;
     const deltaY = t.clientY - startY;

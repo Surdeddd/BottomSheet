@@ -405,6 +405,9 @@ export class ScrimController {
       const s = this.screenComponent.style;
       s.opacity = "";
       s.display = "";
+      s.position = "";
+      s.inset = "";
+      s.pointerEvents = "";
     }
     if (this.backdrop) {
       this.backdrop.style.opacity = "";

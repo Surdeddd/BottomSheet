@@ -95,7 +95,12 @@ export class AnimationRunner {
   }
 
   async animateTo(target: number, velocityPxPerMs: number): Promise<void> {
-    if (target === this.getSize()) return;
+    if (target === this.getSize()) {
+      if (!this.isAnimating && !this.isDragging()) {
+        this.element.style.willChange = "";
+      }
+      return;
+    }
     this.currentTween?.cancel();
     this.currentSpring?.cancel();
     this.getRootEl()?.setAttribute("data-animating", "true");
@@ -104,7 +109,7 @@ export class AnimationRunner {
     if (this.reducedMotion) {
       this.applySizeFn(target);
       this.getRootEl()?.removeAttribute("data-animating");
-      if (!this.isDragging()) this.element.style.willChange = "auto";
+      if (!this.isDragging()) this.element.style.willChange = "";
       return;
     }
 
@@ -133,7 +138,7 @@ export class AnimationRunner {
     }
     if (!this.isAnimating) {
       this.getRootEl()?.removeAttribute("data-animating");
-      if (!this.isDragging()) this.element.style.willChange = "auto";
+      if (!this.isDragging()) this.element.style.willChange = "";
     }
   }
 

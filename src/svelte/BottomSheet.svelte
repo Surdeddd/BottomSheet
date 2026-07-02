@@ -1,6 +1,11 @@
 <script lang="ts" generics="TId extends string = string">
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
   import { BottomSheetEngine } from "../core/BottomSheetEngine";
+  import {
+    resolveTeleportTarget,
+    teleportElements,
+    type TeleportTarget,
+  } from "../core/features/teleport";
   import type {
     EngineState,
     SnapPointDef,
@@ -30,6 +35,9 @@
     disableClose?: boolean;
     disableDrag?: boolean;
     closeOnRouteChange?: boolean;
+    stackEffect?: boolean;
+    teleport?: boolean;
+    teleportTo?: TeleportTarget;
     radius?: string | number;
     maxHeight?: string | number;
     backdropColor?: string;
@@ -45,6 +53,7 @@
     screen?: Snippet;
     children?: Snippet;
     onsnap?: (id: TId) => void;
+    onbeforesnap?: (payload: SheetEventMap["before-snap"]) => void;
     onopen?: (id: TId) => void;
     onclose?: () => void;
     onbeforeclose?: (payload: SheetEventMap["before-close"]) => void;
@@ -74,6 +83,9 @@
     disableClose = false,
     disableDrag = false,
     closeOnRouteChange = false,
+    stackEffect = false,
+    teleport = false,
+    teleportTo,
     radius,
     maxHeight,
     backdropColor,
@@ -89,6 +101,7 @@
     screen,
     children,
     onsnap,
+    onbeforesnap,
     onopen,
     onclose,
     onbeforeclose,
@@ -116,6 +129,7 @@
   });
 
   let engine: BottomSheetEngine | null = null;
+  let restoreTeleport: (() => void) | null = null;
 
   onMount(() => {
     if (!sheetEl) return;
@@ -141,10 +155,19 @@
       disableClose,
       disableDrag,
       closeOnRouteChange,
+      stackEffect,
       radius,
       maxHeight,
       returnFocusTo,
     });
+    const teleportTarget =
+      teleport === false ? null : resolveTeleportTarget(teleportTo);
+    if (teleportTarget) {
+      restoreTeleport = teleportElements(
+        [backdropEl, screenEl, sheetEl],
+        teleportTarget,
+      );
+    }
     const sync = () => {
       if (!engine) return;
       viewState = { ...engine.state } as EngineState & { activeId: TId };
@@ -168,6 +191,7 @@
       onclose?.();
     });
     engine.on("before-close", payload => onbeforeclose?.(payload));
+    engine.on("before-snap", payload => onbeforesnap?.(payload));
     engine.on("opened", payload => onopened?.(payload.id as TId));
     engine.on("closed", () => onclosed?.());
     engine.on("dragstart", () => {
@@ -181,6 +205,8 @@
   });
 
   onDestroy(() => {
+    restoreTeleport?.();
+    restoreTeleport = null;
     engine?.destroy();
     engine = null;
   });
@@ -210,6 +236,36 @@
     (engine?.state ?? viewState) as EngineState & { activeId: TId };
   export const getEngine = (): BottomSheetEngine | null => engine;
 
+  let snapDefApplied = false;
+  $effect(() => {
+    const points = snapPoints;
+    if (!snapDefApplied) {
+      snapDefApplied = true;
+      return;
+    }
+    engine?.setSnapPoints(
+      points as unknown as EngineOptions["snapPoints"],
+      untrack(() => allowed) as unknown as string[] | undefined,
+    );
+  });
+  let allowedApplied = false;
+  $effect(() => {
+    const ids = allowed;
+    if (!allowedApplied) {
+      allowedApplied = true;
+      return;
+    }
+    if (ids) engine?.setAllowed(ids as unknown as string[]);
+  });
+  $effect(() => {
+    engine?.setPersistent(persistent);
+  });
+  $effect(() => {
+    engine?.setDisableClose(disableClose);
+  });
+  $effect(() => {
+    engine?.setDisableDrag(disableDrag);
+  });
   $effect(() => {
     if (radius !== undefined) engine?.setRadius(radius);
   });

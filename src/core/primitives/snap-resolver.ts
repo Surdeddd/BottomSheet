@@ -14,6 +14,7 @@ export class SnapResolver {
   private resolved: ResolvedSnap[] = [];
   private maxAxisSize = 0;
   private rangeCache: { min: number; max: number } | null = null;
+  private notified = false;
 
   constructor(
     raw: SnapPointDef[],
@@ -29,13 +30,21 @@ export class SnapResolver {
   }
 
   recompute(): void {
-    this.resolved = resolveSnapList(this.raw, this.mode, this.measureFit);
-    this.maxAxisSize = this.resolved.reduce(
+    const measure = this.measureFit;
+    let measured: number | undefined;
+    const measureOnce = measure
+      ? () => (measured ??= measure())
+      : undefined;
+    this.resolved = resolveSnapList(this.raw, this.mode, measureOnce);
+    const nextMax = this.resolved.reduce(
       (m, s) => (s.size > m ? s.size : m),
       0,
     );
     this.rangeCache = null;
-    this.onMaxAxisSizeChange?.(this.maxAxisSize);
+    const changed = nextMax !== this.maxAxisSize || !this.notified;
+    this.maxAxisSize = nextMax;
+    this.notified = true;
+    if (changed) this.onMaxAxisSizeChange?.(this.maxAxisSize);
   }
 
   setRaw(raw: SnapPointDef[]): void {

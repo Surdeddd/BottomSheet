@@ -4,6 +4,7 @@ let savedStyles: {
   position: string;
   top: string;
   width: string;
+  paddingRight: string;
   scrollY: number;
 } | null = null;
 
@@ -16,8 +17,15 @@ export const lockBodyScroll = (): (() => void) => {
       position: body.style.position,
       top: body.style.top,
       width: body.style.width,
+      paddingRight: body.style.paddingRight,
       scrollY: window.scrollY,
     };
+    const scrollbarGap =
+      window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarGap > 0) {
+      const current = parseFloat(getComputedStyle(body).paddingRight) || 0;
+      body.style.paddingRight = `${current + scrollbarGap}px`;
+    }
     body.style.overflow = "hidden";
     body.style.position = "fixed";
     body.style.top = `-${savedStyles.scrollY}px`;
@@ -35,6 +43,7 @@ export const lockBodyScroll = (): (() => void) => {
       body.style.position = savedStyles.position;
       body.style.top = savedStyles.top;
       body.style.width = savedStyles.width;
+      body.style.paddingRight = savedStyles.paddingRight;
       window.scrollTo(0, savedStyles.scrollY);
       savedStyles = null;
     }
@@ -49,5 +58,6 @@ export const __resetScrollLockForTests = (): void => {
     document.body.style.position = "";
     document.body.style.top = "";
     document.body.style.width = "";
+    document.body.style.paddingRight = "";
   }
 };

@@ -12,7 +12,7 @@ export type LifecycleControllerDeps = {
 
 export type LifecycleControllerOptions = {
   focusTrap?: boolean;
-  initialFocus?: string | HTMLElement;
+  initialFocus?: string | HTMLElement | false;
   closeOnEscape?: boolean;
   lockBodyScroll?: boolean;
   inertSiblings?: boolean;
@@ -24,7 +24,7 @@ export class LifecycleController {
   private element: HTMLElement;
 
   readonly focusTrapEnabled: boolean;
-  readonly initialFocus?: string | HTMLElement;
+  readonly initialFocus?: string | HTMLElement | false;
   readonly closeOnEscape: boolean;
   readonly bodyScrollLockEnabled: boolean;
   readonly inertSiblingsEnabled: boolean;

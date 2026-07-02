@@ -23,7 +23,7 @@ export type BottomSheetProps<TId extends string = string> = {
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
   mode?: SheetMode;
-  animation?: "spring" | "tween";
+  animation?: EngineOptions["animation"];
   spring?: { stiffness?: number; damping?: number; mass?: number };
   focusTrap?: boolean;
   closeOnEscape?: boolean;
@@ -37,6 +37,7 @@ export type BottomSheetProps<TId extends string = string> = {
   disableClose?: boolean;
   disableDrag?: boolean;
   closeOnRouteChange?: boolean;
+  stackEffect?: boolean;
   returnFocusTo?: EngineOptions["returnFocusTo"];
   ariaLabel?: string;
   radius?: string | number;
@@ -55,6 +56,8 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
   const scrimRef = useSignal<HTMLElement>();
   const headerRef = useSignal<HTMLElement>();
   const footerRef = useSignal<HTMLElement>();
+  const leftBtnRef = useSignal<HTMLElement>();
+  const rightBtnRef = useSignal<HTMLElement>();
 
   const initialActive =
     props.initial ?? props.snapPoints[0]?.id ?? "default";
@@ -103,6 +106,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       disableClose: props.disableClose,
       disableDrag: props.disableDrag,
       closeOnRouteChange: props.closeOnRouteChange,
+      stackEffect: props.stackEffect,
       returnFocusTo: props.returnFocusTo,
       radius: props.radius,
       maxHeight: props.maxHeight,
@@ -147,10 +151,34 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       if (empty) el.setAttribute("hidden", "");
       else el.removeAttribute("hidden");
     };
-    collapseEmpty(headerRef.value);
-    collapseEmpty(footerRef.value);
+    const collapseBoth = () => {
+      collapseEmpty(headerRef.value);
+      collapseEmpty(footerRef.value);
+      collapseEmpty(leftBtnRef.value);
+      collapseEmpty(rightBtnRef.value);
+    };
+    collapseBoth();
+    let slotObserver: MutationObserver | undefined;
+    if (typeof MutationObserver !== "undefined") {
+      slotObserver = new MutationObserver(collapseBoth);
+      for (const el of [
+        headerRef.value,
+        footerRef.value,
+        leftBtnRef.value,
+        rightBtnRef.value,
+      ]) {
+        if (el) {
+          slotObserver.observe(el, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+          });
+        }
+      }
+    }
 
     cleanup(() => {
+      slotObserver?.disconnect();
       if (onBackdropClick && backdropRef.value) {
         backdropRef.value.removeEventListener("click", onBackdropClick);
       }
@@ -177,6 +205,17 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     if (!engine) return;
     if (radius !== undefined) engine.setRadius(radius);
     if (maxHeight !== undefined) engine.setMaxHeight(maxHeight);
+  });
+
+  useTask$(({ track }) => {
+    const persistent = track(() => props.persistent);
+    const disableClose = track(() => props.disableClose);
+    const disableDrag = track(() => props.disableDrag);
+    const engine = engineStore.engine;
+    if (!engine) return;
+    if (persistent !== undefined) engine.setPersistent(persistent);
+    if (disableClose !== undefined) engine.setDisableClose(disableClose);
+    if (disableDrag !== undefined) engine.setDisableDrag(disableDrag);
   });
 
   const showBackdrop = props.backdrop !== false;
@@ -220,6 +259,22 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
           {state.activeId}
         </span>
       </section>
+      <div
+        class="bs-button-slot"
+        data-side="left"
+        data-mode={mode}
+        ref={leftBtnRef}
+      >
+        <Slot name="leftButton" />
+      </div>
+      <div
+        class="bs-button-slot"
+        data-side="right"
+        data-mode={mode}
+        ref={rightBtnRef}
+      >
+        <Slot name="rightButton" />
+      </div>
     </div>
   );
 });

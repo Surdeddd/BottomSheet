@@ -136,6 +136,6 @@ export class GestureController {
     this.isDragging_ = false;
     this.keyboardDismissed = false;
     this.deps.getRoot()?.removeAttribute("data-dragging");
-    this.deps.element.style.willChange = "auto";
+    this.deps.element.style.willChange = "";
   }
 }

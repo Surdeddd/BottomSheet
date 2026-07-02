@@ -80,6 +80,7 @@ type HookOpts<TId extends string> = Omit<
   backdropColor?: string;
   backdropOpacity?: number;
   onSnap?: (id: TId) => void;
+  onBeforeSnap?: (payload: SheetEventMap["before-snap"]) => void;
   onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
   onOpened?: (id: TId) => void;
   onClosed?: () => void;
@@ -147,6 +148,9 @@ export function useBottomSheet<TId extends string = string>(
         refresh();
         optsRef.current.onSnap?.(payload.id as TId);
       }),
+      engine.on("before-snap", payload => {
+        optsRef.current.onBeforeSnap?.(payload);
+      }),
       engine.on("before-close", payload => {
         optsRef.current.onBeforeClose?.(payload);
       }),
@@ -179,7 +183,26 @@ export function useBottomSheet<TId extends string = string>(
   const allowedKey = (opts.allowed ?? opts.snapPoints.map(p => p.id)).join(
     "\x00",
   );
-  const snapKey = opts.snapPoints.map(p => p.id).join("\x00");
+  const defKey = opts.snapPoints
+    .map(p => `${p.id}\x01${String(p.size)}`)
+    .join("\x00");
+  const defApplied = useRef(false);
+  useEffect(() => {
+    if (!defApplied.current) {
+      defApplied.current = true;
+      return;
+    }
+    const engine = engineRef.current;
+    if (!engine) return;
+    const current = optsRef.current;
+    engine.setSnapPoints(
+      current.snapPoints as unknown as EngineOptions["snapPoints"],
+      current.allowed
+        ? Array.from(current.allowed as ReadonlyArray<string>)
+        : undefined,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defKey]);
   useEffect(() => {
     if (!engineRef.current) return;
     const ids: string[] = opts.allowed
@@ -187,7 +210,7 @@ export function useBottomSheet<TId extends string = string>(
       : opts.snapPoints.map(p => p.id);
     engineRef.current.setAllowed(ids);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowedKey, snapKey]);
+  }, [allowedKey]);
 
   useEffect(() => {
     if (!engineRef.current) return;
@@ -216,6 +239,24 @@ export function useBottomSheet<TId extends string = string>(
       engineRef.current.setMaxHeight(opts.maxHeight);
     }
   }, [opts.maxHeight]);
+
+  useEffect(() => {
+    if (opts.persistent !== undefined) {
+      engineRef.current?.setPersistent(opts.persistent);
+    }
+  }, [opts.persistent]);
+
+  useEffect(() => {
+    if (opts.disableClose !== undefined) {
+      engineRef.current?.setDisableClose(opts.disableClose);
+    }
+  }, [opts.disableClose]);
+
+  useEffect(() => {
+    if (opts.disableDrag !== undefined) {
+      engineRef.current?.setDisableDrag(opts.disableDrag);
+    }
+  }, [opts.disableDrag]);
 
   const subscribe = useCallback((fn: () => void) => {
     subscribersRef.current.add(fn);

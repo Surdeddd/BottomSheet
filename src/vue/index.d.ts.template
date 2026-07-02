@@ -113,6 +113,12 @@ export const BottomSheet: DefineComponent<
       reason: CloseReason;
       cancel: () => void;
     }) => void;
+    "before-snap": (payload: {
+      id: string;
+      size: number;
+      previousId: string;
+      cancel: () => void;
+    }) => void;
     "drag-start": (payload: { size: number }) => void;
     "drag-end": (payload: { size: number; velocity: number }) => void;
     "update:open": (open: boolean) => void;

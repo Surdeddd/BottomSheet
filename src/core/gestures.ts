@@ -144,6 +144,7 @@ export const installGestures = (
   handle.addEventListener("pointermove", onPointerMove);
   handle.addEventListener("pointerup", finishGesture);
   handle.addEventListener("pointercancel", onPointerCancel);
+  const prevTouchAction = handle.style.touchAction;
   handle.style.touchAction = isAxisVertical(mode) ? "pan-x" : "pan-y";
 
   return () => {
@@ -151,6 +152,7 @@ export const installGestures = (
     handle.removeEventListener("pointermove", onPointerMove);
     handle.removeEventListener("pointerup", finishGesture);
     handle.removeEventListener("pointercancel", onPointerCancel);
+    handle.style.touchAction = prevTouchAction;
     if (activePointerId !== null && handle.hasPointerCapture(activePointerId)) {
       handle.releasePointerCapture(activePointerId);
     }

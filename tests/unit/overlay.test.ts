@@ -249,8 +249,9 @@ describe("OverlayEngine", () => {
       const onClose = vi.fn();
       ovl.on("close", onClose);
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-      await new Promise(r => setTimeout(r, 100));
-      expect(onClose).toHaveBeenCalledWith({ reason: "escape" });
+      await vi.waitFor(() =>
+        expect(onClose).toHaveBeenCalledWith({ reason: "escape" }),
+      );
       ovl.destroy();
     });
 
@@ -261,8 +262,9 @@ describe("OverlayEngine", () => {
       const onClose = vi.fn();
       ovl.on("close", onClose);
       backdrop.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      await new Promise(r => setTimeout(r, 100));
-      expect(onClose).toHaveBeenCalledWith({ reason: "backdrop" });
+      await vi.waitFor(() =>
+        expect(onClose).toHaveBeenCalledWith({ reason: "backdrop" }),
+      );
       ovl.destroy();
     });
 
@@ -280,8 +282,9 @@ describe("OverlayEngine", () => {
       panel.dispatchEvent(new PointerEvent("pointerdown", { clientY: 0, button: 0 } as PointerEventInit));
       panel.dispatchEvent(new PointerEvent("pointermove", { clientY: 100 } as PointerEventInit));
       panel.dispatchEvent(new PointerEvent("pointerup", { clientY: 100 } as PointerEventInit));
-      await new Promise(r => setTimeout(r, 100));
-      expect(onClose).toHaveBeenCalledWith({ reason: "swipe" });
+      await vi.waitFor(() =>
+        expect(onClose).toHaveBeenCalledWith({ reason: "swipe" }),
+      );
       ovl.destroy();
     });
 
@@ -292,8 +295,9 @@ describe("OverlayEngine", () => {
       const onClose = vi.fn();
       ovl.on("close", onClose);
       window.dispatchEvent(new PopStateEvent("popstate"));
-      await new Promise(r => setTimeout(r, 100));
-      expect(onClose).toHaveBeenCalledWith({ reason: "back" });
+      await vi.waitFor(() =>
+        expect(onClose).toHaveBeenCalledWith({ reason: "back" }),
+      );
       ovl.destroy();
     });
   });
@@ -399,8 +403,9 @@ describe("OverlayEngine", () => {
       const onClose = vi.fn();
       ovl.on("close", onClose);
       document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true } as PointerEventInit));
-      await new Promise(r => setTimeout(r, 100));
-      expect(onClose).toHaveBeenCalledWith({ reason: "outside-pointer" });
+      await vi.waitFor(() =>
+        expect(onClose).toHaveBeenCalledWith({ reason: "outside-pointer" }),
+      );
       ovl.destroy();
     });
 
@@ -566,8 +571,9 @@ describe("OverlayEngine", () => {
       panel.dispatchEvent(new PointerEvent("pointerdown", { clientY: 0, button: 0 } as PointerEventInit));
       panel.dispatchEvent(new PointerEvent("pointermove", { clientY: 100 } as PointerEventInit));
       panel.dispatchEvent(new PointerEvent("pointerup", { clientY: 100 } as PointerEventInit));
-      await new Promise(r => setTimeout(r, 100));
-      expect(onClose).toHaveBeenCalledWith({ reason: "swipe" });
+      await vi.waitFor(() =>
+        expect(onClose).toHaveBeenCalledWith({ reason: "swipe" }),
+      );
       ovl.destroy();
     });
 

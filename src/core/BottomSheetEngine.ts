@@ -6,7 +6,7 @@ import {
 } from "./primitives/transform";
 import { nextInstanceId } from "./primitives/instance-id";
 import { createEventBus, type EventBus } from "./primitives/event-bus";
-import { auditVhUsage } from "./primitives/snap-points";
+import { auditVhUsage, resolveSnap } from "./primitives/snap-points";
 import { SnapResolver } from "./primitives/snap-resolver";
 import { installPersist } from "./features/persist";
 import { installAutoCollapse } from "./features/auto-collapse";
@@ -15,6 +15,11 @@ import { installRoute, installRouteChange } from "./features/route";
 import { installContentSwipe } from "./features/content-swipe";
 import { installVisualViewport } from "./features/visual-viewport";
 import { installResizeObserver } from "./features/resize-observer";
+import { installFitObserver } from "./features/fit-observer";
+import {
+  measureFitSize,
+  type FitMeasurementDeps,
+} from "./features/fit-measurement";
 import { installSliderKeyboard } from "./features/slider-keyboard";
 import { ScrimController } from "./controllers/scrim-controller";
 import { AnimationRunner } from "./controllers/animation-runner";
@@ -36,6 +41,7 @@ import {
   type ScrimStagesOptions,
 } from "./features/scrim-stages";
 import { resolveEngineOptions } from "./primitives/engine-options";
+import { TeardownStack } from "./primitives/teardown-stack";
 import { WriteSentinel } from "./primitives/opacity-dedup";
 import type {
   CloseReason,
@@ -54,24 +60,6 @@ type Listener<K extends keyof SheetEventMap> = (
 ) => void;
 
 const HAPTIC_DURATION_MS = 8;
-
-class TeardownStack {
-  private fns: Array<() => void> = [];
-  add(fn: (() => void) | null | undefined): void {
-    if (fn) this.fns.push(fn);
-  }
-  drain(): void {
-    while (this.fns.length) {
-      try {
-        this.fns.pop()!();
-      } catch (err) {
-        queueMicrotask(() => {
-          throw err;
-        });
-      }
-    }
-  }
-}
 
 export class BottomSheetEngine {
   private id = nextInstanceId("bs");
@@ -96,6 +84,7 @@ export class BottomSheetEngine {
   private disableDragFlag: boolean;
   private closeOnRouteChange: boolean;
   private maxHeightCap: number | undefined;
+  private maxHeightRaw: string | number | undefined;
 
   private snapPointsRaw: EngineOptions["snapPoints"];
   private snaps!: SnapResolver;
@@ -142,6 +131,7 @@ export class BottomSheetEngine {
   private detachScrimStages: (() => void) | null = null;
   private stackEffectEnabled = false;
   private stackEffectPrimed = false;
+  private fitDeps!: FitMeasurementDeps;
 
   private transformTemplate!: (offset: number) => string;
 
@@ -221,13 +211,20 @@ export class BottomSheetEngine {
     this.activeId = resolved.initialId;
 
     auditVhUsage(this.snapPointsRaw);
+    this.auditDuplicateSnapIds(this.snapPointsRaw);
 
     this.rootEl = this.element.closest<HTMLElement>(".bs-root");
+    this.fitDeps = {
+      element: this.element,
+      scrollContainer: this.scrollContainer,
+      mode: this.mode,
+      getMaxHeightCap: () => this.maxHeightCap,
+    };
     this.snaps = new SnapResolver(
       this.snapPointsRaw,
       resolved.initialAllowed,
       this.mode,
-      () => this.measureFitSize(),
+      () => measureFitSize(this.fitDeps),
       maxAxisSize => {
         this.element.style[layoutAxis(this.mode as TransformAxis)] =
           `${maxAxisSize}px`;
@@ -270,7 +267,19 @@ export class BottomSheetEngine {
       this.teardowns.add(() => io.disconnect());
     }
 
-    this.installFitObserver();
+    this.teardowns.add(
+      installFitObserver({
+        handle: this.handle,
+        scrollContainer: this.scrollContainer,
+        hasFitSnap: () =>
+          this.snapPointsRaw.some(
+            p => p.size === "fit" || p.size === "content",
+          ),
+        isDestroyed: () => this.destroyed,
+        isDragging: () => this.gesture?.isDragging ?? false,
+        recompute: () => this.recompute(),
+      }),
+    );
 
     if (resolved.radius !== undefined) this.setRadius(resolved.radius);
     if (resolved.maxHeight !== undefined) this.setMaxHeight(resolved.maxHeight);
@@ -449,27 +458,42 @@ export class BottomSheetEngine {
     } else {
       await this.animation.animateTo(target.size, velocityPxPerMs);
     }
-    this.opening = false;
     externalSignal?.removeEventListener("abort", onExternalAbort);
     if (signal.aborted) return;
-    this.scrollCache.restore(id, previousSize, target.size);
+    this.opening = false;
+    this.completeSnap(id, target.size, previousSize, wasClosed, false);
+  }
+
+  private completeSnap(
+    id: string,
+    targetSize: number,
+    previousSize: number,
+    wasClosed: boolean,
+    withHaptic: boolean,
+  ): void {
+    this.scrollCache.restore(id, previousSize, targetSize);
     this.updateAriaSlider();
     this.emit("snap", {
       id,
       size: this.size,
       progress: this.computeProgress(this.size),
     });
-    if (wasClosed && target.size > 0) {
-      this.emit("open", { id });
-      this.handleOpen();
-      notifyLinkedSheets(this.linkedSheets, this);
-      this.emit("opened", { id });
-    }
-    if (target.size === 0) {
-      this.emit("close", undefined);
-      this.handleClose();
-      this.emit("closed", undefined);
-    }
+    if (withHaptic) this.haptic();
+    if (wasClosed && targetSize > 0) this.emitOpenSequence(id);
+    if (targetSize === 0) this.emitCloseSequence();
+  }
+
+  private emitOpenSequence(id: string): void {
+    this.emit("open", { id });
+    this.handleOpen();
+    notifyLinkedSheets(this.linkedSheets, this);
+    this.emit("opened", { id });
+  }
+
+  private emitCloseSequence(): void {
+    this.emit("close", undefined);
+    this.handleClose();
+    this.emit("closed", undefined);
   }
 
   async dragTo(
@@ -501,7 +525,11 @@ export class BottomSheetEngine {
   open(id?: string): Promise<void> {
     if (this.destroyed) return Promise.resolve();
     const target =
-      id ?? this.snaps.getAllowedIds().find(a => a !== "closed") ?? this.activeId;
+      id ??
+      this.snaps
+        .getAllowedIds()
+        .find(a => (this.snaps.findById(a)?.size ?? 0) > 0) ??
+      this.activeId;
     return this.snapTo(target);
   }
 
@@ -511,12 +539,30 @@ export class BottomSheetEngine {
     if (this.size > 0 && this.emitBeforeClose(reason)) return Promise.resolve();
     const closedId =
       this.snapPointsRaw.find(p => p.id === "closed")?.id ??
+      this.snaps
+        .getAllowedIds()
+        .find(a => this.snaps.findById(a)?.size === 0) ??
       this.snaps.getAllowedIds()[0];
     return this.snapTo(closedId ?? this.activeId);
   }
 
   canDismiss(): boolean {
     return !this.persistent && !this.disableCloseFlag && !this.destroyed;
+  }
+
+  setPersistent(value: boolean): void {
+    if (this.destroyed) return;
+    this.persistent = value;
+  }
+
+  setDisableClose(value: boolean): void {
+    if (this.destroyed) return;
+    this.disableCloseFlag = value;
+  }
+
+  setDisableDrag(value: boolean): void {
+    if (this.destroyed) return;
+    this.disableDragFlag = value;
   }
 
   isTop(): boolean {
@@ -560,19 +606,24 @@ export class BottomSheetEngine {
       axis === "height" ? "max-height" : "max-width",
       value,
     );
-    if (typeof h === "number") {
-      this.maxHeightCap = h;
-      this.recompute();
-    } else if (typeof window !== "undefined") {
-      const probe = document.createElement("div");
-      probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;${axis === "height" ? "height" : "width"}:${value};`;
-      document.body.appendChild(probe);
-      const measured =
-        axis === "height" ? probe.offsetHeight : probe.offsetWidth;
-      probe.remove();
-      this.maxHeightCap = measured > 0 ? measured : undefined;
-      this.recompute();
+    this.maxHeightRaw = h;
+    this.resolveMaxHeightCap();
+    this.recompute();
+  }
+
+  private resolveMaxHeightCap(): void {
+    const raw = this.maxHeightRaw;
+    if (raw === undefined) {
+      this.maxHeightCap = undefined;
+      return;
     }
+    if (typeof raw === "number") {
+      this.maxHeightCap = raw;
+      return;
+    }
+    if (typeof window === "undefined") return;
+    const measured = resolveSnap(raw, this.mode);
+    this.maxHeightCap = measured > 0 ? measured : undefined;
   }
 
   private clampToMaxHeight(): void {
@@ -719,6 +770,7 @@ export class BottomSheetEngine {
     this.newCycle();
     this.snapPointsRaw = points;
     auditVhUsage(points);
+    this.auditDuplicateSnapIds(points);
     this.snaps.setRaw(points);
     if (allowed) this.snaps.setAllowedIds(allowed);
     this.scrollCache.clear();
@@ -732,6 +784,7 @@ export class BottomSheetEngine {
 
   recompute(): void {
     if (this.destroyed) return;
+    this.resolveMaxHeightCap();
     this.snaps.recompute();
     this.clampToMaxHeight();
     this.scrim.invalidateOpacityCache();
@@ -742,143 +795,6 @@ export class BottomSheetEngine {
       this.applySize(this.size);
       this.updateAriaSlider();
     }
-  }
-
-  private contentTargets(): Element[] {
-    const scroller = this.scrollContainer;
-    if (!scroller) return [];
-    const hasSlot = typeof HTMLSlotElement !== "undefined";
-    const out: Element[] = [];
-    for (const child of Array.from(scroller.children)) {
-      if (hasSlot && child instanceof HTMLSlotElement) {
-        for (const el of child.assignedElements()) out.push(el);
-      } else {
-        out.push(child);
-      }
-    }
-    return out;
-  }
-
-  private measureSheetNatural(vertical: boolean): number {
-    const el = this.element;
-    const content = this.scrollContainer;
-    if (!content) {
-      return vertical ? el.offsetHeight : el.offsetWidth;
-    }
-    const axis = vertical ? "height" : "width";
-    const sheetStyle = el.style;
-    const cs = content.style;
-    const prevSheet = sheetStyle[axis];
-    const prevFlex = cs.flex;
-    const prevContent = vertical ? cs.height : cs.width;
-    sheetStyle[axis] = "auto";
-    cs.flex = "none";
-    if (vertical) cs.height = "auto";
-    else cs.width = "auto";
-    // Whole-sheet natural height — covers header/footer slots and shrink. But
-    // if app CSS pins the scroll container's size (a more specific / !important
-    // rule that defeats the inline height:auto above), this alone undercounts
-    // an in-flow `position:sticky` footer. scrollHeight always reports the full
-    // sticky-inclusive content, so also reconstruct the extent as
-    // (non-content chrome + content.scrollHeight) and take the larger.
-    const poked = vertical ? el.offsetHeight : el.offsetWidth;
-    const contentBox = vertical ? content.clientHeight : content.clientWidth;
-    const contentScroll = vertical ? content.scrollHeight : content.scrollWidth;
-    const natural = Math.max(poked, poked - contentBox + contentScroll);
-    sheetStyle[axis] = prevSheet;
-    cs.flex = prevFlex;
-    if (vertical) cs.height = prevContent;
-    else cs.width = prevContent;
-    return natural;
-  }
-
-  private measureFitSize(): number {
-    const vertical = layoutAxis(this.mode as TransformAxis) === "height";
-    const natural = this.measureSheetNatural(vertical);
-    const capped =
-      this.maxHeightCap !== undefined
-        ? Math.min(natural, this.maxHeightCap)
-        : natural;
-    if (typeof window === "undefined") return capped;
-    const viewport = this.containingExtent(vertical);
-    return viewport > 0 ? Math.min(capped, viewport) : capped;
-  }
-
-  // The fit cap is the sheet's containing block, not always the window: a
-  // position:fixed sheet nested under a transform/filter/will-change ancestor
-  // is clipped to that ancestor, so capping by window.innerHeight oversizes the
-  // sheet and the content/footer get clipped. offsetParent resolves to that
-  // ancestor when present, and is null (→ viewport) for a plain fixed sheet.
-  private containingExtent(vertical: boolean): number {
-    const op = this.element.offsetParent as HTMLElement | null;
-    if (op && op !== document.body && op !== document.documentElement) {
-      return vertical ? op.clientHeight : op.clientWidth;
-    }
-    return vertical ? window.innerHeight : window.innerWidth;
-  }
-
-  private installFitObserver(): void {
-    if (typeof ResizeObserver === "undefined") return;
-    if (!this.snapPointsRaw.some(p => p.size === "fit" || p.size === "content"))
-      return;
-    let raf = 0;
-    const schedule = (): void => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        if (this.destroyed || this.gesture?.isDragging) return;
-        this.recompute();
-      });
-    };
-    const ro = new ResizeObserver(schedule);
-    ro.observe(this.handle);
-    const scroller = this.scrollContainer;
-    const observed = new Set<Element>();
-    const slots = new Set<HTMLSlotElement>();
-    const hasSlot = typeof HTMLSlotElement !== "undefined";
-    const onSlotChange = (): void => resync();
-    const trackSlots = (): void => {
-      if (!scroller || !hasSlot) return;
-      for (const child of Array.from(scroller.children)) {
-        if (child instanceof HTMLSlotElement && !slots.has(child)) {
-          child.addEventListener("slotchange", onSlotChange);
-          slots.add(child);
-        }
-      }
-    };
-    const resync = (): void => {
-      trackSlots();
-      const targets = this.contentTargets();
-      for (const el of observed) {
-        if (!targets.includes(el)) {
-          ro.unobserve(el);
-          observed.delete(el);
-        }
-      }
-      for (const el of targets) {
-        if (!observed.has(el)) {
-          ro.observe(el);
-          observed.add(el);
-        }
-      }
-      schedule();
-    };
-    let mo: MutationObserver | undefined;
-    if (scroller) {
-      resync();
-      if (typeof MutationObserver !== "undefined") {
-        mo = new MutationObserver(resync);
-        mo.observe(scroller, { childList: true });
-      }
-    }
-    this.teardowns.add(() => {
-      ro.disconnect();
-      mo?.disconnect();
-      for (const slot of slots) {
-        slot.removeEventListener("slotchange", onSlotChange);
-      }
-      if (raf) cancelAnimationFrame(raf);
-    });
   }
 
   destroy(): void {
@@ -898,9 +814,10 @@ export class BottomSheetEngine {
       this.backdrop.style.opacity = "";
       this.backdrop.style.pointerEvents = "";
     }
-    if (this.anchorHost) {
-      this.anchorHost.style.removeProperty("--bs-size");
-      this.anchorHost.style.removeProperty("--bs-progress");
+    for (const host of [this.anchorHost, this.scrimParent, this.rootEl]) {
+      if (!host) continue;
+      host.style.removeProperty("--bs-size");
+      host.style.removeProperty("--bs-progress");
     }
     if (this.screenComponent) {
       this.screenComponent.style.opacity = "";
@@ -919,6 +836,7 @@ export class BottomSheetEngine {
 
   private newCycle(): AbortSignal {
     this.allowOvershoot = false;
+    this.opening = false;
     this.currentAbort.abort();
     this.currentAbort = new AbortController();
     return this.currentAbort.signal;
@@ -983,8 +901,15 @@ export class BottomSheetEngine {
   }
 
   private recomputeSnaps(): void {
+    this.resolveMaxHeightCap();
+    this.snaps.setRaw(this.snapPointsRaw);
+    this.clampToMaxHeight();
+    this.scrim.invalidateOpacityCache();
+  }
+
+  private auditDuplicateSnapIds(points: EngineOptions["snapPoints"]): void {
     const seen = new Set<string>();
-    for (const p of this.snapPointsRaw) {
+    for (const p of points) {
       if (seen.has(p.id)) {
         console.warn(
           `[BottomSheet] duplicate snap id "${p.id}" — only the first occurrence is reachable.`,
@@ -992,9 +917,6 @@ export class BottomSheetEngine {
       }
       seen.add(p.id);
     }
-    this.snaps.setRaw(this.snapPointsRaw);
-    this.clampToMaxHeight();
-    this.scrim.invalidateOpacityCache();
   }
 
   private getAllowedRange(): { min: number; max: number } {
@@ -1210,10 +1132,16 @@ export class BottomSheetEngine {
       flickVelocity: this.flickVelocity,
       dragThreshold: this.dragThreshold,
     });
-    if (!target) return;
+    if (!target) {
+      this.clearWillChangeIfIdle();
+      return;
+    }
 
     const previousId = this.activeId;
-    if (target.id === previousId && target.size === this.size) return;
+    if (target.id === previousId && target.size === this.size) {
+      this.clearWillChangeIfIdle();
+      return;
+    }
     if (this.emitBeforeSnap(target, previousId)) {
       const restore = this.snaps.findById(previousId);
       if (restore) {
@@ -1237,26 +1165,19 @@ export class BottomSheetEngine {
       if (signal.aborted) return;
       this.allowOvershoot = false;
       this.opening = false;
-      this.scrollCache.restore(target!.id, previousSize, target!.size);
-      this.updateAriaSlider();
-      this.emit("snap", {
-        id: target!.id,
-        size: this.size,
-        progress: this.computeProgress(this.size),
-      });
-      this.haptic();
-      if (previousSnapSize === 0 && target!.size > 0) {
-        this.emit("open", { id: target!.id });
-        this.handleOpen();
-        notifyLinkedSheets(this.linkedSheets, this);
-        this.emit("opened", { id: target!.id });
-      }
-      if (target!.size === 0) {
-        this.emit("close", undefined);
-        this.handleClose();
-        this.emit("closed", undefined);
-      }
+      this.completeSnap(
+        target!.id,
+        target!.size,
+        previousSize,
+        previousSnapSize === 0,
+        true,
+      );
     });
+  }
+
+  private clearWillChangeIfIdle(): void {
+    if (this.animation.isAnimating || this.gesture?.isDragging) return;
+    this.element.style.willChange = "";
   }
 
   private haptic(): void {
@@ -1353,14 +1274,9 @@ export class BottomSheetEngine {
       progress: this.computeProgress(this.size),
     });
     if (target.size > 0 && !this.lifecycle.isInstalled) {
-      this.emit("open", { id: target.id });
-      this.handleOpen();
-      notifyLinkedSheets(this.linkedSheets, this);
-      this.emit("opened", { id: target.id });
+      this.emitOpenSequence(target.id);
     } else if (target.size === 0 && this.lifecycle.isInstalled) {
-      this.emit("close", undefined);
-      this.handleClose();
-      this.emit("closed", undefined);
+      this.emitCloseSequence();
     }
   }
 

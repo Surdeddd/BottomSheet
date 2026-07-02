@@ -155,7 +155,7 @@ export type EngineOptions = {
   spring?: { stiffness?: number; damping?: number; mass?: number };
 
   focusTrap?: boolean;
-  initialFocus?: string | HTMLElement;
+  initialFocus?: string | HTMLElement | false;
   closeOnEscape?: boolean;
   lockBodyScroll?: boolean;
 

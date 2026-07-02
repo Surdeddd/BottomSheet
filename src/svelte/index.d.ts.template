@@ -89,6 +89,9 @@ export type BottomSheetProps<TId extends string = string> = {
   disableClose?: boolean;
   disableDrag?: boolean;
   closeOnRouteChange?: boolean;
+  stackEffect?: boolean;
+  teleport?: boolean;
+  teleportTo?: string | HTMLElement | null;
   radius?: string | number;
   maxHeight?: string | number;
   backdropColor?: string;
@@ -104,6 +107,7 @@ export type BottomSheetProps<TId extends string = string> = {
   screen?: Snippet;
   children?: Snippet;
   onsnap?: (id: TId) => void;
+  onbeforesnap?: (payload: SheetEventMap["before-snap"]) => void;
   onopen?: (id: TId) => void;
   onclose?: () => void;
   onbeforeclose?: (payload: SheetEventMap["before-close"]) => void;
