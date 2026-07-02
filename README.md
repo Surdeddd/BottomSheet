@@ -3,7 +3,7 @@
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
 ![bundle](https://img.shields.io/badge/core-16.8%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-452%20unit-2ea44f?style=flat-square)
+![tests](https://img.shields.io/badge/tests-501%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -33,21 +33,21 @@ stacking — and the exact same engine behind every adapter.
 
 ## Why another bottom-sheet?
 
-| Feature                              |  vaul   | react-modal-sheet | **this lib** |
-| ------------------------------------ | :-----: | :---------------: | :-----------: |
-| React adapter                        |    ✓    |         ✓         |       ✓       |
-| Vue / Svelte / Web Component         |    —    |         —         |   **✓ ✓ ✓**   |
-| Vanilla / no framework               |    —    |         —         |     **✓**     |
-| `bottom` mode                        |    ✓    |         ✓         |       ✓       |
-| `top` / `left` / `right` / overlay   |    —    |         —         |     **✓**     |
-| Spring physics with velocity carry   |    ✓    |      partial      |     **✓**     |
-| Pointer-type-aware tuning            |    —    |         —         |     **✓**     |
-| Hardware-back interception (Android) |    —    |         —         |     **✓**     |
-| `env(safe-area-inset-*)`             | partial |         —         |     **✓**     |
-| WCAG 2.1 AA keyboard slider          | partial |         —         |     **✓**     |
-| Multi-sheet stacking                 |    —    |         —         |     **✓**     |
-| Sheet-manager registry (typed)       |    —    |         —         |     **✓**     |
-| Tests (unit + e2e)                   | partial |      partial      | **452 + 164**  |
+| Feature                              | vaul    | react-modal-sheet | **this lib**  |
+| ------------------------------------ | ------- | ----------------- | ------------- |
+| React adapter                        | ✓       | ✓                 | ✓             |
+| Vue / Svelte / Web Component         | —       | —                 | **✓ ✓ ✓**     |
+| Vanilla / no framework               | —       | —                 | **✓**         |
+| `bottom` mode                        | ✓       | ✓                 | ✓             |
+| `top` / `left` / `right` / overlay   | —       | —                 | **✓**         |
+| Spring physics with velocity carry   | ✓       | partial           | **✓**         |
+| Pointer-type-aware tuning            | —       | —                 | **✓**         |
+| Hardware-back interception (Android) | —       | —                 | **✓**         |
+| `env(safe-area-inset-*)`             | partial | —                 | **✓**         |
+| WCAG 2.1 AA keyboard slider          | partial | —                 | **✓**         |
+| Multi-sheet stacking                 | —       | —                 | **✓**         |
+| Sheet-manager registry (typed)       | —       | —                 | **✓**         |
+| Tests (unit + e2e)                   | partial | partial           | **501 + 195** |
 
 ## Install
 
@@ -210,31 +210,41 @@ engine.snapTo('full');
 type SnapPoint =
   | number // pixels
   | `${number}%` // percent of viewport along the axis
-  | 'fit' // natural height of header
+  | 'fit' // natural height of the whole sheet (handle + header + content + footer)
+  | 'content' // alias of 'fit'
   | 'full' // 100 % of axis
   | string; // any CSS length — "50dvh", "clamp(200px, 60%, 800px)"
 ```
 
 ### Engine options
 
-| Option           | Default       | What it does                                                           |
-| ---------------- | ------------- | ---------------------------------------------------------------------- |
-| `snapPoints`     | required      | Ordered list of `{ id, size }`                                         |
-| `allowed`        | all ids       | Subset the sheet may settle on right now                               |
-| `initial`        | first allowed | Snap id to start at                                                    |
-| `mode`           | `"bottom"`    | `bottom`, `top`, `left`, `right`                                       |
-| `animation`      | `"spring"`    | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy` |
-| `spring`         | snappy        | `{ stiffness, damping, mass }`                                         |
-| `flickVelocity`  | `0.65 px/ms`  | Mobile flick threshold                                                 |
-| `dragThreshold`  | `18 px`       | Below this, drag snaps back                                            |
-| `rubberBand`     | `true`        | iOS-style soft over-drag                                               |
-| `backdropRange`  | `[0, 1]`      | Progress range over which backdrop fades                               |
-| `focusTrap`      | `false`       | Trap Tab focus inside the sheet when open                              |
-| `closeOnEscape`  | `true`        | Listen for Escape and close                                            |
-| `closeOnBack`    | `false`       | Intercept Android back button (history.popstate)                       |
-| `lockBodyScroll` | `true`        | iOS-safe body lock (`position: fixed`)                                 |
-| `stackEffect`    | `false`       | iOS card-stack: back sheets scale down per depth                       |
-| `inertSiblings`  | `false`       | Mark page siblings `inert` while open (full modal)                     |
+| Option               | Default       | What it does                                                                                                               |
+| -------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `snapPoints`         | required      | Ordered list of `{ id, size }`                                                                                             |
+| `allowed`            | all ids       | Subset the sheet may settle on right now                                                                                   |
+| `initial`            | first allowed | Snap id to start at                                                                                                        |
+| `mode`               | `"bottom"`    | `bottom`, `top`, `left`, `right`                                                                                           |
+| `animation`          | `"spring"`    | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy`                                                     |
+| `spring`             | snappy        | `{ stiffness, damping, mass }`                                                                                             |
+| `flickVelocity`      | `0.65 px/ms`  | Mobile flick threshold                                                                                                     |
+| `dragThreshold`      | `18 px`       | Below this, drag snaps back                                                                                                |
+| `rubberBand`         | `true`        | iOS-style soft over-drag                                                                                                   |
+| `backdropRange`      | `[0, 1]`      | Progress range over which backdrop fades                                                                                   |
+| `screenRange`        | `[0, 1]`      | Progress range over which the `screen`/scrim content fades                                                                 |
+| `focusTrap`          | `false`       | Trap Tab focus inside the sheet when open                                                                                  |
+| `initialFocus`       | first field   | Element / selector to focus on open; `false` focuses the sheet container (`tabindex=-1`) instead — avoids the iOS keyboard |
+| `closeOnEscape`      | `true`        | Listen for Escape and close                                                                                                |
+| `closeOnBack`        | `false`       | Intercept Android back button (history.popstate)                                                                           |
+| `closeOnRouteChange` | `false`       | Close when the URL changes (patches `pushState`/`replaceState` + popstate)                                                 |
+| `lockBodyScroll`     | `true`        | iOS-safe body lock (`position: fixed`)                                                                                     |
+| `stackEffect`        | `false`       | iOS card-stack: back sheets scale down per depth                                                                           |
+| `inertSiblings`      | `false`       | Mark page siblings `inert` while open (full modal)                                                                         |
+| `persistent`         | `false`       | Block dismissal (backdrop / Escape / back); programmatic `close()` still works                                             |
+| `disableClose`       | `false`       | Block all closing, including programmatic                                                                                  |
+| `disableDrag`        | `false`       | Suppress the drag gesture (imperative snaps still work)                                                                    |
+| `radius`             | token default | Corner radius (`string` CSS length or `number` px); also `setRadius()`                                                     |
+| `maxHeight`          | none          | Cap the sheet height. `number` (px) or a string (`"92dvh"`, `"50%"`) re-resolved on viewport / orientation changes         |
+| `returnFocusTo`      | opener        | Focus target on dismiss — an `HTMLElement`, a selector `string`, or a `() => HTMLElement` factory                          |
 
 ### Anchored elements, docked bars & scrim stages
 
@@ -268,23 +278,41 @@ engine.setScrimStages({
 ### Events
 
 ```ts
-engine.on('snap', ({ id, size }) => {}); // settled state change
-engine.on('open', ({ id }) => {}); // 0 → >0
-engine.on('close', () => {}); // → 0
+engine.on('snap', ({ id, size, progress }) => {}); // settled state change
+engine.on('open', ({ id }) => {}); // 0 → >0 (enter starts)
+engine.on('opened', ({ id }) => {}); // enter settled
+engine.on('close', () => {}); // → 0 (exit starts)
+engine.on('closed', () => {}); // exit settled
 engine.on('dragstart', ({ size }) => {});
-engine.on('drag', ({ size, delta }) => {}); // ~60 fps
+engine.on('drag', ({ size, delta }) => {}); // ~60 fps — payload is pooled, don't retain
 engine.on('dragend', ({ size, velocity }) => {});
 engine.on('progress', ({ value, size }) => {}); // ~60 fps
+
+// Cancelable — call cancel() synchronously to veto the transition:
+engine.on('before-snap', ({ id, size, previousId, cancel }) => {});
+engine.on('before-close', ({ reason, cancel }) => {}); // reason: programmatic | backdrop | escape | back
 ```
 
 ### Imperative
 
 ```ts
 engine.snapTo('half');
-engine.open(); // → first non-closed allowed
-engine.close(); // → "closed" or first allowed
+engine.open(); // → first allowed snap with resolved size > 0
+engine.close(reason?); // → first snap that resolves to size 0, else first allowed
+engine.expand(); // → largest allowed snap
+engine.collapse(); // → smallest allowed snap with size > 0
 engine.setAllowed(ids, snapId); // dynamic allowlist
 engine.setSnapPoints(points); // re-measure
+engine.recompute(); // re-measure a 'fit' / 'content' snap on demand
+engine.getResolvedSnaps(); // → [{ id, size }] resolved to pixels right now
+engine.setPersistent(bool); // toggle persistence (block dismissal) at runtime
+engine.setDisableClose(bool); // toggle close-blocking at runtime
+engine.setDisableDrag(bool); // toggle the drag gesture at runtime
+engine.setRadius('28px'); // corner radius
+engine.setMaxHeight('92dvh'); // height cap (re-resolved on viewport change)
+engine.canDismiss(); // false when persistent / disableClose
+engine.isTop(); // top of the multi-sheet stack?
+engine.depth(); // open sheets above this one
 engine.destroy(); // remove listeners + cancel animation
 ```
 
@@ -293,17 +321,17 @@ engine.destroy(); // remove listeners + cancel animation
 The scrim is the dim layer behind/around the sheet (`screenComponent`). All
 scrim properties can be mutated at runtime — no remount needed.
 
-| Method                                                        | Purpose                                                                                                                                          |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `setScrimMode('full' \| 'above-sheet' \| 'off')`              | Switch positioning at runtime. `'off'` fully disables the scrim layer.                                                                           |
-| `setScrimEnabled(boolean)`                                    | Convenience switch — stashes/restores opacity ranges.                                                                                            |
-| `setScrimTapToClose(boolean)`                                 | Install/teardown click-to-close on the scrim.                                                                                                    |
-| `setScrimColor(color \| null)` / `setScrimBlur(blur \| null)` | Live color & backdrop-filter blur. `null` clears.                                                                                                |
-| `setScrimInteractive(boolean)`                                | Toggle `pointer-events` on the scrim layer.                                                                                                      |
-| `setBackdropRange([s, e])` / `setScreenRange([s, e])`         | Opacity-range mapping (progress 0..1 → opacity 0..1).                                                                                            |
-| `setScrim({ ... })`                                           | Batch — applies preset + individual fields in one pass with a single `applySize`.                                                                |
-| `setScrimOverlay({ children, position, interactive })`        | Inject a positioned floating element into the scrim area. Returns a teardown. Useful for monitoring-style "dim everything except this badge" UX. |
-| `getScrimState()`                                             | Read-only `{ mode, enabled }` snapshot. Stable public API for introspection without coupling to internals.                                       |
+| Method                                                 | Purpose                                                                                                                                          |         |                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ---------------------------------------------------------------------- |
+| `setScrimMode('full' \                                 | 'above-sheet' \                                                                                                                                  | 'off')` | Switch positioning at runtime. `'off'` fully disables the scrim layer. |
+| `setScrimEnabled(boolean)`                             | Convenience switch — stashes/restores opacity ranges.                                                                                            |         |                                                                        |
+| `setScrimTapToClose(boolean)`                          | Install/teardown click-to-close on the scrim.                                                                                                    |         |                                                                        |
+| `setScrimColor(color \                                 | null)` / `setScrimBlur(blur \                                                                                                                    | null)`  | Live color & backdrop-filter blur. `null` clears.                      |
+| `setScrimInteractive(boolean)`                         | Toggle `pointer-events` on the scrim layer.                                                                                                      |         |                                                                        |
+| `setBackdropRange([s, e])` / `setScreenRange([s, e])`  | Opacity-range mapping (progress 0..1 → opacity 0..1).                                                                                            |         |                                                                        |
+| `setScrim({ ... })`                                    | Batch — applies preset + individual fields in one pass with a single `applySize`.                                                                |         |                                                                        |
+| `setScrimOverlay({ children, position, interactive })` | Inject a positioned floating element into the scrim area. Returns a teardown. Useful for monitoring-style "dim everything except this badge" UX. |         |                                                                        |
+| `getScrimState()`                                      | Read-only `{ mode, enabled }` snapshot. Stable public API for introspection without coupling to internals.                                       |         |                                                                        |
 
 **Presets**: `'subtle' | 'standard' | 'monitoring' | 'cinematic'` — use via `scrimPreset` constructor option or `setScrim({ preset })`.
 
@@ -312,11 +340,11 @@ scrim properties can be mutated at runtime — no remount needed.
 The overlay engine (`@surdeddd/bottom-sheet/overlay`) is a standalone slide-up
 panel that mirrors the scrim's runtime-mutability story for content.
 
-| Method                                            | Purpose                                                                                              |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `setOverlayChildren(node \| fragment \| factory)` | Replace overlay contents at runtime. Pass a `Node`, a `DocumentFragment`, or a `() => Node` factory. |
-| `clearOverlayChildren()`                          | Remove any injected content.                                                                         |
-| `setOverlay({ children, ... })`                   | Batch update — `children` is one of the accepted fields alongside positioning/preset overrides.      |
+| Method                          | Purpose                                                                                         |           |                                                                                                      |
+| ------------------------------- | ----------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `setOverlayChildren(node \      | fragment \                                                                                      | factory)` | Replace overlay contents at runtime. Pass a `Node`, a `DocumentFragment`, or a `() => Node` factory. |
+| `clearOverlayChildren()`        | Remove any injected content.                                                                    |           |                                                                                                      |
+| `setOverlay({ children, ... })` | Batch update — `children` is one of the accepted fields alongside positioning/preset overrides. |           |                                                                                                      |
 
 **Presets**: `OverlayPreset` is `'sheet' | 'dialog' | 'sidebar' | 'toast'` —
 exposed as the `OVERLAY_PRESETS` const map and accepted by `setOverlay({ preset })`.
@@ -379,6 +407,20 @@ element — drive any CSS animation from drag without touching JS:
 }
 ```
 
+### Scrim, blur & high contrast
+
+| Token                    | Default     | Region                                               |
+| ------------------------ | ----------- | ---------------------------------------------------- |
+| `--bs-scrim-color`       | transparent | Fill of the scrim layer (`.bs-screen`)               |
+| `--bs-scrim-blur`        | `0px`       | `backdrop-filter: blur()` applied to the scrim layer |
+| `--bs-header-min-height` | `0px`       | Minimum height of the `.bs-header` region            |
+
+`--bs-scrim-blur` drives a real `backdrop-filter` blur on the scrim — set it
+for a frosted backdrop (or use the `monitoring` / `cinematic` scrim presets,
+which set both color and blur). Under Windows High Contrast / `forced-colors`
+the stylesheet ships a `@media (forced-colors: active)` block so the sheet
+surface, handle and focus ring stay visible.
+
 ### Padding & layout
 
 Every region's padding is a token — override or zero it to go edge-to-edge.
@@ -386,12 +428,12 @@ Defaults match the built-in look. Set the variable on the host / `.bs-root` /
 `:root`; custom properties inherit through the Web Component's shadow boundary,
 so the same override works for every adapter:
 
-| Token                  | Default                | Region              |
-| ---------------------- | ---------------------- | ------------------- |
-| `--bs-content-padding` | `0 16px 16px`          | scrollable body     |
-| `--bs-handle-padding`  | `8px 16px 4px`         | grabber strip (top) |
-| `--bs-header-padding`  | `0 16px 8px`           | header slot         |
-| `--bs-footer-padding`  | `12px 16px (+ inset)`  | footer slot         |
+| Token                  | Default               | Region              |
+| ---------------------- | --------------------- | ------------------- |
+| `--bs-content-padding` | `0 16px 16px`         | scrollable body     |
+| `--bs-handle-padding`  | `8px 16px 4px`        | grabber strip (top) |
+| `--bs-header-padding`  | `0 16px 8px`          | header slot         |
+| `--bs-footer-padding`  | `12px 16px (+ inset)` | footer slot         |
 
 (The footer default is `12px 16px calc(12px + env(safe-area-inset-bottom))` — it
 keeps action buttons clear of the home indicator.)
@@ -421,12 +463,12 @@ snap, progress, velocity, FPS). EN/RU and light/dark toggles in the corner.
 ## Testing
 
 ```bash
-npm test                 # 452 unit tests via vitest + happy-dom (~6s)
-npx playwright test      # 32 e2e via Playwright on mobile-Chrome (~25s)
+npm test                 # 501 unit tests via vitest + happy-dom (~6s)
+npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
 npm run typecheck        # TypeScript --noEmit
 ```
 
-CI runs all three across Node 18/20/22 on every PR and tag.
+CI runs all three across Node 20/22 on every PR and tag.
 
 ## Contributing
 

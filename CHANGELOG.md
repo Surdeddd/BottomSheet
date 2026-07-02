@@ -5,7 +5,174 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.0]
+
+### Added — Event parity across every adapter
+
+Every adapter now exposes the full engine event set (previously coverage was
+uneven: Vue/Svelte 5 of 9, Qwik 3, Solid 4).
+
+- **React** (hook + component): `onOpen`, `onClose`, `onDrag`, `onProgress` added, alongside the existing `onSnap` / `onBeforeSnap` / `onBeforeClose` / `onOpened` / `onClosed` / `onDragStart` / `onDragEnd`. `onOpen` fires on enter start, `onOpened` after the enter settles.
+- **Solid**: `onBeforeClose` (synchronous, working `cancel()`), `onOpen`, `onClose`, `onOpened`, `onClosed`, `onDragStart`, `onDragEnd`, `onDrag`, `onProgress` — full parity with React.
+- **Qwik**: lifecycle QRLs `onOpen$`, `onClose$`, `onOpened$`, `onClosed$`, `onDragStart$`, `onDragEnd$` added (alongside `onSnap$` / `onChange$`). See _Limitations_ for the events Qwik intentionally does not expose.
+- **Vue**: `drag` and `progress` emits added.
+- **Svelte**: `ondrag` and `onprogress` callback props added.
+- **Web Component**: `drag` `CustomEvent` added (joining `drag-start` / `drag-end`).
+
+`drag` / `progress` are hot-path: React, Solid and Svelte only subscribe to
+them when the handler is provided **at mount** — the engine builds no per-frame
+payload otherwise. Adding these handlers after mount has no effect.
+
+### Added — cancelable `before-close` on Solid & Web Component
+
+- **Solid**: `onBeforeClose` runs synchronously and can `cancel()` a dismissal.
+- **Web Component**: the `before-close` `CustomEvent` is now cancelable — call `e.preventDefault()` to veto (mirroring `before-snap`).
+
+### Added — Qwik teleport & lifecycle
+
+- `teleport` / `teleportTo` props on the Qwik adapter (opt-in, off by default), mirroring Solid.
+
+### Added — CSS tokens & high contrast
+
+- `--bs-scrim-blur` now applies a real `backdrop-filter: blur()` on the scrim layer (`.bs-screen`) — the token was previously inert.
+- `--bs-header-min-height` wired to the `.bs-header` region (default `0px`).
+- `@media (forced-colors: active)` block so the sheet surface, handle and focus ring stay visible under Windows High Contrast.
+
+### Added — engine
+
+- `BottomSheetEngine.getResolvedSnaps()` — snapshot of every snap resolved to pixels right now; also exposed on `LinkedSheet`.
+
+### Fixed
+
+- **Overlay backdrop pointer-events** — a transparent backdrop no longer blocks clicks or silently swallows `closeOnBackdrop` / outside-pointer dismissal. `setBackdropOpacity` / `setOverlay` / `open` now resync backdrop `pointer-events`, and a `toast` overlay becoming visible regains interactivity.
+- **React component prop types** — `onSnap`, `onBeforeSnap`, `teleportTo`, `backdropColor` and `backdropOpacity` are now typed on `BottomSheetProps` (previously a `TS2322` at the JSX boundary even though the runtime forwarded them).
+- **Vue double-teleport** — the SFC drives the composable with `teleport: false`, so only Vue's `<Teleport>` relocates the DOM in the component path; the engine-level relocation no longer fights it. The standalone composable's `teleportTo` is unchanged.
+- **visual-viewport vs. in-flight animation** — a soft-keyboard/viewport change during an animation now cancels the in-flight cycle and re-clamps (matching the resize-observer path), instead of the keyboard clamp being overwritten by the next animation tick.
+- **linked-sheets size-0 target** — a linked sheet resolves its target to the first allowed snap with resolved size > 0, instead of snapping to a size-0 snap that happened to carry a non-`"closed"` id.
+
+### Changed / Internal
+
+- Engine `maxHeight` state extracted to `max-height-controller.ts`; a `cancelable-emit.ts` primitive backs `before-snap` / `before-close`.
+- Overlay types and presets moved to `overlay-options.ts`, React config validation to `config-validation.ts` and the hook's prop-sync effects to `useEnginePropSync.ts` — all re-exported, public import paths unchanged.
+- `devWarn` replaces raw `console.warn` in the engine, snap-points, Qwik and overlay — development-only warnings are stripped from production bundles (`NODE_ENV === "production"`).
+
+### Limitations
+
+- **Qwik** does not expose `onDrag$` / `onProgress$` (a QRL is a lazily-resolved reference; invoking one per frame is prohibitively expensive) nor `onBeforeSnap$` / `onBeforeClose$` (a QRL is async, but `cancel()` must be read synchronously right after the emit). Both exclusions are locked by a compile-time test. Use `getEngine()` and subscribe directly if you need per-frame or cancelable hooks in Qwik.
+
+## [0.9.1]
+
+### Fixed
+
+- e2e viewport-resize probe accepts any of the three resize signals (`window.resize`, `visualViewport`, `ResizeObserver`) — Linux WebKit does not dispatch `window.resize`, and the engine relies on `ResizeObserver` / `visualViewport` anyway.
+
+## [0.9.0]
+
+### Added — `before-snap` across adapters
+
+- `before-snap` (cancelable) surfaced on React (`onBeforeSnap`), Vue (`before-snap` emit), Svelte (`onbeforesnap`), Solid (`onBeforeSnap`) and the Web Component (cancelable `CustomEvent`). Qwik is excluded (async QRL cannot drive a synchronous `cancel()`).
+
+### Added — runtime setters & reactive flags
+
+- `BottomSheetEngine.setPersistent`, `setDisableClose`, `setDisableDrag` — flip dismissal/gesture behavior at runtime.
+- `persistent` / `disableClose` / `disableDrag` are now reactive on every adapter (React effects, Vue watchers, Svelte `$effect`, Solid `createEffect`, Qwik `useTask$`) and live attributes on the Web Component (`persistent`, `disable-close`, `disable-drag`) — applied without re-init.
+- `initialFocus: false` — focus the sheet container (adding `tabindex=-1` if needed) instead of autofocusing the first field; avoids the iOS software keyboard popping up when a sheet with an input opens.
+
+### Added — parity features
+
+- **Teleport for Solid & Svelte** — `teleport` / `teleportTo` props (opt-in, **off by default**, unlike Vue whose default is `body`).
+- **`stackEffect`** wired through Svelte, Solid and Qwik (React/Vue already had it via `EngineOptions` passthrough).
+- **Button slots for Solid & Qwik** — `leftButton` / `rightButton` (Solid JSX props; Qwik named slots), collapsing when empty.
+- The Web Component preserves the active snap across DOM moves and structural re-inits when the id still exists in the new snap-points.
+
+### Fixed
+
+- **content-swipe double-action** — a swipe that actually scrolls the content no longer also nudges the snap (touchend compares `scrollTop` against the touchstart value).
+- **Back after a cancelled `before-close`** — the popstate handler awaits `close()`; if `before-close` vetoed it, the history marker is re-pushed so the next Back closes the sheet and the page doesn't navigate away.
+- **`opening` flag race** — `newCycle()` resets `opening`, and `snapTo` only clears it after the abort check, so an aborted cycle can't leave a closed sheet reporting `isOpen() === true`.
+- **`will-change` leak** — a tap with no movement now clears the compositor `will-change` layer it set on `pointerdown` (both `settleAfterDrag` and `animateTo` early-returns).
+- **String `maxHeight` re-resolve** — a `"92dvh"` / `"50%"` cap is re-resolved on viewport / orientation / visual-viewport changes and on `recompute()`, instead of sticking at its first-measured pixel value.
+- **Shadow-DOM focus trap** — the Web Component's focus trap now sees slotted light-DOM fields (Tab cycles through them and focus-in no longer yanks focus out of them).
+- **Sticky-footer measurement** — `size: 'content'` includes an in-flow `position: sticky; bottom: 0` footer inside `.bs-content` (measured via a `scrollHeight` floor).
+
+### Changed / Internal
+
+- Engine, overlay and Web Component decomposed into focused modules (`teardown-stack.ts`, `overlay-transforms.ts`, `overlay-swipe.ts`, WC `attributes.ts` / `shadow-tree.ts`); `fit`/`content` measurement moved to `fit-measurement.ts` + `fit-observer.ts`.
+- React / Vue / Svelte / Solid / Qwik react to post-mount `snapPoints` and `allowed` changes (skip-first-run) — previously a size change was silently ignored and an id change could break `setAllowed`.
+
+## [0.8.2]
+
+### Fixed
+
+- `size: 'content'` includes in-flow sticky footers via a `scrollHeight` floor.
+
+## [0.8.1]
+
+### Fixed
+
+- Vue: `teleport={false}` also suppresses engine-level relocation.
+
+## [0.8.0]
+
+### Fixed
+
+- `size: 'content'` measures the whole sheet (handle + header + content + footer, incl. in-flow sticky children) instead of just handle + content; the numeric `maxHeight` cap survives window / orientation / keyboard resizes; the rubber-band release recoil is restored (no one-frame snap); Solid & Qwik honor `persistent` on backdrop tap and gained `persistent` / `disableClose` / `disableDrag` / `closeOnRouteChange` / `returnFocusTo`.
+
+## [0.7.0]
+
+### Added
+
+- Padding tokens for every region (`--bs-content-padding`, `--bs-handle-padding`, `--bs-header-padding`, `--bs-footer-padding`) — override or zero for edge-to-edge.
+
+### Fixed
+
+- `maxHeight`: a snap taller than the cap no longer shoves the sheet up off its anchor — it settles flush and the body scrolls internally. Solid gained `maxHeight` / `radius` parity.
+
+## [0.6.1]
+
+### Fixed
+
+- Nested z-promote is synchronous for `content` / `fit` / `%` snaps (no one-frame behind-flash); composable `teleportTo` / `backdropColor` added to the Vue & Svelte `.d.ts` templates.
+
+## [0.6.0]
+
+### Added
+
+- Composable options `teleportTo`, `backdropColor`, `backdropOpacity` (React / Vue / Svelte), backed by physical node relocation for the headless composables.
+
+## [0.5.0]
+
+### Added
+
+- `size: 'content'` auto-resizes when its content grows/shrinks; a `footer` slot; `header` moved out of the grabber strip into its own `.bs-header` region.
+
+## [0.4.1]
+
+### Fixed
+
+- Button slots (`leftButton` / `rightButton`) re-parented to `.bs-root` so they are no longer clipped by the sheet's `overflow: hidden` + transform; the engine writes `--bs-size` to the root.
+
+## [0.4.0]
+
+### Added
+
+- Lifecycle & cancelable events (`before-close`, `opened`, `closed`); dismissal options (`persistent`, `disableClose`, `disableDrag`, `closeOnRouteChange`); `isTop()` / `depth()` / `expand()` / `collapse()`; `radius` / `maxHeight`; auto `aria-labelledby`; Vue `v-model` / Teleport / footer / anchors; Svelte & Web Component reactive parity; Web Component host-variable theming.
+
+### Fixed
+
+- `closeOnBack` no longer cascades through nested sheets; content-`fit` + `recompute()`; scrim default dim; synchronous z-promote.
+
+## [0.3.0]
+
+### Added
+
+- Mode-aware `sheet-top-*` scrim positioning; `getEngine()` on all seven adapters; Svelte export condition; typechecked root configs.
+
+### Fixed
+
+- Bumped `devalue` 5.7.1 → 5.8.1 to clear a high-severity DoS advisory (GHSA-77vg-94rm-hx3p).
+
+## [0.2.0]
 
 ### Added — Scrim runtime API
 

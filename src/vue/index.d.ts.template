@@ -87,7 +87,7 @@ export type BottomSheetProps<TId extends string = string> =
     open?: boolean;
     snap?: TId;
     teleport?: boolean;
-    teleportTo?: string | HTMLElement;
+    teleportTo?: string | HTMLElement | null;
     anchors?: VueAnchor<TId>[];
     scrimStages?: ScrimStagesOptions | null;
     backdropColor?: string;
@@ -121,6 +121,8 @@ export const BottomSheet: DefineComponent<
     }) => void;
     "drag-start": (payload: { size: number }) => void;
     "drag-end": (payload: { size: number; velocity: number }) => void;
+    drag: (payload: { size: number; delta: number }) => void;
+    progress: (payload: { value: number; size: number }) => void;
     "update:open": (open: boolean) => void;
     "update:snap": (id: string) => void;
   }

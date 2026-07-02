@@ -488,6 +488,45 @@ describe("OverlayEngine", () => {
       ovl.destroy();
     });
 
+    it("setBackdropOpacity resyncs backdrop pointerEvents (transparent stops blocking, visible re-enables)", async () => {
+      const { panel, backdrop } = makeDom();
+      const ovl = new OverlayEngine({ element: panel, backdrop, duration: 0 });
+      await ovl.open();
+      expect(backdrop.style.pointerEvents).toBe("auto");
+      ovl.setBackdropOpacity(0);
+      expect(backdrop.style.pointerEvents).toBe("none");
+      ovl.setBackdropOpacity(0.5);
+      expect(backdrop.style.pointerEvents).toBe("auto");
+      ovl.destroy();
+    });
+
+    it("toast preset backdrop raised from 0 to 0.5 re-enables pointerEvents", async () => {
+      const { panel, backdrop } = makeDom();
+      const ovl = new OverlayEngine({
+        element: panel,
+        backdrop,
+        duration: 0,
+        preset: "toast",
+      });
+      await ovl.open();
+      expect(backdrop.style.pointerEvents).toBe("none");
+      ovl.setBackdropOpacity(0.5);
+      expect(backdrop.style.pointerEvents).toBe("auto");
+      ovl.destroy();
+    });
+
+    it("setOverlay backdropOpacity write resyncs pointerEvents", async () => {
+      const { panel, backdrop } = makeDom();
+      const ovl = new OverlayEngine({ element: panel, backdrop, duration: 0 });
+      await ovl.open();
+      expect(backdrop.style.pointerEvents).toBe("auto");
+      ovl.setOverlay({ backdropOpacity: 0 });
+      expect(backdrop.style.pointerEvents).toBe("none");
+      ovl.setOverlay({ backdropOpacity: 0.5 });
+      expect(backdrop.style.pointerEvents).toBe("auto");
+      ovl.destroy();
+    });
+
     it("setBackdropFilter('blur(20px)') applies when open, defers when closed", async () => {
       const { panel, backdrop } = makeDom();
       const ovl = new OverlayEngine({ element: panel, backdrop, duration: 0 });

@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import { useEnginePropSync } from "./useEnginePropSync";
 import {
   resolveTeleportTarget,
   teleportElements,
@@ -82,10 +83,14 @@ type HookOpts<TId extends string> = Omit<
   onSnap?: (id: TId) => void;
   onBeforeSnap?: (payload: SheetEventMap["before-snap"]) => void;
   onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
+  onOpen?: (id: TId) => void;
+  onClose?: () => void;
   onOpened?: (id: TId) => void;
   onClosed?: () => void;
   onDragStart?: (payload: SheetEventMap["dragstart"]) => void;
   onDragEnd?: (payload: SheetEventMap["dragend"]) => void;
+  onDrag?: (payload: SheetEventMap["drag"]) => void;
+  onProgress?: (payload: SheetEventMap["progress"]) => void;
 };
 
 export function useBottomSheet<TId extends string = string>(
@@ -154,6 +159,12 @@ export function useBottomSheet<TId extends string = string>(
       engine.on("before-close", payload => {
         optsRef.current.onBeforeClose?.(payload);
       }),
+      engine.on("open", payload => {
+        optsRef.current.onOpen?.(payload.id as TId);
+      }),
+      engine.on("close", () => {
+        optsRef.current.onClose?.();
+      }),
       engine.on("opened", payload => {
         optsRef.current.onOpened?.(payload.id as TId);
       }),
@@ -169,6 +180,20 @@ export function useBottomSheet<TId extends string = string>(
         optsRef.current.onDragEnd?.(payload);
       }),
     ];
+    if (optsRef.current.onDrag) {
+      offs.push(
+        engine.on("drag", payload => {
+          optsRef.current.onDrag?.(payload);
+        }),
+      );
+    }
+    if (optsRef.current.onProgress) {
+      offs.push(
+        engine.on("progress", payload => {
+          optsRef.current.onProgress?.(payload);
+        }),
+      );
+    }
     return () => {
       offs.forEach(off => off());
       restoreTeleport?.();
@@ -180,83 +205,17 @@ export function useBottomSheet<TId extends string = string>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const allowedKey = (opts.allowed ?? opts.snapPoints.map(p => p.id)).join(
-    "\x00",
-  );
-  const defKey = opts.snapPoints
-    .map(p => `${p.id}\x01${String(p.size)}`)
-    .join("\x00");
-  const defApplied = useRef(false);
-  useEffect(() => {
-    if (!defApplied.current) {
-      defApplied.current = true;
-      return;
-    }
-    const engine = engineRef.current;
-    if (!engine) return;
-    const current = optsRef.current;
-    engine.setSnapPoints(
-      current.snapPoints as unknown as EngineOptions["snapPoints"],
-      current.allowed
-        ? Array.from(current.allowed as ReadonlyArray<string>)
-        : undefined,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defKey]);
-  useEffect(() => {
-    if (!engineRef.current) return;
-    const ids: string[] = opts.allowed
-      ? Array.from(opts.allowed as ReadonlyArray<string>)
-      : opts.snapPoints.map(p => p.id);
-    engineRef.current.setAllowed(ids);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowedKey]);
-
-  useEffect(() => {
-    if (!engineRef.current) return;
-    if (opts.backdropColor !== undefined) {
-      engineRef.current.setScrimColor(opts.backdropColor);
-    }
-  }, [opts.backdropColor]);
-
-  useEffect(() => {
-    if (!engineRef.current) return;
-    if (opts.backdropOpacity !== undefined) {
-      engineRef.current.setBackdropRange([0, opts.backdropOpacity]);
-    }
-  }, [opts.backdropOpacity]);
-
-  useEffect(() => {
-    if (!engineRef.current) return;
-    if (opts.radius !== undefined) {
-      engineRef.current.setRadius(opts.radius);
-    }
-  }, [opts.radius]);
-
-  useEffect(() => {
-    if (!engineRef.current) return;
-    if (opts.maxHeight !== undefined) {
-      engineRef.current.setMaxHeight(opts.maxHeight);
-    }
-  }, [opts.maxHeight]);
-
-  useEffect(() => {
-    if (opts.persistent !== undefined) {
-      engineRef.current?.setPersistent(opts.persistent);
-    }
-  }, [opts.persistent]);
-
-  useEffect(() => {
-    if (opts.disableClose !== undefined) {
-      engineRef.current?.setDisableClose(opts.disableClose);
-    }
-  }, [opts.disableClose]);
-
-  useEffect(() => {
-    if (opts.disableDrag !== undefined) {
-      engineRef.current?.setDisableDrag(opts.disableDrag);
-    }
-  }, [opts.disableDrag]);
+  useEnginePropSync(engineRef, {
+    snapPoints: opts.snapPoints,
+    allowed: opts.allowed,
+    backdropColor: opts.backdropColor,
+    backdropOpacity: opts.backdropOpacity,
+    radius: opts.radius,
+    maxHeight: opts.maxHeight,
+    persistent: opts.persistent,
+    disableClose: opts.disableClose,
+    disableDrag: opts.disableDrag,
+  });
 
   const subscribe = useCallback((fn: () => void) => {
     subscribersRef.current.add(fn);

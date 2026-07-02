@@ -12,6 +12,10 @@ export type VisualViewportDeps = {
   setMaxAxisSize: (size: number) => void;
   setSize: (size: number) => void;
   applySize: (size: number) => void;
+  cancelInFlight: () => void;
+  newCycle: () => void;
+  isAnimating?: () => boolean;
+  resyncAfterCancel?: () => void;
 };
 
 export function installVisualViewport(deps: VisualViewportDeps): () => void {
@@ -34,11 +38,15 @@ export function installVisualViewport(deps: VisualViewportDeps): () => void {
       if (clamp < deps.getMaxAxisSize()) {
         deps.setMaxAxisSize(clamp);
       }
+      const wasAnimating = deps.isAnimating?.() ?? false;
+      deps.cancelInFlight();
+      deps.newCycle();
       const max = deps.getMaxAxisSize();
       deps.setSize(Math.min(deps.getSize(), max));
       const current = deps.resolveActiveSnap();
       if (current && !deps.isDragging()) {
         deps.applySize(Math.min(current.size, max));
+        if (wasAnimating) deps.resyncAfterCancel?.();
       } else {
         deps.applySize(deps.getSize());
       }

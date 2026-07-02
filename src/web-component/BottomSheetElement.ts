@@ -268,9 +268,15 @@ export class BottomSheetElement extends BaseHTMLElement {
       this.engine.on("progress", payload =>
         this.dispatchEvent(new CustomEvent("progress", { detail: payload })),
       ),
-      this.engine.on("before-close", payload =>
-        this.dispatchEvent(new CustomEvent("before-close", { detail: payload })),
-      ),
+      this.engine.on("before-close", payload => {
+        const accepted = this.dispatchEvent(
+          new CustomEvent("before-close", {
+            detail: payload,
+            cancelable: true,
+          }),
+        );
+        if (!accepted) payload.cancel();
+      }),
       this.engine.on("opened", payload =>
         this.dispatchEvent(new CustomEvent("opened", { detail: payload })),
       ),
@@ -282,6 +288,9 @@ export class BottomSheetElement extends BaseHTMLElement {
       ),
       this.engine.on("dragend", payload =>
         this.dispatchEvent(new CustomEvent("drag-end", { detail: payload })),
+      ),
+      this.engine.on("drag", payload =>
+        this.dispatchEvent(new CustomEvent("drag", { detail: payload })),
       ),
     ];
   }

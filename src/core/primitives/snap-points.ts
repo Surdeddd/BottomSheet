@@ -1,4 +1,5 @@
 import { resolveSnap } from "./cssLength";
+import { devWarn } from "./devWarn";
 import type { SheetMode, SnapPoint, SnapPointDef } from "../types";
 
 export { resolveSnap };
@@ -15,8 +16,7 @@ export const resolveSnapList = (
       const raw = resolveSnap(p.size, mode, measureFit);
 
       if (!Number.isFinite(raw) || raw < 0) {
-        // eslint-disable-next-line no-console
-        console.warn(
+        devWarn(
           `[BottomSheet] snap "${p.id}" resolved to invalid size (${String(p.size)} → ${raw}); clamped to 0.`,
         );
         return { id: p.id, size: 0 };
@@ -31,8 +31,7 @@ export const auditVhUsage = (points: SnapPointDef[]): void => {
   for (const p of points) {
     if (typeof p.size !== "string") continue;
     if (!VH_NOT_DVH.test(p.size)) continue;
-    // eslint-disable-next-line no-console
-    console.warn(
+    devWarn(
       `[BottomSheet] snap "${p.id}" uses "vh" — prefer "dvh" on mobile ` +
         `(iOS Safari URL bar makes vh unstable). ` +
         `See https://web.dev/blog/viewport-units`,

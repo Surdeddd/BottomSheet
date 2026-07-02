@@ -11,9 +11,16 @@ import {
   type QRL,
 } from "@builder.io/qwik";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import { devWarn } from "../core/primitives/devWarn";
+import {
+  resolveTeleportTarget,
+  teleportElements,
+  type TeleportTarget,
+} from "../core/features/teleport";
 import type {
   EngineOptions,
   EngineState,
+  SheetEventMap,
   SnapPointDef,
   SheetMode,
 } from "../core/types";
@@ -38,12 +45,20 @@ export type BottomSheetProps<TId extends string = string> = {
   disableDrag?: boolean;
   closeOnRouteChange?: boolean;
   stackEffect?: boolean;
+  teleport?: boolean;
+  teleportTo?: TeleportTarget;
   returnFocusTo?: EngineOptions["returnFocusTo"];
   ariaLabel?: string;
   radius?: string | number;
   maxHeight?: string | number;
 
   onSnap$?: QRL<(id: TId) => void>;
+  onOpen$?: QRL<(id: TId) => void>;
+  onClose$?: QRL<() => void>;
+  onOpened$?: QRL<(id: TId) => void>;
+  onClosed$?: QRL<() => void>;
+  onDragStart$?: QRL<(payload: SheetEventMap["dragstart"]) => void>;
+  onDragEnd$?: QRL<(payload: SheetEventMap["dragend"]) => void>;
 
   onChange$?: QRL<(state: EngineState & { activeId: TId }) => void>;
 };
@@ -78,7 +93,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     if (!sheetRef.value) return;
 
     if (!handleRef.value || !contentRef.value) {
-      console.warn(
+      devWarn(
         "[BottomSheet/qwik] handle or content ref missing at attach time — drag and content-swipe disabled. Make sure ref bindings render before useVisibleTask$ fires.",
       );
     }
@@ -115,6 +130,15 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     const engine = new BottomSheetEngine(engineOpts);
     engineStore.engine = noSerialize(engine);
 
+    const teleportTarget =
+      props.teleport === false ? null : resolveTeleportTarget(props.teleportTo);
+    const restoreTeleport = teleportTarget
+      ? teleportElements(
+          [backdropRef.value, scrimRef.value, sheetRef.value],
+          teleportTarget,
+        )
+      : null;
+
     const sync = () => {
       const s = engine.state;
       state.size = s.size;
@@ -130,8 +154,18 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       sync();
       props.onSnap$?.(payload.id);
     });
-    engine.on("dragstart", sync);
-    engine.on("dragend", sync);
+    engine.on("open", payload => props.onOpen$?.(payload.id));
+    engine.on("close", () => props.onClose$?.());
+    engine.on("opened", payload => props.onOpened$?.(payload.id));
+    engine.on("closed", () => props.onClosed$?.());
+    engine.on("dragstart", payload => {
+      sync();
+      props.onDragStart$?.(payload);
+    });
+    engine.on("dragend", payload => {
+      sync();
+      props.onDragEnd$?.(payload);
+    });
 
     let onBackdropClick: (() => void) | undefined;
     if (
@@ -182,6 +216,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       if (onBackdropClick && backdropRef.value) {
         backdropRef.value.removeEventListener("click", onBackdropClick);
       }
+      restoreTeleport?.();
       engineStore.engine = undefined;
       engine.destroy();
     });

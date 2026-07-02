@@ -607,6 +607,55 @@ describe("BottomSheetEngine — linkedSheets", () => {
     engine.destroy();
     expect(() => engine.setLinkedSheets([])).not.toThrow();
   });
+
+  it("does not snap a linked sheet to a size-0 rest snap that is first in allowed", async () => {
+    const domA = makeDom();
+    const sheetB = document.createElement("section");
+    const handleB = document.createElement("div");
+    sheetB.appendChild(handleB);
+    document.body.appendChild(sheetB);
+    Object.assign(handleB, {
+      setPointerCapture: () => {},
+      releasePointerCapture: () => {},
+      hasPointerCapture: () => false,
+    });
+
+    const engineB = new BottomSheetEngine({
+      element: sheetB,
+      handle: handleB,
+      snapPoints: [
+        { id: "hidden", size: 0 },
+        { id: "half", size: 300 },
+      ],
+      allowed: ["hidden", "half"],
+      initial: "half",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+    const engineA = new BottomSheetEngine({
+      element: domA.sheet,
+      handle: domA.handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "open", size: 600 },
+      ],
+      initial: "closed",
+      linkedSheets: [engineB],
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+
+    await engineA.open();
+    await new Promise(r => setTimeout(r, 30));
+
+    expect(engineB.state.activeId).toBe("half");
+    expect(engineB.state.size).toBe(300);
+
+    engineA.destroy();
+    engineB.destroy();
+  });
 });
 
 describe("BottomSheetEngine — Plugin system", () => {

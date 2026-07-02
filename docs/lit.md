@@ -43,6 +43,8 @@ export class MyApp extends LitElement {
   ```
 
 - Lit's `@event` syntax binds directly to the element's `CustomEvent`s
-  (`snap`, `open`, `close`, `progress`, `drag`, `dragstart`, `dragend`).
+  (`snap`, `before-snap`, `open`, `opened`, `close`, `closed`, `before-close`,
+  `progress`, `drag`, `drag-start`, `drag-end`). `before-snap` / `before-close`
+  are cancelable — call `e.preventDefault()` in the handler to veto.
 - The component uses Shadow DOM. Style via `::part(sheet)`, `::part(handle)`,
   etc. Or pass `stylesheet="…"` for full control.

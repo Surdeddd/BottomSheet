@@ -10,7 +10,6 @@
 
   --bs-z-backdrop: 90;
   --bs-z-sheet: 100;
-  --bs-header-min-height: 80px;
 
   --bs-backdrop-color-d: rgba(0, 0, 0, 0.5);
 
@@ -246,6 +245,7 @@
 
 .bs-header {
   flex: 0 0 auto;
+  min-height: var(--bs-header-min-height, 0px);
   padding: var(--bs-header-padding, 0 16px 8px);
   background: var(--bs-surface, var(--bs-surface-d));
 }
@@ -285,6 +285,8 @@
   z-index: var(--bs-z-scrim);
 
   background: var(--bs-scrim-color, var(--bs-scrim-color-d));
+  backdrop-filter: blur(var(--bs-scrim-blur, 0px));
+  -webkit-backdrop-filter: blur(var(--bs-scrim-blur, 0px));
   transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity;
 }
@@ -344,6 +346,20 @@
 
     --bs-handle-color-d: rgba(255, 255, 255, 0.45);
     --bs-shadow-auto: 0 -3px 16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@media (forced-colors: active) {
+  .bs-sheet {
+    border: 1px solid CanvasText;
+  }
+  .bs-handle::before {
+    background: CanvasText;
+    forced-color-adjust: none;
+  }
+  .bs-backdrop,
+  .bs-screen {
+    forced-color-adjust: none;
   }
 }
 

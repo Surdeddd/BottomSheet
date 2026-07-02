@@ -61,6 +61,8 @@
     onclosed?: () => void;
     ondragstart?: () => void;
     ondragend?: () => void;
+    ondrag?: (payload: SheetEventMap["drag"]) => void;
+    onprogress?: (payload: SheetEventMap["progress"]) => void;
     onchange?: (state: EngineState & { activeId: TId }) => void;
   };
 
@@ -109,6 +111,8 @@
     onclosed,
     ondragstart,
     ondragend,
+    ondrag,
+    onprogress,
     onchange,
   }: Props = $props();
 
@@ -202,6 +206,8 @@
       sync();
       ondragend?.();
     });
+    if (ondrag) engine.on("drag", payload => ondrag(payload));
+    if (onprogress) engine.on("progress", payload => onprogress(payload));
   });
 
   onDestroy(() => {

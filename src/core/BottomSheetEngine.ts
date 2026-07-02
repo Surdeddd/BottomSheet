@@ -6,7 +6,9 @@ import {
 } from "./primitives/transform";
 import { nextInstanceId } from "./primitives/instance-id";
 import { createEventBus, type EventBus } from "./primitives/event-bus";
-import { auditVhUsage, resolveSnap } from "./primitives/snap-points";
+import { auditVhUsage } from "./primitives/snap-points";
+import { emitCancelable } from "./primitives/cancelable-emit";
+import { devWarn } from "./primitives/devWarn";
 import { SnapResolver } from "./primitives/snap-resolver";
 import { installPersist } from "./features/persist";
 import { installAutoCollapse } from "./features/auto-collapse";
@@ -16,6 +18,10 @@ import { installContentSwipe } from "./features/content-swipe";
 import { installVisualViewport } from "./features/visual-viewport";
 import { installResizeObserver } from "./features/resize-observer";
 import { installFitObserver } from "./features/fit-observer";
+import {
+  createMaxHeightController,
+  type MaxHeightController,
+} from "./features/max-height-controller";
 import {
   measureFitSize,
   type FitMeasurementDeps,
@@ -83,8 +89,7 @@ export class BottomSheetEngine {
   private disableCloseFlag: boolean;
   private disableDragFlag: boolean;
   private closeOnRouteChange: boolean;
-  private maxHeightCap: number | undefined;
-  private maxHeightRaw: string | number | undefined;
+  private maxHeight!: MaxHeightController;
 
   private snapPointsRaw: EngineOptions["snapPoints"];
   private snaps!: SnapResolver;
@@ -214,11 +219,20 @@ export class BottomSheetEngine {
     this.auditDuplicateSnapIds(this.snapPointsRaw);
 
     this.rootEl = this.element.closest<HTMLElement>(".bs-root");
+    this.maxHeight = createMaxHeightController({
+      element: this.element,
+      mode: this.mode,
+      getMaxAxisSize: () => this.snaps.getMaxAxisSize(),
+      setMaxAxisSize: size => {
+        this.snaps.setMaxAxisSize(size);
+      },
+      recompute: () => this.recompute(),
+    });
     this.fitDeps = {
       element: this.element,
       scrollContainer: this.scrollContainer,
       mode: this.mode,
-      getMaxHeightCap: () => this.maxHeightCap,
+      getMaxHeightCap: () => this.maxHeight.getCap(),
     };
     this.snaps = new SnapResolver(
       this.snapPointsRaw,
@@ -348,7 +362,7 @@ export class BottomSheetEngine {
 
   use(plugin: Plugin): this {
     if (this.destroyed) {
-      console.warn(
+      devWarn(
         `[BottomSheet] use("${plugin.name}") called on destroyed engine — ignored.`,
       );
       return this;
@@ -393,6 +407,10 @@ export class BottomSheetEngine {
     return this.snaps.getAllowedIds().slice();
   }
 
+  getResolvedSnaps(): readonly { id: string; size: number }[] {
+    return this.snaps.getResolvedSnaps();
+  }
+
   async snapTo(
     id: string,
     velocityOrOpts:
@@ -410,11 +428,11 @@ export class BottomSheetEngine {
     if (externalSignal?.aborted) return;
     const target = this.snaps.findById(id);
     if (!target) {
-      console.warn(`[BottomSheet] unknown snap id: ${id}`);
+      devWarn(`[BottomSheet] unknown snap id: ${id}`);
       return;
     }
     if (!this.snaps.getAllowedIds().includes(id)) {
-      console.warn(`[BottomSheet] snap "${id}" is not in allowed list`);
+      devWarn(`[BottomSheet] snap "${id}" is not in allowed list`);
       return;
     }
     if (!_skipBeforeSnap && this.emitBeforeSnap(target, this.activeId)) {
@@ -592,45 +610,12 @@ export class BottomSheetEngine {
 
   setRadius(r: string | number): void {
     if (this.destroyed) return;
-    this.element.style.setProperty(
-      "--bs-radius",
-      typeof r === "number" ? `${r}px` : r,
-    );
+    this.maxHeight.setRadius(r);
   }
 
   setMaxHeight(h: string | number): void {
     if (this.destroyed) return;
-    const value = typeof h === "number" ? `${h}px` : h;
-    const axis = layoutAxis(this.mode as TransformAxis);
-    this.element.style.setProperty(
-      axis === "height" ? "max-height" : "max-width",
-      value,
-    );
-    this.maxHeightRaw = h;
-    this.resolveMaxHeightCap();
-    this.recompute();
-  }
-
-  private resolveMaxHeightCap(): void {
-    const raw = this.maxHeightRaw;
-    if (raw === undefined) {
-      this.maxHeightCap = undefined;
-      return;
-    }
-    if (typeof raw === "number") {
-      this.maxHeightCap = raw;
-      return;
-    }
-    if (typeof window === "undefined") return;
-    const measured = resolveSnap(raw, this.mode);
-    this.maxHeightCap = measured > 0 ? measured : undefined;
-  }
-
-  private clampToMaxHeight(): void {
-    if (this.maxHeightCap === undefined) return;
-    if (this.snaps.getMaxAxisSize() > this.maxHeightCap) {
-      this.snaps.setMaxAxisSize(this.maxHeightCap);
-    }
+    this.maxHeight.setMaxHeight(h);
   }
 
   setAllowed(ids: string[], snap?: string): void {
@@ -729,7 +714,7 @@ export class BottomSheetEngine {
     if (!opts) return () => {};
     const host = this.screenComponent?.parentElement;
     if (!host) {
-      console.warn(
+      devWarn(
         "[BottomSheet] setScrimStages: no scrim element mounted — pass `scrim` to the engine first.",
       );
       return () => {};
@@ -784,9 +769,9 @@ export class BottomSheetEngine {
 
   recompute(): void {
     if (this.destroyed) return;
-    this.resolveMaxHeightCap();
+    this.maxHeight.resolveCap();
     this.snaps.recompute();
-    this.clampToMaxHeight();
+    this.maxHeight.clampTo();
     this.scrim.invalidateOpacityCache();
     if (this.gesture?.isDragging) return;
     const current = this.snaps.findById(this.activeId);
@@ -846,43 +831,19 @@ export class BottomSheetEngine {
     target: { id: string; size: number },
     previousId: string,
   ): boolean {
-    let cancelled = false;
-    let frozen = false;
-    this.emit("before-snap", {
-      id: target.id,
-      size: target.size,
-      previousId,
-      cancel: () => {
-        if (frozen) {
-          console.warn(
-            "[BottomSheet] before-snap.cancel() called asynchronously — ignored. cancel() must be invoked synchronously inside the listener.",
-          );
-          return;
-        }
-        cancelled = true;
-      },
-    });
-    frozen = true;
-    return cancelled;
+    return emitCancelable(
+      payload => this.emit("before-snap", payload),
+      { id: target.id, size: target.size, previousId },
+      "before-snap",
+    );
   }
 
   private emitBeforeClose(reason: CloseReason): boolean {
-    let cancelled = false;
-    let frozen = false;
-    this.emit("before-close", {
-      reason,
-      cancel: () => {
-        if (frozen) {
-          console.warn(
-            "[BottomSheet] before-close.cancel() called asynchronously — ignored. cancel() must be invoked synchronously inside the listener.",
-          );
-          return;
-        }
-        cancelled = true;
-      },
-    });
-    frozen = true;
-    return cancelled;
+    return emitCancelable(
+      payload => this.emit("before-close", payload),
+      { reason },
+      "before-close",
+    );
   }
 
   private applyAutoAriaLabelledBy(): void {
@@ -901,9 +862,9 @@ export class BottomSheetEngine {
   }
 
   private recomputeSnaps(): void {
-    this.resolveMaxHeightCap();
+    this.maxHeight.resolveCap();
     this.snaps.setRaw(this.snapPointsRaw);
-    this.clampToMaxHeight();
+    this.maxHeight.clampTo();
     this.scrim.invalidateOpacityCache();
   }
 
@@ -911,7 +872,7 @@ export class BottomSheetEngine {
     const seen = new Set<string>();
     for (const p of points) {
       if (seen.has(p.id)) {
-        console.warn(
+        devWarn(
           `[BottomSheet] duplicate snap id "${p.id}" — only the first occurrence is reachable.`,
         );
       }
@@ -1100,6 +1061,14 @@ export class BottomSheetEngine {
           this.size = size;
         },
         applySize: size => this.applySize(size),
+        cancelInFlight: () => {
+          this.animation.cancel();
+        },
+        newCycle: () => {
+          this.newCycle();
+        },
+        isAnimating: () => this.animation.isAnimating,
+        resyncAfterCancel: () => this.resyncAfterResize(),
       }));
     }
 

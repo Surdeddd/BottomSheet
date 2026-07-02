@@ -181,7 +181,7 @@
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "25.5 KB",
+      "limit": "26 KB",
       "gzip": true
     },
     {
@@ -205,7 +205,7 @@
     {
       "name": "qwik adapter",
       "path": "dist/qwik.js",
-      "limit": "19.5 KB",
+      "limit": "20 KB",
       "gzip": true
     },
     {
@@ -220,19 +220,19 @@
     {
       "name": "web component (self-contained)",
       "path": "dist/element.js",
-      "limit": "24.5 KB",
+      "limit": "25 KB",
       "gzip": true
     },
     {
       "name": "web component (IIFE / CDN)",
       "path": "dist/element.iife.global.js",
-      "limit": "24 KB",
+      "limit": "24.5 KB",
       "gzip": true
     },
     {
       "name": "overlay (subpath)",
       "path": "dist/overlay.js",
-      "limit": "6.5 KB",
+      "limit": "7 KB",
       "gzip": true
     }
   ],

@@ -53,13 +53,39 @@ Every `EngineOption` is forwarded plus:
 | Prop | Default | Description |
 | --- | --- | --- |
 | `backdrop` | `true` | Render the dimmed overlay element |
-| `closeOnBackdrop` | `true` | Tap-out closes |
-| `header` | — | Drag handle content (ReactNode) |
+| `closeOnBackdrop` | `true` | Tap-out closes (only when `canDismiss()`) |
+| `header` | — | Header content — `ReactNode` or `(state) => ReactNode` |
+| `footer` | — | Footer content, pinned below the scroll area — same signature as `header` |
 | `leftButton` / `rightButton` | — | Slots above the sheet |
 | `screen` | — | Background fading by progress |
+| `teleportTo` | — | Relocate the sheet DOM (`HTMLElement`, selector, or `"body"`) to escape a transformed/clipping ancestor |
+| `backdropColor` | — | Scrim color, applied via `setScrimColor` (no `--bs-backdrop-color` needed) |
+| `backdropOpacity` | — | Max backdrop opacity, applied via `setBackdropRange([0, opacity])` |
 | `noSSR` | `false` | Skip render on server (Next.js) |
 | `ariaLabel` / `ariaLabelledBy` | — | Accessible name |
-| `onChange(state)` | — | Fires on settled snap transitions |
+
+### Event callbacks
+
+| Prop | Payload | Fires |
+| --- | --- | --- |
+| `onChange(state)` | `EngineState` | On settled snap transitions |
+| `onSnap(id)` | `string` | Settled on a new snap |
+| `onBeforeSnap(e)` | `{ id, size, previousId, cancel }` | Before a snap settles — call `e.cancel()` **synchronously** to veto |
+| `onBeforeClose(e)` | `{ reason, cancel }` | Before a dismissal — call `e.cancel()` synchronously to veto |
+| `onOpen(id)` | `string` | Enter starts (0 → >0) |
+| `onOpened(id)` | `string` | Enter settled |
+| `onClose()` | — | Exit starts |
+| `onClosed()` | — | Exit settled |
+| `onDragStart(e)` | `{ size }` | Pointer drag begins |
+| `onDragEnd(e)` | `{ size, velocity }` | Pointer drag ends |
+| `onDrag(e)` | `{ size, delta }` | ~60 fps during drag — **provide at mount** (see below) |
+| `onProgress(e)` | `{ value, size }` | ~60 fps during motion — **provide at mount** (see below) |
+
+`onDrag` / `onProgress` are hot-path: the hook only subscribes to the engine's
+`drag` / `progress` streams when the handler is present **at mount**. Adding
+these props after mount has no effect (and the engine builds no per-frame
+payload at all when no handler is attached). Keep the handler stable and don't
+call `setState` from it — mutate the DOM directly.
 
 ### Imperative handle (`ref`)
 
@@ -67,17 +93,28 @@ Every `EngineOption` is forwarded plus:
 type BottomSheetHandle = {
   snapTo(id: string): Promise<void>;
   open(id?: string): Promise<void>;
-  close(): Promise<void>;
+  close(reason?: CloseReason): Promise<void>;
+  expand(): Promise<void>;    // largest allowed snap
+  collapse(): Promise<void>;  // smallest allowed snap > 0
+  isTop(): boolean;           // top of the multi-sheet stack?
+  depth(): number;            // open sheets above this one
   setAllowed(ids: string[], snap?: string): void;
   setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
   setScrim(opts: ScrimUpdate): void;
   setScrimOverlay(opts: ScrimOverlayOptions): () => void;
   addAnchor(opts: AnchorOptions): () => void;
   setScrimStages(opts: ScrimStagesOptions | null): () => void;
+  recompute(): void;          // re-measure a 'fit' / 'content' snap
   getEngine(): BottomSheetEngine | null;
   state: EngineState;        // settled-only snapshot
 };
 ```
+
+Runtime setters that aren't on the handle — `setPersistent`, `setDisableClose`,
+`setDisableDrag`, `setRadius`, `setMaxHeight`, `getResolvedSnaps` — are reached
+via `getEngine()`. The `persistent` / `disableClose` / `disableDrag` / `radius`
+/ `maxHeight` props are also **reactive**: changing them after mount applies to
+the live engine without a remount.
 
 ### Anchors & scrim stages (declarative)
 

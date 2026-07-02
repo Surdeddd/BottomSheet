@@ -115,6 +115,8 @@ export type BottomSheetProps<TId extends string = string> = {
   onclosed?: () => void;
   ondragstart?: () => void;
   ondragend?: () => void;
+  ondrag?: (payload: SheetEventMap["drag"]) => void;
+  onprogress?: (payload: SheetEventMap["progress"]) => void;
   onchange?: (state: EngineState & { activeId: TId }) => void;
 };
 

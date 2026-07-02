@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
 import {
@@ -232,5 +232,63 @@ describe("destroy() removes engine-written custom properties from hosts", () => 
     engine.destroy();
     expect(root.style.getPropertyValue("--bs-size")).toBe("");
     expect(root.style.getPropertyValue("--bs-progress")).toBe("");
+  });
+});
+
+describe("visualViewport cancels an in-flight animation before re-clamping (keyboard resize mid-animation)", () => {
+  const originalVv = Object.getOwnPropertyDescriptor(window, "visualViewport");
+
+  afterEach(() => {
+    if (originalVv) {
+      Object.defineProperty(window, "visualViewport", originalVv);
+    } else {
+      delete (window as unknown as { visualViewport?: unknown }).visualViewport;
+    }
+  });
+
+  it("a keyboard shrink mid-tween cancels the tween and settles at the clamped viewport, not the target snap", async () => {
+    let vvListener: (() => void) | null = null;
+    const vv = {
+      height: 1000,
+      width: 1000,
+      addEventListener: (_type: string, fn: () => void) => {
+        vvListener = fn;
+      },
+      removeEventListener: () => {},
+    };
+    Object.defineProperty(window, "visualViewport", {
+      value: vv,
+      configurable: true,
+    });
+
+    const { sheet, handle } = makeDom();
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 300 },
+        { id: "open", size: 900 },
+      ],
+      initial: "half",
+      animation: "tween" as const,
+      duration: 300,
+      respectReducedMotion: false,
+    });
+
+    const settle = engine.snapTo("open");
+    await new Promise(r => setTimeout(r, 20));
+    expect(engine.state.isAnimating).toBe(true);
+
+    vv.height = 400;
+    expect(vvListener).not.toBeNull();
+    vvListener!();
+    await new Promise(r => setTimeout(r, 40));
+    await settle;
+
+    expect(engine.state.isAnimating).toBe(false);
+    expect(engine.state.size).toBe(392);
+    expect(sheet.style.getPropertyValue("--bs-size")).toBe("392px");
+    engine.destroy();
   });
 });

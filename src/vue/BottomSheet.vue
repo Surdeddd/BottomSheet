@@ -56,6 +56,8 @@ const emit = defineEmits<{
   ];
   "drag-start": [payload: { size: number }];
   "drag-end": [payload: { size: number; velocity: number }];
+  drag: [payload: { size: number; delta: number }];
+  progress: [payload: { value: number; size: number }];
   "update:open": [open: boolean];
   "update:snap": [id: TId];
 }>();
@@ -88,7 +90,7 @@ const {
   canDismiss,
   on,
   getEngine,
-} = useBottomSheet<TId>(props);
+} = useBottomSheet<TId>({ ...props, teleport: false });
 
 watch(
   () => ({ ...state }),
@@ -121,6 +123,8 @@ on("before-snap", payload =>
 );
 on("dragstart", payload => emit("drag-start", payload));
 on("dragend", payload => emit("drag-end", payload));
+on("drag", payload => emit("drag", payload));
+on("progress", payload => emit("progress", payload));
 
 watch(
   () => props.open,

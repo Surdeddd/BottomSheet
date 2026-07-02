@@ -76,19 +76,35 @@ type SvelteBottomSheetController = {
     handle?: HTMLElement;
     scrollContainer?: HTMLElement;
     backdrop?: HTMLElement;
-    screenComponent?: HTMLElement;
+    scrim?: HTMLElement;
   }): () => void;                                            // returns teardown
 
   state(): EngineState;                                      // snapshot
-  on(event, fn): () => void;                                 // unsubscribe
+  on(event, fn): () => void;                                 // unsubscribe — full SheetEventMap
 
   snapTo(id: string): Promise<void>;
   open(id?: string): Promise<void>;
   close(): Promise<void>;
+  expand(): Promise<void>;                                   // largest allowed snap
+  collapse(): Promise<void>;                                 // smallest allowed snap > 0
+  isTop(): boolean;
+  depth(): number;
   setAllowed(ids: string[], snap?: string): void;
+  setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
+  setScrim(opts: ScrimUpdate): void;
+  setScrimOverlay(opts: ScrimOverlayOptions): () => void;
+  addAnchor(opts: AnchorOptions): () => void;
+  setScrimStages(opts: ScrimStagesOptions | null): () => void;
+  recompute(): void;                                         // re-measure a 'fit' / 'content' snap
+  getEngine(): BottomSheetEngine | null;
   destroy(): void;
 };
 ```
+
+The controller's `on()` exposes the full engine event set (`snap`,
+`before-snap`, `open`, `opened`, `close`, `closed`, `before-close`,
+`dragstart`, `dragend`, `drag`, `progress`) — `before-snap` / `before-close`
+carry a synchronous `cancel()`.
 
 ## SvelteKit / SSR
 
@@ -130,9 +146,53 @@ Engine recreation (changing `mode`, `animation`, `focusTrap`) requires
 calling `ctrl.destroy()` and constructing a fresh controller — the
 controller's `attach()` re-uses the constructor-time `opts` snapshot.
 
-## Why a controller, not a `<BottomSheet>` component?
+## `<BottomSheet>` component
 
-Distributing a `.svelte` component would require shipping precompiled Svelte
-artifacts and a separate build pipeline. The controller pattern keeps the
-adapter framework-version-agnostic — it works under Svelte 5 today and stays
-forward-compatible as Svelte evolves runes API.
+A ready-made `<BottomSheet>` SFC is also exported for the common case — it
+renders the full DOM (backdrop, scrim, handle, header/footer, button slots)
+and wires the engine for you. Snippets fill the regions; callback props and
+`bind:` surface the engine events and state.
+
+```svelte
+<script lang="ts">
+  import { BottomSheet } from "@surdeddd/bottom-sheet/svelte";
+  import "@surdeddd/bottom-sheet/styles";
+
+  let open = $state(false);
+  let snap = $state("min");
+</script>
+
+<BottomSheet
+  snapPoints={[{ id: "min", size: 96 }, { id: "full", size: "85%" }]}
+  bind:open
+  bind:snap
+  focusTrap
+  onsnap={(id) => console.log("settled", id)}
+  onbeforeclose={(e) => { if (formDirty) e.cancel(); }}
+>
+  {#snippet header()}<h2>Search</h2>{/snippet}
+  {#snippet children()}<YourList />{/snippet}
+  {#snippet footer()}<button>Done</button>{/snippet}
+</BottomSheet>
+```
+
+Snippet props: `header` / `footer` (receive the state), `children`,
+`leftButton` / `rightButton`, `screen`. Callback props:
+`onsnap`, `onbeforesnap`, `onopen`, `onopened`, `onclose`, `onclosed`,
+`onbeforeclose`, `ondragstart`, `ondragend`, `ondrag`, `onprogress`,
+`onchange`. `bind:open` and `bind:snap` are two-way; `persistent`,
+`disableClose`, `disableDrag`, `radius`, `maxHeight`, `backdropColor`,
+`backdropOpacity`, `snapPoints` and `allowed` are reactive. `onbeforesnap` /
+`onbeforeclose` cancel synchronously; `ondrag` / `onprogress` only subscribe
+when the handler is supplied at mount.
+
+Teleport is **opt-in** (`teleport` defaults to `false`) — set `teleport` and
+optionally `teleportTo` to relocate the sheet DOM via the engine.
+
+## Controller vs. component
+
+The controller (`createBottomSheet`) is for full DOM control — you own the
+markup and wire refs via `$effect` + `bind:this`. The `<BottomSheet>`
+component is the batteries-included path. Both share the same engine; pick the
+controller when you need a custom DOM shape or to embed the sheet in an
+existing layout, the component otherwise.

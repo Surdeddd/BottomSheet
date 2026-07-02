@@ -57,6 +57,15 @@ export type BottomSheetProps<TId extends string = string> = {
   ariaLabel?: string;
   onSnap?: (id: TId) => void;
   onBeforeSnap?: (payload: SheetEventMap["before-snap"]) => void;
+  onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
+  onOpen?: (id: TId) => void;
+  onClose?: () => void;
+  onOpened?: (id: TId) => void;
+  onClosed?: () => void;
+  onDragStart?: (payload: SheetEventMap["dragstart"]) => void;
+  onDragEnd?: (payload: SheetEventMap["dragend"]) => void;
+  onDrag?: (payload: SheetEventMap["drag"]) => void;
+  onProgress?: (payload: SheetEventMap["progress"]) => void;
   onChange?: (state: EngineState & { activeId: TId }) => void;
   engineRef?: (engine: BottomSheetEngine | null) => void;
   header?: JSX.Element;
@@ -146,8 +155,23 @@ export const BottomSheet = <TId extends string = string>(
       props.onSnap?.(payload.id as TId);
     });
     engine.on("before-snap", payload => props.onBeforeSnap?.(payload));
-    engine.on("dragstart", sync);
-    engine.on("dragend", sync);
+    engine.on("before-close", payload => props.onBeforeClose?.(payload));
+    engine.on("open", payload => props.onOpen?.(payload.id as TId));
+    engine.on("close", () => props.onClose?.());
+    engine.on("opened", payload => props.onOpened?.(payload.id as TId));
+    engine.on("closed", () => props.onClosed?.());
+    engine.on("dragstart", payload => {
+      sync();
+      props.onDragStart?.(payload);
+    });
+    engine.on("dragend", payload => {
+      sync();
+      props.onDragEnd?.(payload);
+    });
+    if (props.onDrag) engine.on("drag", payload => props.onDrag?.(payload));
+    if (props.onProgress) {
+      engine.on("progress", payload => props.onProgress?.(payload));
+    }
 
     if (
       props.backdrop !== false &&

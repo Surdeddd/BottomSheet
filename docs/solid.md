@@ -53,10 +53,36 @@ export const Search = () => (
 | `backdrop` | `boolean` | Render the dimming backdrop (default `true`). |
 | `closeOnBackdrop` | `boolean` | Tap backdrop to close (default `true`). |
 | `backdropRange` | `[number, number]` | `[minOpacity, maxOpacity]` for the backdrop. |
+| `radius` | `string \| number` | Corner radius. Reactive. |
+| `maxHeight` | `string \| number` | Height cap; a string is re-resolved on viewport changes. |
+| `persistent` | `boolean` | Block dismissal (backdrop / Escape / back). Reactive. |
+| `disableClose` | `boolean` | Block all closing. Reactive. |
+| `disableDrag` | `boolean` | Suppress the drag gesture. Reactive. |
+| `closeOnRouteChange` | `boolean` | Close when the URL changes. |
+| `stackEffect` | `boolean` | iOS card-stack scaling of back sheets. |
+| `teleport` / `teleportTo` | `boolean` / `HTMLElement \| string \| null` | Relocate the sheet DOM. Opt-in — **off by default** (`teleportTo` unset). |
+| `returnFocusTo` | `HTMLElement \| string \| (() => HTMLElement \| null)` | Focus target on dismiss. |
 | `ariaLabel` | `string` | Accessible name (default `"Bottom sheet"`). |
-| `onSnap` | `(id: string) => void` | Fires when the engine settles on a new snap. |
-| `onChange` | `(state: EngineState) => void` | Fires on every state-affecting engine event. |
-| `header` | `JSX.Element` | Header content rendered inside the drag handle. |
+| `header` / `footer` | `JSX.Element` | Header / footer content. |
+| `leftButton` / `rightButton` | `JSX.Element` | Buttons docked above the sheet. |
+| `screen` | `JSX.Element` | Background that fades in by progress. |
+| `engineRef` | `(engine) => void` | Receives the `BottomSheetEngine` (or `null` on cleanup). |
+
+### Event callbacks
+
+| Prop | Payload | Fires |
+| --- | --- | --- |
+| `onSnap` | `id: string` | Settled on a new snap. |
+| `onBeforeSnap` | `{ id, size, previousId, cancel }` | Before a snap — call `cancel()` **synchronously** to veto. |
+| `onBeforeClose` | `{ reason, cancel }` | Before a dismissal — call `cancel()` synchronously to veto. |
+| `onOpen` / `onOpened` | `id: string` | Enter starts / enter settled. |
+| `onClose` / `onClosed` | — | Exit starts / exit settled. |
+| `onDragStart` / `onDragEnd` | `{ size }` / `{ size, velocity }` | Pointer drag boundaries. |
+| `onDrag` / `onProgress` | `{ size, delta }` / `{ value, size }` | ~60 fps — **provide at mount**; the engine only subscribes when the handler is present, so adding them later has no effect. Don't push these through signals. |
+| `onChange` | `EngineState` | On `snap` / `dragstart` / `dragend`. |
+
+`onBeforeSnap` / `onBeforeClose` cancel synchronously — Solid callbacks run
+inline, so vetoing works (unlike Qwik's async QRLs).
 
 ## Recipe (engine-direct)
 

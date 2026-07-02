@@ -16,6 +16,7 @@ import type {
   EngineState,
   SheetEventMap,
 } from "../core/types";
+import type { TeleportTarget } from "../core/features/teleport";
 import type { AnchorOptions } from "../core/features/sheet-anchors";
 import type {
   ScrimStageDef,
@@ -60,12 +61,21 @@ export type BottomSheetProps = EngineOptionsForProps & {
   screen?: ReactNode;
   anchors?: BottomSheetAnchorProp[];
   scrimStages?: BottomSheetScrimStagesProp;
+  teleportTo?: TeleportTarget;
+  backdropColor?: string;
+  backdropOpacity?: number;
   onChange?: (state: EngineState) => void;
+  onSnap?: (id: string) => void;
+  onBeforeSnap?: (payload: SheetEventMap["before-snap"]) => void;
   onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
+  onOpen?: (id: string) => void;
+  onClose?: () => void;
   onOpened?: (id: string) => void;
   onClosed?: () => void;
   onDragStart?: (payload: SheetEventMap["dragstart"]) => void;
   onDragEnd?: (payload: SheetEventMap["dragend"]) => void;
+  onDrag?: (payload: SheetEventMap["drag"]) => void;
+  onProgress?: (payload: SheetEventMap["progress"]) => void;
   ariaLabel?: string;
   ariaLabelledBy?: string;
   noSSR?: boolean;
@@ -112,10 +122,14 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       scrimStages,
       onChange,
       onBeforeClose,
+      onOpen,
+      onClose,
       onOpened,
       onClosed,
       onDragStart,
       onDragEnd,
+      onDrag,
+      onProgress,
       ariaLabel = "Bottom sheet",
       ariaLabelledBy,
       noSSR = false,
@@ -142,10 +156,14 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     } = useBottomSheet({
       ...engineOpts,
       onBeforeClose,
+      onOpen,
+      onClose,
       onOpened,
       onClosed,
       onDragStart,
       onDragEnd,
+      onDrag,
+      onProgress,
     });
 
     const ariaModal = engineOpts.focusTrap === true;
