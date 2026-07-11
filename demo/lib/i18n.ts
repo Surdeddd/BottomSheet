@@ -80,7 +80,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — typed registry mapping route keys to configs. <code>onOpen</code>/<code>onClose</code> hooks, framework-agnostic.",
     "f12.title": "Tested",
     "f12.body":
-      "138 unit tests (vitest + happy-dom) covering snap math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. 32 e2e via Playwright on mobile-Chrome. All green.",
+      "500+ unit tests (vitest + happy-dom) covering snap math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. ~200 e2e via Playwright on Chromium, WebKit and Firefox. All green.",
     "advanced.title": "Advanced playground",
     "adv.editor.title": "Snap-point editor",
     "adv.editor.sub": "Add, remove, edit, reorder snaps. Sheet remounts live.",
@@ -174,7 +174,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — типизированный реестр ключ маршрута → конфиг. Хуки <code>onOpen</code>/<code>onClose</code>, без привязки к фреймворку.",
     "f12.title": "Покрытие тестами",
     "f12.body":
-      "138 unit-тестов (vitest + happy-dom) на snap-math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. 32 e2e через Playwright на mobile-Chrome. Все зелёные.",
+      "500+ unit-тестов (vitest + happy-dom) на snap-math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. ~200 e2e через Playwright на Chromium, WebKit и Firefox. Все зелёные.",
     "advanced.title": "Расширенные эксперименты",
     "adv.editor.title": "Редактор snap-точек",
     "adv.editor.sub": "Добавляйте, удаляйте, меняйте порядок. Шторка пересобирается на лету.",

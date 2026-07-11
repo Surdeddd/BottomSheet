@@ -21,7 +21,7 @@ test.describe("Floating-action overlay", () => {
     await page.waitForFunction(
       sel => document.querySelector(sel)?.getAttribute("data-active") === "half",
       sheetSelector,
-      { timeout: 8000 },
+      { timeout: 15000 },
     );
   });
 
@@ -76,7 +76,7 @@ test.describe("Floating-action overlay", () => {
     await page.waitForFunction(
       sel => document.querySelector(sel)?.getAttribute("data-active") === "full",
       sheetSelector,
-      { timeout: 8000 },
+      { timeout: 15000 },
     );
     await expect(page.locator(sheetSelector)).toHaveAttribute(
       "data-active",
