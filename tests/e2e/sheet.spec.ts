@@ -44,32 +44,6 @@ test.describe("React BottomSheet", () => {
     );
   });
 
-  test.fixme("close brings sheet to size 0", async ({ page }) => {
-    await page.click(chip("closed"));
-    await page.waitForFunction(
-      sel => {
-        const el = document.querySelector(sel) as HTMLElement | null;
-        const s = el ? parseFloat(el.style.getPropertyValue("--bs-size")) : 999;
-        return s === 0;
-      },
-      sheetSelector,
-    );
-  });
-
-  test.fixme("Escape closes sheet via closeOnEscape", async ({ page }) => {
-    await page.click(chip("half"));
-    await page.waitForTimeout(400);
-    await page.keyboard.press("Escape");
-    await page.waitForFunction(
-      sel => {
-        const el = document.querySelector(sel) as HTMLElement | null;
-        const s = el ? parseFloat(el.style.getPropertyValue("--bs-size")) : 999;
-        return s === 0;
-      },
-      sheetSelector,
-    );
-  });
-
   test("focusTrap moves focus into the sheet", async ({
     page,
     browserName,
@@ -94,6 +68,38 @@ test.describe("React BottomSheet", () => {
       undefined,
       { timeout: 10000 },
     );
+  });
+});
+
+test.describe("Dismissible fixture", () => {
+  const fixtureSheet = ".bs-sheet";
+  const isClosed = (sel: string) => {
+    const el = document.querySelector(sel) as HTMLElement | null;
+    const s = el ? parseFloat(el.style.getPropertyValue("--bs-size")) : 999;
+    return Math.abs(s) < 1;
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/fixtures/dismissible.html");
+    await page.waitForSelector(fixtureSheet);
+    await page.waitForFunction(
+      sel => {
+        const el = document.querySelector(sel) as HTMLElement | null;
+        const s = el ? parseFloat(el.style.getPropertyValue("--bs-size")) : 0;
+        return s > 200;
+      },
+      fixtureSheet,
+    );
+  });
+
+  test("close brings sheet to size 0", async ({ page }) => {
+    await page.click("#close");
+    await page.waitForFunction(isClosed, fixtureSheet);
+  });
+
+  test("Escape closes sheet via closeOnEscape", async ({ page }) => {
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(isClosed, fixtureSheet);
   });
 });
 

@@ -29,16 +29,6 @@ export const CheckoutDrawer = () => {
   const ref = useRef<BottomSheetHandle>(null);
   const [paying, setPaying] = useState(false);
 
-  // TODO: blocked on `before-snap` cancellable event — when shipped, gate
-  // here to prevent dismissal mid-payment. Today we use a hard guard via
-  // re-snap inside onClose.
-  const onSnap = (id: string) => {
-    if (paying && id === "closed") {
-      // bounce back: don't let the user close while payment is live
-      ref.current?.snapTo("full");
-    }
-  };
-
   return (
     <BottomSheet
       ref={ref}
@@ -54,7 +44,10 @@ export const CheckoutDrawer = () => {
       closeOnEscape={!paying}
       lockBodyScroll
       inertSiblings
-      onSnap={onSnap}
+      // Veto any dismissal while a payment is in flight. Both fire a
+      // synchronous cancel() — see the Gotchas below.
+      onBeforeSnap={(e) => { if (paying && e.size === 0) e.cancel(); }}
+      onBeforeClose={(e) => { if (paying) e.cancel(); }}
       header={<h2>Pay $42.00</h2>}
     >
       <CardForm onSubmit={async data => {
@@ -70,6 +63,7 @@ export const CheckoutDrawer = () => {
 
 ## Gotchas
 
+- **`cancel()` must run synchronously** — `onBeforeSnap` / `onBeforeClose` freeze the cancel callback after the synchronous emit phase, so an async guard (promise, `setTimeout`, a modal `await`) won't block. Gate on already-resolved state like `paying`. `onBeforeSnap` covers drag-to-dismiss (a snap to `size === 0`); `onBeforeClose` covers backdrop / Escape / back / programmatic `close()`.
 - **Use `inertSiblings: true`** — otherwise screen-readers and keyboard users can tab into the dimmed page behind the sheet.
 - **Don't disable `focusTrap` while paying** — auto-focus on the submit button at the moment of dragging "preview→full" is part of the magic. Trap is what makes Tab cycling work without a custom keymap.
 - **Disable `closeOnEscape` during the network call** — accidental Esc kills the payment UX.

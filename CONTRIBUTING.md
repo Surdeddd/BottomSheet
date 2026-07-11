@@ -7,43 +7,51 @@ Thanks for considering a contribution. This is a headless library — every chan
 ```bash
 git clone https://github.com/surdeddd/bottom-sheet
 cd bottom-sheet
-npm install --legacy-peer-deps
+nvm use               # Node >= 20.19 — pinned in .nvmrc (dev toolchain requirement)
+npm install
 npm run build         # dist/ for SSR tests
-npm test              # 138 unit tests via vitest + happy-dom
-npm run e2e           # 32 e2e via Playwright on mobile-Chrome
+npm test              # 500+ unit tests via vitest + happy-dom
+npm run e2e           # Playwright e2e (mobile-chrome project; ~200 specs per browser)
 npm run demo          # http://localhost:5173 — interactive playground
 ```
 
-`--legacy-peer-deps` is needed because the workspace fans out to `examples/*` which all consume the local lib via `file:../..`.
+The published package's `engines.node` stays at `>=20` for consumers; the
+**dev** toolchain requires **Node >= 20.19** (pinned in `.nvmrc`). All the
+library's framework peer deps are optional, so a plain `npm install` resolves
+cleanly. If your npm version balks at the `examples/*` workspaces — each
+consumes the local lib via `file:../..` — re-run with `--legacy-peer-deps`.
 
 ## Repo map
 
 ```
 src/
-├── core/              # framework-agnostic engine
-├── react/             # React + Preact adapter
+├── core/              # framework-agnostic engine (+ overlay, features/, controllers/)
+├── react/             # React adapter (Preact re-uses it)
+├── preact/            # zero-cost re-export of /react
 ├── vue/               # Vue 3 SFC adapter
 ├── svelte/            # Svelte 5 SFC adapter
+├── solid/             # Solid adapter (preserved-JSX source bundle)
 ├── qwik/              # Qwik component adapter
-├── web-component/     # native <bottom-sheet>
+├── web-component/     # native <bottom-sheet> custom element
 ├── integrations/      # opt-in form-library wrappers (RHF, Formik)
-├── plugins/           # haptic, analytics — reference plugins
-├── styles/            # base CSS + theme presets
-└── preact/            # zero-cost re-export of /react
+└── styles/            # base CSS + theme presets
 
 tests/
 ├── unit/              # vitest + happy-dom
-└── e2e/               # Playwright on mobile-Chrome (375×667)
+└── e2e/               # Playwright (mobile-chrome / mobile-safari / firefox)
 
-demo/                  # vite-served playground (live on bottomsheet.dev)
-docs/                  # per-framework guides + 8 recipes + MIGRATION.md
+demo/                  # vite-served playground (live on bottom-sheet-demo.vercel.app)
+docs/                  # per-framework guides + 10 recipes + MIGRATION.md
 examples/              # minimal Vite apps for each adapter (StackBlitz-ready)
 ```
+
+Plugins are a runtime pattern (`engine.use(plugin)`), not a source folder —
+see [docs/plugins.md](docs/plugins.md).
 
 ## What changes are welcome
 
 - **Bug fixes** — always
-- **New adapters** — Solid is currently recipe-only; a bundled adapter would be welcome
+- **New adapters** — Angular currently ships as a recipe (`docs/angular.md`); a first-party bundled adapter would be welcome. (React, Preact, Vue, Svelte, Solid, Qwik and the Web Component already ship.)
 - **Integrations** — TanStack Form, Final Form, Conform — same shape as `integrations/react-hook-form.ts`
 - **Plugin pack** — analytics, haptics, telemetry, devtools panel
 - **Theme presets** — additions to `src/styles/themes/*.css`
@@ -65,6 +73,7 @@ Open an issue, get alignment, then PR.
 npm run typecheck     # tsc --noEmit
 npm test              # vitest
 npm run e2e           # Playwright
+npm run docs:check    # validate doc npm-script refs + internal links (CI-gated)
 npm run size          # size-limit — fails CI on regression
 npm run sync:css      # if you edited src/styles/bottom-sheet.css
 npm run build         # verify dist artifacts
@@ -78,7 +87,7 @@ A `.husky/pre-commit` hook runs typecheck + vitest + sync:css drift-guard automa
 - **Breaking changes** in adapters: add a JSDoc deprecation notice for one minor before removing.
 - **Engine guarantees**: cycle-nonce / destroyed-guard / SSR-safety patterns are non-negotiable. Read `src/core/BottomSheetEngine.ts` before modifying gesture or animation paths.
 - **Tests**: new public API needs at least one unit test. Engine-level changes also need an e2e if they touch gesture or animation timing.
-- **Bundle**: keep `dist/index.js` ≤ 10 KB gzipped, `dist/react.js` ≤ 12 KB, `dist/element.js` ≤ 20 KB.
+- **Bundle**: every entry has a gzip budget in the `size-limit` array in `package.json` — core 22.5 KB, react 26, vue 22, svelte 21.5, solid/qwik 20.5, element 25, overlay 7. `npm run size` gates CI on any regression past these ceilings.
 
 ## Publishing a release
 

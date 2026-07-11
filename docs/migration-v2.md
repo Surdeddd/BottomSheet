@@ -1,26 +1,30 @@
-# Migration to v2
+# Migration plan: 1.0 → 2.0 (draft)
 
-This document tracks deprecations in the v1.x line and the breaking
-changes planned for v2. **v2 has no release date** — the deprecations are
-in place so consumers can migrate at their own pace before the symbols
-disappear.
+> **Status:** the package is currently **0.x** (see `version` in
+> `package.json`). Neither v1.0 nor v2.0 has shipped. This document is the
+> **draft plan** for the deprecations the 1.0 line is expected to carry and the
+> breaking changes slated for the eventual 2.0. Nothing here has a release
+> date, and the "1.x" labels below describe the *planned* 1.0 stable line — not
+> a released version.
 
 ## Status legend
 
-- ⚠️ **Deprecated in 1.x** — emits TS strikethrough; still works at runtime
-- 🔥 **Breaking in v2** — will be removed; replacement available now
+- ⚠️ **Planned deprecation (1.0 line)** — will carry a TS `@deprecated`
+  strikethrough once tagged; keeps working at runtime
+- 🔥 **Planned removal (2.0)** — slated for removal; the replacement already
+  exists today
 
 ## Public API curation
 
 ### `OverlayEngine` no longer barrel-exported
 
-⚠️ Deprecated in 1.x · 🔥 Breaking in v2
+⚠️ Planned deprecation (1.0) · 🔥 Planned removal (2.0)
 
 ```ts
-// Before (v1.x — works, but deprecated):
+// Today (still exported; slated for deprecation):
 import { OverlayEngine, Overlay, createOverlay } from "@surdeddd/bottom-sheet";
 
-// After (v1.x and v2):
+// Recommended (works now, and after 2.0):
 import { OverlayEngine, Overlay, createOverlay } from "@surdeddd/bottom-sheet/overlay";
 ```
 
@@ -34,13 +38,13 @@ is bundle-size-safe.
 
 ### `attachGestures` renamed to `installGestures`
 
-⚠️ Deprecated in 1.x · 🔥 Breaking in v2
+⚠️ Planned deprecation (1.0) · 🔥 Planned removal (2.0)
 
 ```ts
-// Before (v1.x — works, but deprecated):
+// Today (still exported; slated for deprecation):
 import { attachGestures } from "@surdeddd/bottom-sheet";
 
-// After (v1.x and v2):
+// Recommended (works now, and after 2.0):
 import { installGestures } from "@surdeddd/bottom-sheet";
 ```
 
@@ -50,10 +54,10 @@ import { installGestures } from "@surdeddd/bottom-sheet";
 
 ### Internal helpers will be moved off the public surface
 
-🔥 Breaking in v2
+🔥 Planned removal (2.0)
 
 The following are exported from the barrel for legacy compatibility but
-are marked `@internal`. v2 will remove them entirely:
+are marked `@internal`. The 2.0 plan removes them entirely:
 
 - `tween`, `easeOutBack`, `easeOutCubic`, `prefersReducedMotion`
 - `runSpring`, `DEFAULT_SPRING`
@@ -78,14 +82,14 @@ media query via a live listener.
 
 ### `engine` field on `useBottomSheet` return value
 
-⚠️ Deprecated in 1.x · 🔥 Breaking in v2
+⚠️ Planned deprecation (1.0) · 🔥 Planned removal (2.0)
 
 ```ts
-// Before (v1.x — works, but deprecated):
+// Today (still exported; slated for deprecation):
 const sheet = useBottomSheet({ snapPoints });
 sheet.engine?.snapTo("full");
 
-// After (v1.x and v2):
+// Recommended (works now, and after 2.0):
 const sheet = useBottomSheet({ snapPoints });
 sheet.getEngine()?.snapTo("full");
 ```
@@ -192,25 +196,26 @@ If `plugin.install()` throws, the engine catches it, drains any partial
 `queueMicrotask` so dev tools surface it on the next tick. Sibling
 plugins still install. The engine remains usable.
 
-## v1 stable contract — explicit pin
+## Planned 1.0 stable contract (draft)
 
-The following surface is **stable for v1.x** — additions are allowed, but
-no rename, removal, signature change, or behaviour change without a v2
-breaking-change cycle. Documented here so every contributor (human + AI
-agent) has one canonical reference.
+The following surface is the one the 1.0 release is expected to **freeze** —
+once 1.0 ships, additions are allowed but no rename, removal, signature
+change, or behaviour change without a 2.0 breaking-change cycle. Documented
+here (ahead of 1.0) so every contributor (human + AI agent) has one canonical
+reference for what the stable surface will be.
 
 ### Engine
 
 - `class BottomSheetEngine` — constructor `new BottomSheetEngine(opts: EngineOptions)`
 - Public methods (signatures pinned):
   - `snapTo(id: string, opts?: { signal?: AbortSignal; velocity?: number }): Promise<void>`
-  - `dragTo(size: number): void`
+  - `dragTo(size: number): Promise<void>`
   - `open(): Promise<void>`, `close(): Promise<void>`
   - `setAllowed(ids: string[]): void`
   - `setSnapPoints(points: SnapPointDef[], allowed?: string[]): void`
   - `setLinkedSheets(others: BottomSheetEngine[]): void`
   - `on<K extends keyof SheetEventMap>(event: K, fn): () => void`
-  - `use(plugin: Plugin): void`
+  - `use(plugin: Plugin): this`
   - `destroy(): void`
   - `getAllowedIds(): string[]`
   - **Scrim**: `setScrimMode`, `setScrimEnabled`, `setScrimTapToClose`, `setScrimColor`, `setScrimBlur`, `setScrimInteractive`, `setBackdropRange`, `setScreenRange`, `setScrim`, `setScrimOverlay`, `getScrimState`
@@ -236,7 +241,7 @@ agent) has one canonical reference.
 - `useBottomSheet` (React/Vue/Svelte/Solid/Qwik) — return shape stable.
   Hooks accept `onSnap?: (id) => void` callback consistently.
 - `BottomSheet` component (React) — props pinned.
-- Custom Element `<surd-bottom-sheet>` — attribute names + dispatched events stable.
+- Custom Element `<bottom-sheet>` (the `defineBottomSheet()` default tag) — attribute names + dispatched events stable.
 
 ### Internal — NOT pinned (subject to refactor without notice)
 

@@ -158,19 +158,20 @@ export const BottomSheet = (props: { items: { title: string; sub: string }[] }) 
 The engine is constructed once inside `onMount` from the props read at that
 moment. Subsequent changes to `snapPoints` / `allowed` / `mode` props after
 mount do **not** auto-recreate the engine — Solid signals don't propagate
-through to the imperative engine state. For runtime updates, drive the
-engine via the imperative `engine` field on the rendered component:
+through to the imperative engine state. For runtime updates, capture the
+engine via the `engineRef` callback prop and drive it directly:
 
 ```tsx
-let sheetRef: { engine: BottomSheetEngine | null } | undefined;
+let engine: BottomSheetEngine | null = null;
+// On the component: <BottomSheet engineRef={(e) => (engine = e)} ... />
 
 createEffect(() => {
-  sheetRef?.engine?.setAllowed(formDirty() ? ["full"] : ["min", "full"]);
+  engine?.setAllowed(formDirty() ? ["full"] : ["min", "full"]);
 });
 
 // Subscribe to events:
 onMount(() => {
-  const off = sheetRef?.engine?.on("before-snap", e => {
+  const off = engine?.on("before-snap", e => {
     if (formDirty() && e.id === "closed") e.cancel();
   });
   onCleanup(() => off?.());
@@ -187,4 +188,7 @@ Engine recreation (changing `mode`, `animation`, `focusTrap`) requires a
 - Subscribe only to `snap` / `dragstart` / `dragend` for reactive state. Use
   `engine.on("progress", ...)` imperatively if you need 60 fps progress —
   update the DOM directly, don't push through signals.
-- The bundled adapter is `dist/solid.js` ≈ 9 KB gzip (engine + adapter + types).
+- The bundled adapter ships as `dist/solid.js`, held to a 20.5 KB gzip budget
+  (engine + adapter + types) by `size-limit` in CI. Solid also gets a
+  preserved-JSX source bundle via the `"solid"` export condition, so
+  SSR/hydration compiles against your app's Solid toolchain.

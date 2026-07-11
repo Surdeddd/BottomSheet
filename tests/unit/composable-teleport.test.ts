@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { useBottomSheet } from "../../src/react/useBottomSheet";

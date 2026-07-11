@@ -13,6 +13,11 @@ import {
 } from "./primitives/overlay-transforms";
 import { installOverlaySwipe } from "./features/overlay-swipe";
 import {
+  pushBackMarker,
+  popBackMarker,
+  type MarkerHandle,
+} from "./features/history-coordinator";
+import {
   OVERLAY_PRESETS,
   type OverlayCloseReason,
   type OverlayEventMap,
@@ -74,7 +79,7 @@ export class OverlayEngine {
   private detachSwipe: (() => void) | null = null;
   private respectReducedMotionEnabled: boolean;
   private isTop = true;
-  private backPushed = false;
+  private backMarker: MarkerHandle | null = null;
   private movedToTarget = false;
   private onOpenCb?: () => void;
   private onCloseCb?: () => void;
@@ -87,7 +92,6 @@ export class OverlayEngine {
   private bus: EventBus<OverlayEventMap> = createEventBus<OverlayEventMap>();
   private detachEscape: (() => void) | null = null;
   private detachBackdrop: (() => void) | null = null;
-  private detachHardwareBack: (() => void) | null = null;
   private releaseStackEntry: (() => void) | null = null;
   private lifecycle: LifecycleController;
 
@@ -260,7 +264,10 @@ export class OverlayEngine {
     this.isOpen_ = false;
     this.isAnimating_ = true;
     sheetStack.update();
-    this.popBackMarker(reason);
+    if (reason !== "back" && this.backMarker) {
+      popBackMarker(this.backMarker);
+    }
+    this.backMarker = null;
     this.element.setAttribute("data-state", "exiting");
 
     const dur = this.effectiveDuration();
@@ -322,6 +329,10 @@ export class OverlayEngine {
     this.bus.clear();
     this.setWillChange(false);
     this.releaseInteractiveListeners();
+    if (this.backMarker) {
+      popBackMarker(this.backMarker);
+      this.backMarker = null;
+    }
     this.releaseStackEntry?.();
     this.releaseStackEntry = null;
     const hadOriginalParent = this.originalParent !== null;
@@ -525,20 +536,6 @@ export class OverlayEngine {
       : this.duration;
   }
 
-  private popBackMarker(reason: OverlayCloseReason): void {
-    if (!this.backPushed) return;
-    this.backPushed = false;
-    if (reason === "back") return;
-    const state = history.state as Record<string, unknown> | null;
-    if (state && state.__bsOverlay === this.id) {
-      try {
-        history.back();
-      } catch {
-        return;
-      }
-    }
-  }
-
   private resolvePeekPx(raw: number | string): number {
     if (typeof raw === "number") return Math.max(0, raw);
     try {
@@ -676,26 +673,6 @@ export class OverlayEngine {
       this.detachBackdrop = () =>
         this.backdrop?.removeEventListener("click", handler);
     }
-    if (
-      this.closeOnBackEnabled &&
-      typeof window !== "undefined" &&
-      !this.detachHardwareBack
-    ) {
-      try {
-        history.pushState({ __bsOverlay: this.id }, "");
-        this.backPushed = true;
-      } catch {
-      }
-      const onPop = () => {
-        if (this.isOpen_ && this.isTop) {
-          this.backPushed = false;
-          void this.close("back");
-        }
-      };
-      window.addEventListener("popstate", onPop);
-      this.detachHardwareBack = () =>
-        window.removeEventListener("popstate", onPop);
-    }
     if (this.closeOnOutsidePointerEnabled && !this.detachOutsidePointer) {
       const handler = (e: PointerEvent) => {
         if (!this.isOpen_) return;
@@ -709,6 +686,18 @@ export class OverlayEngine {
       this.detachOutsidePointer = () =>
         document.removeEventListener("pointerdown", handler, true);
     }
+    if (
+      this.closeOnBackEnabled &&
+      this.backMarker === null &&
+      typeof window !== "undefined"
+    ) {
+      this.backMarker = pushBackMarker({
+        isOpen: () => this.isOpen_,
+        isTop: () => this.isTop,
+        close: () => this.close("back"),
+        markerState: () => ({ __bsOverlay: this.id }),
+      });
+    }
   }
 
   private releaseInteractiveListeners(): void {
@@ -716,8 +705,6 @@ export class OverlayEngine {
     this.detachEscape = null;
     this.detachBackdrop?.();
     this.detachBackdrop = null;
-    this.detachHardwareBack?.();
-    this.detachHardwareBack = null;
     this.detachSwipe?.();
     this.detachSwipe = null;
     this.detachOutsidePointer?.();

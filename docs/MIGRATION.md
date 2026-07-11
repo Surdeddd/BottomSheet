@@ -77,13 +77,13 @@ const ref = useRef<BottomSheetHandle>(null);
 
 ## What you gain
 
-- **7 framework adapters** — React, Vue 3, Svelte 5, Solid, Lit, Web Component, Vanilla. `vaul` and `react-modal-sheet` are React-only.
+- **8 build targets** — React, Preact, Vue 3, Svelte 5, Solid, Qwik, Web Component (Lit-compatible), Vanilla core. `vaul` and `react-modal-sheet` are React-only.
 - **4 sheet directions** — bottom, top, left, right. Both alternatives support bottom only (vaul has limited top support).
 - **Hardware back interception** on Android — opt-in via `closeOnBack`.
 - **WCAG 2.1 AA keyboard slider** — Arrow Up/Down stepping, Home/End, Esc, focus trap with restore.
 - **iOS soft-keyboard awareness** via `visualViewport` API — sheet auto-clamps above keyboard.
 - **Hardware-accelerated transform-only motion** — no layout thrash per frame.
-- **No Framer-Motion / Radix dependencies** — `@surdeddd/bottom-sheet` is 7.7 KB gzipped core. `vaul` is 22 KB, `react-modal-sheet` + Framer is 60+ KB.
+- **No Framer-Motion / Radix dependencies** — `@surdeddd/bottom-sheet` ships only the engine, no animation/primitive libraries. The React adapter is held to a 26 KB gzip budget (core 22.5 KB) by `size-limit` in CI.
 
 ## What you lose
 

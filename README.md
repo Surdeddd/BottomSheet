@@ -2,8 +2,8 @@
 
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
-![bundle](https://img.shields.io/badge/core-16.8%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-501%20unit-2ea44f?style=flat-square)
+![bundle](https://img.shields.io/badge/core-%E2%89%A422.5%20KB%20gzip%20budget-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-500%2B%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -14,40 +14,41 @@ stacking — and the exact same engine behind every adapter.
 ## 🚀 [Live demo → bottom-sheet-demo.vercel.app](https://bottom-sheet-demo.vercel.app)
 
 <p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/sheet-dark.png" />
+    <img src="docs/screenshots/sheet-light.png" alt="bottom sheet at a mid snap point over a dimmed page" width="420" />
+  </picture>
+</p>
+
+<p align="center">
   <img src="https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/gifs/01-drag-to-close.gif" alt="drag to close — spring physics" width="380" />
 </p>
 
-```
+<p align="center">
+  <img src="docs/assets/architecture.svg" alt="One engine core feeding eight adapters — React, Preact, Vue 3, Svelte, Solid, Qwik, Web Component and Vanilla — plus a standalone /overlay subpath" width="720" />
+</p>
 
-                       ┌───────────────────────────────────────┐
-                       │           ENGINE (~9.15 KB gzip)      │
-                       │   spring · gestures · snap math       │
-                       │   focus trap · scroll lock · stack    │
-                       └────────────┬──────────────────────────┘
-                                    │
-       ┌──────┬──────┬──────┬──────┬──────┬─────────────┬─────────┐
-       ▼      ▼      ▼      ▼      ▼      ▼             ▼         ▼
-    React  Vue 3  Svelte  Solid  Lit   Web Comp.    Vanilla   Angular
-                                                              (recipe)
-```
+## What it does
 
-## Why another bottom-sheet?
+Every item below is verifiable in this repo's `src/`:
 
-| Feature                              | vaul    | react-modal-sheet | **this lib**  |
-| ------------------------------------ | ------- | ----------------- | ------------- |
-| React adapter                        | ✓       | ✓                 | ✓             |
-| Vue / Svelte / Web Component         | —       | —                 | **✓ ✓ ✓**     |
-| Vanilla / no framework               | —       | —                 | **✓**         |
-| `bottom` mode                        | ✓       | ✓                 | ✓             |
-| `top` / `left` / `right` / overlay   | —       | —                 | **✓**         |
-| Spring physics with velocity carry   | ✓       | partial           | **✓**         |
-| Pointer-type-aware tuning            | —       | —                 | **✓**         |
-| Hardware-back interception (Android) | —       | —                 | **✓**         |
-| `env(safe-area-inset-*)`             | partial | —                 | **✓**         |
-| WCAG 2.1 AA keyboard slider          | partial | —                 | **✓**         |
-| Multi-sheet stacking                 | —       | —                 | **✓**         |
-| Sheet-manager registry (typed)       | —       | —                 | **✓**         |
-| Tests (unit + e2e)                   | partial | partial           | **501 + 195** |
+- **8 build targets** — React, Preact, Vue 3, Svelte 5, Solid, Qwik, Web
+  Component (Lit-compatible `<bottom-sheet>`) and the vanilla core, plus an
+  `/overlay` subpath (standalone slide-up panel).
+- **4 axes** — `bottom`, `top`, `left`, `right` (via `mode`).
+- **Spring physics with velocity carry**, plus pointer-type-aware tuning
+  (separate touch / mouse / pen drag thresholds).
+- **Hardware-back interception** on Android — opt-in via `closeOnBack`.
+- **`env(safe-area-inset-*)`-aware padding** so action rows clear the home
+  indicator.
+- **WCAG 2.1 AA keyboard slider** — Arrow/Home/End/Esc stepping, focus trap
+  with restore.
+- **Multi-sheet stacking** plus a typed sheet-manager registry.
+- **Cancelable `before-snap` / `before-close`** — veto a transition
+  synchronously.
+- Backed by 500+ unit tests across the suite and ~200 Playwright e2e runs
+  across three browser engines (`mobile-chrome` / `mobile-safari` /
+  `firefox`).
 
 ## Install
 
@@ -456,19 +457,19 @@ npm run demo
 # http://localhost:5173
 ```
 
-The editorial demo showcases all five adapters, every gesture, every mode
+The editorial demo showcases the adapters, every gesture, every mode
 (`bottom · top · left · right · overlay`), and live engine readouts (active
 snap, progress, velocity, FPS). EN/RU and light/dark toggles in the corner.
 
 ## Testing
 
 ```bash
-npm test                 # 501 unit tests via vitest + happy-dom (~6s)
+npm test                 # 500+ unit tests via vitest + happy-dom
 npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
 npm run typecheck        # TypeScript --noEmit
 ```
 
-CI runs all three across Node 20/22 on every PR and tag.
+CI runs all three across Node 20.19 / 22 on every PR and tag.
 
 ## Contributing
 

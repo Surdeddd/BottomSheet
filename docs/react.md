@@ -1,7 +1,7 @@
 # @surdeddd/bottom-sheet · React
 
-React 17+ adapter. Ships a `<BottomSheet>` component (forwardRef) and a
-`useBottomSheet()` hook for headless control.
+React 18+ adapter (peer dep `react >=18`). Ships a `<BottomSheet>` component
+(forwardRef) and a `useBottomSheet()` hook for headless control.
 
 ## Install
 
@@ -164,8 +164,11 @@ return (
 
 ## SSR / Next.js
 
-The component is SSR-safe by default (no `window` touched at import). For
-hydration-strict pages, pass `noSSR`:
+The adapter is **import-safe in Node** — importing it server-side touches no
+`window`/DOM. It is **SSR-renderable**: the sheet markup renders on the server,
+and the engine (all gesture/DOM work) attaches only on **client hydration**.
+For hydration-strict pages where you want to skip the server render entirely,
+pass `noSSR`:
 
 ```tsx
 <BottomSheet noSSR snapPoints={…}>…</BottomSheet>

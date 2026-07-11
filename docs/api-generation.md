@@ -79,7 +79,7 @@ Per-adapter usage guides live in `docs/`:
   [web-component.md](./web-component.md)
 - [plugins.md](./plugins.md) — building custom plugins with `Plugin.install`
   and the optional `TeardownScope` argument
-- [migration-v2.md](./migration-v2.md) — v1 → v2 deprecation tracker plus
-  v1.x stable-contract pin
+- [migration-v2.md](./migration-v2.md) — the draft 1.0 → 2.0 deprecation
+  tracker plus the planned 1.0 stable-contract pin
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — internal controller layout, data
   flow, hot-path invariants

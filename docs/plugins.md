@@ -115,14 +115,19 @@ export function createDirtyGuard(getDirty: () => boolean): Plugin {
   };
 }
 
-// Usage with React:
+// Usage with React — install once. `engine.use()` returns the engine (not a
+// per-plugin teardown), and a plugin lives for the engine's lifetime, so read
+// the latest `dirty` through a ref instead of re-installing on every change.
 const [dirty, setDirty] = useState(false);
+const dirtyRef = useRef(dirty);
+dirtyRef.current = dirty;
+
 const sheet = useBottomSheet({ snapPoints });
 useEffect(() => {
   const engine = sheet.getEngine();
   if (!engine) return;
-  return engine.use(createDirtyGuard(() => dirty)).destroy;
-}, [sheet, dirty]);
+  engine.use(createDirtyGuard(() => dirtyRef.current));
+}, [sheet]);
 ```
 
 > **Important:** `cancel()` MUST be called synchronously inside the listener.

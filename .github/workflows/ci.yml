@@ -22,7 +22,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        node: [20, 22]
+        node: ["20.19", "22"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -44,13 +44,15 @@ jobs:
         run: npm run build
       - name: Unit tests
         run: npx vitest run --coverage --reporter=verbose
+      - name: Docs consistency (npm scripts + internal links)
+        run: npm run docs:check
       - name: Package contract (publint + attw + dist smoke imports)
         run: |
           npx publint
           npx attw --pack . --profile node16 --exclude-entrypoints ./styles ./styles.css ./themes/ios ./themes/ios.css ./themes/material ./themes/material.css ./themes/vercel ./themes/vercel.css
           for f in index react preact vue element svelte overlay qwik; do node -e "import('./dist/$f.js')"; done
       - name: Upload coverage to Codecov
-        if: matrix.node == 20
+        if: matrix.node == '20.19'
         uses: codecov/codecov-action@v4
         with:
           use_oidc: true
@@ -103,7 +105,7 @@ jobs:
       - name: Build library (demo needs dist for theme resolution)
         run: npm run build
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - name: Visual-regression tests
         run: npx playwright test tests/e2e/visual-regression.spec.ts
       - uses: actions/upload-artifact@v4

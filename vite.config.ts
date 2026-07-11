@@ -45,6 +45,14 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "demo/index.html"),
+        dismissible: resolve(__dirname, "demo/fixtures/dismissible.html"),
+      },
+    },
+  },
   optimizeDeps: {
     exclude: ["vaul", "react-modal-sheet"],
   },

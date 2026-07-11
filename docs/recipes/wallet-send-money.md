@@ -42,8 +42,10 @@ export function SendMoney() {
       backdrop lockBodyScroll inertSiblings focusTrap closeOnEscape closeOnBack
       onBeforeSnap={(e) => {
         // guard: leaving "amount" with a value entered → confirm
-        if (e.from === "amount" && (e.to === "recipients" || e.to === "closed") && amount > 0) {
-          if (!confirm("Discard amount and go back?")) e.preventDefault();
+        // payload is { id, size, previousId, cancel }: previousId = where you
+        // leave, id = the target snap.
+        if (e.previousId === "amount" && (e.id === "recipients" || e.id === "closed") && amount > 0) {
+          if (!confirm("Discard amount and go back?")) e.cancel();
         }
       }}
       header={<h2>Send money</h2>}
@@ -70,7 +72,7 @@ export function SendMoney() {
 
 ## Gotchas
 
-- **`onBeforeSnap` must `preventDefault()` synchronously** — async modals won't block; use `confirm()` or pre-resolved state.
+- **`onBeforeSnap` must call `e.cancel()` synchronously** — the cancel callback freezes after the synchronous emit phase, so async modals won't block; use `confirm()` or pre-resolved state.
 - **`inertSiblings` + `focusTrap`** — financial UX shouldn't allow tab-out or pointer-out on the dimmed page.
 - **`closeOnBack: true`** — Android system back pops one snap level instead of closing. Verify on real device; Chrome desktop won't reproduce.
 

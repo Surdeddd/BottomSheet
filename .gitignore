@@ -118,6 +118,7 @@ tests/benchmark/report.md
 # Local agent / CLI state — assistant/agent runtime artifacts. NEVER commit:
 # session state, conversation logs, scheduled-task locks, agent ID files,
 # debug dumps. Each tool keeps a different folder shape, so list them all.
+.remember/
 .claude/
 .claude-tools/
 .cursor-tools/

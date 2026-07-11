@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import { OverlayEngine, createOverlay } from "../../src/core/overlay";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
 import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
+import { __resetHistoryCoordinatorForTests } from "../../src/core/features/history-coordinator";
 
 const makeDom = () => {
   while (document.body.firstChild) document.body.removeChild(document.body.firstChild);
@@ -15,6 +16,7 @@ const makeDom = () => {
 beforeEach(() => {
   __resetSheetStackForTests();
   __resetScrollLockForTests();
+  __resetHistoryCoordinatorForTests();
 });
 
 describe("OverlayEngine", () => {

@@ -222,9 +222,9 @@ Consumer-facing imports:
 | Subpath | What you get | Notes |
 |---|---|---|
 | `@surdeddd/bottom-sheet` | Core engine + utilities | Barrel; some helpers marked `@internal` |
-| `@surdeddd/bottom-sheet/overlay` | OverlayEngine without the bottom-sheet engine | Standalone slide-up panel; ~4 KB gzip |
+| `@surdeddd/bottom-sheet/overlay` | OverlayEngine without the bottom-sheet engine | Standalone slide-up panel; ≤7 KB gzip `size-limit` budget |
 | `@surdeddd/bottom-sheet/element` | Custom Element with auto-registration | Async side effect — see W11 in audit notes |
-| `@surdeddd/bottom-sheet/{react,vue,svelte,solid,qwik,preact}` | Framework adapters | Each ~16–22 KB gzip |
+| `@surdeddd/bottom-sheet/{react,vue,svelte,solid,qwik,preact}` | Framework adapters | `size-limit` gzip budgets: react 26, vue 22, svelte 21.5, solid/qwik 20.5, preact ~1 (re-export) |
 | `@surdeddd/bottom-sheet/integrations/{formik,react-hook-form}` | React-form bindings | Field-aware wrappers; depend on the React adapter |
 
 `package.json` `sideEffects` array is curated to literal paths (no globs):
@@ -249,7 +249,7 @@ other entries are pure for tree-shaking.
 
 ## Test layout
 
-- `tests/unit/*.test.ts` — vitest + happy-dom; 501 tests covering engine
+- `tests/unit/*.test.ts` — vitest + happy-dom; 500+ tests covering engine
   behaviour, gestures, focus trap, scroll lock, snap math, persist,
   auto-collapse, linked sheets, plugin system, dragTo, scroll cache,
   AbortSignal API, ARIA slider attributes, route mount-time push.

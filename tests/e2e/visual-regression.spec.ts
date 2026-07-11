@@ -37,8 +37,6 @@ const waitForSnap = async (
   await waitForSheetSettled(page);
 };
 
-test.skip(!!process.env.CI && !process.env.BS_FORCE_VISUAL, "visual-regression baselines not yet generated");
-
 test.describe("Visual regression — demo layout", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
