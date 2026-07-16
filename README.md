@@ -317,6 +317,14 @@ engine.depth(); // open sheets above this one
 engine.destroy(); // remove listeners + cancel animation
 ```
 
+`initial` starts the sheet **born open** at any snap whose size resolves `> 0`
+(no `open` / `opened` event fires — there is no transition to announce). Calling
+`open()` / `snapTo()` **synchronously in the mount tick is safe** — no
+`requestAnimationFrame` / `nextTick` delay is needed, including `fit` / `content`
+and teleported sheets. A sheet mounted hidden (`display:none` ancestor) heals
+and emits its open sequence once on reveal. See
+[Architecture → Opening at construction](docs/ARCHITECTURE.md).
+
 ### Scrim runtime API
 
 The scrim is the dim layer behind/around the sheet (`screenComponent`). All
@@ -407,6 +415,14 @@ element — drive any CSS animation from drag without touching JS:
   opacity: calc(1 - var(--bs-progress));
 }
 ```
+
+> **z-index is engine-owned.** The stack controller rewrites inline `z-index` on
+> `.bs-sheet`, `.bs-backdrop` and anchor wrappers on every stack change (base
+> `100`, step `10` per depth), so a value you set is overwritten and races the
+> stack. To position the sheet layer against app UI, move the container
+> (teleport target / `.bs-root` parent) or change the open order — don't style
+> `z-index` on bs-managed elements. See
+> [Architecture → z-index & the sheet stack](docs/ARCHITECTURE.md).
 
 ### Scrim, blur & high contrast
 

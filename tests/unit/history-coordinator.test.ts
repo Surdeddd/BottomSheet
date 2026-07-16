@@ -335,3 +335,107 @@ describe("history-coordinator — overlay marker leak on destroy", () => {
     expect(history.pushState).toBe(origPush);
   });
 });
+
+describe("history-coordinator — public __bs marker discriminator", () => {
+  const findState = (
+    spy: MockInstance,
+    key: string,
+  ): Record<string, unknown> | undefined => {
+    const hit = spy.mock.calls.find(c => {
+      const st = c[0] as Record<string, unknown> | null;
+      return !!st && key in st;
+    });
+    return hit?.[0] as Record<string, unknown> | undefined;
+  };
+
+  it("stamps __bs:true on a pushed closeOnBack sheet marker", async () => {
+    const s = makeSheet();
+    const sheet = new BottomSheetEngine(sheetOpts(s, { closeOnBack: true }));
+    await sheet.open("full");
+    await settle();
+
+    expect(findState(pushSpy, "__bsSheet")).toMatchObject({
+      __bsSheet: expect.any(String),
+      __bs: true,
+    });
+
+    sheet.destroy();
+  });
+
+  it("stamps __bs:true on a pushed routed sheet marker", async () => {
+    const s = makeSheet();
+    const sheet = new BottomSheetEngine(
+      sheetOpts(s, { closeOnBack: true, routedTo: "#routed" }),
+    );
+    await sheet.open("full");
+    await settle();
+
+    expect(findState(pushSpy, "__bsRouted")).toMatchObject({
+      __bsRouted: expect.any(String),
+      __bs: true,
+    });
+
+    sheet.destroy();
+  });
+
+  it("stamps __bs:true on a pushed overlay marker", async () => {
+    const { panel } = makeOverlayDom();
+    const ovl = new OverlayEngine({
+      element: panel,
+      duration: 0,
+      closeOnBack: true,
+    });
+    await ovl.open();
+    await settle();
+
+    expect(findState(pushSpy, "__bsOverlay")).toMatchObject({
+      __bsOverlay: expect.any(String),
+      __bs: true,
+    });
+
+    ovl.destroy();
+  });
+
+  it("stamps __bs:true on the marker restored after a cancelled before-close", async () => {
+    const s = makeSheet();
+    const sheet = new BottomSheetEngine(sheetOpts(s, { closeOnBack: true }));
+    await sheet.open("full");
+    await settle();
+
+    const off = sheet.on("before-close", p => p.cancel());
+    pushSpy.mockClear();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle();
+
+    expect(sheet.state.size).toBeGreaterThan(0);
+    expect(findState(pushSpy, "__bsSheet")).toMatchObject({ __bs: true });
+
+    off();
+    sheet.destroy();
+  });
+
+  it("stamps __bs:true on the rebrand replaceState of a surviving marker", async () => {
+    const replaceSpy = vi.spyOn(history, "replaceState");
+    const a = makeSheet();
+    const b = makeSheet();
+    const sheetA = new BottomSheetEngine(
+      sheetOpts(a, { closeOnBack: true, routedTo: "#sheet-a" }),
+    );
+    const sheetB = new BottomSheetEngine(sheetOpts(b, { closeOnBack: true }));
+    await sheetA.open("full");
+    await sheetB.open("full");
+    await settle();
+
+    replaceSpy.mockClear();
+    await sheetA.close();
+    await settle();
+
+    expect(findState(replaceSpy, "__bsSheet")).toMatchObject({
+      __bsSheet: expect.any(String),
+      __bs: true,
+    });
+
+    sheetA.destroy();
+    sheetB.destroy();
+  });
+});

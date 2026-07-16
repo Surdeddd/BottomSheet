@@ -87,7 +87,7 @@ A `.husky/pre-commit` hook runs typecheck + vitest + sync:css drift-guard automa
 - **Breaking changes** in adapters: add a JSDoc deprecation notice for one minor before removing.
 - **Engine guarantees**: cycle-nonce / destroyed-guard / SSR-safety patterns are non-negotiable. Read `src/core/BottomSheetEngine.ts` before modifying gesture or animation paths.
 - **Tests**: new public API needs at least one unit test. Engine-level changes also need an e2e if they touch gesture or animation timing.
-- **Bundle**: every entry has a gzip budget in the `size-limit` array in `package.json` — core 22.5 KB, react 26, vue 22, svelte 21.5, solid/qwik 20.5, element 25, overlay 7. `npm run size` gates CI on any regression past these ceilings.
+- **Bundle**: every entry has a gzip budget in the `size-limit` array in `package.json` — core 22.5 KB, react 26, vue/svelte 22, solid/qwik 20.5, element 25.5, overlay 7. `npm run size` gates CI on any regression past these ceilings.
 
 ## Publishing a release
 

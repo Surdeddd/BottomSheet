@@ -5,6 +5,20 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Hidden-at-construction initial-open sheets** — a `fit` / `content` (or any born-open) sheet mounted inside a `display:none` ancestor or detached from the document measured `0` at construction and locked collapsed (~4px) forever. Root cause: `measureSheetNatural`'s no-`scrollContainer` branch measured the element while the engine still pinned its height. Both measurement branches now poke `height: auto` before reading, so the sheet self-heals on reveal (via an `IntersectionObserver` fallback) and emits the full open sequence exactly once. A guard blocks a double `open` / `opened` when `recompute()` lands mid-open-animation.
+
+### Added
+
+- **`__bs: true` history discriminator** — every history entry the library pushes (sheet marker, `routedTo` marker, overlay marker, cancel-restore, internal rebrand) now carries `__bs: true` in `history.state`. A public, documented signal SPA router guards can test to skip the library's same-URL back-stack entries.
+
+### Documentation
+
+- z-index ownership (the stack controller owns inline `z-index` on `.bs-sheet` / `.bs-backdrop` / anchor wrappers), the `vue-router` guard integration pattern, the initial-open contract (born-open visible vs. hidden-at-construction), and the mount-tick `open()` guarantee (no `requestAnimationFrame` delay needed).
+
 ## [0.10.0]
 
 ### Added — Event parity across every adapter

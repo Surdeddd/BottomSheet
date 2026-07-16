@@ -267,12 +267,7 @@ export class BottomSheetEngine {
           if (!entry.isIntersecting) continue;
           if (this.destroyed) return;
           this.snaps.recompute();
-          const current = this.snaps.findById(this.activeId);
-          if (current) {
-            this.size = current.size;
-            this.applySize(this.size);
-            this.updateAriaSlider();
-          }
+          this.healActiveSnap();
           io.disconnect();
           return;
         }
@@ -774,11 +769,22 @@ export class BottomSheetEngine {
     this.maxHeight.clampTo();
     this.scrim.invalidateOpacityCache();
     if (this.gesture?.isDragging) return;
+    this.healActiveSnap();
+  }
+
+  private healActiveSnap(): void {
     const current = this.snaps.findById(this.activeId);
-    if (current) {
-      this.size = current.size;
-      this.applySize(this.size);
-      this.updateAriaSlider();
+    if (!current) return;
+    this.size = current.size;
+    this.applySize(this.size);
+    this.updateAriaSlider();
+    if (
+      this.size > 0 &&
+      !this.lifecycle.isInstalled &&
+      !this.opening &&
+      !this.animation.isAnimating
+    ) {
+      this.emitOpenSequence(this.activeId);
     }
   }
 

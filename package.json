@@ -193,7 +193,7 @@
     {
       "name": "svelte adapter",
       "path": "dist/svelte.js",
-      "limit": "21.5 KB",
+      "limit": "22 KB",
       "gzip": true
     },
     {
@@ -220,7 +220,7 @@
     {
       "name": "web component (self-contained)",
       "path": "dist/element.js",
-      "limit": "25 KB",
+      "limit": "25.5 KB",
       "gzip": true
     },
     {

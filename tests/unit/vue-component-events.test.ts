@@ -109,4 +109,51 @@ describe("Vue <BottomSheet> drag/progress emits", () => {
     expect(list).toContain("drag");
     expect(list).toContain("progress");
   });
+
+  it("open=true at mount opens the sheet", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const app = vue.createApp(Cmp as never, {
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 400 },
+      ],
+      initial: "closed",
+      open: true,
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+      teleport: false,
+    });
+    const vm = app.mount(host) as unknown as { state: { size: number } };
+    await flush();
+
+    expect(vm.state.size).toBeGreaterThan(0);
+
+    app.unmount();
+    host.remove();
+  });
+
+  it("open stays false at mount when not requested", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const app = vue.createApp(Cmp as never, {
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 400 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+      teleport: false,
+    });
+    const vm = app.mount(host) as unknown as { state: { size: number } };
+    await flush();
+
+    expect(vm.state.size).toBe(0);
+
+    app.unmount();
+    host.remove();
+  });
 });

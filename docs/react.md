@@ -116,6 +116,11 @@ via `getEngine()`. The `persistent` / `disableClose` / `disableDrag` / `radius`
 / `maxHeight` props are also **reactive**: changing them after mount applies to
 the live engine without a remount.
 
+`open()` / `snapTo()` are safe to call **synchronously in the mount tick** (e.g.
+a mount `useEffect` / `useLayoutEffect`) — no `requestAnimationFrame` delay is
+needed, including `fit` / `content` and teleported sheets. Or pass `initial`
+(a snap whose size resolves `> 0`) to start the sheet born open.
+
 ### Anchors & scrim stages (declarative)
 
 ```tsx
@@ -229,3 +234,17 @@ useEffect(() => {
   return () => clearInterval(id);
 }, []);
 ```
+
+## Gotchas
+
+- **Don't set `z-index` on `.bs-sheet` / `.bs-backdrop` / anchors.** The engine
+  rewrites inline `z-index` on these on every stack change (base `100`, step
+  `10` per depth); your value is overwritten and races. Position the sheet layer
+  by moving the `teleportTo` target / `.bs-root` parent or changing the open
+  order. See [Architecture](ARCHITECTURE.md).
+- **Router guards + `closeOnBack`.** The Back-button marker is a same-URL
+  `history.pushState` entry tagged `__bs: true` in `history.state`. In a global
+  router guard (React Router, TanStack Router, Next.js) skip your app's
+  confirm-guard when `window.history.state?.__bs` is truthy, falling back to a
+  same-path check. See the [Vue router-guard pattern](vue.md) for the full
+  worked example.

@@ -50,6 +50,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "demo/index.html"),
         dismissible: resolve(__dirname, "demo/fixtures/dismissible.html"),
+        mountOpen: resolve(__dirname, "demo/fixtures/mount-open.html"),
       },
     },
   },

@@ -95,6 +95,22 @@ reactive — changing them after mount applies to the live engine.
 <BottomSheet v-model:open="isOpen" v-model:snap="activeSnap" :max-height="cap" />
 ```
 
+## Opening at mount
+
+The component opens at first render when `open` is already truthy — an
+`onMounted` guard calls `open()` when `props.open` is set and the sheet is
+closed; `v-model:open` keeps it in sync afterwards. Combine with `initial` for a
+specific born-open snap:
+
+```vue
+<BottomSheet :open="true" initial="half" :snap-points="snaps" />
+```
+
+Composable users don't get the `open` prop — pass `initial` (a snap whose size
+resolves `> 0`) to start born-open, or call `open()` inside `onMounted`
+directly. Calling `open()` / `snapTo()` synchronously in the mount tick is safe;
+no `nextTick` delay is required.
+
 ## Teleport
 
 The component renders inside Vue's own `<Teleport>` (`teleport` defaults to
@@ -136,3 +152,45 @@ Engine recreation (changing `mode`, `animation`, `focusTrap`) requires a
 The composable wraps `onMounted` so the engine attaches only on the client.
 No `window` access at import. SSR pages render the static HTML; gestures
 activate after hydration.
+
+## Router guards & `closeOnBack`
+
+`closeOnBack` (and `routedTo`, and overlays) push a history entry so the
+hardware / browser Back button closes the top sheet. These are **same-URL**
+`pushState` entries, auto-cleaned by the library on close / destroy in any
+order. Every entry the library pushes carries `__bs: true` in `history.state` —
+a public discriminator.
+
+A global `vue-router` guard sees a `closeOnBack` pop as a same-URL navigation,
+which can trip an app-level "unsaved changes?" confirm guard. Skip your guard
+for the library's own entries:
+
+```ts
+router.beforeEach((to, from) => {
+  // __bs marks the library's own history entries (sheet / overlay / routed markers)
+  if (window.history.state?.__bs) return true;
+  // belt-and-braces: a back-marker pop is a same-URL navigation, and guard
+  // timing vs. popstate can vary, so fall back to a path comparison
+  if (to.fullPath === from.fullPath) return true;
+
+  return confirmLeaveIfDirty();
+});
+```
+
+Both lines are intentional: `__bs` is the precise signal (the library's marker
+entries), and the `fullPath` equality is the fallback for when the guard runs
+before the library's `history.state` is observable.
+
+## Gotchas
+
+- **Don't set `z-index` on `.bs-sheet` / `.bs-backdrop` / anchors.** The stack
+  controller rewrites inline `z-index` on these on every stack change (base
+  `100`, step `10` per depth), so any value you set is overwritten and races.
+  To place the sheet layer against app UI, move the teleport target / `.bs-root`
+  parent or change the open order. See [Architecture](ARCHITECTURE.md).
+- **Chrome "aria-hidden on an ancestor of the focused element" warning.** The
+  library performs **zero** dynamic `aria-hidden` writes; sibling isolation uses
+  the `inert` attribute (opt-in via `inertSiblings`, and it skips `.bs-root` /
+  `.bs-backdrop` / `.bs-screen`, so stacked sheets never inert each other). If
+  you see that warning with stacked sheets, it originates in your own layers
+  (router wrappers, another modal library) — not in this library.

@@ -13,11 +13,15 @@ export const measureSheetNatural = (
   content: HTMLElement | undefined,
   vertical: boolean,
 ): number => {
-  if (!content) {
-    return vertical ? element.offsetHeight : element.offsetWidth;
-  }
   const axis = vertical ? "height" : "width";
   const sheetStyle = element.style;
+  if (!content) {
+    const prev = sheetStyle[axis];
+    sheetStyle[axis] = "auto";
+    const poked = vertical ? element.offsetHeight : element.offsetWidth;
+    sheetStyle[axis] = prev;
+    return poked;
+  }
   const cs = content.style;
   const prevSheet = sheetStyle[axis];
   const prevFlex = cs.flex;

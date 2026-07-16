@@ -86,6 +86,8 @@ tests/benchmark/report.md
 # Vitest run-state
 .nyc_output/
 .tap-output*
+# Transient test-generated compile artifacts (svelte real-mount harness)
+src/**/__*.gen.js
 # Visual regression: ignore comparison/diff artifacts but COMMIT baseline
 # *.png snapshots under tests/e2e/visual-regression.spec.ts-snapshots/.
 **/*-actual.png

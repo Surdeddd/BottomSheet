@@ -125,6 +125,55 @@ short-circuits without firing `emit("snap")`.
 This pattern replaces the older numeric `cycleNonce` with standard browser
 abort semantics — see commit history for migration details.
 
+## Opening at construction
+
+A sheet is **born open** when `initial` names a snap whose size resolves `> 0`
+at construction — a px / `%` value, or a `fit` / `content` snap whose content
+already has layout. Two paths:
+
+- **Visible at construction** — the initial size resolves `> 0` synchronously.
+  The engine installs lifecycle (focus trap, scroll lock), pushes the
+  `closeOnBack` history marker and promotes the sheet in the stack **at
+  construction**, but stays **silent**: no `open` / `opened` events fire (the
+  sheet was never closed, so there is no transition to announce).
+- **Hidden at construction** — the sheet is mounted under a `display:none`
+  ancestor or detached from the document, so `fit` / `content` measures `0` and
+  it can't lay out yet. The engine registers an `IntersectionObserver` fallback;
+  on first reveal it re-measures, heals the active snap, and **then** emits the
+  full open sequence exactly once (`open` + `opened`, `closeOnBack` marker,
+  stack promotion). A guard (`isInstalled` / `opening` / `isAnimating`) prevents
+  a double emit when a `recompute()` lands mid-animation.
+
+`measureSheetNatural` (`src/core/features/fit-measurement.ts`) pokes
+`height: auto` on **both** measurement branches before reading natural size — a
+hidden-mounted `fit` sheet used to lock at its pinned collapsed height forever
+because the no-`scrollContainer` branch measured while the engine still pinned
+the height.
+
+Calling `open()` / `snapTo()` **synchronously in the mount tick works** across
+`fit`, teleport and hidden-host cases — consumers do **not** need a
+`requestAnimationFrame` / `setTimeout` / `nextTick` delay before the first
+imperative open.
+
+## z-index & the sheet stack
+
+`sheetStack` (`src/core/lifecycle/sheetStack.ts`) owns z-index. On **every**
+stack change — open (promote), settle, close, destroy — it rewrites **inline**
+`z-index` on the managed elements from a base of `100`, stepping `10` per stack
+position:
+
+| Element | z-index |
+|---|---|
+| `.bs-sheet` | stack `z` (`100 + 10·position`) |
+| `.bs-backdrop` | `z − 1` |
+| anchor wrappers | `z + 1` |
+
+Because these writes land on every stack change, a consumer-set `z-index` on any
+bs-managed element is overwritten — or survives only until the next stack
+change, so it races. **Never style `z-index` on bs-managed elements.** To place
+the whole sheet layer relative to app UI, control the container (the teleport
+target or the `.bs-root` parent) or the open order instead.
+
 ## Feature factories
 
 Features in `src/core/features/*` follow a strict pattern:
@@ -224,7 +273,7 @@ Consumer-facing imports:
 | `@surdeddd/bottom-sheet` | Core engine + utilities | Barrel; some helpers marked `@internal` |
 | `@surdeddd/bottom-sheet/overlay` | OverlayEngine without the bottom-sheet engine | Standalone slide-up panel; ≤7 KB gzip `size-limit` budget |
 | `@surdeddd/bottom-sheet/element` | Custom Element with auto-registration | Async side effect — see W11 in audit notes |
-| `@surdeddd/bottom-sheet/{react,vue,svelte,solid,qwik,preact}` | Framework adapters | `size-limit` gzip budgets: react 26, vue 22, svelte 21.5, solid/qwik 20.5, preact ~1 (re-export) |
+| `@surdeddd/bottom-sheet/{react,vue,svelte,solid,qwik,preact}` | Framework adapters | `size-limit` gzip budgets: react 26, vue/svelte 22, solid/qwik 20.5, preact ~1 (re-export) |
 | `@surdeddd/bottom-sheet/integrations/{formik,react-hook-form}` | React-form bindings | Field-aware wrappers; depend on the React adapter |
 
 `package.json` `sideEffects` array is curated to literal paths (no globs):

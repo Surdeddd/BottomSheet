@@ -33,6 +33,11 @@ let patchedReplaceState: HistoryFn | null = null;
 const hasWindow = (): boolean => typeof window !== "undefined";
 const hasHistory = (): boolean => typeof history !== "undefined";
 
+const brandMarker = (surface: BackSurface): Record<string, unknown> => ({
+  ...surface.markerState(),
+  __bs: true,
+});
+
 const runInternal = (fn: () => void): void => {
   internalDepth += 1;
   try {
@@ -141,7 +146,7 @@ function restore(entry: Entry): void {
   entry.live = true;
   runInternal(() => {
     try {
-      history.pushState(entry.surface.markerState(), "", entry.surface.url);
+      history.pushState(brandMarker(entry.surface), "", entry.surface.url);
     } catch {
       entry.live = false;
     }
@@ -160,7 +165,7 @@ export function pushBackMarker(surface: BackSurface): MarkerHandle {
   entry.priorUrl = surface.url !== undefined ? location.href : undefined;
   runInternal(() => {
     try {
-      history.pushState(surface.markerState(), "", surface.url);
+      history.pushState(brandMarker(surface), "", surface.url);
       entry.live = true;
     } catch {
       entry.live = false;
@@ -188,7 +193,7 @@ export function popBackMarker(handle: MarkerHandle): void {
     pendingRebrand = (): void => {
       runInternal(() => {
         history.replaceState(
-          rebrandSurface.markerState(),
+          brandMarker(rebrandSurface),
           "",
           rebrandUrl !== undefined ? rebrandUrl : location.href,
         );
