@@ -456,12 +456,14 @@ export class BottomSheetEngine {
         document as unknown as {
           startViewTransition: (cb: () => void) => {
             finished: Promise<void>;
+            ready?: Promise<void>;
             skipTransition?: () => void;
           };
         }
       ).startViewTransition(() => {
         this.applySize(target.size);
       });
+      vt.ready?.catch(() => {});
       this.currentViewTransition = vt;
       try {
         await vt.finished;
