@@ -45,6 +45,7 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "qwik": "./dist/qwik-lib/index.qwik.mjs",
   "exports": {
     ".": {
       "import": {
@@ -117,6 +118,36 @@
         "default": "./dist/overlay.cjs"
       }
     },
+    "./debug": {
+      "import": {
+        "types": "./dist/debug.d.ts",
+        "default": "./dist/debug.js"
+      },
+      "require": {
+        "types": "./dist/debug.d.cts",
+        "default": "./dist/debug.cjs"
+      }
+    },
+    "./core": {
+      "import": {
+        "types": "./dist/core.d.ts",
+        "default": "./dist/core.js"
+      },
+      "require": {
+        "types": "./dist/core.d.cts",
+        "default": "./dist/core.cjs"
+      }
+    },
+    "./features": {
+      "import": {
+        "types": "./dist/features.d.ts",
+        "default": "./dist/features.js"
+      },
+      "require": {
+        "types": "./dist/features.d.cts",
+        "default": "./dist/features.cjs"
+      }
+    },
     "./qwik": {
       "import": {
         "types": "./dist/qwik.d.ts",
@@ -175,37 +206,37 @@
     {
       "name": "core (engine + types)",
       "path": "dist/index.js",
-      "limit": "22.5 KB",
+      "limit": "24 KB",
       "gzip": true
     },
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "26 KB",
+      "limit": "28 KB",
       "gzip": true
     },
     {
       "name": "vue adapter",
       "path": "dist/vue.js",
-      "limit": "22 KB",
+      "limit": "23.5 KB",
       "gzip": true
     },
     {
       "name": "svelte adapter",
       "path": "dist/svelte.js",
-      "limit": "22 KB",
+      "limit": "23.5 KB",
       "gzip": true
     },
     {
       "name": "solid adapter",
       "path": "dist/solid.js",
-      "limit": "20.5 KB",
+      "limit": "22 KB",
       "gzip": true
     },
     {
       "name": "qwik adapter",
       "path": "dist/qwik.js",
-      "limit": "20.5 KB",
+      "limit": "22 KB",
       "gzip": true
     },
     {
@@ -220,19 +251,37 @@
     {
       "name": "web component (self-contained)",
       "path": "dist/element.js",
-      "limit": "25.5 KB",
+      "limit": "27 KB",
       "gzip": true
     },
     {
       "name": "web component (IIFE / CDN)",
       "path": "dist/element.iife.global.js",
-      "limit": "25 KB",
+      "limit": "26.5 KB",
       "gzip": true
     },
     {
       "name": "overlay (subpath)",
       "path": "dist/overlay.js",
       "limit": "7 KB",
+      "gzip": true
+    },
+    {
+      "name": "debug overlay (subpath)",
+      "path": "dist/debug.js",
+      "limit": "3 KB",
+      "gzip": true
+    },
+    {
+      "name": "slim core (subpath, no optional features)",
+      "path": "dist/core.js",
+      "limit": "19.5 KB",
+      "gzip": true
+    },
+    {
+      "name": "features (subpath)",
+      "path": "dist/features.js",
+      "limit": "4 KB",
       "gzip": true
     }
   ],
@@ -244,7 +293,7 @@
   ],
   "scripts": {
     "prebuild": "node ./scripts/clean-dist.mjs && node ./scripts/inline-base-css.mjs",
-    "build": "tsup && tsup --config tsup.solid.config.ts && tsup --config tsup.iife.config.ts",
+    "build": "tsup && tsup --config tsup.solid.config.ts && tsup --config tsup.iife.config.ts && vite build --mode lib --config vite.qwik-lib.config.ts",
     "postbuild": "node ./scripts/copy-d-ts-templates.mjs && node ./scripts/fix-preact-dist.mjs && node ./scripts/strip-icloud-dupes.mjs",
     "sync:css": "node ./scripts/inline-base-css.mjs",
     "dev": "tsup --watch",
@@ -257,6 +306,8 @@
     "e2e": "playwright test --project=mobile-chrome",
     "docs:check": "node ./scripts/docs-check.mjs",
     "bench": "vitest bench",
+    "bench:check": "node ./scripts/bench-check.mjs",
+    "check:qwik-ssr": "node ./scripts/qwik-ssr-check.mjs",
     "size": "size-limit",
     "docs:api": "typedoc",
     "lhci": "lhci autorun --config=./lighthouserc.json",
@@ -336,7 +387,8 @@
     "solid-js": "^1.9.12",
     "svelte": "^5.55.5",
     "tsup": "^8.0.1",
-    "typescript": "^5.3.3",
+    "typedoc": "^0.28.20",
+    "typescript": "^5.9.3",
     "unplugin-vue": "^7.2.0",
     "vite": "^5.0.10",
     "vite-plugin-solid": "^2.11.12",

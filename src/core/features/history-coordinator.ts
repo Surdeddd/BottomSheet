@@ -21,7 +21,7 @@ const subscribers = new Set<() => void>();
 
 let suppress = 0;
 let internalDepth = 0;
-let pendingRebrand: (() => void) | null = null;
+const pendingRebrands: Array<(() => void) | null> = [];
 
 let listenerInstalled = false;
 let patchInstalled = false;
@@ -100,8 +100,7 @@ const removePatch = (): void => {
 function onPopState(): void {
   if (suppress > 0) {
     suppress -= 1;
-    const rebrand = pendingRebrand;
-    pendingRebrand = null;
+    const rebrand = pendingRebrands.shift();
     if (rebrand) rebrand();
     maybeTeardownListener();
     return;
@@ -187,10 +186,11 @@ export function popBackMarker(handle: MarkerHandle): void {
   entry.live = false;
   entries.splice(idx, 1);
 
+  let rebrand: (() => void) | null = null;
   if (idx !== last) {
     const rebrandSurface = entries[entries.length - 1]!.surface;
     const rebrandUrl = entry.priorUrl;
-    pendingRebrand = (): void => {
+    rebrand = (): void => {
       runInternal(() => {
         history.replaceState(
           brandMarker(rebrandSurface),
@@ -201,13 +201,14 @@ export function popBackMarker(handle: MarkerHandle): void {
     };
   }
 
+  pendingRebrands.push(rebrand);
   suppress += 1;
   runInternal(() => {
     try {
       history.back();
     } catch {
       suppress = Math.max(0, suppress - 1);
-      pendingRebrand = null;
+      pendingRebrands.pop();
     }
   });
   maybeTeardownListener();
@@ -230,7 +231,7 @@ export const __resetHistoryCoordinatorForTests = (): void => {
   entries.length = 0;
   suppress = 0;
   internalDepth = 0;
-  pendingRebrand = null;
+  pendingRebrands.length = 0;
   removePatch();
   subscribers.clear();
   if (listenerInstalled && hasWindow()) {

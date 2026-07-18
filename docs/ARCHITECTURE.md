@@ -182,6 +182,19 @@ Features in `src/core/features/*` follow a strict pattern:
 2. Wire DOM listeners / observers / timers using only the deps
 3. Return a teardown `() => void` (or a handle object for stateful features)
 
+Since the slim-core split, the OPTIONAL subset of these (route,
+visual-viewport, content-swipe, persist, auto-collapse) is registered
+through the `EngineFeature` seam instead of hardwired constructor calls:
+`BottomSheetCore` runs `opts.features` in two stages ("attach" installs at
+the historical content-swipe position, "post" at the constructor tail,
+preserving listener order), dedupes by `name` (last wins), and dev-warns
+when an option like `closeOnBack` is set without its feature. The default
+`BottomSheetEngine` subclass (`src/core/BottomSheetEngine.ts`) prepends
+`defaultEngineFeatures()` so the full engine is behaviorally identical to
+the pre-split one. `EngineFeatureContext` exposes the same lazy accessors
+the old inline deps closures used — features must not cache values from it
+at install time.
+
 Example:
 
 ```ts

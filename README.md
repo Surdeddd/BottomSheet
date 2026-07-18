@@ -2,7 +2,8 @@
 
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
-![bundle](https://img.shields.io/badge/core-%E2%89%A422.5%20KB%20gzip%20budget-1a1614?style=flat-square)
+![bundle](https://img.shields.io/badge/core-%E2%89%A424%20KB%20gzip%20budget-1a1614?style=flat-square)
+![slim](https://img.shields.io/badge/slim%20core-%E2%89%A419.5%20KB%20gzip-1a1614?style=flat-square)
 ![tests](https://img.shields.io/badge/tests-500%2B%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
@@ -12,6 +13,8 @@ GPU-only motion, full keyboard a11y, hardware-back interception, multi-sheet
 stacking — and the exact same engine behind every adapter.
 
 ## 🚀 [Live demo → bottom-sheet-demo.vercel.app](https://bottom-sheet-demo.vercel.app)
+
+📚 [API reference (typedoc) → surdeddd.github.io/BottomSheet](https://surdeddd.github.io/BottomSheet/)
 
 <p align="center">
   <picture>
@@ -226,6 +229,8 @@ type SnapPoint =
 | `initial`            | first allowed | Snap id to start at                                                                                                        |
 | `mode`               | `"bottom"`    | `bottom`, `top`, `left`, `right`                                                                                           |
 | `animation`          | `"spring"`    | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy`                                                     |
+| `settleAnimation`    | off           | `"waapi"` — settle runs as a compositor-driven Web Animation (pre-sampled spring keyframes); falls back to rAF automatically |
+| `features`           | all defaults  | `EngineFeature[]` — override/extend the composable feature set (see Slim core below)                                       |
 | `spring`             | snappy        | `{ stiffness, damping, mass }`                                                                                             |
 | `flickVelocity`      | `0.65 px/ms`  | Mobile flick threshold                                                                                                     |
 | `dragThreshold`      | `18 px`       | Below this, drag snaps back                                                                                                |
@@ -387,6 +392,52 @@ Three deliberate choices keep things 60 fps even on mid-range Android:
    only on `snap` / `dragstart` / `dragend`. Drag pixels and animation frames
    propagate via CSS variables (`--bs-progress`, `--bs-size`) and direct
    imperative subscriptions — no React re-renders on every frame.
+
+## Slim core & composable features
+
+The default `BottomSheetEngine` ships every optional behavior preinstalled.
+If you only need the essentials, import the slim core (~17.5 KB gzip vs
+~23 KB) and register just the features you use:
+
+```ts
+import { BottomSheetCore } from '@surdeddd/bottom-sheet/core';
+import { routeFeature, contentSwipeFeature } from '@surdeddd/bottom-sheet/features';
+
+const engine = new BottomSheetCore({
+  element, handle, snapPoints,
+  closeOnBack: true,
+  features: [routeFeature(), contentSwipeFeature()],
+});
+```
+
+Optional features: `routeFeature()` (`closeOnBack` / `routedTo` /
+`closeOnRouteChange`), `visualViewportFeature()` (soft-keyboard clamp),
+`contentSwipeFeature()`, `persistFeature()`, `autoCollapseFeature()`.
+Everything else (gestures, snap math, resize self-heal, a11y slider, focus
+trap, scroll lock, scrim, stacking) is core. Setting an option whose feature
+is missing dev-warns once and is ignored in production. Custom features
+implement `{ name, install(ctx) }` — the same seam the built-ins use.
+
+### Debug overlay
+
+```ts
+import { attachDebugOverlay } from '@surdeddd/bottom-sheet/debug';
+
+const detach = attachDebugOverlay(engine);
+```
+
+A fixed dev panel showing the active snap, live size/progress, drag/animate
+flags and the resolved snap list — driven purely by public engine events,
+shipped as its own entry so it costs nothing in app bundles.
+
+### Qwik SSR
+
+The package declares a `qwik` field pointing at
+`dist/qwik-lib/index.qwik.mjs`. Qwik apps pick the adapter up automatically
+as a vendor root: the consumer optimizer segments it into QRL chunks and
+`renderToString` emits a resumable (`q:container="paused"`) sheet. No extra
+configuration — `import { BottomSheet } from '@surdeddd/bottom-sheet/qwik'`
+keeps working for CSR, and Qwik City SSR now works out of the box.
 
 ## Theming
 

@@ -1,0 +1,23 @@
+{
+  "generatedOn": "2026-07-18",
+  "note": "ops/s floors; gate fails below baseline/floorDivisor (shared CI runners are slow and noisy, only order-of-magnitude regressions should trip)",
+  "floorDivisor": 10,
+  "benches": {
+    "drag pipeline — emit allocation cost > emit drag with FRESH payload alloc per frame (pre-pool baseline)": 20144974,
+    "drag pipeline — emit allocation cost > emit drag with POOLED payload (current impl)": 22103979,
+    "drag pipeline — rubber-band clamping branches > onMove math: in-range delta (no clamp)": 34332884,
+    "drag pipeline — rubber-band clamping branches > onMove math: past max → rubber-band clamp": 26202365,
+    "drag pipeline — rubber-band clamping branches > onMove math: below min → rubber-band clamp": 26208240,
+    "drag pipeline — listenerCount gate skip > hot path with NO drag listener — gate skips emit": 29922014,
+    "drag pipeline — listenerCount gate skip > hot path WITH drag listener — gate passes, emit runs": 17704061,
+    "snap-math > findNearest 4 snaps": 13125381,
+    "snap-math > findNearest 4 snaps with direction+bias": 9928876,
+    "snap-math > allowedRange 4 snaps": 13962937,
+    "snap-math > findDragSettleTarget — flick up": 13432438,
+    "snap-math > findDragSettleTarget — sub-threshold (no-op)": 25065033,
+    "transform > transformTemplate(bottom) call": 33523930,
+    "transform > transformTemplate(top) call": 21041807,
+    "transform > transformTemplate(left) call": 18890177,
+    "transform > transformTemplate(right) call": 21832714
+  }
+}

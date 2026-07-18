@@ -5,7 +5,12 @@ import { OverlayEngine } from "../../src/core/overlay";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
 import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
 import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
-import { __resetHistoryCoordinatorForTests } from "../../src/core/features/history-coordinator";
+import {
+  __resetHistoryCoordinatorForTests,
+  pushBackMarker,
+  popBackMarker,
+  type BackSurface,
+} from "../../src/core/features/history-coordinator";
 
 const settle = () => new Promise(r => setTimeout(r, 30));
 
@@ -437,5 +442,90 @@ describe("history-coordinator — public __bs marker discriminator", () => {
 
     sheetA.destroy();
     sheetB.destroy();
+  });
+});
+
+describe("history-coordinator — pending-rebrand FIFO queue", () => {
+  const mkSurface = (
+    tag: string,
+    overrides: Partial<BackSurface> = {},
+  ): BackSurface & { closeCalls: number } => {
+    const surface = {
+      closeCalls: 0,
+      isOpen: () => true,
+      isTop: () => false,
+      close: () => {
+        surface.closeCalls += 1;
+      },
+      markerState: () => ({ __bsSheet: tag }),
+      ...overrides,
+    };
+    return surface;
+  };
+
+  it("two same-tick middle closes run both rebrands, one per swallowed popstate", () => {
+    const replaceSpy = vi.spyOn(history, "replaceState");
+    backSpy.mockImplementation(() => {});
+
+    const a = mkSurface("qa", { url: "#queue-a" } as Partial<BackSurface>);
+    const b = mkSurface("qb");
+    const c = mkSurface("qc");
+    const hA = pushBackMarker(a);
+    const hB = pushBackMarker(b);
+    pushBackMarker(c);
+
+    replaceSpy.mockClear();
+    popBackMarker(hA);
+    popBackMarker(hB);
+    expect(replaceSpy.mock.calls.length).toBe(0);
+
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(replaceSpy.mock.calls.length).toBe(2);
+    expect(replaceSpy.mock.calls[0]?.[0]).toMatchObject({
+      __bsSheet: "qc",
+      __bs: true,
+    });
+    expect(replaceSpy.mock.calls[1]?.[0]).toMatchObject({
+      __bsSheet: "qc",
+      __bs: true,
+    });
+    expect(c.closeCalls).toBe(0);
+
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(c.closeCalls).toBe(1);
+  });
+
+  it("a throwing back() unwinds its queue slot without desyncing later rebrands", () => {
+    const replaceSpy = vi.spyOn(history, "replaceState");
+    backSpy
+      .mockImplementationOnce(() => {
+        throw new Error("no-entry");
+      })
+      .mockImplementation(() => {});
+
+    const a = mkSurface("ta");
+    const b = mkSurface("tb");
+    const c = mkSurface("tc");
+    const hA = pushBackMarker(a);
+    const hB = pushBackMarker(b);
+    pushBackMarker(c);
+
+    replaceSpy.mockClear();
+    popBackMarker(hA);
+    expect(replaceSpy.mock.calls.length).toBe(0);
+
+    popBackMarker(hB);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(replaceSpy.mock.calls.length).toBe(1);
+    expect(replaceSpy.mock.calls[0]?.[0]).toMatchObject({
+      __bsSheet: "tc",
+      __bs: true,
+    });
+
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(c.closeCalls).toBe(1);
   });
 });

@@ -152,6 +152,7 @@ export type EngineOptions = {
     | "material-bounce"
     | "linear"
     | "snappy";
+  settleAnimation?: "waapi";
   spring?: { stiffness?: number; damping?: number; mass?: number };
 
   focusTrap?: boolean;
@@ -177,11 +178,62 @@ export type EngineOptions = {
 
   viewTransitions?: boolean;
   stackEffect?: boolean;
+
+  features?: EngineFeature[];
 };
 
-import type { BottomSheetEngine } from "./BottomSheetEngine";
+import type { BottomSheetCore } from "./BottomSheetCore";
 
-export type BottomSheetEngineLike = BottomSheetEngine;
+export type BottomSheetEngineLike = BottomSheetCore;
+
+export type EngineFeatureStage = "attach" | "post";
+
+export type EngineFeatureOptions = {
+  routedTo?: string;
+  closeOnBack: boolean;
+  closeOnRouteChange: boolean;
+  persistKey?: string;
+  autoCollapseAfter?: number;
+};
+
+export type EngineFeatureContext = {
+  element: HTMLElement;
+  scrollContainer?: HTMLElement;
+  sheetId: string;
+  options: EngineFeatureOptions;
+  isDestroyed: () => boolean;
+  isDragging: () => boolean;
+  isAnimating: () => boolean;
+  isTopSheet: () => boolean;
+  isVerticalAxis: () => boolean;
+  getSize: () => number;
+  getActiveId: () => string;
+  getAllowedIds: () => string[];
+  allowedIdsBySize: () => string[];
+  getMaxAxisSize: () => number;
+  resolveSnap: (id: string) => { id: string; size: number } | null;
+  resolveActiveSnap: () => { id: string; size: number } | null;
+  setSize: (size: number) => void;
+  setMaxAxisSize: (size: number) => void;
+  applySize: (size: number) => void;
+  recomputeSnaps: () => void;
+  newCycle: () => void;
+  cancelInFlight: () => void;
+  resyncAfterResize: () => void;
+  snapTo: (id: string) => void;
+  close: (reason?: CloseReason) => Promise<void>;
+  on: <K extends keyof SheetEventMap>(
+    event: K,
+    fn: (payload: SheetEventMap[K]) => void,
+  ) => () => void;
+  addTeardown: (fn: (() => void) | null | undefined) => void;
+};
+
+export type EngineFeature = {
+  name: string;
+  stage?: EngineFeatureStage;
+  install: (ctx: EngineFeatureContext) => (() => void) | void;
+};
 
 export type TeardownScope = {
   add: (fn: (() => void) | null | undefined) => void;
@@ -190,7 +242,7 @@ export type TeardownScope = {
 export type Plugin = {
   name: string;
   install: (
-    engine: BottomSheetEngine,
+    engine: BottomSheetCore,
     scope: TeardownScope,
   ) => void | (() => void);
 };

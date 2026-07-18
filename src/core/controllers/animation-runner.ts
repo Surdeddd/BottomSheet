@@ -1,6 +1,11 @@
 import { tween, type Tween, easeOutBack } from "../animation/animation";
 import { runSpring, type SpringHandle } from "../animation/spring";
 import { resolveAnimationPreset } from "../animation/animation-presets";
+import {
+  sampleSpringSettle,
+  sampleTweenSettle,
+  type SettleSamples,
+} from "../animation/waapi-settle";
 import type { EngineOptions } from "../types";
 
 const DEFAULT_DURATION = 220;
@@ -12,15 +17,23 @@ export type AnimationRunnerDeps = {
   applySize: (size: number) => void;
   getSize: () => number;
   isDragging: () => boolean;
+  applyAux?: (size: number) => void;
+  getTransformFor?: (size: number) => string;
 };
 
 export type AnimationRunnerOptions = {
   animation?: EngineOptions["animation"];
+  settleAnimation?: "waapi";
   duration?: number;
   easing?: (t: number) => number;
   spring?: { stiffness?: number; damping?: number; mass?: number };
   respectReducedMotion?: boolean;
   viewTransitions?: boolean;
+};
+
+type WaapiEntry = {
+  anim: Animation;
+  stop: () => void;
 };
 
 export class AnimationRunner {
@@ -29,6 +42,10 @@ export class AnimationRunner {
   private applySizeFn: (size: number) => void;
   private getSize: () => number;
   private isDragging: () => boolean;
+  private applyAux?: (size: number) => void;
+  private getTransformFor?: (size: number) => string;
+  private settleWaapi: boolean;
+  private currentWaapi: WaapiEntry | null = null;
 
   private animationKind: "spring" | "tween";
   private springConfig: { stiffness?: number; damping?: number; mass?: number };
@@ -48,6 +65,9 @@ export class AnimationRunner {
     this.applySizeFn = deps.applySize;
     this.getSize = deps.getSize;
     this.isDragging = deps.isDragging;
+    this.applyAux = deps.applyAux;
+    this.getTransformFor = deps.getTransformFor;
+    this.settleWaapi = opts.settleAnimation === "waapi";
 
     const preset = resolveAnimationPreset(opts.animation);
     this.animationKind = preset.kind;
@@ -86,12 +106,25 @@ export class AnimationRunner {
   }
 
   get isAnimating(): boolean {
-    return this.currentTween !== null || this.currentSpring !== null;
+    return (
+      this.currentTween !== null ||
+      this.currentSpring !== null ||
+      this.currentWaapi !== null
+    );
   }
 
   cancel(): void {
     this.currentTween?.cancel();
     this.currentSpring?.cancel();
+    if (this.currentWaapi) {
+      const entry = this.currentWaapi;
+      this.currentWaapi = null;
+      entry.stop();
+      try {
+        entry.anim.cancel();
+      } catch {
+      }
+    }
   }
 
   async animateTo(target: number, velocityPxPerMs: number): Promise<void> {
@@ -111,6 +144,36 @@ export class AnimationRunner {
       this.getRootEl()?.removeAttribute("data-animating");
       if (!this.isDragging()) this.element.style.willChange = "";
       return;
+    }
+
+    if (
+      this.settleWaapi &&
+      this.applyAux &&
+      this.getTransformFor &&
+      typeof this.element.animate === "function"
+    ) {
+      const samples =
+        this.animationKind === "spring"
+          ? sampleSpringSettle(
+              this.getSize(),
+              target,
+              velocityPxPerMs * VELOCITY_PX_PER_S,
+              this.springConfig,
+            )
+          : sampleTweenSettle(
+              this.getSize(),
+              target,
+              this.duration,
+              this.easing,
+            );
+      if (samples.values.length >= 2 && samples.durationMs > 0) {
+        await this.runWaapiSettle(samples, target);
+        if (!this.isAnimating) {
+          this.getRootEl()?.removeAttribute("data-animating");
+          if (!this.isDragging()) this.element.style.willChange = "";
+        }
+        return;
+      }
     }
 
     if (this.animationKind === "spring") {
@@ -142,10 +205,73 @@ export class AnimationRunner {
     }
   }
 
+  private async runWaapiSettle(
+    samples: SettleSamples,
+    target: number,
+  ): Promise<void> {
+    const applyAux = this.applyAux!;
+    const getTransformFor = this.getTransformFor!;
+    const frames = samples.values.map(v => ({
+      transform: getTransformFor(v),
+    }));
+    const anim = this.element.animate(frames, {
+      duration: samples.durationMs,
+      easing: "linear",
+      fill: "forwards",
+    });
+
+    let stopped = false;
+    let auxRaf = 0;
+    const start = performance.now();
+    const lastIdx = samples.values.length - 1;
+    const auxTick = (): void => {
+      if (stopped) return;
+      const elapsed = performance.now() - start;
+      const idx = Math.min(Math.floor(elapsed / samples.stepMs), lastIdx);
+      applyAux(samples.values[idx]!);
+      auxRaf = requestAnimationFrame(auxTick);
+    };
+    auxRaf = requestAnimationFrame(auxTick);
+
+    const entry: WaapiEntry = {
+      anim,
+      stop: () => {
+        stopped = true;
+        cancelAnimationFrame(auxRaf);
+      },
+    };
+    this.currentWaapi = entry;
+
+    try {
+      await anim.finished;
+    } catch {
+    }
+    entry.stop();
+    const wasCurrent = this.currentWaapi === entry;
+    if (wasCurrent) this.currentWaapi = null;
+
+    if (wasCurrent && anim.playState === "finished") {
+      this.applySizeFn(target);
+      try {
+        anim.cancel();
+      } catch {
+      }
+    }
+  }
+
   destroy(): void {
     this.detachReducedMotion?.();
     this.detachReducedMotion = null;
     this.currentTween = null;
     this.currentSpring = null;
+    if (this.currentWaapi) {
+      const entry = this.currentWaapi;
+      this.currentWaapi = null;
+      entry.stop();
+      try {
+        entry.anim.cancel();
+      } catch {
+      }
+    }
   }
 }

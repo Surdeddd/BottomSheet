@@ -46,11 +46,18 @@ jobs:
         run: npx vitest run --coverage --reporter=verbose
       - name: Docs consistency (npm scripts + internal links)
         run: npm run docs:check
+      - name: Perf regression floor (10x)
+        if: matrix.node == '22'
+        run: npm run bench:check
       - name: Package contract (publint + attw + dist smoke imports)
         run: |
           npx publint
           npx attw --pack . --profile node16 --exclude-entrypoints ./styles ./styles.css ./themes/ios ./themes/ios.css ./themes/material ./themes/material.css ./themes/vercel ./themes/vercel.css
-          for f in index react preact vue element svelte overlay qwik; do node -e "import('./dist/$f.js')"; done
+          for f in index react preact vue element svelte overlay qwik core features debug; do node -e "import('./dist/$f.js')"; done
+          node -e "import('./dist/qwik-lib/index.qwik.mjs')"
+      - name: Qwik consumer SSR contract
+        if: matrix.node == '22'
+        run: npm run check:qwik-ssr
       - name: Upload coverage to Codecov
         if: matrix.node == '20.19'
         uses: codecov/codecov-action@v4

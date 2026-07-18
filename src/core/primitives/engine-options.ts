@@ -2,8 +2,6 @@ import type { EngineOptions, SheetMode } from "../types";
 import type { ScrimControllerOptions } from "../controllers/scrim-controller";
 import type { AnimationRunnerOptions } from "../controllers/animation-runner";
 import type { LifecycleControllerOptions } from "../controllers/lifecycle-controller";
-import { readPersistedId } from "../features/persist";
-
 export const DEFAULT_FLICK_VELOCITY = 0.65;
 export const DEFAULT_DRAG_THRESHOLD = 18;
 export const DEFAULT_DURATION = 220;
@@ -60,7 +58,7 @@ export function resolveEngineOptions(
     opts.snapPoints[0]?.id ??
     "default";
   if (opts.persistKey) {
-    const restored = readPersistedId(opts.persistKey);
+    const restored = readPersistedIdSafe(opts.persistKey);
     if (restored && initialAllowed.includes(restored)) {
       initialId = restored;
     }
@@ -95,6 +93,7 @@ export function resolveEngineOptions(
     },
     animation: {
       animation: opts.animation,
+      settleAnimation: opts.settleAnimation,
       duration: opts.duration,
       easing: opts.easing,
       spring: opts.spring,
@@ -113,3 +112,13 @@ export function resolveEngineOptions(
     },
   };
 }
+
+const readPersistedIdSafe = (key: string): string | null => {
+  if (typeof window === "undefined") return null;
+  if (typeof localStorage === "undefined") return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};

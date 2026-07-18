@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Slim core entry `@surdeddd/bottom-sheet/core`** — `BottomSheetCore`, the engine without optional features (~17.5 KB gzip vs ~23 KB full). Optional behaviors are now composable `EngineFeature`s registered per instance via the new `features` option; the default `BottomSheetEngine` keeps every feature preinstalled and its behavior is unchanged.
+- **Feature factories entry `@surdeddd/bottom-sheet/features`** — `routeFeature()` (closeOnBack / routedTo / closeOnRouteChange), `visualViewportFeature()`, `contentSwipeFeature()`, `persistFeature()`, `autoCollapseFeature()`, plus `defaultEngineFeatures()`. Passing an option that needs a missing feature dev-warns once.
+- **`settleAnimation: "waapi"` (opt-in)** — snap settles run as a real Web Animations API transform animation (spring trajectory pre-sampled into keyframes, compositor-driven and jank-resistant), while CSS vars / backdrop / `progress` events follow on a lightweight rAF companion. Falls back to the rAF spring automatically when `element.animate` is unavailable and under `prefers-reduced-motion`.
+- **Qwik true SSR** — the package now ships `dist/qwik-lib/index.qwik.mjs` and declares it in the package `qwik` field, so Qwik apps pick the adapter up as a vendor root: the consumer's optimizer segments it into QRL chunks and `renderToString` produces a resumable (`q:container="paused"`) sheet. Guarded in CI by a full consumer client+SSR contract check (`npm run check:qwik-ssr`).
+- **Debug overlay entry `@surdeddd/bottom-sheet/debug`** — `attachDebugOverlay(engine)` renders a live dev panel (active snap, size, progress, flags, resolved snap list) driven only by public engine events; zero bytes in other bundles.
+- **Performance regression gate** — `npm run bench:check` compares hot-path benches against a committed baseline with a 10× floor (order-of-magnitude guard, CI-runner tolerant); wired into CI.
+- **API docs on GitHub Pages** — typedoc build published via `docs-pages.yml` on version tags; https://surdeddd.github.io/BottomSheet/.
+
+### Fixed
+
+- **history-coordinator rebrand queue** — two programmatic middle-of-stack closes in the same tick could drop one marker rebrand (single pending slot); rebrands are now a FIFO queue paired 1:1 with suppressed history pops.
+- `docs:api` script referenced a typedoc that was never installed; typedoc `0.28` is now a real devDependency (and TypeScript is pinned honest at `^5.9.3` — installing the old typedoc `0.25` silently downgraded TS below what `unplugin-vue` typings require).
+
+## [0.12.0]
+
 ### Fixed
 
 - **Hidden-at-construction initial-open sheets** — a `fit` / `content` (or any born-open) sheet mounted inside a `display:none` ancestor or detached from the document measured `0` at construction and locked collapsed (~4px) forever. Root cause: `measureSheetNatural`'s no-`scrollContainer` branch measured the element while the engine still pinned its height. Both measurement branches now poke `height: auto` before reading, so the sheet self-heals on reveal (via an `IntersectionObserver` fallback) and emits the full open sequence exactly once. A guard blocks a double `open` / `opened` when `recompute()` lands mid-open-animation.
@@ -18,6 +35,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - z-index ownership (the stack controller owns inline `z-index` on `.bs-sheet` / `.bs-backdrop` / anchor wrappers), the `vue-router` guard integration pattern, the initial-open contract (born-open visible vs. hidden-at-construction), and the mount-tick `open()` guarantee (no `requestAnimationFrame` delay needed).
+
+## [0.11.0]
+
+### Added
+
+- **Unified history coordinator** — one module-level owner for `popstate` and the `history.pushState` / `replaceState` patch, shared by `BottomSheetEngine` (`closeOnBack` / `routedTo` / `closeOnRouteChange`) and `OverlayEngine` (`closeOnBack`). One hardware Back closes only the top open surface of a mixed sheet+overlay stack; programmatic close of a lower surface keeps upper surfaces and marker accounting intact; a cancelled `before-close` restores exactly one marker.
+- `closeOnRouteChange` now uses a single ref-counted history patch — original `pushState` / `replaceState` identities are restored after the last instance is destroyed regardless of destroy order.
+
+### Fixed
+
+- Overlay back-marker leaked when an open overlay was destroyed.
+- View-transition `ready` rejection of a skipped transition surfaced as an `unhandledrejection` on rapid `snapTo`.
+
+### Infrastructure
+
+- Visual regression actually runs in CI (Linux baselines committed, unconditional skip removed); dev toolchain floor Node 20.19 (`.nvmrc`, CI matrix); live close/Escape e2e on a dedicated dismissible fixture; `react-dom/test-utils` → `React.act`; Svelte devDep patched to 5.56.4; `npm run e2e` and `docs:check` scripts.
 
 ## [0.10.0]
 
