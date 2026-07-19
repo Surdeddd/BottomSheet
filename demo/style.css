@@ -426,7 +426,8 @@ body {
   position:fixed;
   top:16px;
   right:24px;
-  z-index:9000;
+  /* above .grain (9999) so toggles stay hittable even if pointer-events regress */
+  z-index:10001;
   display:flex;
   gap:6px
 }
