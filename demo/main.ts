@@ -31,6 +31,7 @@ import { startViewTransition } from "./lib/view-transition";
 import { wireScrimControls } from "./lib/scrim-controls";
 import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
 import { wireDragSurface } from "./lib/drag-surface";
+import { initHero3D } from "./lib/hero-3d";
 import { initReveal } from "./lib/reveal";
 import {
   initCountUp,
@@ -356,6 +357,11 @@ initReveal();
 initScrollProgress();
 initCountUp();
 initHeroParallax();
+
+const heroStage = $<HTMLElement>("#hero-3d");
+void initHero3D(heroStage).then(handle => {
+  if (handle) heroStage.classList.add("is-live");
+});
 
 $<HTMLButtonElement>("#install-copy")?.addEventListener("click", async () => {
   const label = $<HTMLElement>("#install-copy-label");

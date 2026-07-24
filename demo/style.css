@@ -505,6 +505,41 @@ kbd {
   padding:56px 48px 32px;
   position:relative
 }
+/* WebGL stage sits behind the type; it only ever mounts when the scene runs. */
+.hero-stage {
+  position:absolute;
+  top:24px;
+  right:24px;
+  width:min(46%,520px);
+  height:min(460px,52vh);
+  pointer-events:none;
+  z-index:0;
+  opacity:0;
+  transition:opacity .9s ease
+}
+.hero-stage.is-live {
+  opacity:1
+}
+.hero-stage canvas {
+  display:block;
+  width:100%;
+  height:100%
+}
+.hero > *:not(.hero-stage) {
+  position:relative;
+  z-index:1
+}
+@media (max-width:900px) {
+  .hero-stage {
+    top:8px;
+    right:0;
+    width:70%;
+    height:min(300px,34vh)
+  }
+  .hero-stage.is-live {
+    opacity:.4
+  }
+}
 .hero:before {
   content:"";
   position:absolute;
