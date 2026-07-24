@@ -239,18 +239,20 @@ export const initHero3D = async (
     true,
   );
 
+  // Handle and rows are siblings of the sheet, not children: as children they
+  // inherited the sheet's explode offset on top of their own and the stack
+  // sprayed apart. They follow the sheet in layout instead.
   const handle = addShape(
     roundedRect(0.62, 0.075, 0.037),
     "vermillion",
     0.11,
     1,
-    sheet,
+    rig,
     true,
   );
 
-  // content rows on the sheet, grouped so they can travel as one layer
   const rowsGroup: Group = new THREE.Group();
-  sheet.add(rowsGroup);
+  rig.add(rowsGroup);
   const rows: Mesh[] = [];
   for (let i = 0; i < 4; i++) {
     const row = addShape(
@@ -264,14 +266,20 @@ export const initHero3D = async (
     rows.push(row);
   }
 
+  /** topY is the sheet's top edge; body, handle and rows all hang off it. */
   const layoutSheet = (topY: number): void => {
-    // topY is where the sheet's top edge sits; the body hangs below it
-    sheet.position.y = topY - SHEET_H / 2;
-    handle.position.y = SHEET_H / 2 - 0.16;
+    sheetBaseY = topY - SHEET_H / 2;
+    sheet.position.y = sheetBaseY + sheetOffsetY;
+    handle.position.y = topY - 0.16 + handleOffsetY;
+    rowsGroup.position.y = topY + rowsOffsetY;
     rows.forEach((r, i) => {
-      r.position.y = SHEET_H / 2 - 0.5 - i * 0.34;
+      r.position.y = -0.5 - i * 0.34;
     });
   };
+  let sheetBaseY = 0;
+  let sheetOffsetY = 0;
+  let handleOffsetY = 0;
+  let rowsOffsetY = 0;
 
   const screenBottom = -SCREEN_H / 2;
   const topFor = (frac: number): number => screenBottom + SCREEN_H * frac;
@@ -307,15 +315,23 @@ export const initHero3D = async (
     document.querySelectorAll<HTMLElement>(".asm-item"),
   );
   const legendList = document.querySelector<HTMLElement>(".assembly-legend");
-  // Kept tight on purpose: the layers should separate enough to be counted,
-  // not fly apart into unrelated shapes.
-  const explodeTargets: { obj: Object3D; z: number; y: number }[] = [
-    { obj: shellMesh, z: -1.15, y: 0 },
-    { obj: screenMesh, z: -0.55, y: 0 },
-    { obj: sheet, z: 0.5, y: -0.08 },
-    { obj: handle, z: 0.95, y: 0.2 },
-    { obj: rowsGroup, z: 1.35, y: -0.16 },
+  // An even fan, not a scatter: equal steps in depth with a matching rise, so
+  // the stack opens like a technical exploded view and stays countable.
+  const STEP_Z = 0.62;
+  const STEP_Y = 0.3;
+  const explodeOrder: Object3D[] = [
+    shellMesh,
+    screenMesh,
+    sheet,
+    handle,
+    rowsGroup,
   ];
+  const mid = (explodeOrder.length - 1) / 2;
+  const explodeTargets = explodeOrder.map((obj, i) => ({
+    obj,
+    z: (i - mid) * STEP_Z,
+    y: (i - mid) * STEP_Y,
+  }));
   const restState = explodeTargets.map(t => ({
     z: t.obj.position.z,
     y: t.obj.position.y,
@@ -426,15 +442,19 @@ export const initHero3D = async (
     const accel = (target - current) * STIFFNESS - velocity * DAMPING;
     velocity += accel * dt;
     current += velocity * dt;
-    layoutSheet(current);
 
     // ease the layers apart; eased here rather than per-scroll so it glides
     explodeShown += (explode - explodeShown) * 0.09;
     explodeTargets.forEach((tgt, i) => {
       const rest = restState[i]!;
       tgt.obj.position.z = rest.z + tgt.z * explodeShown;
-      tgt.obj.position.y = rest.y + tgt.y * explodeShown;
+      // sheet-borne layers take their rise through layout, so they stay aligned
+      if (tgt.obj === sheet) sheetOffsetY = tgt.y * explodeShown;
+      else if (tgt.obj === handle) handleOffsetY = tgt.y * explodeShown;
+      else if (tgt.obj === rowsGroup) rowsOffsetY = tgt.y * explodeShown;
+      else tgt.obj.position.y = rest.y + tgt.y * explodeShown;
     });
+    layoutSheet(current);
 
     t += 0.0075;
     curX += (targetX - curX) * 0.045;

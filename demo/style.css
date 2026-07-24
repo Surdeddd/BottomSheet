@@ -527,18 +527,22 @@ kbd {
   position:relative
 }
 /* ——— anatomy: tall scroll section, pinned copy, scene pulls apart ——— */
+/* Left transparent on purpose — this is the one section the pinned scene is
+   meant to show through, beside the legend. */
 .assembly {
   max-width:1320px;
   margin:0 auto;
   padding:0 48px;
   min-height:115vh;
-  position:relative
+  position:relative;
+  z-index:1
 }
 .assembly-inner {
   position:sticky;
   top:18vh;
   max-width:min(46%,520px);
-  padding:6vh 0 10vh
+  padding:6vh 0 10vh;
+  z-index:2
 }
 .assembly-title {
   font-family:var(--serif);
@@ -741,11 +745,26 @@ kbd {
   opacity:0;
   transition:opacity .9s ease
 }
+/* Pinned, and deliberately behind the page: a fixed element outranks static
+   siblings by default, which put the scene on top of the sections it was
+   meant to sit behind. Content below claims its own layer. */
 .hero-stage.is-live {
   position:fixed;
   top:88px;
   right:max(24px,calc((100vw - 1320px) / 2 + 24px));
-  transition:none
+  transition:none;
+  z-index:0
+}
+.adapter-row,
+.showcase,
+.controls,
+.advanced,
+.features,
+.footer,
+.sec-cap {
+  position:relative;
+  z-index:1;
+  background:var(--paper)
 }
 .hero-stage.is-live {
   opacity:1
