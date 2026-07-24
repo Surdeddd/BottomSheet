@@ -129,7 +129,60 @@
     </section>
 
     <div class="sec-cap">
-      <span data-i18n="sec.demo">§ 01 — the device</span>
+      <span data-i18n="sec.assembly">§ 01 — the anatomy</span>
+    </div>
+
+    <section class="assembly" id="assembly" aria-labelledby="assembly-title">
+      <div class="assembly-inner">
+        <h2 class="assembly-title" id="assembly-title" data-i18n="asm.title">
+          Five layers, one gesture
+        </h2>
+        <p class="assembly-lede" data-i18n="asm.lede">
+          Scroll to pull the sheet apart. Every layer below is a real node the
+          engine owns — nothing here is a picture of a sheet.
+        </p>
+        <ol class="assembly-legend">
+          <li class="asm-item" data-layer="0">
+            <span class="asm-no mono">01</span>
+            <span class="asm-name" data-i18n="asm.l1">Backdrop</span>
+            <span class="asm-note mono" data-i18n="asm.l1.note">
+              opacity tracks progress
+            </span>
+          </li>
+          <li class="asm-item" data-layer="1">
+            <span class="asm-no mono">02</span>
+            <span class="asm-name" data-i18n="asm.l2">Scrim</span>
+            <span class="asm-note mono" data-i18n="asm.l2.note">
+              above-sheet · blur · presets
+            </span>
+          </li>
+          <li class="asm-item" data-layer="2">
+            <span class="asm-no mono">03</span>
+            <span class="asm-name" data-i18n="asm.l3">Surface</span>
+            <span class="asm-note mono" data-i18n="asm.l3.note">
+              translate3d only · 0 reflow
+            </span>
+          </li>
+          <li class="asm-item" data-layer="3">
+            <span class="asm-no mono">04</span>
+            <span class="asm-name" data-i18n="asm.l4">Handle</span>
+            <span class="asm-note mono" data-i18n="asm.l4.note">
+              role=slider · drag zones
+            </span>
+          </li>
+          <li class="asm-item" data-layer="4">
+            <span class="asm-no mono">05</span>
+            <span class="asm-name" data-i18n="asm.l5">Content</span>
+            <span class="asm-note mono" data-i18n="asm.l5.note">
+              scrollable · drag-from-content
+            </span>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <div class="sec-cap">
+      <span data-i18n="sec.demo">§ 02 — the device</span>
     </div>
 
     <section class="showcase">
@@ -614,7 +667,7 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
     </section>
 
     <div class="sec-cap">
-      <span data-i18n="sec.features">§ 04 — what's inside</span>
+      <span data-i18n="sec.features">§ 05 — what's inside</span>
     </div>
 
     <section class="features">

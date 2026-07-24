@@ -182,9 +182,19 @@ export const initHero3D = async (
   };
 
   // phone shell + screen
-  addShape(roundedRect(PHONE_W, PHONE_H, 0.34), "shell", -0.06, 0.9);
+  const shellMesh = addShape(
+    roundedRect(PHONE_W, PHONE_H, 0.34),
+    "shell",
+    -0.06,
+    0.9,
+  );
   addOutline(roundedRect(PHONE_W, PHONE_H, 0.34), 0.02, 0.5);
-  addShape(roundedRect(SCREEN_W, SCREEN_H, 0.26), "ink", -0.02, 0.08);
+  const screenMesh = addShape(
+    roundedRect(SCREEN_W, SCREEN_H, 0.26),
+    "ink",
+    -0.02,
+    0.08,
+  );
 
   // snap-level rules across the screen
   for (const frac of SNAPS) {
@@ -238,7 +248,9 @@ export const initHero3D = async (
     true,
   );
 
-  // content rows on the sheet
+  // content rows on the sheet, grouped so they can travel as one layer
+  const rowsGroup: Group = new THREE.Group();
+  sheet.add(rowsGroup);
   const rows: Mesh[] = [];
   for (let i = 0; i < 4; i++) {
     const row = addShape(
@@ -246,7 +258,7 @@ export const initHero3D = async (
       "ink",
       0.1,
       0.13,
-      sheet,
+      rowsGroup,
       true,
     );
     rows.push(row);
@@ -285,20 +297,56 @@ export const initHero3D = async (
   target = snapFromScroll();
   current = target;
 
-  /** The stage is pinned, so it has to bow out once its section is behind us. */
-  const FADE_START = SCROLL_TRAVEL * 1.15;
-  const FADE_END = SCROLL_TRAVEL * 1.6;
+  /**
+   * Second act: while the anatomy section is pinned, the same rig pulls apart
+   * into its layers and the legend lights up in step. One WebGL context does
+   * both jobs — the scene the reader already met is the one taking itself apart.
+   */
+  const anatomy = document.getElementById("assembly");
+  const legend = Array.from(
+    document.querySelectorAll<HTMLElement>(".asm-item"),
+  );
+  const explodeTargets: { obj: Object3D; z: number; y: number }[] = [
+    { obj: shellMesh, z: -2.4, y: 0 },
+    { obj: screenMesh, z: -1.1, y: 0 },
+    { obj: sheet, z: 0.9, y: -0.15 },
+    { obj: handle, z: 2.0, y: 0.55 },
+    { obj: rowsGroup, z: 3.1, y: -0.5 },
+  ];
+  const restState = explodeTargets.map(t => ({
+    z: t.obj.position.z,
+    y: t.obj.position.y,
+  }));
+  let explode = 0;
+  let explodeShown = 0;
+
+  /** 0 while the section is still ahead, 1 once it has been scrolled through. */
+  const explodeFromScroll = (): number => {
+    if (!anatomy) return 0;
+    const r = anatomy.getBoundingClientRect();
+    const travel = Math.max(1, r.height - window.innerHeight * 0.5);
+    return Math.min(Math.max(-r.top / travel, 0), 1);
+  };
+
+  const FADE_TAIL = 0.14;
   let scrollQueued = false;
 
   const applyScroll = (): void => {
     scrollQueued = false;
     target = snapFromScroll();
-    const y = window.scrollY;
+    explode = explodeFromScroll();
+
+    // hold the stage while the anatomy section is live, then let it go
     const fade =
-      y <= FADE_START
+      explode <= 1 - FADE_TAIL
         ? 1
-        : Math.max(0, 1 - (y - FADE_START) / (FADE_END - FADE_START));
+        : Math.max(0, 1 - (explode - (1 - FADE_TAIL)) / FADE_TAIL);
     host.style.opacity = String(fade);
+
+    legend.forEach((item, i) => {
+      const lit = explode > (i + 0.35) / legend.length;
+      item.classList.toggle("is-live", lit);
+    });
   };
 
   const onScroll = (): void => {
@@ -373,10 +421,19 @@ export const initHero3D = async (
     current += velocity * dt;
     layoutSheet(current);
 
+    // ease the layers apart; eased here rather than per-scroll so it glides
+    explodeShown += (explode - explodeShown) * 0.09;
+    explodeTargets.forEach((tgt, i) => {
+      const rest = restState[i]!;
+      tgt.obj.position.z = rest.z + tgt.z * explodeShown;
+      tgt.obj.position.y = rest.y + tgt.y * explodeShown;
+    });
+
     t += 0.0075;
     curX += (targetX - curX) * 0.045;
     curY += (targetY - curY) * 0.045;
-    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04;
+    // pull the rig broadside as it comes apart, so the layers read as layers
+    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04 + explodeShown * 0.5;
     rig.rotation.x = -0.2 + curY * 0.16 + Math.cos(t * 0.8) * 0.02;
     rig.position.y = Math.sin(t * 1.2) * 0.05;
 

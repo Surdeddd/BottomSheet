@@ -520,6 +520,95 @@ kbd {
   padding:56px 48px 32px;
   position:relative
 }
+/* ——— anatomy: tall scroll section, pinned copy, scene pulls apart ——— */
+.assembly {
+  max-width:1320px;
+  margin:0 auto;
+  padding:0 48px;
+  min-height:190vh;
+  position:relative
+}
+.assembly-inner {
+  position:sticky;
+  top:24vh;
+  max-width:min(46%,520px);
+  padding-bottom:12vh
+}
+.assembly-title {
+  font-family:var(--serif);
+  font-size:clamp(30px,4vw,52px);
+  font-weight:300;
+  letter-spacing:-.02em;
+  line-height:1.05;
+  margin:0 0 14px
+}
+.assembly-lede {
+  font-family:var(--serif);
+  font-size:16px;
+  line-height:1.6;
+  color:var(--ink-2);
+  font-weight:300;
+  margin:0 0 28px;
+  max-width:44ch
+}
+.assembly-legend {
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px
+}
+.asm-item {
+  display:grid;
+  grid-template-columns:32px 1fr;
+  grid-template-areas:"no name" ". note";
+  gap:0 12px;
+  padding:12px 0 12px 12px;
+  border-left:2px solid var(--hairline);
+  opacity:.32;
+  transition:opacity var(--t-base) var(--e-out),border-color var(--t-base) var(--e-out),transform var(--t-base) var(--e-out)
+}
+.asm-item.is-live {
+  opacity:1;
+  border-left-color:var(--vermillion);
+  transform:translateX(4px)
+}
+.asm-no {
+  grid-area:no;
+  font-size:11px;
+  letter-spacing:.16em;
+  color:var(--vermillion)
+}
+.asm-name {
+  grid-area:name;
+  font-family:var(--serif);
+  font-size:20px;
+  font-weight:400
+}
+.asm-note {
+  grid-area:note;
+  font-size:11px;
+  letter-spacing:.06em;
+  color:var(--muted);
+  margin-top:2px
+}
+@media (max-width:900px) {
+  .assembly {
+    min-height:auto;
+    padding:0 20px 40px
+  }
+  .assembly-inner {
+    position:static;
+    max-width:none;
+    padding-bottom:0
+  }
+  .asm-item {
+    opacity:1;
+    border-left-color:var(--vermillion)
+  }
+}
+
 /* ——— per-feature diagrams ——— */
 .feature-viz {
   margin:4px 0 2px;
