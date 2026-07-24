@@ -67,8 +67,8 @@ const readPalette = (): Record<Role, number> => {
   };
   return {
     ink: hex("--ink", 0x1a1614),
-    paper: hex("--paper", 0xf4ede0),
-    shell: hex("--paper-deep", 0xece2d0),
+    paper: hex("--scene-surface", 0xf7f2e8),
+    shell: hex("--scene-shell", 0xe3d8c4),
     vermillion: hex("--vermillion", 0xc12d1c),
   };
 };
@@ -306,12 +306,15 @@ export const initHero3D = async (
   const legend = Array.from(
     document.querySelectorAll<HTMLElement>(".asm-item"),
   );
+  const legendList = document.querySelector<HTMLElement>(".assembly-legend");
+  // Kept tight on purpose: the layers should separate enough to be counted,
+  // not fly apart into unrelated shapes.
   const explodeTargets: { obj: Object3D; z: number; y: number }[] = [
-    { obj: shellMesh, z: -2.4, y: 0 },
-    { obj: screenMesh, z: -1.1, y: 0 },
-    { obj: sheet, z: 0.9, y: -0.15 },
-    { obj: handle, z: 2.0, y: 0.55 },
-    { obj: rowsGroup, z: 3.1, y: -0.5 },
+    { obj: shellMesh, z: -1.15, y: 0 },
+    { obj: screenMesh, z: -0.55, y: 0 },
+    { obj: sheet, z: 0.5, y: -0.08 },
+    { obj: handle, z: 0.95, y: 0.2 },
+    { obj: rowsGroup, z: 1.35, y: -0.16 },
   ];
   const restState = explodeTargets.map(t => ({
     z: t.obj.position.z,
@@ -347,6 +350,10 @@ export const initHero3D = async (
       const lit = explode > (i + 0.35) / legend.length;
       item.classList.toggle("is-live", lit);
     });
+    legendList?.style.setProperty(
+      "--asm-progress",
+      `${Math.round(explode * 100)}%`,
+    );
   };
 
   const onScroll = (): void => {
@@ -433,8 +440,11 @@ export const initHero3D = async (
     curX += (targetX - curX) * 0.045;
     curY += (targetY - curY) * 0.045;
     // pull the rig broadside as it comes apart, so the layers read as layers
-    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04 + explodeShown * 0.5;
+    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04 + explodeShown * 0.34;
     rig.rotation.x = -0.2 + curY * 0.16 + Math.cos(t * 0.8) * 0.02;
+    // ease back a little as it opens up, so the spread stays in frame
+    const s = 1 - explodeShown * 0.12;
+    rig.scale.setScalar(s);
     rig.position.y = Math.sin(t * 1.2) * 0.05;
 
     // clipping planes live in world space, so re-derive it from the tilted rig

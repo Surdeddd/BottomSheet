@@ -382,7 +382,11 @@
   --hairline: rgba(26, 22, 20, .14);
   --hairline-strong: rgba(26, 22, 20, .32);
   --vermillion: #c12d1c;
-  --vermillion-dim: #9a2516
+  --vermillion-dim: #9a2516;
+  /* WebGL scene reads these directly — the sheet has to sit above the page,
+     not merge into it, which needs its own values per theme. */
+  --scene-shell: #e3d8c4;
+  --scene-surface: #f7f2e8
 }
 :root[data-theme=dark] {
   --paper: #14110f;
@@ -393,7 +397,9 @@
   --hairline: rgba(236, 228, 211, .1);
   --hairline-strong: rgba(236, 228, 211, .24);
   --vermillion: #ff6b56;
-  --vermillion-dim: #ff5a3f
+  --vermillion-dim: #ff5a3f;
+  --scene-shell: #322b25;
+  --scene-surface: #473e35
 }
 :root[data-theme=dark] .bs-root {
   --bs-surface: #1f1a17;
@@ -525,14 +531,14 @@ kbd {
   max-width:1320px;
   margin:0 auto;
   padding:0 48px;
-  min-height:190vh;
+  min-height:115vh;
   position:relative
 }
 .assembly-inner {
   position:sticky;
-  top:24vh;
+  top:18vh;
   max-width:min(46%,520px);
-  padding-bottom:12vh
+  padding:6vh 0 10vh
 }
 .assembly-title {
   font-family:var(--serif);
@@ -557,41 +563,64 @@ kbd {
   padding:0;
   display:flex;
   flex-direction:column;
-  gap:2px
+  gap:2px;
+  position:relative
 }
+/* progress spine: fills as the layers separate */
+.assembly-legend::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  width:2px;
+  height:var(--asm-progress,0%);
+  background:var(--vermillion);
+  transition:height var(--t-base) var(--e-out);
+  z-index:1
+}
+/* Dormant rows stay fully legible — the state reads through the rule and the
+   number, never by fading text below its contrast floor. */
 .asm-item {
   display:grid;
   grid-template-columns:32px 1fr;
   grid-template-areas:"no name" ". note";
   gap:0 12px;
-  padding:12px 0 12px 12px;
+  padding:13px 0 13px 14px;
   border-left:2px solid var(--hairline);
-  opacity:.32;
-  transition:opacity var(--t-base) var(--e-out),border-color var(--t-base) var(--e-out),transform var(--t-base) var(--e-out)
+  transition:border-color var(--t-base) var(--e-out),transform var(--t-base) var(--e-out),background var(--t-base) var(--e-out)
 }
 .asm-item.is-live {
-  opacity:1;
   border-left-color:var(--vermillion);
-  transform:translateX(4px)
+  transform:translateX(5px);
+  background:linear-gradient(90deg,color-mix(in oklab,var(--vermillion),transparent 95%),transparent 62%)
 }
 .asm-no {
   grid-area:no;
   font-size:11px;
   letter-spacing:.16em;
+  color:var(--muted);
+  transition:color var(--t-base) var(--e-out)
+}
+.asm-item.is-live .asm-no {
   color:var(--vermillion)
 }
 .asm-name {
   grid-area:name;
   font-family:var(--serif);
-  font-size:20px;
-  font-weight:400
+  font-size:21px;
+  font-weight:400;
+  color:var(--ink-2);
+  transition:color var(--t-base) var(--e-out)
+}
+.asm-item.is-live .asm-name {
+  color:var(--ink)
 }
 .asm-note {
   grid-area:note;
   font-size:11px;
   letter-spacing:.06em;
   color:var(--muted);
-  margin-top:2px
+  margin-top:3px
 }
 @media (max-width:900px) {
   .assembly {
