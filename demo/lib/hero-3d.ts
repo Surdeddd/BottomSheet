@@ -1,55 +1,38 @@
 /**
- * Hero scene: the sheet exploded into its real layers — backdrop, scrim,
- * surface, handle, content — floating apart in depth and drawing back together
- * as you scroll. Blueprint styling (flat fills + vermillion edges) so it reads
- * as a diagram of the library rather than decoration.
+ * Hero scene: the package itself, in 3D — a phone with a sheet that travels
+ * between real snap points on a spring, the same shape of motion the engine
+ * produces. Dashed rules mark each snap level, the handle rides the sheet, and
+ * the whole rig tilts with the pointer.
  *
- * Opt-in by capability: no WebGL, reduced motion, or a hidden tab → never loads.
- * three.js is imported dynamically so the bundle cost lands only where it runs.
+ * Opt-in by capability: no WebGL, reduced motion, or a hidden tab → never
+ * loads. three.js is a dynamic import, so its weight lands only where the scene
+ * actually runs.
  */
+
+import type {
+  Group,
+  LineBasicMaterial,
+  Mesh,
+  MeshBasicMaterial,
+  Object3D,
+  Shape,
+} from "three";
 
 export type Hero3DHandle = { destroy: () => void };
 
-type Role = "ink" | "paper" | "vermillion";
+type Role = "ink" | "paper" | "vermillion" | "shell";
 
-type Layer = {
-  z: number;
-  w: number;
-  h: number;
-  role: Role;
-  opacity: number;
-  label: string;
-};
+/** Fractions of screen height, mirroring a typical snapPoints config. */
+const SNAPS = [0.16, 0.46, 0.88];
+const DWELL_MS = 2100;
 
-/** Deliberately restrained: the stack sits beside the type, never over it. */
-const LAYERS: Layer[] = [
-  { z: -2.2, w: 3.1, h: 4.3, role: "ink", opacity: 0.07, label: "backdrop" },
-  { z: -1.2, w: 2.9, h: 3.1, role: "ink", opacity: 0.1, label: "scrim" },
-  { z: -0.1, w: 2.7, h: 2.2, role: "paper", opacity: 0.95, label: "surface" },
-  { z: 0.6, w: 0.8, h: 0.12, role: "vermillion", opacity: 1, label: "handle" },
-];
+const PHONE_W = 2.5;
+const PHONE_H = 5.1;
+const SCREEN_W = PHONE_W - 0.22;
+const SCREEN_H = PHONE_H - 0.3;
 
-const ROW_COUNT = 3;
-
-const readPalette = (): Record<Role, number> => {
-  const cs = getComputedStyle(document.documentElement);
-  const hex = (name: string, fallback: number): number => {
-    const raw = cs.getPropertyValue(name).trim();
-    if (!raw) return fallback;
-    const probe = document.createElement("span");
-    probe.style.color = raw;
-    document.body.appendChild(probe);
-    const rgb = getComputedStyle(probe).color.match(/\d+/g);
-    probe.remove();
-    if (!rgb || rgb.length < 3) return fallback;
-    return (+rgb[0]! << 16) | (+rgb[1]! << 8) | +rgb[2]!;
-  };
-  return {
-    ink: hex("--ink", 0x1a1614),
-    paper: hex("--paper-deep", 0xece2d0),
-    vermillion: hex("--vermillion", 0xc12d1c),
-  };
-};
+/** Desktop only: a phone does not need a WebGL context spending its battery. */
+const MIN_STAGE_WIDTH = 900;
 
 const prefersReducedMotion = (): boolean =>
   typeof matchMedia === "function" &&
@@ -68,16 +51,63 @@ const hasWebGL = (): boolean => {
   }
 };
 
+const readPalette = (): Record<Role, number> => {
+  const cs = getComputedStyle(document.documentElement);
+  const hex = (name: string, fallback: number): number => {
+    const raw = cs.getPropertyValue(name).trim();
+    if (!raw) return fallback;
+    const probe = document.createElement("span");
+    probe.style.color = raw;
+    document.body.appendChild(probe);
+    const rgb = getComputedStyle(probe).color.match(/\d+/g);
+    probe.remove();
+    if (!rgb || rgb.length < 3) return fallback;
+    return (+rgb[0]! << 16) | (+rgb[1]! << 8) | +rgb[2]!;
+  };
+  return {
+    ink: hex("--ink", 0x1a1614),
+    paper: hex("--paper", 0xf4ede0),
+    shell: hex("--paper-deep", 0xece2d0),
+    vermillion: hex("--vermillion", 0xc12d1c),
+  };
+};
+
 export const initHero3D = async (
   host: HTMLElement | null,
 ): Promise<Hero3DHandle | null> => {
   if (!host || prefersReducedMotion() || !hasWebGL()) return null;
+  if (window.innerWidth < MIN_STAGE_WIDTH) return null;
 
   const THREE = await import("three");
+  let palette = readPalette();
+
+  /** Rounded rectangle centred on the origin; `top`/`bottom` pick which corners round. */
+  const roundedRect = (
+    w: number,
+    h: number,
+    r: number,
+    corners: "all" | "top" = "all",
+  ): Shape => {
+    const s = new THREE.Shape();
+    const x = -w / 2;
+    const y = -h / 2;
+    const rt = r;
+    const rb = corners === "all" ? r : 0;
+    s.moveTo(x + rt, y + h);
+    s.lineTo(x + w - rt, y + h);
+    s.quadraticCurveTo(x + w, y + h, x + w, y + h - rt);
+    s.lineTo(x + w, y + rb);
+    s.quadraticCurveTo(x + w, y, x + w - rb, y);
+    s.lineTo(x + rb, y);
+    s.quadraticCurveTo(x, y, x, y + rb);
+    s.lineTo(x, y + h - rt);
+    s.quadraticCurveTo(x, y + h, x + rt, y + h);
+    return s;
+  };
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(0, 0, 9.5);
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+  camera.position.set(0, 0, 11);
 
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -86,66 +116,160 @@ export const initHero3D = async (
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearAlpha(0);
+  // The sheet slides in from below the screen; clip it at the screen edge so it
+  // is masked by the phone instead of hanging out of the shell.
+  renderer.localClippingEnabled = true;
   host.appendChild(renderer.domElement);
   renderer.domElement.setAttribute("aria-hidden", "true");
 
-  const group = new THREE.Group();
-  group.rotation.set(-0.42, 0.62, 0.12);
-  scene.add(group);
+  const rig: Group = new THREE.Group();
+  rig.rotation.set(-0.2, 0.52, 0.06);
+  scene.add(rig);
 
   const disposables: { dispose: () => void }[] = [];
-  const planes: { mesh: import("three").Object3D; restZ: number }[] = [];
-  const fills: { mat: import("three").MeshBasicMaterial; role: Role }[] = [];
-  const strokes: import("three").LineBasicMaterial[] = [];
-  let palette = readPalette();
+  const fills: { mat: MeshBasicMaterial; role: Role }[] = [];
+  const strokes: LineBasicMaterial[] = [];
 
-  const addPlane = (l: Layer): void => {
-    const geo = new THREE.PlaneGeometry(l.w, l.h, 1, 1);
+  const localClip = new THREE.Plane(new THREE.Vector3(0, 1, 0), SCREEN_H / 2);
+  const screenClip = localClip.clone();
+  const clipFor = (clipped: boolean) => (clipped ? [screenClip] : null);
+
+  const addShape = (
+    shape: Shape,
+    role: Role,
+    z: number,
+    opacity = 1,
+    parent: Object3D = rig,
+    clipped = false,
+  ): Mesh => {
+    const geo = new THREE.ShapeGeometry(shape);
     const mat = new THREE.MeshBasicMaterial({
-      color: palette[l.role],
-      transparent: true,
-      opacity: l.opacity,
+      color: palette[role],
+      transparent: opacity < 1,
+      opacity,
       side: THREE.DoubleSide,
-      depthWrite: l.opacity > 0.9,
+      clippingPlanes: clipFor(clipped),
     });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.z = l.z;
-    group.add(mesh);
+    mesh.position.z = z;
+    parent.add(mesh);
     disposables.push(geo, mat);
-    fills.push({ mat, role: l.role });
-    planes.push({ mesh, restZ: l.z });
-
-    const edges = new THREE.EdgesGeometry(geo);
-    const edgeMat = new THREE.LineBasicMaterial({
-      color: palette.vermillion,
-      transparent: true,
-      opacity: l.label === "surface" ? 0.8 : 0.28,
-    });
-    const line = new THREE.LineSegments(edges, edgeMat);
-    line.position.z = l.z + 0.001;
-    group.add(line);
-    disposables.push(edges, edgeMat);
-    strokes.push(edgeMat);
-    planes.push({ mesh: line, restZ: l.z });
+    fills.push({ mat, role });
+    return mesh;
   };
 
-  for (const l of LAYERS) addPlane(l);
-
-  // content rows riding just above the surface
-  for (let i = 0; i < ROW_COUNT; i++) {
-    const geo = new THREE.PlaneGeometry(1.9, 0.24, 1, 1);
-    const mat = new THREE.MeshBasicMaterial({
-      color: palette.ink,
+  const addOutline = (
+    shape: Shape,
+    z: number,
+    opacity: number,
+    parent: Object3D = rig,
+    clipped = false,
+  ): void => {
+    const pts = shape.getPoints(48);
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+      color: palette.vermillion,
       transparent: true,
-      opacity: 0.14,
+      opacity,
+      clippingPlanes: clipFor(clipped),
     });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(0, 0.28 - i * 0.45, 0.3 + i * 0.1);
-    group.add(mesh);
+    const line = new THREE.Line(geo, mat);
+    line.position.z = z;
+    parent.add(line);
     disposables.push(geo, mat);
-    fills.push({ mat, role: "ink" });
-    planes.push({ mesh, restZ: mesh.position.z });
+    strokes.push(mat);
+  };
+
+  // phone shell + screen
+  addShape(roundedRect(PHONE_W, PHONE_H, 0.34), "shell", -0.06, 0.9);
+  addOutline(roundedRect(PHONE_W, PHONE_H, 0.34), 0.02, 0.5);
+  addShape(roundedRect(SCREEN_W, SCREEN_H, 0.26), "ink", -0.02, 0.08);
+
+  // snap-level rules across the screen
+  for (const frac of SNAPS) {
+    const y = -SCREEN_H / 2 + SCREEN_H * frac;
+    const pts: import("three").Vector3[] = [];
+    const segments = 13;
+    for (let i = 0; i < segments; i++) {
+      const x0 = -SCREEN_W / 2 + (SCREEN_W / segments) * i;
+      pts.push(new THREE.Vector3(x0, y, 0));
+      pts.push(new THREE.Vector3(x0 + SCREEN_W / segments / 2, y, 0));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+      color: palette.vermillion,
+      transparent: true,
+      opacity: 0.32,
+    });
+    const seg = new THREE.LineSegments(geo, mat);
+    seg.position.z = 0.03;
+    rig.add(seg);
+    disposables.push(geo, mat);
+    strokes.push(mat);
   }
+
+  // the sheet: its own group so the whole thing slides as one
+  const sheet: Group = new THREE.Group();
+  rig.add(sheet);
+  const SHEET_H = SCREEN_H;
+  addShape(
+    roundedRect(SCREEN_W, SHEET_H, 0.24, "top"),
+    "paper",
+    0.06,
+    1,
+    sheet,
+    true,
+  );
+  addOutline(
+    roundedRect(SCREEN_W, SHEET_H, 0.24, "top"),
+    0.09,
+    0.75,
+    sheet,
+    true,
+  );
+
+  const handle = addShape(
+    roundedRect(0.62, 0.075, 0.037),
+    "vermillion",
+    0.11,
+    1,
+    sheet,
+    true,
+  );
+
+  // content rows on the sheet
+  const rows: Mesh[] = [];
+  for (let i = 0; i < 4; i++) {
+    const row = addShape(
+      roundedRect(SCREEN_W - 0.55, 0.16, 0.06),
+      "ink",
+      0.1,
+      0.13,
+      sheet,
+      true,
+    );
+    rows.push(row);
+  }
+
+  const layoutSheet = (topY: number): void => {
+    // topY is where the sheet's top edge sits; the body hangs below it
+    sheet.position.y = topY - SHEET_H / 2;
+    handle.position.y = SHEET_H / 2 - 0.16;
+    rows.forEach((r, i) => {
+      r.position.y = SHEET_H / 2 - 0.5 - i * 0.34;
+    });
+  };
+
+  const screenBottom = -SCREEN_H / 2;
+  const topFor = (frac: number): number => screenBottom + SCREEN_H * frac;
+
+  let snapIndex = 1;
+  let current = topFor(SNAPS[snapIndex]!);
+  let target = current;
+  let velocity = 0;
+  layoutSheet(current);
+
+  let lastSwitch = 0;
 
   const repaint = (): void => {
     palette = readPalette();
@@ -169,11 +293,9 @@ export const initHero3D = async (
     camera.updateProjectionMatrix();
   };
   resize();
-
   const ro = new ResizeObserver(resize);
   ro.observe(host);
 
-  // pointer parallax, normalised to the host box
   let targetX = 0;
   let targetY = 0;
   const onPointer = (e: PointerEvent): void => {
@@ -183,16 +305,6 @@ export const initHero3D = async (
   };
   window.addEventListener("pointermove", onPointer, { passive: true });
 
-  // scroll assembles the stack: 0 = exploded, 1 = collapsed into one sheet
-  let assemble = 0;
-  const onScroll = (): void => {
-    const r = host.getBoundingClientRect();
-    const travel = Math.max(1, r.height * 0.9);
-    assemble = Math.min(Math.max(-r.top / travel, 0), 1);
-  };
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
-
   let visible = true;
   const io = new IntersectionObserver(
     entries => {
@@ -201,7 +313,6 @@ export const initHero3D = async (
     { threshold: 0.01 },
   );
   io.observe(host);
-
   const onVisibility = (): void => {
     visible = !document.hidden;
   };
@@ -211,22 +322,36 @@ export const initHero3D = async (
   let t = 0;
   let curX = 0;
   let curY = 0;
-  const tick = (): void => {
+  const STIFFNESS = 150;
+  const DAMPING = 20;
+
+  const tick = (now: number): void => {
     raf = requestAnimationFrame(tick);
     if (!visible || document.hidden) return;
-    t += 0.0075;
 
+    if (now - lastSwitch > DWELL_MS) {
+      lastSwitch = now;
+      snapIndex = (snapIndex + 1) % SNAPS.length;
+      target = topFor(SNAPS[snapIndex]!);
+    }
+
+    // critically-ish damped spring, the engine's own settle shape
+    const dt = 1 / 60;
+    const accel = (target - current) * STIFFNESS - velocity * DAMPING;
+    velocity += accel * dt;
+    current += velocity * dt;
+    layoutSheet(current);
+
+    t += 0.0075;
     curX += (targetX - curX) * 0.045;
     curY += (targetY - curY) * 0.045;
+    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04;
+    rig.rotation.x = -0.2 + curY * 0.16 + Math.cos(t * 0.8) * 0.02;
+    rig.position.y = Math.sin(t * 1.2) * 0.05;
 
-    group.rotation.y = 0.62 + curX * 0.34 + Math.sin(t) * 0.05;
-    group.rotation.x = -0.42 + curY * 0.2 + Math.cos(t * 0.8) * 0.03;
-
-    for (const p of planes) {
-      const spread = 1 - assemble;
-      p.mesh.position.z = p.restZ * (0.25 + spread * 0.75);
-    }
-    group.position.y = Math.sin(t * 1.2) * 0.06;
+    // clipping planes live in world space, so re-derive it from the tilted rig
+    rig.updateMatrixWorld();
+    screenClip.copy(localClip).applyMatrix4(rig.matrixWorld);
 
     renderer.render(scene, camera);
   };
@@ -239,7 +364,6 @@ export const initHero3D = async (
       io.disconnect();
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);
-      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVisibility);
       for (const d of disposables) d.dispose();
       renderer.dispose();

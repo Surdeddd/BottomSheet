@@ -32,6 +32,7 @@ import { wireScrimControls } from "./lib/scrim-controls";
 import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
 import { wireDragSurface } from "./lib/drag-surface";
 import { initHero3D } from "./lib/hero-3d";
+import { initMotionFx } from "./lib/motion-fx";
 import { initReveal } from "./lib/reveal";
 import {
   initCountUp,
@@ -362,6 +363,7 @@ const heroStage = $<HTMLElement>("#hero-3d");
 void initHero3D(heroStage).then(handle => {
   if (handle) heroStage.classList.add("is-live");
 });
+initMotionFx();
 
 $<HTMLButtonElement>("#install-copy")?.addEventListener("click", async () => {
   const label = $<HTMLElement>("#install-copy-label");

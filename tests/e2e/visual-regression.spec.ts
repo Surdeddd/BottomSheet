@@ -39,6 +39,11 @@ const waitForSnap = async (
 
 test.describe("Visual regression — demo layout", () => {
   test.beforeEach(async ({ page }) => {
+    // Emulate here, not just via the project's `use`: that setting does not
+    // reach matchMedia in this Playwright version (measured — the demo's
+    // motion gates saw no-preference and ran the WebGL hero mid-snapshot).
+    // Snapshots must be deterministic, so pin the media state per page.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     await page.waitForSelector(REACT_SHEET);
     await page.waitForLoadState("networkidle");

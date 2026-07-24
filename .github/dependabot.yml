@@ -41,6 +41,13 @@ updates:
           - "solid*"
           - "@builder.io/qwik*"
           - "lit*"
+    ignore:
+      # Vite majors are gated on @builder.io/qwik, whose peer range is
+      # vite ">=5 <8". A lone vite 8 bump lands an unresolvable tree and every
+      # job dies at npm ci. Bump vite and qwik together, by hand, when qwik
+      # widens its range; minor/patch updates still flow automatically.
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

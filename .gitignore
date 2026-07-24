@@ -166,3 +166,6 @@ node_modules.nosync/
 scripts/record-gifs/.raw/
 
 memory-bank/
+
+# Lighthouse CI local output
+.lighthouseci/

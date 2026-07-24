@@ -71,6 +71,15 @@ jobs:
             --out=bundle-delta.md
           echo "exit=$?" >> "$GITHUB_OUTPUT"
 
+      # The comment step hard-errors on a missing/empty path, which turns any
+      # earlier failure (a failed npm ci, say) into a second, misleading error.
+      - name: Ensure a report file exists
+        if: always()
+        run: |
+          if [ ! -s bundle-delta.md ]; then
+            printf '### Bundle size\n\nReport unavailable — a step before the comparison failed. See the job log.\n' > bundle-delta.md
+          fi
+
       - name: Comment on PR
         if: always()
         uses: marocchino/sticky-pull-request-comment@v2

@@ -1,3 +1,18 @@
+/* ——— motion system ———
+   One vocabulary for every transition on the page: three curves, four speeds.
+   Anything that moves picks from these, so the whole site feels authored by
+   one hand rather than assembled from snippets. */
+:root {
+  --e-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --e-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --e-spring: cubic-bezier(0.29, 1.24, 0.84, 0.99);
+
+  --t-tap: 120ms;
+  --t-fast: 200ms;
+  --t-base: 340ms;
+  --t-slow: 700ms;
+}
+
 :where(.bs-root) {
   --bs-surface: #ffffff;
   --bs-surface-border: rgba(225, 227, 237, 1);
@@ -505,6 +520,83 @@ kbd {
   padding:56px 48px 32px;
   position:relative
 }
+/* ——— section rules that draw themselves ——— */
+.sec-cap,
+.features-head {
+  position:relative
+}
+.sec-cap::after,
+.features-head::after {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,var(--vermillion),transparent);
+  transform:scaleX(0);
+  transform-origin:left center;
+  transition:transform 1.1s var(--e-out)
+}
+.sec-cap.is-drawn::after,
+.features-head.is-drawn::after {
+  transform:scaleX(1)
+}
+
+/* ——— cursor spotlight on cards ——— */
+.has-spotlight {
+  position:relative;
+  isolation:isolate
+}
+.has-spotlight::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:0;
+  background:radial-gradient(
+    320px circle at var(--mx,50%) var(--my,50%),
+    color-mix(in oklab,var(--vermillion),transparent 90%),
+    transparent 68%
+  );
+  transition:opacity var(--t-base) var(--e-out)
+}
+.has-spotlight:hover::after {
+  opacity:1
+}
+.feature.has-spotlight {
+  transition:transform var(--t-base) var(--e-out),background var(--t-base) var(--e-out)
+}
+.feature.has-spotlight:hover {
+  transform:translateY(-3px)
+}
+
+/* ——— cursor ring (fine pointers, motion allowed) ——— */
+.cursor-ring {
+  position:fixed;
+  top:0;
+  left:0;
+  width:26px;
+  height:26px;
+  border:1px solid var(--vermillion);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:9999;
+  opacity:.55;
+  will-change:transform;
+  transition:width var(--t-fast) var(--e-out),height var(--t-fast) var(--e-out),opacity var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out)
+}
+.cursor-ring.is-over {
+  width:44px;
+  height:44px;
+  opacity:.9;
+  background:color-mix(in oklab,var(--vermillion),transparent 92%)
+}
+@media (pointer:coarse) {
+  .cursor-ring { display:none }
+}
+
 /* WebGL stage sits behind the type; it only ever mounts when the scene runs. */
 .hero-stage {
   position:absolute;
@@ -529,15 +621,10 @@ kbd {
   position:relative;
   z-index:1
 }
+/* The scene never mounts below this width, so the stage collapses with it. */
 @media (max-width:900px) {
   .hero-stage {
-    top:8px;
-    right:0;
-    width:70%;
-    height:min(300px,34vh)
-  }
-  .hero-stage.is-live {
-    opacity:.4
+    display:none
   }
 }
 .hero:before {
