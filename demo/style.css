@@ -520,6 +520,19 @@ kbd {
   padding:56px 48px 32px;
   position:relative
 }
+/* ——— per-feature diagrams ——— */
+.feature-viz {
+  margin:4px 0 2px;
+  opacity:.9
+}
+.feature-viz svg {
+  display:block;
+  overflow:visible
+}
+.feature:hover .feature-viz {
+  opacity:1
+}
+
 /* ——— section rules that draw themselves ——— */
 .sec-cap,
 .features-head {
@@ -598,6 +611,7 @@ kbd {
 }
 
 /* WebGL stage sits behind the type; it only ever mounts when the scene runs. */
+/* Sticky so the phone stays in frame while the sheet walks its snap ladder. */
 .hero-stage {
   position:absolute;
   top:24px;
@@ -608,6 +622,12 @@ kbd {
   z-index:0;
   opacity:0;
   transition:opacity .9s ease
+}
+.hero-stage.is-live {
+  position:fixed;
+  top:88px;
+  right:max(24px,calc((100vw - 1320px) / 2 + 24px));
+  transition:none
 }
 .hero-stage.is-live {
   opacity:1

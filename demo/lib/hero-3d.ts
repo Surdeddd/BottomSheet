@@ -24,7 +24,8 @@ type Role = "ink" | "paper" | "vermillion" | "shell";
 
 /** Fractions of screen height, mirroring a typical snapPoints config. */
 const SNAPS = [0.16, 0.46, 0.88];
-const DWELL_MS = 2100;
+/** How far the page scrolls before the sheet has walked the whole ladder. */
+const SCROLL_TRAVEL = 900;
 
 const PHONE_W = 2.5;
 const PHONE_H = 5.1;
@@ -263,13 +264,49 @@ export const initHero3D = async (
   const screenBottom = -SCREEN_H / 2;
   const topFor = (frac: number): number => screenBottom + SCREEN_H * frac;
 
-  let snapIndex = 1;
-  let current = topFor(SNAPS[snapIndex]!);
+  let current = topFor(SNAPS[0]!);
   let target = current;
   let velocity = 0;
   layoutSheet(current);
 
-  let lastSwitch = 0;
+  /**
+   * Scroll drives which snap the sheet is heading for — reading the page walks
+   * the sheet up its ladder, so the scene demonstrates the engine instead of
+   * looping at the viewer.
+   */
+  const snapFromScroll = (): number => {
+    const t = Math.min(Math.max(window.scrollY / SCROLL_TRAVEL, 0), 1);
+    const idx = Math.min(
+      SNAPS.length - 1,
+      Math.floor(t * SNAPS.length + 0.0001),
+    );
+    return topFor(SNAPS[idx]!);
+  };
+  target = snapFromScroll();
+  current = target;
+
+  /** The stage is pinned, so it has to bow out once its section is behind us. */
+  const FADE_START = SCROLL_TRAVEL * 1.15;
+  const FADE_END = SCROLL_TRAVEL * 1.6;
+  let scrollQueued = false;
+
+  const applyScroll = (): void => {
+    scrollQueued = false;
+    target = snapFromScroll();
+    const y = window.scrollY;
+    const fade =
+      y <= FADE_START
+        ? 1
+        : Math.max(0, 1 - (y - FADE_START) / (FADE_END - FADE_START));
+    host.style.opacity = String(fade);
+  };
+
+  const onScroll = (): void => {
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(applyScroll);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
 
   const repaint = (): void => {
     palette = readPalette();
@@ -325,15 +362,9 @@ export const initHero3D = async (
   const STIFFNESS = 150;
   const DAMPING = 20;
 
-  const tick = (now: number): void => {
+  const tick = (): void => {
     raf = requestAnimationFrame(tick);
     if (!visible || document.hidden) return;
-
-    if (now - lastSwitch > DWELL_MS) {
-      lastSwitch = now;
-      snapIndex = (snapIndex + 1) % SNAPS.length;
-      target = topFor(SNAPS[snapIndex]!);
-    }
 
     // critically-ish damped spring, the engine's own settle shape
     const dt = 1 / 60;
@@ -364,6 +395,7 @@ export const initHero3D = async (
       io.disconnect();
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVisibility);
       for (const d of disposables) d.dispose();
       renderer.dispose();

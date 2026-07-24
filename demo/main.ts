@@ -33,6 +33,7 @@ import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
 import { wireDragSurface } from "./lib/drag-surface";
 import { initHero3D } from "./lib/hero-3d";
 import { initMotionFx } from "./lib/motion-fx";
+import { initFeatureViz } from "./lib/feature-viz";
 import { initReveal } from "./lib/reveal";
 import {
   initCountUp,
@@ -364,6 +365,7 @@ void initHero3D(heroStage).then(handle => {
   if (handle) heroStage.classList.add("is-live");
 });
 initMotionFx();
+initFeatureViz();
 
 $<HTMLButtonElement>("#install-copy")?.addEventListener("click", async () => {
   const label = $<HTMLElement>("#install-copy-label");
