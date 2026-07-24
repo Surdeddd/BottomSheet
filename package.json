@@ -402,7 +402,7 @@
     "vite-plugin-solid": "^2.11.12",
     "vitest": "^1.6.1",
     "vue": "^3.4.0",
-    "vue-tsc": "^1.8.27"
+    "vue-tsc": "^3.3.8"
   },
   "engines": {
     "node": ">=20"
