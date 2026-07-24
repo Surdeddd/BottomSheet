@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
-    "typescript": "^5.3.3",
+    "typescript": "^7.0.2",
     "vite": "^5.0.10"
   }
 }
