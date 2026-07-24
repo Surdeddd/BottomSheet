@@ -503,9 +503,7 @@ kbd {
   max-width:1320px;
   margin:0 auto;
   padding:56px 48px 32px;
-  position:relative;
-  border-bottom:1px solid var(--hairline-strong);
-  animation:fadeInUp .6s cubic-bezier(.2,.8,.3,1) both
+  position:relative
 }
 .hero:before {
   content:"";
@@ -539,7 +537,8 @@ kbd {
   font-variation-settings:"opsz" 144,"SOFT" 100
 }
 .title-line {
-  display:block
+  display:block;
+  overflow:hidden
 }
 .title-italic {
   font-style:italic;
@@ -1036,6 +1035,15 @@ kbd {
   color:var(--vermillion);
   font-size:10px
 }
+.control-note {
+  font-family:var(--mono);
+  font-size:11px;
+  line-height:1.5;
+  color:var(--ink-2);
+  margin:2px 0 0;
+  padding-left:10px;
+  border-left:2px solid var(--vermillion)
+}
 .chip-row {
   display:flex;
   flex-wrap:wrap;
@@ -1077,8 +1085,55 @@ kbd {
   letter-spacing:.05em
 }
 .slider input[type=range] {
-  width:100%;
-  accent-color:var(--vermillion)
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+.slider input[type=range]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--hairline-strong);
+  border-radius: 2px;
+}
+.slider input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--vermillion);
+  border: 3px solid #f4ede0;
+  box-shadow: 0 1px 4px rgba(26, 22, 20, 0.35);
+  transition: transform 0.15s ease;
+}
+.slider input[type=range]:hover::-webkit-slider-thumb,
+.slider input[type=range]:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+.slider input[type=range]::-moz-range-track {
+  height: 2px;
+  background: var(--hairline-strong);
+  border-radius: 2px;
+}
+.slider input[type=range]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--vermillion);
+  border: 3px solid #f4ede0;
+  box-shadow: 0 1px 4px rgba(26, 22, 20, 0.35);
+  transition: transform 0.15s ease;
+}
+.slider input[type=range]:hover::-moz-range-thumb {
+  transform: scale(1.2);
+}
+.slider input[type=range]:focus-visible {
+  outline: 2px solid var(--vermillion);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 .toggle {
   display:flex;
@@ -1090,19 +1145,46 @@ kbd {
   font-family:var(--mono);
   letter-spacing:.02em
 }
-.toggle input {
-  accent-color:var(--vermillion);
-  width:16px;
-  height:16px
+.toggle input[type=checkbox] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--hairline-strong);
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.toggle input[type=checkbox]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f4ede0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.toggle input[type=checkbox]:checked {
+  background: var(--vermillion);
+}
+.toggle input[type=checkbox]:checked::before {
+  transform: translateX(16px);
+}
+.toggle input[type=checkbox]:focus-visible {
+  outline: 2px solid var(--vermillion);
+  outline-offset: 2px;
 }
 .advanced {
   max-width:1320px;
   margin:0 auto;
   padding:56px 48px;
   border-bottom:1px solid var(--hairline-strong)
-}
-.advanced-head {
-  margin-bottom:32px
 }
 .advanced-grid {
   display:grid;
@@ -1776,6 +1858,50 @@ kbd {
     font-size:11px
   }
 }
+/* ——— scroll reveal (JS adds .reveal; no-JS stays visible) ——— */
+/* ——— hero entrance ——— */
+.title-inner {
+  display: block;
+  transform: translateY(112%);
+  animation: titleRise 1s cubic-bezier(0.2, 0.8, 0.3, 1) 0.05s forwards;
+}
+.title-line.title-italic .title-inner {
+  animation-delay: 0.18s;
+}
+@keyframes titleRise {
+  to { transform: translateY(0); }
+}
+.hero-meta,
+.hero-lede,
+.hero-stats {
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.hero-meta { animation-delay: 0.02s; }
+.hero-lede { animation-delay: 0.32s; }
+.hero-stats { animation-delay: 0.48s; }
+/* visibility, not opacity alone: a transparent ancestor still exposes its text
+   to contrast tooling and screen readers while being invisible on screen. */
+.reveal {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s ease var(--reveal-delay, 0ms),
+    transform 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) var(--reveal-delay, 0ms),
+    visibility 0s linear var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-revealed {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  will-change: auto;
+}
+/* Large containers fade without translate: a moving transform on an ancestor
+   desyncs Playwright's element screenshots (layout box vs rendered pixels). */
+.footer.reveal {
+  transform: none;
+}
 @keyframes fadeInUp {
   0% {
     opacity:0;
@@ -1785,21 +1911,6 @@ kbd {
     opacity:1;
     transform:translateY(0)
   }
-}
-.adapter-row,.showcase,.controls,.features {
-  animation:fadeInUp .7s cubic-bezier(.2,.8,.3,1) both
-}
-.adapter-row {
-  animation-delay:.08s
-}
-.showcase {
-  animation-delay:.16s
-}
-.controls {
-  animation-delay:.24s
-}
-.features {
-  animation-delay:.32s
 }
 @media (prefers-reduced-motion: reduce) {
   *,*:before,*:after {
@@ -1904,4 +2015,130 @@ kbd {
 .demo-dock-item.is-active {
   color: var(--vermillion, #c12d1c);
   background: color-mix(in srgb, var(--vermillion, #c12d1c) 12%, transparent);
+}
+
+/* ——— section captions ——— */
+.sec-cap {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 20px 48px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sec-cap span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-cap span::before {
+  content: "";
+  width: 32px;
+  height: 1px;
+  background: var(--vermillion);
+}
+
+/* ——— scroll progress hairline ——— */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--vermillion);
+  transform: scaleX(0);
+  transform-origin: left;
+  z-index: 10002;
+  pointer-events: none;
+}
+
+/* ——— feature hover accent ——— */
+.feature::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  height: 2px;
+  background: var(--vermillion);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.feature:hover::after {
+  transform: scaleX(1);
+}
+
+/* ——— chip press + focus rings ——— */
+.chip:active {
+  transform: scale(0.95);
+}
+.chip:focus-visible,
+.adapter:focus-visible,
+.advanced-btn:focus-visible {
+  outline: 2px solid var(--vermillion);
+  outline-offset: 2px;
+}
+
+/* ——— control / advanced hover treatment ——— */
+.control-group,
+.advanced-card {
+  position: relative;
+  transition: background 0.2s ease;
+}
+.control-group:hover,
+.advanced-card:hover {
+  background: var(--paper-deep);
+}
+.advanced-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  height: 2px;
+  background: var(--vermillion);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.advanced-card:hover::after {
+  transform: scaleX(1);
+}
+
+/* ——— footer install copy ——— */
+.install-row {
+  position: relative;
+  max-width: 100%;
+}
+.install-row .install {
+  padding-right: 92px;
+}
+.install-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 5px 12px;
+}
+@media (max-width: 720px) {
+  .sec-cap { padding: 16px 24px 0; }
+}
+@media (max-width: 480px) {
+  .sec-cap { padding: 14px 16px 0; }
+}
+
+/* ——— view transitions (adapter / language switch) ——— */
+::view-transition-old(root) {
+  animation: vt-root-out 0.22s ease both;
+}
+::view-transition-new(root) {
+  animation: vt-root-in 0.3s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+@keyframes vt-root-out {
+  to { opacity: 0; transform: translateY(8px); }
+}
+@keyframes vt-root-in {
+  from { opacity: 0; transform: translateY(-8px); }
 }

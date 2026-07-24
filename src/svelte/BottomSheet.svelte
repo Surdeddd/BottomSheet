@@ -284,6 +284,9 @@
     }
   });
   $effect(() => {
+    if (dragFrom !== undefined) engine?.setDragFrom(dragFrom);
+  });
+  $effect(() => {
     if (radius !== undefined) engine?.setRadius(radius);
   });
   $effect(() => {

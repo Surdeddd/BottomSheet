@@ -97,6 +97,14 @@ for (let i = 0; i < 6; i++) {
   });
 }
 
+for (const mode of ["handle", "sheet", "zones"] as const) {
+  document.querySelector(`#from-${mode}`)?.addEventListener("click", () => {
+    engine.setDragFrom(mode);
+    main.sheet.dataset.dragFrom = engine.getDragFrom();
+  });
+}
+main.sheet.dataset.dragFrom = engine.getDragFrom();
+
 document.querySelector("#open-half")?.addEventListener("click", () => {
   void engine.snapTo("half");
 });

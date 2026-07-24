@@ -215,6 +215,7 @@ export function useBottomSheet<TId extends string = string>(
     persistent: opts.persistent,
     disableClose: opts.disableClose,
     disableDrag: opts.disableDrag,
+    dragFrom: opts.dragFrom,
     dragFromContent: opts.dragFromContent,
   });
 

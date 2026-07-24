@@ -350,6 +350,57 @@ describe("dragFrom zones", () => {
     engine.destroy();
   });
 
+  it("setDragFrom moves the gesture between surfaces at runtime", () => {
+    const dom = makeDom();
+    stubPointerCapture(dom.sheet);
+    const plain = document.createElement("div");
+    dom.sheet.appendChild(plain);
+    const engine = new BottomSheetEngine({
+      element: dom.sheet,
+      handle: dom.handle,
+      snapPoints: points,
+      initial: "full",
+      ...tweenOpts,
+    });
+    expect(engine.getDragFrom()).toBe("handle");
+
+    // handle mode: the sheet body does not drag
+    pointer(plain, "pointerdown", 100);
+    pointer(plain, "pointermove", 200);
+    expect(engine.state.isDragging).toBe(false);
+
+    engine.setDragFrom("sheet");
+    expect(engine.getDragFrom()).toBe("sheet");
+    pointer(plain, "pointerdown", 100);
+    pointer(plain, "pointermove", 200);
+    expect(engine.state.isDragging).toBe(true);
+    pointer(plain, "pointerup", 200);
+
+    // and back off again
+    engine.setDragFrom("handle");
+    pointer(plain, "pointerdown", 100);
+    pointer(plain, "pointermove", 200);
+    expect(engine.state.isDragging).toBe(false);
+    engine.destroy();
+  });
+
+  it("setDragFrom is a no-op for the current mode and after destroy", () => {
+    const dom = makeDom();
+    stubPointerCapture(dom.sheet);
+    const engine = new BottomSheetEngine({
+      element: dom.sheet,
+      handle: dom.handle,
+      snapPoints: points,
+      initial: "full",
+      ...tweenOpts,
+    });
+    engine.setDragFrom("handle");
+    expect(engine.getDragFrom()).toBe("handle");
+    engine.destroy();
+    engine.setDragFrom("sheet");
+    expect(engine.getDragFrom()).toBe("handle");
+  });
+
   it("data-bs-no-drag opts a subtree out in sheet mode", () => {
     const dom = makeDom();
     stubPointerCapture(dom.sheet);

@@ -72,12 +72,13 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         viewport: { width: bp.width, height: bp.height },
         deviceScaleFactor: 1,
+        reducedMotion: "reduce" as const,
       },
     })),
     ...MOBILE_VISUAL_PROJECTS.map(p => ({
       name: p.name,
       testMatch: /visual-regression\.spec\.ts/,
-      use: p.device,
+      use: { ...p.device, reducedMotion: "reduce" as const },
     })),
   ],
 });

@@ -10,7 +10,7 @@ import { mountLitDemo } from "./apps/lit-demo";
 import { snapPoints as resolveSnapPoints } from "./apps/shared";
 import { decode, encode, writeHash } from "./lib/permalink";
 import { $, type AdapterKey, type Settings } from "./lib/types";
-import { applyLang, getLang, wireLangToggle } from "./lib/i18n";
+import { applyLang, getLang, t, wireLangToggle } from "./lib/i18n";
 import {
   applyTheme,
   applyThemePreset,
@@ -30,6 +30,13 @@ import { wireStressTest } from "./lib/stress";
 import { startViewTransition } from "./lib/view-transition";
 import { wireScrimControls } from "./lib/scrim-controls";
 import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
+import { wireDragSurface } from "./lib/drag-surface";
+import { initReveal } from "./lib/reveal";
+import {
+  initCountUp,
+  initHeroParallax,
+  initScrollProgress,
+} from "./lib/scroll-effects";
 
 const defaults: Settings = {
   mode: "bottom",
@@ -64,6 +71,7 @@ let activeAdapter: AdapterKey = "react";
 let activeController: DemoController | null = null;
 let scrimControlsSync: (() => void) | null = null;
 let floatingUiSync: (() => void) | null = null;
+let dragSurfaceSync: (() => void) | null = null;
 
 const ro = {
   active: $<HTMLElement>("#ro-active"),
@@ -124,6 +132,7 @@ const mountAdapter = (key: AdapterKey): void => {
       () => {
         scrimControlsSync?.();
         floatingUiSync?.();
+        dragSurfaceSync?.();
       },
     );
     renderActiveCode();
@@ -300,6 +309,15 @@ const floatingUi = wireFloatingUi({
 });
 floatingUiSync = floatingUi.syncToEngine;
 
+const dragSurface = wireDragSurface({
+  getEngine: () => activeController?.getEngine?.() ?? null,
+  getScreen: () =>
+    document.querySelector<HTMLElement>(
+      `.device-screen[data-screen="${activeAdapter}"]`,
+    ),
+});
+dragSurfaceSync = dragSurface.syncToEngine;
+
 const initial = decode(location.hash);
 if (initial.adapter) activeAdapter = initial.adapter;
 Object.assign(settings, initial.settings);
@@ -334,5 +352,22 @@ if (snipTag) snipTag.textContent = activeAdapter;
 updateChipsForMode();
 
 mountAdapter(activeAdapter);
+initReveal();
+initScrollProgress();
+initCountUp();
+initHeroParallax();
+
+$<HTMLButtonElement>("#install-copy")?.addEventListener("click", async () => {
+  const label = $<HTMLElement>("#install-copy-label");
+  try {
+    await navigator.clipboard.writeText("npm i @surdeddd/bottom-sheet");
+    if (label) label.textContent = t("install.copied");
+  } catch {
+    if (label) label.textContent = "failed";
+  }
+  window.setTimeout(() => {
+    if (label) label.textContent = t("install.copy");
+  }, 1400);
+});
 
 export { defaultSnaps };

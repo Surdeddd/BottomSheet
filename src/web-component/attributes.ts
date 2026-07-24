@@ -39,6 +39,7 @@ export const LIVE_ATTRS: ReadonlySet<string> = new Set([
   ATTR_PERSISTENT,
   ATTR_DISABLE_CLOSE,
   ATTR_DISABLE_DRAG,
+  ATTR_DRAG_FROM,
   ATTR_DRAG_FROM_CONTENT,
 ]);
 

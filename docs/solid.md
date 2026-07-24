@@ -58,7 +58,7 @@ export const Search = () => (
 | `persistent` | `boolean` | Block dismissal (backdrop / Escape / back). Reactive. |
 | `disableClose` | `boolean` | Block all closing. Reactive. |
 | `disableDrag` | `boolean` | Suppress the drag gesture. Reactive. |
-| `dragFrom` | `"handle" \| "sheet" \| "zones"` | Which regions start a drag; `"zones"` limits it to `[data-bs-drag]` subtrees. Applied at mount. |
+| `dragFrom` | `"handle" \| "sheet" \| "zones"` | Which regions start a drag; `"zones"` limits it to `[data-bs-drag]` subtrees. Reactive. |
 | `dragFromContent` | `boolean` | Whether a touch gesture on the scroll container drags the sheet. Reactive; override per snap point with `dragFromContent` on the point. |
 | `closeOnRouteChange` | `boolean` | Close when the URL changes. |
 | `stackEffect` | `boolean` | iOS card-stack scaling of back sheets. |

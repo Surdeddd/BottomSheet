@@ -111,6 +111,7 @@ export class BottomSheetCore {
   private size = 0;
   private gesture: GestureController | undefined;
   private contentGesture: GestureController | undefined;
+  private detachSheetGesture: (() => void) | null = null;
   private rootEl: HTMLElement | null = null;
   private destroyed = false;
   private restClosed = false;
@@ -661,6 +662,19 @@ export class BottomSheetCore {
     this.dragFromContentDefault = value;
   }
 
+  /** Remounts the sheet gesture — the drag surface differs per mode. */
+  setDragFrom(mode: DragFrom): void {
+    if (this.destroyed || mode === this.dragFromMode) return;
+    this.gesture?.forceClearDragState();
+    this.detachSheetGesture?.();
+    this.dragFromMode = mode;
+    this.mountSheetGesture();
+  }
+
+  getDragFrom(): DragFrom {
+    return this.dragFromMode;
+  }
+
   isTop(): boolean {
     return this.isTopSheet;
   }
@@ -1133,20 +1147,33 @@ export class BottomSheetCore {
     return true;
   }
 
-  private attach(): void {
+  /** Kept re-runnable so `setDragFrom` can move the gesture to another surface. */
+  private mountSheetGesture(): void {
     const surface = this.sheetDragSurface();
-    this.gesture = new GestureController(
+    const controller = new GestureController(
       this.buildGestureDeps(surface, {
         shouldStart: e => this.canStartSheetDrag(e),
         manageTouchAction: this.dragFromMode === "handle",
       }),
     );
-    this.teardowns.add(this.gesture!.install());
-    if (this.dragFromMode !== "handle") {
-      this.teardowns.add(
-        installTouchScrollGuard(surface, () => this.gesture?.isDragging ?? false),
-      );
-    }
+    this.gesture = controller;
+    const detachGestures = controller.install();
+    const detachGuard =
+      this.dragFromMode === "handle"
+        ? null
+        : installTouchScrollGuard(surface, () => controller.isDragging);
+    this.detachSheetGesture = () => {
+      detachGuard?.();
+      detachGestures();
+    };
+  }
+
+  private attach(): void {
+    this.mountSheetGesture();
+    this.teardowns.add(() => {
+      this.detachSheetGesture?.();
+      this.detachSheetGesture = null;
+    });
 
     try {
       this.attachFeatures();

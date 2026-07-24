@@ -251,6 +251,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     const disableClose = track(() => props.disableClose);
     const disableDrag = track(() => props.disableDrag);
     const dragFromContent = track(() => props.dragFromContent);
+    const dragFrom = track(() => props.dragFrom);
     const engine = engineStore.engine;
     if (!engine) return;
     if (persistent !== undefined) engine.setPersistent(persistent);
@@ -259,6 +260,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     if (dragFromContent !== undefined) {
       engine.setDragFromContent(dragFromContent);
     }
+    if (dragFrom !== undefined) engine.setDragFrom(dragFrom);
   });
 
   const showBackdrop = props.backdrop !== false;

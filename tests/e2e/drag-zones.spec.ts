@@ -165,6 +165,34 @@ test.describe("closed sheets and content drag", () => {
     expect(await sizeOf(page, mainSheet)).toBe(before);
   });
 
+  test("setDragFrom moves the drag surface without a remount", async ({
+    page,
+  }) => {
+    await page.click("#open-half");
+    await page.waitForTimeout(300);
+    const before = await sizeOf(page, mainSheet);
+
+    // handle mode: a pull on the sheet body below the content does nothing
+    const noDragBox = (await page.locator(".no-drag").boundingBox())!;
+    await swipe(page, ".no-drag", noDragBox.y + 4, noDragBox.y + 200);
+    await page.waitForTimeout(300);
+    expect(await sizeOf(page, mainSheet)).toBe(before);
+
+    await page.click("#from-sheet");
+    expect(await page.getAttribute(mainSheet, "data-drag-from")).toBe("sheet");
+
+    // the same region still refuses — it is opted out via data-bs-no-drag
+    await swipe(page, ".no-drag", noDragBox.y + 4, noDragBox.y + 200);
+    await page.waitForTimeout(300);
+    expect(await sizeOf(page, mainSheet)).toBe(before);
+
+    // ...while a plain row now drags, because the whole sheet is live
+    const rowBox = (await page.locator(topRow).boundingBox())!;
+    await swipe(page, topRow, rowBox.y + 4, rowBox.y + 220);
+    await page.waitForTimeout(400);
+    expect(await sizeOf(page, mainSheet)).toBeLessThan(before);
+  });
+
   test("the handle still drags after all the gating", async ({ page }) => {
     await page.click("#open-half");
     await page.waitForTimeout(300);

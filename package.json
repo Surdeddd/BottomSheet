@@ -358,6 +358,11 @@
       "optional": true
     }
   },
+  "overrides": {
+    "postcss": "^8.5.23",
+    "seroval": "^1.5.6",
+    "seroval-plugins": "^1.5.6"
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",
     "@axe-core/playwright": "^4.11.2",

@@ -48,13 +48,13 @@ const readSize = ({
 };
 
 const activate = async (page: import("@playwright/test").Page, key: AdapterKey) => {
-  // scrollIntoViewIfNeeded before the force-click: on mobile viewports the
-  // adapter buttons can sit below the fold, and force:true skips auto-scroll,
-  // so the synthesized click lands off-screen and the adapter never switches
-  // (mobile-safari/WebKit). Scrolling first keeps the click on target.
+  // A plain click, deliberately: it auto-scrolls AND waits for the element to
+  // stop moving. force:true skips the stability check, so the demo's reveal and
+  // parallax animations could shift the button out from under a synthesized
+  // click mid-flight (WebKit lost ~1 switch in 4 that way).
   const adapterBtn = page.locator(`.adapter[data-adapter="${key}"]`);
   await adapterBtn.scrollIntoViewIfNeeded();
-  await adapterBtn.click({ force: true });
+  await adapterBtn.click();
   await page.waitForFunction(
     ({ adapter, shadow }) => {
       const screen = document.querySelector(

@@ -145,6 +145,11 @@ export class BottomSheetElement extends BaseHTMLElement {
       case ATTR_DRAG_FROM_CONTENT:
         this.engine.setDragFromContent(value !== "false");
         break;
+      case ATTR_DRAG_FROM: {
+        const mode = parseDragFrom(value);
+        if (mode) this.engine.setDragFrom(mode);
+        break;
+      }
       case ATTR_SNAP:
         if (value && value !== this.engine.state.activeId) {
           void this.engine.snapTo(value);

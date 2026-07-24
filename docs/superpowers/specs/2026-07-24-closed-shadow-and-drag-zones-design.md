@@ -88,6 +88,10 @@ point. The rule is read from the *active* snap point when the gesture starts.
 Axis split: `dragFrom` governs the sheet outside the scroll container, `dragFromContent`
 governs the scroll container itself. They never overlap.
 
+Both are runtime-switchable: `setDragFromContent()` flips a flag read per gesture, while
+`setDragFrom()` tears the gesture off its current surface and remounts it on the new one
+(the handle and the sheet element are different DOM nodes, so a flag would not suffice).
+
 ### C. Follow-the-finger drag from content
 
 The threshold swipe is replaced by a real drag that tracks the finger. No second physics

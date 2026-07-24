@@ -32,11 +32,11 @@ const activate = async (
   page: import("@playwright/test").Page,
   key: AdapterKey,
 ) => {
-  // force:true skips auto-scroll; on mobile viewports the adapter button can be
-  // below the fold, so scroll it into view first or the click misses (WebKit).
+  // A plain click waits for the button to stop moving; force:true does not, and
+  // the demo's reveal/parallax animations can shift it mid-click (WebKit).
   const adapterBtn = page.locator(`.adapter[data-adapter="${key}"]`);
   await adapterBtn.scrollIntoViewIfNeeded();
-  await adapterBtn.click({ force: true });
+  await adapterBtn.click();
   await page.waitForFunction(
     adapter => {
       const screen = document.querySelector(
