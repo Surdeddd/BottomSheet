@@ -9,6 +9,8 @@ export type SnapPoint =
 export type SnapPointDef<Id extends string = string> = {
   id: Id;
   size: SnapPoint;
+  /** Overrides the engine-level `dragFromContent` while this point is active. */
+  dragFromContent?: boolean;
 };
 
 export type SnapId<
@@ -22,6 +24,11 @@ export type SnapId<
     : never;
 
 export type SheetMode = import("./primitives/transform").TransformAxis;
+
+export type DragFrom = import("./primitives/drag-zones").DragFrom;
+
+/** Surfaces the engine can mount a drag gesture on besides the handle. */
+export type DragSurfaceKind = "content";
 
 export type ScrimPreset = "subtle" | "standard" | "monitoring" | "cinematic";
 
@@ -135,6 +142,10 @@ export type EngineOptions = {
 
   flickVelocity?: number;
   dragThreshold?: number;
+  /** Which regions outside the scroll container start a drag. Default: handle when given, else the whole sheet. */
+  dragFrom?: DragFrom;
+  /** Whether a gesture on the scroll container drags the sheet. Default: true. */
+  dragFromContent?: boolean;
   rubberBand?: boolean;
   backdropRange?: [number, number];
   screenRange?: [number, number];
@@ -222,6 +233,11 @@ export type EngineFeatureContext = {
   resyncAfterResize: () => void;
   snapTo: (id: string) => void;
   close: (reason?: CloseReason) => Promise<void>;
+  /** Mounts the engine's own drag physics on another surface, e.g. the scroll container. */
+  attachDragSurface: (
+    surface: HTMLElement,
+    kind: DragSurfaceKind,
+  ) => (() => void) | void;
   on: <K extends keyof SheetEventMap>(
     event: K,
     fn: (payload: SheetEventMap[K]) => void,

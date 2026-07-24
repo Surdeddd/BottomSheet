@@ -49,6 +49,8 @@ npm i @surdeddd/bottom-sheet
 | `persistent` | bool | `false` | block dismissal; programmatic `close()` still works |
 | `disable-close` | bool | `false` | block all closing |
 | `disable-drag` | bool | `false` | suppress the drag gesture |
+| `drag-from` | `handle` \| `sheet` \| `zones` | `handle` | which regions start a drag; `zones` limits it to `[data-bs-drag]` subtrees |
+| `drag-from-content` | bool | `true` | whether a touch gesture on the scroll container drags the sheet |
 | `radius` | length / px | — | corner radius |
 | `max-height` | length / px | — | height cap; a string is re-resolved on viewport changes |
 | `snap` | string | — | active snap id — set it to snap imperatively |
@@ -60,7 +62,7 @@ npm i @surdeddd/bottom-sheet
 ### Live attributes (no re-init)
 
 `radius`, `max-height`, `backdrop-color`, `scrim-color`, `snap`, `persistent`,
-`disable-close` and `disable-drag` apply in place — changing them mutates the
+`disable-close`, `disable-drag` and `drag-from-content` apply in place — changing them mutates the
 running engine without tearing it down. Any other observed attribute triggers a
 re-init. The active snap survives DOM moves and structural re-inits: if the
 current snap id still exists in the new `snap-points`, the element re-opens at

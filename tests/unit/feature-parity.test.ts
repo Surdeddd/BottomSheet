@@ -5,7 +5,7 @@ import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
 import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
 import { __resetRouteCoordinatorForTests } from "../../src/core/features/route";
 import { installFocusTrap } from "../../src/core/lifecycle/focusTrap";
-import { installContentSwipe } from "../../src/core/features/content-swipe";
+import { decideContentGesture } from "../../src/core/primitives/content-gesture";
 
 const makeDom = () => {
   const sheet = document.createElement("section");
@@ -96,55 +96,29 @@ describe("initialFocus: false focuses the container instead of the first field",
   });
 });
 
-describe("content-swipe skips snapping when the gesture scrolled the content", () => {
-  const fire = (
-    el: HTMLElement,
-    type: string,
-    y: number,
-    listKey: "touches" | "changedTouches",
-  ) => {
-    const ev = new Event(type);
-    Object.defineProperty(ev, listKey, { value: [{ clientY: y }] });
-    el.dispatchEvent(ev);
-  };
-
-  const setup = () => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const calls: string[] = [];
-    const detach = installContentSwipe({
-      container,
-      isDragging: () => false,
-      isAnimating: () => false,
-      getAllowedIds: () => ["half", "full"],
-      getActiveId: () => "half",
-      snapTo: id => calls.push(id),
-    });
-    return { container, calls, detach };
-  };
-
-  it("swipe up that also scrolled the container does not expand", () => {
-    const { container, calls, detach } = setup();
-    Object.defineProperty(container, "scrollTop", {
-      value: 0,
-      writable: true,
-      configurable: true,
-    });
-    fire(container, "touchstart", 500, "touches");
-    container.scrollTop = 120;
-    fire(container, "touchmove", 300, "touches");
-    fire(container, "touchend", 300, "changedTouches");
-    expect(calls).toEqual([]);
-    detach();
+describe("content gestures leave a scrolled container to the browser", () => {
+  it("a scrolled container keeps its scroll in both directions", () => {
+    expect(
+      decideContentGesture({ delta: -80, scrollTop: 120, atMaxSnap: true }),
+    ).toBe("scroll");
+    expect(
+      decideContentGesture({ delta: 80, scrollTop: 120, atMaxSnap: false }),
+    ).toBe("scroll");
   });
 
-  it("swipe up without content scroll still expands", () => {
-    const { container, calls, detach } = setup();
-    fire(container, "touchstart", 500, "touches");
-    fire(container, "touchmove", 300, "touches");
-    fire(container, "touchend", 300, "changedTouches");
-    expect(calls).toEqual(["full"]);
-    detach();
+  it("a container at the top drags the sheet", () => {
+    expect(
+      decideContentGesture({ delta: -80, scrollTop: 0, atMaxSnap: true }),
+    ).toBe("drag");
+    expect(
+      decideContentGesture({ delta: 80, scrollTop: 0, atMaxSnap: false }),
+    ).toBe("drag");
+  });
+
+  it("expanding stops at the largest allowed snap", () => {
+    expect(
+      decideContentGesture({ delta: 80, scrollTop: 0, atMaxSnap: true }),
+    ).toBe("scroll");
   });
 });
 

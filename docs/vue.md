@@ -88,7 +88,7 @@ const { sheetRef, handleRef, contentRef, state, snapTo, close } =
 
 `v-model:open` and `v-model:snap` bind the open state and active snap id.
 `backdropColor`, `backdropOpacity`, `radius`, `maxHeight`, `persistent`,
-`disableClose`, `disableDrag`, `snapPoints` (deep) and `allowed` are all
+`disableClose`, `disableDrag`, `dragFromContent`, `snapPoints` (deep) and `allowed` are all
 reactive — changing them after mount applies to the live engine.
 
 ```vue

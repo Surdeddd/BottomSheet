@@ -47,6 +47,8 @@ export type BottomSheetProps<TId extends string = string> = {
   persistent?: boolean;
   disableClose?: boolean;
   disableDrag?: boolean;
+  dragFrom?: EngineOptions["dragFrom"];
+  dragFromContent?: boolean;
   closeOnRouteChange?: boolean;
   stackEffect?: boolean;
   teleport?: boolean;
@@ -125,6 +127,8 @@ export const BottomSheet = <TId extends string = string>(
       persistent: props.persistent,
       disableClose: props.disableClose,
       disableDrag: props.disableDrag,
+      dragFrom: props.dragFrom,
+      dragFromContent: props.dragFromContent,
       closeOnRouteChange: props.closeOnRouteChange,
       stackEffect: props.stackEffect,
       returnFocusTo: props.returnFocusTo,
@@ -249,6 +253,17 @@ export const BottomSheet = <TId extends string = string>(
       (value, prev) => {
         if (!engine || prev === undefined || value === undefined) return;
         engine.setDisableDrag(value);
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.dragFromContent,
+      (value, prev) => {
+        if (!engine || prev === undefined || value === undefined) return;
+        engine.setDragFromContent(value);
       },
       { defer: true },
     ),

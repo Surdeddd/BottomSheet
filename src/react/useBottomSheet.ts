@@ -215,6 +215,7 @@ export function useBottomSheet<TId extends string = string>(
     persistent: opts.persistent,
     disableClose: opts.disableClose,
     disableDrag: opts.disableDrag,
+    dragFromContent: opts.dragFromContent,
   });
 
   const subscribe = useCallback((fn: () => void) => {

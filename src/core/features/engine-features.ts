@@ -2,7 +2,7 @@ import type { EngineFeature } from "../types";
 import { installRoute, installRouteChange } from "./route";
 import { installPersist } from "./persist";
 import { installAutoCollapse } from "./auto-collapse";
-import { installContentSwipe } from "./content-swipe";
+import { installContentDrag } from "./content-drag";
 import { installVisualViewport } from "./visual-viewport";
 import { TeardownStack } from "../primitives/teardown-stack";
 
@@ -71,13 +71,9 @@ export function contentSwipeFeature(): EngineFeature {
     stage: "attach",
     install: ctx => {
       if (!ctx.scrollContainer) return;
-      return installContentSwipe({
+      return installContentDrag({
         container: ctx.scrollContainer,
-        isDragging: ctx.isDragging,
-        isAnimating: ctx.isAnimating,
-        getAllowedIds: ctx.allowedIdsBySize,
-        getActiveId: ctx.getActiveId,
-        snapTo: ctx.snapTo,
+        attachDragSurface: ctx.attachDragSurface,
       });
     },
   };

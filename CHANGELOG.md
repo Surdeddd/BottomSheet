@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Drag zones — `dragFrom` + `[data-bs-drag]` / `[data-bs-no-drag]`** — pick which regions of the sheet start a drag: `"handle"` (default when a handle is given), `"sheet"`, or `"zones"` where only `[data-bs-drag]` subtrees drag. `[data-bs-no-drag]` opts a subtree out in every mode, including inside the scroll container, so carousels and sliders stop hijacking the sheet. The handle always drags, whatever the mode.
+- **`dragFromContent`, per engine and per snap point** — gates whether a touch gesture on the scroll container moves the sheet. Set it globally (`dragFromContent: false`), per point (`{ id: "full", size: "92%", dragFromContent: false }` — content only scrolls while expanded), or at runtime via `setDragFromContent()`. Exposed in every adapter; the custom element reads `drag-from` / `drag-from-content`.
+- **`attachDragSurface` on `EngineFeatureContext`** — features can hand another element to the engine's own drag physics instead of reimplementing them.
+
 - **Slim core entry `@surdeddd/bottom-sheet/core`** — `BottomSheetCore`, the engine without optional features (~17.5 KB gzip vs ~23 KB full). Optional behaviors are now composable `EngineFeature`s registered per instance via the new `features` option; the default `BottomSheetEngine` keeps every feature preinstalled and its behavior is unchanged.
 - **Feature factories entry `@surdeddd/bottom-sheet/features`** — `routeFeature()` (closeOnBack / routedTo / closeOnRouteChange), `visualViewportFeature()`, `contentSwipeFeature()`, `persistFeature()`, `autoCollapseFeature()`, plus `defaultEngineFeatures()`. Passing an option that needs a missing feature dev-warns once.
 - **`settleAnimation: "waapi"` (opt-in)** — snap settles run as a real Web Animations API transform animation (spring trajectory pre-sampled into keyframes, compositor-driven and jank-resistant), while CSS vars / backdrop / `progress` events follow on a lightweight rAF companion. Falls back to the rAF spring automatically when `element.animate` is unavailable and under `prefers-reduced-motion`.
@@ -17,8 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Performance regression gate** — `npm run bench:check` compares hot-path benches against a committed baseline with a 10× floor (order-of-magnitude guard, CI-runner tolerant); wired into CI.
 - **API docs on GitHub Pages** — typedoc build published via `docs-pages.yml` on version tags; https://surdeddd.github.io/BottomSheet/.
 
+### Changed
+
+- **Content gestures follow the finger** — a gesture on the scroll container now drags the sheet in real time (same physics, rubber band and `drag` / `dragend` events as the handle) instead of jumping to the neighbouring snap point after a 60 px threshold swipe. The gesture engages only while the scroller sits at its top; anywhere else the browser keeps the scroll. The `content-swipe` feature keeps its registry name.
+
 ### Fixed
 
+- **Closed sheets no longer paint a shadow band** — a closed sheet stays mounted and is hidden by a transform, which does not clip `box-shadow`, so its upward shadow painted inside the viewport; several pre-mounted closed sheets stacked into a visible band above the tab bar. `--bs-shadow-auto` now fades its alpha to a true zero over the last stretch of travel (identical at full extension), and a fully-closed sheet gets `data-bs-rest="closed"`, which drops `box-shadow` and `visibility` — covering static custom `--bs-shadow` values and the bundled themes as well, and keeping closed sheets out of hit-testing and the accessibility tree.
 - **history-coordinator rebrand queue** — two programmatic middle-of-stack closes in the same tick could drop one marker rebrand (single pending slot); rebrands are now a FIFO queue paired 1:1 with suppressed history pops.
 - `docs:api` script referenced a typedoc that was never installed; typedoc `0.28` is now a real devDependency (and TypeScript is pinned honest at `^5.9.3` — installing the old typedoc `0.25` silently downgraded TS below what `unplugin-vue` typings require).
 

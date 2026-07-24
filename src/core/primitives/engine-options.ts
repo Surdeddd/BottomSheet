@@ -1,4 +1,4 @@
-import type { EngineOptions, SheetMode } from "../types";
+import type { DragFrom, EngineOptions, SheetMode } from "../types";
 import type { ScrimControllerOptions } from "../controllers/scrim-controller";
 import type { AnimationRunnerOptions } from "../controllers/animation-runner";
 import type { LifecycleControllerOptions } from "../controllers/lifecycle-controller";
@@ -13,6 +13,10 @@ export type ResolvedEngineOptions = {
   flickVelocity: number;
 
   dragThreshold: number;
+
+  dragFrom: DragFrom;
+
+  dragFromContent: boolean;
 
   rubberBandEnabled: boolean;
 
@@ -68,6 +72,8 @@ export function resolveEngineOptions(
     mode: opts.mode ?? "bottom",
     flickVelocity: opts.flickVelocity ?? DEFAULT_FLICK_VELOCITY,
     dragThreshold: opts.dragThreshold ?? DEFAULT_DRAG_THRESHOLD,
+    dragFrom: opts.dragFrom ?? (opts.handle ? "handle" : "sheet"),
+    dragFromContent: opts.dragFromContent ?? true,
     rubberBandEnabled: opts.rubberBand ?? true,
     closeOnBack: opts.closeOnBack ?? false,
     persistent: opts.persistent ?? false,

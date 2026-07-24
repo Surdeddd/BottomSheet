@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>drag zones fixture</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f4f4f6;
+        font-family: system-ui, sans-serif;
+      }
+      #controls {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 999;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        background: #fff;
+      }
+      #controls button {
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+      #tabbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 56px;
+        background: #ffffff;
+        z-index: 1;
+      }
+      .row {
+        padding: 12px 4px;
+        border-bottom: 1px solid #e5e5ea;
+      }
+      .zone {
+        padding: 16px;
+        background: #dfe6ff;
+      }
+      .no-drag {
+        padding: 16px;
+        background: #ffe0e0;
+      }
+      /* A static custom shadow: the case that progress-driven fading cannot fix. */
+      .bs-sheet {
+        --bs-shadow: 0 -0.5rem 2.5rem rgba(0, 0, 0, 0.25);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <button id="open-half">half</button>
+      <button id="open-full">full</button>
+      <button id="close">close</button>
+    </div>
+    <div id="tabbar"></div>
+    <div id="mount"></div>
+    <div id="idle-mount"></div>
+    <script type="module" src="./drag-zones.ts"></script>
+  </body>
+</html>

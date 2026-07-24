@@ -25,7 +25,19 @@ import { installSliderKeyboard } from "./features/slider-keyboard";
 import { ScrimController } from "./controllers/scrim-controller";
 import { AnimationRunner } from "./controllers/animation-runner";
 import { LifecycleController } from "./controllers/lifecycle-controller";
-import { GestureController } from "./controllers/gesture-controller";
+import {
+  GestureController,
+  type GestureControllerDeps,
+} from "./controllers/gesture-controller";
+import type { GestureOptions } from "./gestures";
+import {
+  isDragAllowedFrom,
+  DRAG_ZONE_SELECTOR,
+  NO_DRAG_SELECTOR,
+  type DragFrom,
+} from "./primitives/drag-zones";
+import { decideContentGesture } from "./primitives/content-gesture";
+import { installTouchScrollGuard } from "./primitives/touch-scroll-guard";
 import { AriaSliderWriter } from "./primitives/aria-slider-writer";
 import {
   OPACITY_WRITE_EPSILON,
@@ -46,6 +58,7 @@ import { TeardownStack } from "./primitives/teardown-stack";
 import { WriteSentinel } from "./primitives/opacity-dedup";
 import type {
   CloseReason,
+  DragSurfaceKind,
   EngineFeature,
   EngineFeatureContext,
   EngineFeatureStage,
@@ -76,6 +89,8 @@ export class BottomSheetCore {
   private mode: SheetMode;
   private flickVelocity: number;
   private dragThreshold: number;
+  private dragFromMode: DragFrom;
+  private dragFromContentDefault: boolean;
   private rubberBandEnabled: boolean;
   private scrim!: ScrimController;
   private aria!: AriaSliderWriter;
@@ -95,8 +110,10 @@ export class BottomSheetCore {
 
   private size = 0;
   private gesture: GestureController | undefined;
+  private contentGesture: GestureController | undefined;
   private rootEl: HTMLElement | null = null;
   private destroyed = false;
+  private restClosed = false;
   private currentViewTransition: {
     finished: Promise<void>;
     skipTransition?: () => void;
@@ -162,6 +179,8 @@ export class BottomSheetCore {
     this.aria = new AriaSliderWriter(this.handle, this.mode);
     this.flickVelocity = resolved.flickVelocity;
     this.dragThreshold = resolved.dragThreshold;
+    this.dragFromMode = resolved.dragFrom;
+    this.dragFromContentDefault = resolved.dragFromContent;
     this.rubberBandEnabled = resolved.rubberBandEnabled;
     this.scrim = new ScrimController(
       {
@@ -188,7 +207,7 @@ export class BottomSheetCore {
         getRootEl: () => this.rootEl,
         applySize: (size: number) => this.applySize(size),
         getSize: () => this.size,
-        isDragging: () => this.gesture?.isDragging ?? false,
+        isDragging: () => this.isDraggingAny(),
         applyAux: (size: number) => this.applySize(size, true),
         getTransformFor: (size: number) =>
           this.transformTemplate(this.snaps.getMaxAxisSize() - size),
@@ -255,6 +274,7 @@ export class BottomSheetCore {
     const initial = this.snaps.findById(this.activeId);
     if (initial) this.size = initial.size;
     this.applySize(this.size);
+    this.setRestClosed(this.size === 0);
     this.updateAriaSlider();
 
     this.scrollCache = createScrollCache({
@@ -294,7 +314,7 @@ export class BottomSheetCore {
             p => p.size === "fit" || p.size === "content",
           ),
         isDestroyed: () => this.destroyed,
-        isDragging: () => this.gesture?.isDragging ?? false,
+        isDragging: () => this.isDraggingAny(),
         recompute: () => this.recompute(),
       }),
     );
@@ -326,7 +346,7 @@ export class BottomSheetCore {
         autoCollapseAfter,
       },
       isDestroyed: () => this.destroyed,
-      isDragging: () => this.gesture?.isDragging ?? false,
+      isDragging: () => this.isDraggingAny(),
       isAnimating: () => this.animation.isAnimating,
       isTopSheet: () => this.isTopSheet,
       isVerticalAxis: () => this.mode === "bottom" || this.mode === "top",
@@ -356,6 +376,8 @@ export class BottomSheetCore {
         void this.snapTo(id);
       },
       close: reason => this.close(reason),
+      attachDragSurface: (surface, kind) =>
+        this.attachDragSurface(surface, kind),
       on: (event, fn) => this.on(event, fn),
       addTeardown: fn => this.teardowns.add(fn),
     };
@@ -390,7 +412,7 @@ export class BottomSheetCore {
     return {
       size: this.size,
       activeId: this.activeId,
-      isDragging: this.gesture?.isDragging ?? false,
+      isDragging: this.isDraggingAny(),
       isAnimating: this.animation.isAnimating,
       progress: this.computeProgress(this.size),
     };
@@ -539,8 +561,17 @@ export class BottomSheetCore {
       progress: this.computeProgress(this.size),
     });
     if (withHaptic) this.haptic();
+    this.setRestClosed(targetSize === 0);
     if (wasClosed && targetSize > 0) this.emitOpenSequence(id);
     if (targetSize === 0) this.emitCloseSequence();
+  }
+
+  /** Fully-closed sheets stay mounted; the flag lets CSS drop their shadow and hit-testing. */
+  private setRestClosed(closed: boolean): void {
+    if (closed === this.restClosed) return;
+    this.restClosed = closed;
+    if (closed) this.element.setAttribute("data-bs-rest", "closed");
+    else this.element.removeAttribute("data-bs-rest");
   }
 
   private emitOpenSequence(id: string): void {
@@ -623,6 +654,11 @@ export class BottomSheetCore {
   setDisableDrag(value: boolean): void {
     if (this.destroyed) return;
     this.disableDragFlag = value;
+  }
+
+  setDragFromContent(value: boolean): void {
+    if (this.destroyed) return;
+    this.dragFromContentDefault = value;
   }
 
   isTop(): boolean {
@@ -815,7 +851,7 @@ export class BottomSheetCore {
     this.snaps.recompute();
     this.maxHeight.clampTo();
     this.scrim.invalidateOpacityCache();
-    if (this.gesture?.isDragging) return;
+    if (this.isDraggingAny()) return;
     this.healActiveSnap();
   }
 
@@ -844,6 +880,8 @@ export class BottomSheetCore {
     this.bus.clear();
     this.animation.cancel();
     this.gesture?.forceClearDragState();
+    this.contentGesture?.forceClearDragState();
+    this.setRestClosed(false);
     this.teardowns.drain();
     this.scrim.destroy();
     this.animation.destroy();
@@ -985,11 +1023,15 @@ export class BottomSheetCore {
     this.element.style.scale = scale === 1 ? "" : String(scale);
   }
 
-  private attach(): void {
-    this.gesture = new GestureController({
-      handle: this.handle,
+  private buildGestureDeps(
+    surface: HTMLElement,
+    gestureOptions: GestureOptions,
+  ): GestureControllerDeps {
+    return {
+      handle: surface,
       element: this.element,
       mode: this.mode,
+      gestureOptions,
       getRoot: () => this.rootEl,
       getDragContext: () => {
         const buf = this.dragContextBuf;
@@ -1009,8 +1051,102 @@ export class BottomSheetCore {
         this.settleAfterDrag(delta, velocity, kind),
       emit: (event, payload) => this.emit(event, payload),
       listenerCount: event => this.bus.listenerCount(event),
+    };
+  }
+
+  /** Whether the active snap point lets a content gesture move the sheet. */
+  private isContentDragAllowed(): boolean {
+    if (this.disableDragFlag) return false;
+    const point = this.snapPointsRaw.find(p => p.id === this.activeId);
+    return point?.dragFromContent ?? this.dragFromContentDefault;
+  }
+
+  private decideContentDrag(
+    surface: HTMLElement,
+    e: PointerEvent,
+    delta: number,
+  ): boolean | null {
+    if (this.destroyed) return false;
+    if (e.pointerType === "mouse") return false;
+    if (this.gesture?.isDragging) return false;
+    if (!this.isContentDragAllowed()) return false;
+    if (!isDragAllowedFrom(e.target, "sheet")) return false;
+    const decision = decideContentGesture({
+      delta,
+      scrollTop: surface.scrollTop,
+      atMaxSnap: this.size >= this.getAllowedRange().max - 0.5,
     });
+    if (decision === "pending") return null;
+    return decision === "drag";
+  }
+
+  private attachDragSurface(
+    surface: HTMLElement,
+    kind: DragSurfaceKind,
+  ): (() => void) | void {
+    if (this.destroyed || kind !== "content") return;
+    if (this.contentGesture) return;
+    const controller = new GestureController(
+      this.buildGestureDeps(surface, {
+        manageTouchAction: false,
+        deferStart: (e, delta) => this.decideContentDrag(surface, e, delta),
+      }),
+    );
+    this.contentGesture = controller;
+    const detachGestures = controller.install();
+    const detachGuard = installTouchScrollGuard(
+      surface,
+      () => controller.isDragging,
+    );
+    return () => {
+      detachGuard();
+      detachGestures();
+      if (this.contentGesture === controller) this.contentGesture = undefined;
+    };
+  }
+
+  /** The handle gesture covers the handle only; wider modes move to the sheet element. */
+  private sheetDragSurface(): HTMLElement {
+    return this.dragFromMode === "handle" ? this.handle : this.element;
+  }
+
+  private canStartSheetDrag(e: PointerEvent): boolean {
+    if (this.contentGesture?.isDragging) return false;
+    const target = e.target as Element | null;
+    const scoped = typeof target?.closest === "function";
+    if (scoped && target.closest(NO_DRAG_SELECTOR)) return false;
+    // The handle drags in every mode, zones or not.
+    if (this.handle !== this.element && scoped && this.handle.contains(target)) {
+      return true;
+    }
+    if (!isDragAllowedFrom(e.target, this.dragFromMode)) return false;
+    if (this.dragFromMode === "handle") return true;
+    // The scroll container runs its own gesture; only an explicit zone overrides it.
+    if (
+      this.scrollContainer &&
+      scoped &&
+      this.scrollContainer.contains(target) &&
+      !target.closest(DRAG_ZONE_SELECTOR)
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  private attach(): void {
+    const surface = this.sheetDragSurface();
+    this.gesture = new GestureController(
+      this.buildGestureDeps(surface, {
+        shouldStart: e => this.canStartSheetDrag(e),
+        manageTouchAction: this.dragFromMode === "handle",
+      }),
+    );
     this.teardowns.add(this.gesture!.install());
+    if (this.dragFromMode !== "handle") {
+      this.teardowns.add(
+        installTouchScrollGuard(surface, () => this.gesture?.isDragging ?? false),
+      );
+    }
 
     try {
       this.attachFeatures();
@@ -1050,7 +1186,7 @@ export class BottomSheetCore {
         element: this.element,
         getMode: () => this.mode as TransformAxis,
         isDestroyed: () => this.destroyed,
-        isDragging: () => this.gesture?.isDragging ?? false,
+        isDragging: () => this.isDraggingAny(),
         resolveActiveSnap: () => this.snaps.findById(this.activeId),
         getMaxAxisSize: () => this.snaps.getMaxAxisSize(),
         getSize: () => this.size,
@@ -1160,8 +1296,15 @@ export class BottomSheetCore {
     });
   }
 
+  private isDraggingAny(): boolean {
+    return (
+      (this.gesture?.isDragging ?? false) ||
+      (this.contentGesture?.isDragging ?? false)
+    );
+  }
+
   private clearWillChangeIfIdle(): void {
-    if (this.animation.isAnimating || this.gesture?.isDragging) return;
+    if (this.animation.isAnimating || this.isDraggingAny()) return;
     this.element.style.willChange = "";
   }
 
@@ -1178,10 +1321,11 @@ export class BottomSheetCore {
   private applySize(size: number, skipTransform = false): void {
     const cap = this.snaps.getMaxAxisSize();
     const clamped =
-      cap > 0 && size > cap && !this.gesture?.isDragging && !this.allowOvershoot
+      cap > 0 && size > cap && !this.isDraggingAny() && !this.allowOvershoot
         ? cap
         : size;
     this.size = clamped;
+    if (clamped > 0) this.setRestClosed(false);
     const offset = cap - clamped;
     const style = this.element.style;
     if (!skipTransform) style.transform = this.transformTemplate(offset);

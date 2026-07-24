@@ -88,6 +88,8 @@ export type BottomSheetProps<TId extends string = string> = {
   persistent?: boolean;
   disableClose?: boolean;
   disableDrag?: boolean;
+  dragFrom?: "handle" | "sheet" | "zones";
+  dragFromContent?: boolean;
   closeOnRouteChange?: boolean;
   stackEffect?: boolean;
   teleport?: boolean;

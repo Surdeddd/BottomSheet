@@ -34,6 +34,8 @@
     persistent?: boolean;
     disableClose?: boolean;
     disableDrag?: boolean;
+    dragFrom?: EngineOptions["dragFrom"];
+    dragFromContent?: boolean;
     closeOnRouteChange?: boolean;
     stackEffect?: boolean;
     teleport?: boolean;
@@ -84,6 +86,8 @@
     persistent = false,
     disableClose = false,
     disableDrag = false,
+    dragFrom,
+    dragFromContent,
     closeOnRouteChange = false,
     stackEffect = false,
     teleport = false,
@@ -158,6 +162,8 @@
       persistent,
       disableClose,
       disableDrag,
+      dragFrom,
+      dragFromContent,
       closeOnRouteChange,
       stackEffect,
       radius,
@@ -271,6 +277,11 @@
   });
   $effect(() => {
     engine?.setDisableDrag(disableDrag);
+  });
+  $effect(() => {
+    if (dragFromContent !== undefined) {
+      engine?.setDragFromContent(dragFromContent);
+    }
   });
   $effect(() => {
     if (radius !== undefined) engine?.setRadius(radius);

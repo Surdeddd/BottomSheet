@@ -220,6 +220,14 @@ watch(
   },
 );
 
+watch(
+  () => props.dragFromContent,
+  next => {
+    if (next === undefined) return;
+    getEngine()?.setDragFromContent(next);
+  },
+);
+
 const mounted = ref(false);
 const anchorHosts = shallowRef<Record<string, HTMLElement>>({});
 const anchorDetachers = ref<Array<() => void>>([]);

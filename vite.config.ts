@@ -52,6 +52,7 @@ export default defineConfig({
         dismissible: resolve(__dirname, "demo/fixtures/dismissible.html"),
         mountOpen: resolve(__dirname, "demo/fixtures/mount-open.html"),
         waapi: resolve(__dirname, "demo/fixtures/waapi.html"),
+        dragZones: resolve(__dirname, "demo/fixtures/drag-zones.html"),
       },
     },
   },

@@ -181,7 +181,7 @@ Snippet props: `header` / `footer` (receive the state), `children`,
 `onsnap`, `onbeforesnap`, `onopen`, `onopened`, `onclose`, `onclosed`,
 `onbeforeclose`, `ondragstart`, `ondragend`, `ondrag`, `onprogress`,
 `onchange`. `bind:open` and `bind:snap` are two-way; `persistent`,
-`disableClose`, `disableDrag`, `radius`, `maxHeight`, `backdropColor`,
+`disableClose`, `disableDrag`, `dragFromContent`, `radius`, `maxHeight`, `backdropColor`,
 `backdropOpacity`, `snapPoints` and `allowed` are reactive. `onbeforesnap` /
 `onbeforeclose` cancel synchronously; `ondrag` / `onprogress` only subscribe
 when the handler is supplied at mount.

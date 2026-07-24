@@ -10,6 +10,18 @@ export type GestureCallbacks = {
   onCancel?: () => void;
 };
 
+export type GestureOptions = {
+  /** Rejects a pointerdown outright — used for drag zones. */
+  shouldStart?: (e: PointerEvent) => boolean;
+  /**
+   * Postpones the gesture to the first move: `true` starts it, `false` hands the
+   * pointer back to the browser, `null` waits for more movement.
+   */
+  deferStart?: (e: PointerEvent, delta: number) => boolean | null;
+  /** Scroll containers must keep their own touch-action. */
+  manageTouchAction?: boolean;
+};
+
 const isAxisVertical = (mode: SheetMode) => mode === "bottom" || mode === "top";
 
 class SampleRing {
@@ -65,11 +77,13 @@ export const installGestures = (
   handle: HTMLElement,
   mode: SheetMode,
   callbacks: GestureCallbacks,
+  options: GestureOptions = {},
 ): (() => void) => {
   let activePointerId: number | null = null;
   let activePointerType: PointerKind = "touch";
   let startCoord = 0;
   let lastCoord = 0;
+  let pendingStart = false;
   const VELOCITY_WINDOW_MS = (kind: PointerKind) =>
     kind === "mouse" ? 160 : 120;
   const MAX_SAMPLES = 32;
@@ -81,9 +95,23 @@ export const installGestures = (
   const coordOf = (e: PointerEvent): number =>
     axis === "Y" ? e.clientY : e.clientX;
 
+  const capture = (pointerId: number): void => {
+    try {
+      handle.setPointerCapture(pointerId);
+    } catch {
+    }
+  };
+
+  const releaseTracking = (): void => {
+    activePointerId = null;
+    pendingStart = false;
+    samples.reset();
+  };
+
   const onPointerDown = (e: PointerEvent) => {
     if (activePointerId !== null) return;
     if (e.button !== undefined && e.button !== 0) return;
+    if (options.shouldStart && !options.shouldStart(e)) return;
     activePointerId = e.pointerId;
     activePointerType =
       (e.pointerType as PointerKind) || "touch";
@@ -91,10 +119,11 @@ export const installGestures = (
     lastCoord = startCoord;
     samples.reset();
     samples.push(e.timeStamp, startCoord);
-    try {
-      handle.setPointerCapture(e.pointerId);
-    } catch {
+    if (options.deferStart) {
+      pendingStart = true;
+      return;
     }
+    capture(e.pointerId);
     callbacks.onStart(startCoord, activePointerType);
   };
 
@@ -103,6 +132,23 @@ export const installGestures = (
     const coord = coordOf(e);
     const rawDelta = coord - startCoord;
     const delta = rawDelta * sign;
+    if (pendingStart) {
+      const verdict = options.deferStart!(e, delta);
+      if (verdict === false) {
+        releaseTracking();
+        return;
+      }
+      if (verdict !== true) return;
+      pendingStart = false;
+      // Restart from where the finger is now, so the sheet does not jump by the slop.
+      startCoord = coord;
+      lastCoord = coord;
+      samples.reset();
+      samples.push(e.timeStamp, coord);
+      capture(e.pointerId);
+      callbacks.onStart(startCoord, activePointerType);
+      return;
+    }
     lastCoord = coord;
     samples.push(e.timeStamp, coord);
     const cutoff = e.timeStamp - VELOCITY_WINDOW_MS(activePointerType);
@@ -112,6 +158,10 @@ export const installGestures = (
 
   const finishGesture = (e: PointerEvent) => {
     if (e.pointerId !== activePointerId) return;
+    if (pendingStart) {
+      releaseTracking();
+      return;
+    }
     const rawDelta = lastCoord - startCoord;
     const delta = rawDelta * sign;
     let velocity = 0;
@@ -135,8 +185,9 @@ export const installGestures = (
 
   const onPointerCancel = (e: PointerEvent) => {
     if (e.pointerId !== activePointerId) return;
-    activePointerId = null;
-    samples.reset();
+    const wasPending = pendingStart;
+    releaseTracking();
+    if (wasPending) return;
     callbacks.onCancel?.();
   };
 
@@ -144,15 +195,18 @@ export const installGestures = (
   handle.addEventListener("pointermove", onPointerMove);
   handle.addEventListener("pointerup", finishGesture);
   handle.addEventListener("pointercancel", onPointerCancel);
+  const managesTouchAction = options.manageTouchAction !== false;
   const prevTouchAction = handle.style.touchAction;
-  handle.style.touchAction = isAxisVertical(mode) ? "pan-x" : "pan-y";
+  if (managesTouchAction) {
+    handle.style.touchAction = isAxisVertical(mode) ? "pan-x" : "pan-y";
+  }
 
   return () => {
     handle.removeEventListener("pointerdown", onPointerDown);
     handle.removeEventListener("pointermove", onPointerMove);
     handle.removeEventListener("pointerup", finishGesture);
     handle.removeEventListener("pointercancel", onPointerCancel);
-    handle.style.touchAction = prevTouchAction;
+    if (managesTouchAction) handle.style.touchAction = prevTouchAction;
     if (activePointerId !== null && handle.hasPointerCapture(activePointerId)) {
       handle.releasePointerCapture(activePointerId);
     }

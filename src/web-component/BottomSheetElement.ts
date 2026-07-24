@@ -17,6 +17,9 @@ import {
   ATTR_CLOSE_ON_ROUTE_CHANGE,
   ATTR_DISABLE_CLOSE,
   ATTR_DISABLE_DRAG,
+  ATTR_DRAG_FROM,
+  ATTR_DRAG_FROM_CONTENT,
+  parseDragFrom,
   ATTR_FOCUS_TRAP,
   ATTR_INITIAL,
   ATTR_LOCK_BODY_SCROLL,
@@ -139,6 +142,9 @@ export class BottomSheetElement extends BaseHTMLElement {
       case ATTR_DISABLE_DRAG:
         this.engine.setDisableDrag(value === "true");
         break;
+      case ATTR_DRAG_FROM_CONTENT:
+        this.engine.setDragFromContent(value !== "false");
+        break;
       case ATTR_SNAP:
         if (value && value !== this.engine.state.activeId) {
           void this.engine.snapTo(value);
@@ -222,6 +228,11 @@ export class BottomSheetElement extends BaseHTMLElement {
       persistent: this.getAttribute(ATTR_PERSISTENT) === "true",
       disableClose: this.getAttribute(ATTR_DISABLE_CLOSE) === "true",
       disableDrag: this.getAttribute(ATTR_DISABLE_DRAG) === "true",
+      dragFrom: parseDragFrom(this.getAttribute(ATTR_DRAG_FROM)),
+      dragFromContent:
+        this.getAttribute(ATTR_DRAG_FROM_CONTENT) === null
+          ? undefined
+          : this.getAttribute(ATTR_DRAG_FROM_CONTENT) !== "false",
       closeOnRouteChange:
         this.getAttribute(ATTR_CLOSE_ON_ROUTE_CHANGE) === "true",
       radius: parseDimension(this.getAttribute(ATTR_RADIUS)),

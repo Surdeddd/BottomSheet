@@ -111,10 +111,11 @@ type BottomSheetHandle = {
 ```
 
 Runtime setters that aren't on the handle — `setPersistent`, `setDisableClose`,
-`setDisableDrag`, `setRadius`, `setMaxHeight`, `getResolvedSnaps` — are reached
-via `getEngine()`. The `persistent` / `disableClose` / `disableDrag` / `radius`
-/ `maxHeight` props are also **reactive**: changing them after mount applies to
-the live engine without a remount.
+`setDisableDrag`, `setDragFromContent`, `setRadius`, `setMaxHeight`,
+`getResolvedSnaps` — are reached via `getEngine()`. The `persistent` /
+`disableClose` / `disableDrag` / `dragFromContent` / `radius` / `maxHeight`
+props are also **reactive**: changing them after mount applies to the live
+engine without a remount. `dragFrom` is read at mount.
 
 `open()` / `snapTo()` are safe to call **synchronously in the mount tick** (e.g.
 a mount `useEffect` / `useLayoutEffect`) — no `requestAnimationFrame` delay is

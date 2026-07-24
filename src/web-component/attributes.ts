@@ -20,6 +20,8 @@ export const ATTR_STACK_EFFECT = "stack-effect";
 export const ATTR_PERSISTENT = "persistent";
 export const ATTR_DISABLE_CLOSE = "disable-close";
 export const ATTR_DISABLE_DRAG = "disable-drag";
+export const ATTR_DRAG_FROM = "drag-from";
+export const ATTR_DRAG_FROM_CONTENT = "drag-from-content";
 export const ATTR_CLOSE_ON_ROUTE_CHANGE = "close-on-route-change";
 export const ATTR_RADIUS = "radius";
 export const ATTR_MAX_HEIGHT = "max-height";
@@ -37,6 +39,7 @@ export const LIVE_ATTRS: ReadonlySet<string> = new Set([
   ATTR_PERSISTENT,
   ATTR_DISABLE_CLOSE,
   ATTR_DISABLE_DRAG,
+  ATTR_DRAG_FROM_CONTENT,
 ]);
 
 export const OBSERVED_ATTRS: ReadonlyArray<string> = [
@@ -54,6 +57,8 @@ export const OBSERVED_ATTRS: ReadonlyArray<string> = [
   ATTR_PERSISTENT,
   ATTR_DISABLE_CLOSE,
   ATTR_DISABLE_DRAG,
+  ATTR_DRAG_FROM,
+  ATTR_DRAG_FROM_CONTENT,
   ATTR_CLOSE_ON_ROUTE_CHANGE,
   ATTR_RADIUS,
   ATTR_MAX_HEIGHT,
@@ -126,6 +131,19 @@ export const parseAnimation = (
 ): EngineOptions["animation"] =>
   raw && (VALID_ANIMATIONS as readonly string[]).includes(raw)
     ? (raw as EngineOptions["animation"])
+    : undefined;
+
+const VALID_DRAG_FROM: ReadonlyArray<NonNullable<EngineOptions["dragFrom"]>> = [
+  "handle",
+  "sheet",
+  "zones",
+];
+
+export const parseDragFrom = (
+  raw: string | null,
+): EngineOptions["dragFrom"] =>
+  raw && (VALID_DRAG_FROM as readonly string[]).includes(raw)
+    ? (raw as EngineOptions["dragFrom"])
     : undefined;
 
 export const parseList = (raw: string | null): string[] | undefined =>

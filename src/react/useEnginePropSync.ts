@@ -12,6 +12,7 @@ type PropSyncOpts = {
   persistent?: boolean;
   disableClose?: boolean;
   disableDrag?: boolean;
+  dragFromContent?: boolean;
 };
 
 export function useEnginePropSync(
@@ -96,6 +97,13 @@ export function useEnginePropSync(
   useEffect(() => {
     if (opts.disableDrag !== undefined) {
       engineRef.current?.setDisableDrag(opts.disableDrag);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts.disableDrag]);
+
+  useEffect(() => {
+    if (opts.dragFromContent !== undefined) {
+      engineRef.current?.setDragFromContent(opts.dragFromContent);
     }
   }, [opts.disableDrag]);
 }

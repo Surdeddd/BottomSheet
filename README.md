@@ -248,6 +248,8 @@ type SnapPoint =
 | `persistent`         | `false`       | Block dismissal (backdrop / Escape / back); programmatic `close()` still works                                             |
 | `disableClose`       | `false`       | Block all closing, including programmatic                                                                                  |
 | `disableDrag`        | `false`       | Suppress the drag gesture (imperative snaps still work)                                                                    |
+| `dragFrom`           | `"handle"`    | Which regions start a drag: `"handle"`, `"sheet"` (whole sheet), or `"zones"` (only `[data-bs-drag]` subtrees). Defaults to `"sheet"` when no handle is given. `[data-bs-no-drag]` opts a subtree out in every mode |
+| `dragFromContent`    | `true`        | Whether a touch gesture on the scroll container drags the sheet; override per snap point with `{ id, size, dragFromContent: false }`. Also `setDragFromContent()` |
 | `radius`             | token default | Corner radius (`string` CSS length or `number` px); also `setRadius()`                                                     |
 | `maxHeight`          | none          | Cap the sheet height. `number` (px) or a string (`"92dvh"`, `"50%"`) re-resolved on viewport / orientation changes         |
 | `returnFocusTo`      | opener        | Focus target on dismiss — an `HTMLElement`, a selector `string`, or a `() => HTMLElement` factory                          |

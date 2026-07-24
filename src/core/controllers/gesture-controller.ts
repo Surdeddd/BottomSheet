@@ -1,4 +1,4 @@
-import { installGestures } from "../gestures";
+import { installGestures, type GestureOptions } from "../gestures";
 import { rubberBand } from "../primitives/rubber-band";
 import { dismissSoftKeyboardIfFocused } from "../features/soft-keyboard";
 import type { SheetMode, SheetEventMap } from "../types";
@@ -7,6 +7,7 @@ export type GestureControllerDeps = {
   handle: HTMLElement;
   element: HTMLElement;
   mode: SheetMode;
+  gestureOptions?: GestureOptions;
   getRoot: () => HTMLElement | null;
 
   getDragContext: () => {
@@ -127,7 +128,7 @@ export class GestureController {
         const restoreTo = this.dragStartSize;
         void this.deps.animateTo(restoreTo, 0);
       },
-    });
+    }, this.deps.gestureOptions);
     return this.detach;
   }
 
