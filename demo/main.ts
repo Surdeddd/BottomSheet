@@ -367,6 +367,19 @@ void initHero3D(heroStage).then(handle => {
 initMotionFx();
 initFeatureViz();
 
+// Read the real version rather than restating it — the footer had drifted to
+// v0.1 while the package was on 0.13.0.
+void (async () => {
+  const slot = document.getElementById("footer-version");
+  if (!slot) return;
+  try {
+    const pkg = (await import("../package.json")) as { version?: string };
+    if (pkg.version) slot.textContent = `v${pkg.version}`;
+  } catch {
+    // leave the markup fallback in place
+  }
+})();
+
 $<HTMLButtonElement>("#install-copy")?.addEventListener("click", async () => {
   const label = $<HTMLElement>("#install-copy-label");
   try {

@@ -655,6 +655,48 @@ kbd {
   }
 }
 
+/* ——— footer links ——— */
+.footer-links {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:0 28px;
+  margin:26px 0 18px
+}
+.footer-links a {
+  font-family:var(--mono);
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-2);
+  text-decoration:none;
+  min-height:40px;
+  display:inline-flex;
+  align-items:center;
+  position:relative;
+  transition:color var(--t-fast) var(--e-out)
+}
+.footer-links a::after {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:8px;
+  height:1px;
+  background:var(--vermillion);
+  transform:scaleX(0);
+  transform-origin:left center;
+  transition:transform var(--t-base) var(--e-out)
+}
+.footer-links a:hover,
+.footer-links a:focus-visible {
+  color:var(--vermillion)
+}
+.footer-links a:hover::after,
+.footer-links a:focus-visible::after {
+  transform:scaleX(1)
+}
+
 /* ——— per-feature diagrams ——— */
 .feature-viz {
   margin:4px 0 2px;
