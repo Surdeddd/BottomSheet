@@ -1,12 +1,17 @@
 import { $, type Settings } from "./types";
+import { snapPoints } from "../apps/shared";
 
 export type EditableSnap = { id: string; size: number };
 
-export const defaultSnaps = (): EditableSnap[] => [
-  { id: "minimized", size: 110 },
-  { id: "half", size: 320 },
-  { id: "full", size: 620 },
-];
+/**
+ * Derived from the demo's own snap config rather than restated here — the two
+ * lists had already drifted (the editor offered full: 620 against the sheet's
+ * 520), so the editor opened pre-seeded with sizes the sheet never used.
+ */
+export const defaultSnaps = (): EditableSnap[] =>
+  snapPoints("bottom")
+    .filter(s => s.id !== "closed" && typeof s.size === "number")
+    .map(s => ({ id: s.id, size: s.size as number }));
 
 let customSnaps: EditableSnap[] | null = null;
 

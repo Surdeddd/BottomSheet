@@ -1295,13 +1295,16 @@ kbd {
 .c-a {
   color:#c4a47a
 }
+/* Six groups, so the track count has to divide six or the last row leaves a
+   ragged hole: 340px lands on 3 / 2 / 1 columns as the page narrows. */
 .controls {
   max-width:1320px;
   margin:0 auto;
   padding:48px 48px 56px;
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:0;
+  grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));
+  column-gap:0;
+  row-gap:44px;
   border-bottom:1px solid var(--hairline-strong)
 }
 .control-group {
@@ -1317,6 +1320,29 @@ kbd {
 .control-group:last-child {
   border-right:none;
   padding-right:0
+}
+/* the rule belongs at the end of each row, not just the end of the list */
+@media (min-width:781px) {
+  .control-group:nth-child(3n) {
+    border-right:none
+  }
+  .control-group:nth-child(3n+1) {
+    padding-left:0
+  }
+}
+@media (max-width:780px) and (min-width:521px) {
+  .control-group:nth-child(2n) {
+    border-right:none
+  }
+  .control-group:nth-child(2n+1) {
+    padding-left:0
+  }
+}
+@media (max-width:520px) {
+  .control-group {
+    border-right:none;
+    padding:0
+  }
 }
 .control-title {
   font-family:var(--mono);
