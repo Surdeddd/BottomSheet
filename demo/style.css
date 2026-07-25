@@ -917,12 +917,14 @@ kbd {
 
 /* WebGL stage sits behind the type; it only ever mounts when the scene runs. */
 /* Sticky so the phone stays in frame while the sheet walks its snap ladder. */
+/* Clears the kicker line above and the stats row below: the scene sits in the
+   band between them, so it never has to compete with type it cannot move. */
 .hero-stage {
   position:absolute;
-  top:24px;
-  right:24px;
-  width:min(46%,520px);
-  height:min(460px,52vh);
+  top:76px;
+  right:0;
+  width:min(54%,660px);
+  height:min(470px,50vh);
   pointer-events:none;
   z-index:0;
   opacity:0;

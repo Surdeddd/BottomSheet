@@ -111,8 +111,9 @@ export const initHero3D = async (
   };
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-  camera.position.set(0, 0, 11);
+  // closer and wider: the phone was reading as a thumbnail in the corner
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  camera.position.set(0, 0, 8.2);
 
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -472,6 +473,15 @@ export const initHero3D = async (
   let t = 0;
   let curX = 0;
   let curY = 0;
+  /**
+   * Entrance: the rig swings in from a steeper angle and settles, so the scene
+   * arrives rather than being suddenly present. Purely additive on top of the
+   * scroll-driven pose, and it is over within a second.
+   */
+  let intro = 0;
+  const INTRO_MS = 1100;
+  const introStart = performance.now();
+  const easeOut = (x: number): number => 1 - Math.pow(1 - x, 3);
   const STIFFNESS = 150;
   const DAMPING = 20;
 
@@ -502,12 +512,20 @@ export const initHero3D = async (
     curX += (targetX - curX) * 0.045;
     curY += (targetY - curY) * 0.045;
     // pull the rig broadside as it comes apart, so the layers read as layers
-    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04 + explodeShown * 0.46;
+    intro = easeOut(
+      Math.min((performance.now() - introStart) / INTRO_MS, 1),
+    );
+    const entry = 1 - intro;
+
+    rig.rotation.y =
+      0.52 + curX * 0.3 + Math.sin(t) * 0.04 + explodeShown * 0.46 + entry * 0.7;
     rig.rotation.x =
-      -0.2 + curY * 0.16 + Math.cos(t * 0.8) * 0.02 - explodeShown * 0.12;
-    rig.rotation.z = explodeShown * 0.05;
+      -0.2 + curY * 0.16 + Math.cos(t * 0.8) * 0.02 - explodeShown * 0.12 -
+      entry * 0.25;
+    rig.rotation.z = explodeShown * 0.05 + entry * 0.1;
     // ease back as it opens up, so the wider spread still stays in frame
-    rig.scale.setScalar(1 - explodeShown * 0.2);
+    rig.scale.setScalar((1 - explodeShown * 0.2) * (0.82 + intro * 0.18));
+    rig.position.x = entry * 0.9;
     rig.position.y = Math.sin(t * 1.2) * 0.05;
 
     // clipping planes live in world space, so re-derive it from the tilted rig
