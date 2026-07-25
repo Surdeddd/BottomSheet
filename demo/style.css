@@ -561,6 +561,18 @@ kbd {
   margin:0 0 28px;
   max-width:44ch
 }
+/* Only meaningful where the scene exists; below 900px there is nothing to
+   pull apart, so the instruction would be a lie. */
+.assembly-hint {
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--vermillion);
+  margin:0 0 22px
+}
+@media (max-width:900px) {
+  .assembly-hint { display:none }
+}
 .assembly-legend {
   list-style:none;
   margin:0;
@@ -1242,7 +1254,10 @@ kbd {
   line-height:1.65;
   border-radius:4px;
   overflow-x:auto;
-  white-space:pre;
+  /* Wrap rather than clip: the snippet is the point of the panel, and a
+     horizontal scrollbar hid the right-hand half of every long line. */
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
   letter-spacing:-.005em;
   position:relative
 }

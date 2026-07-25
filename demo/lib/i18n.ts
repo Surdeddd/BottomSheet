@@ -13,7 +13,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.advanced": "§ 04 — advanced",
     "asm.title": "Five layers, one gesture",
     "asm.lede":
-      "Scroll to pull the sheet apart. Every layer below is a real node the engine owns — nothing here is a picture of a sheet.",
+      "Every layer below is a real node the engine owns — nothing here is a picture of a sheet.",
+    "asm.hint": "↓ scroll to pull it apart",
     "asm.l1": "Backdrop",
     "asm.l1.note": "opacity tracks progress",
     "asm.l2": "Scrim",
@@ -136,7 +137,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.advanced": "§ 04 — расширенное",
     "asm.title": "Пять слоёв, один жест",
     "asm.lede":
-      "Прокрути, чтобы разобрать лист. Каждый слой ниже — реальный узел, которым владеет движок, а не картинка листа.",
+      "Каждый слой ниже — реальный узел, которым владеет движок, а не картинка листа.",
+    "asm.hint": "↓ прокрути, чтобы разобрать",
     "asm.l1": "Подложка",
     "asm.l1.note": "прозрачность идёт за прогрессом",
     "asm.l2": "Затемнение",

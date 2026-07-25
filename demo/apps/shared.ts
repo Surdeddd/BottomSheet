@@ -64,7 +64,9 @@ export const snapPoints = (mode: DemoSettings["mode"]): SnapPointDef[] => {
   }
   return [
     { id: "closed", size: 0 },
-    { id: "minimized", size: 110 },
+    // 44px handle + 80px header = 124px of chrome; at 110 the sheet's own
+    // title was sliced in half by the screen edge.
+    { id: "minimized", size: 136 },
     { id: "half", size: 320 },
     { id: "full", size: 520 },
   ];
