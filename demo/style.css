@@ -600,8 +600,9 @@ kbd {
    number, never by fading text below its contrast floor. */
 .asm-item {
   display:grid;
-  grid-template-columns:32px 1fr;
-  grid-template-areas:"no name" ". note";
+  grid-template-columns:32px 1fr auto;
+  grid-template-areas:"no name node" ". note note";
+  align-items:baseline;
   gap:0 12px;
   padding:13px 0 13px 14px;
   border-left:2px solid var(--hairline);
@@ -639,6 +640,33 @@ kbd {
   letter-spacing:.06em;
   color:var(--muted);
   margin-top:3px
+}
+/* the actual selector each layer maps to — the block claims these are real
+   nodes, so it should name them */
+.asm-node {
+  grid-area:node;
+  font-size:11px;
+  letter-spacing:.02em;
+  color:var(--muted);
+  background:color-mix(in oklab,var(--ink),transparent 94%);
+  border-radius:3px;
+  padding:3px 7px;
+  white-space:nowrap;
+  transition:color var(--t-base) var(--e-out),background var(--t-base) var(--e-out)
+}
+.asm-item.is-live .asm-node {
+  color:var(--vermillion);
+  background:color-mix(in oklab,var(--vermillion),transparent 90%)
+}
+@media (max-width:560px) {
+  .asm-item {
+    grid-template-columns:32px 1fr;
+    grid-template-areas:"no name" ". node" ". note"
+  }
+  .asm-node {
+    justify-self:start;
+    margin-top:4px
+  }
 }
 @media (max-width:900px) {
   .assembly {

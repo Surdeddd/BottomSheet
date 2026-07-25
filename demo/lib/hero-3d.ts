@@ -185,14 +185,29 @@ export const initHero3D = async (
     strokes.push(mat);
   };
 
-  // phone shell + screen
+  // phone shell — doubled with a slight offset so the body reads as having
+  // thickness rather than being a cut-out
   const shellMesh = addShape(
     roundedRect(PHONE_W, PHONE_H, 0.34),
     "shell",
     -0.06,
     0.9,
   );
+  const shellBack = addShape(
+    roundedRect(PHONE_W, PHONE_H, 0.34),
+    "ink",
+    -0.14,
+    0.16,
+  );
+  shellBack.position.x = 0.05;
+  shellBack.position.y = -0.05;
   addOutline(roundedRect(PHONE_W, PHONE_H, 0.34), 0.02, 0.5);
+
+  // hardware detail: notch bar and side button
+  const notch = addShape(roundedRect(0.72, 0.1, 0.05), "ink", 0.04, 0.55);
+  notch.position.y = PHONE_H / 2 - 0.18;
+  const sideButton = addShape(roundedRect(0.05, 0.34, 0.025), "ink", -0.05, 0.4);
+  sideButton.position.set(PHONE_W / 2 + 0.02, 0.55, -0.05);
   const screenMesh = addShape(
     roundedRect(SCREEN_W, SCREEN_H, 0.26),
     "ink",
