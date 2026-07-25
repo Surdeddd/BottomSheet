@@ -34,6 +34,7 @@ import { wireDragSurface } from "./lib/drag-surface";
 import { initHero3D } from "./lib/hero-3d";
 import { initMotionFx } from "./lib/motion-fx";
 import { initFeatureViz } from "./lib/feature-viz";
+import { initDetails } from "./lib/details";
 import { initReveal } from "./lib/reveal";
 import {
   initCountUp,
@@ -366,6 +367,7 @@ void initHero3D(heroStage).then(handle => {
 });
 initMotionFx();
 initFeatureViz();
+initDetails();
 
 // Read the real version rather than restating it — the footer had drifted to
 // v0.1 while the package was on 0.13.0.
