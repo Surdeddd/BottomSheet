@@ -1676,7 +1676,13 @@ kbd {
   font-size:14px;
   padding:4px 6px;
   min-width:34px;
-  min-height:34px
+  min-height:34px;
+  border-radius:4px;
+  transition:background var(--t-fast) var(--e-out),color var(--t-fast) var(--e-out)
+}
+.snap-editor-row .remove:hover {
+  background:color-mix(in oklab,var(--vermillion),transparent 90%);
+  color:var(--vermillion)
 }
 .recorder-strip {
   display:flex;
