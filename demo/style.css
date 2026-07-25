@@ -378,7 +378,9 @@
   --paper-deep: #ece2d0;
   --ink: #1a1614;
   --ink-2: #3a322c;
-  --muted: #6b6359;
+  /* deepened: at #6b6359 it measured 3.7:1 once composited over the
+     translucent row tints and the canvas, under the AA floor */
+  --muted: #585047;
   --hairline: rgba(26, 22, 20, .14);
   --hairline-strong: rgba(26, 22, 20, .32);
   --vermillion: #c12d1c;
