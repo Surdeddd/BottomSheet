@@ -534,7 +534,8 @@ kbd {
   max-width:1320px;
   margin:0 auto;
   padding:0 48px;
-  min-height:115vh;
+  /* a longer track: the separation used to be over in a flick of the wheel */
+  min-height:190vh;
   position:relative;
   z-index:1
 }
@@ -733,6 +734,40 @@ kbd {
   transform:scaleX(1)
 }
 
+/* ——— depth: cards sit in space rather than on a flat plane ——— */
+.features-grid,
+.advanced-grid {
+  perspective:1400px;
+  perspective-origin:50% 40%
+}
+.feature,
+.advanced-card {
+  transform-style:preserve-3d;
+  will-change:transform
+}
+.feature.has-spotlight:hover,
+.advanced-card.has-spotlight:hover {
+  transform:translateY(-4px) translateZ(22px) rotateX(1.4deg);
+  box-shadow:0 26px 50px -32px rgba(26,22,20,.5)
+}
+:root[data-theme=dark] .feature.has-spotlight:hover,
+:root[data-theme=dark] .advanced-card.has-spotlight:hover {
+  box-shadow:0 26px 60px -30px rgba(0,0,0,.85)
+}
+/* the device gets a real cast shadow so it reads as an object on the page */
+.device-bezel {
+  box-shadow:0 60px 90px -50px rgba(26,22,20,.55),0 2px 6px rgba(26,22,20,.12)
+}
+:root[data-theme=dark] .device-bezel {
+  box-shadow:0 60px 100px -46px rgba(0,0,0,.9),0 2px 8px rgba(0,0,0,.5)
+}
+@media (prefers-reduced-motion:reduce) {
+  .feature.has-spotlight:hover,
+  .advanced-card.has-spotlight:hover {
+    transform:none
+  }
+}
+
 /* ——— cursor spotlight on cards ——— */
 .has-spotlight {
   position:relative;
@@ -800,15 +835,18 @@ kbd {
   opacity:0;
   transition:opacity .9s ease
 }
-/* Pinned, and deliberately behind the page: a fixed element outranks static
-   siblings by default, which put the scene on top of the sections it was
-   meant to sit behind. Content below claims its own layer. */
+/* Lives inside the hero by default so the stats row below can never slide
+   under it, and only pins once the anatomy section reaches the top. Behind the
+   page either way: a fixed element outranks static siblings whatever its
+   z-index claims. */
 .hero-stage.is-live {
-  position:fixed;
-  top:88px;
-  right:max(24px,calc((100vw - 1320px) / 2 + 24px));
   transition:none;
   z-index:0
+}
+.hero-stage.is-pinned {
+  position:fixed;
+  top:88px;
+  right:max(24px,calc((100vw - 1320px) / 2 + 24px))
 }
 .adapter-row,
 .showcase,

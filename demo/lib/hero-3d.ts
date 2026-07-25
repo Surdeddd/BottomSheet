@@ -24,8 +24,12 @@ type Role = "ink" | "paper" | "vermillion" | "shell";
 
 /** Fractions of screen height, mirroring a typical snapPoints config. */
 const SNAPS = [0.16, 0.46, 0.88];
-/** How far the page scrolls before the sheet has walked the whole ladder. */
-const SCROLL_TRAVEL = 900;
+/**
+ * How far the page scrolls before the sheet has walked the whole ladder.
+ * Deliberately long — at 900 the ladder was over before the reader had taken
+ * the hero in, which made the motion feel twitchy rather than deliberate.
+ */
+const SCROLL_TRAVEL = 1800;
 
 const PHONE_W = 2.5;
 const PHONE_H = 5.1;
@@ -317,8 +321,8 @@ export const initHero3D = async (
   const legendList = document.querySelector<HTMLElement>(".assembly-legend");
   // An even fan, not a scatter: equal steps in depth with a matching rise, so
   // the stack opens like a technical exploded view and stays countable.
-  const STEP_Z = 0.62;
-  const STEP_Y = 0.3;
+  const STEP_Z = 0.92;
+  const STEP_Y = 0.42;
   const explodeOrder: Object3D[] = [
     shellMesh,
     screenMesh,
@@ -350,8 +354,30 @@ export const initHero3D = async (
   const FADE_TAIL = 0.14;
   let scrollQueued = false;
 
+  /**
+   * The stage is fixed, so anything below it in the hero — the stats row —
+   * would slide underneath as the page moves. Track the hero instead until it
+   * has left, and only then pin: the scene rides out with its own section and
+   * never crosses the numbers.
+   */
+  const PINNED_TOP = 88;
+  let pinned = false;
+  const applyStagePosition = (): void => {
+    // Pin only once the anatomy section reaches the pin line. Before that the
+    // stage rides inside the hero, so the stats row below it can never slide
+    // beneath a fixed element.
+    const anatomyTop = anatomy
+      ? anatomy.getBoundingClientRect().top
+      : Number.POSITIVE_INFINITY;
+    const shouldPin = anatomyTop <= PINNED_TOP;
+    if (shouldPin === pinned) return;
+    pinned = shouldPin;
+    host.classList.toggle("is-pinned", pinned);
+  };
+
   const applyScroll = (): void => {
     scrollQueued = false;
+    applyStagePosition();
     target = snapFromScroll();
     explode = explodeFromScroll();
 
@@ -378,6 +404,7 @@ export const initHero3D = async (
     requestAnimationFrame(applyScroll);
   };
   window.addEventListener("scroll", onScroll, { passive: true });
+  applyScroll();
 
   const repaint = (): void => {
     palette = readPalette();
@@ -460,11 +487,12 @@ export const initHero3D = async (
     curX += (targetX - curX) * 0.045;
     curY += (targetY - curY) * 0.045;
     // pull the rig broadside as it comes apart, so the layers read as layers
-    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04 + explodeShown * 0.34;
-    rig.rotation.x = -0.2 + curY * 0.16 + Math.cos(t * 0.8) * 0.02;
-    // ease back a little as it opens up, so the spread stays in frame
-    const s = 1 - explodeShown * 0.12;
-    rig.scale.setScalar(s);
+    rig.rotation.y = 0.52 + curX * 0.3 + Math.sin(t) * 0.04 + explodeShown * 0.46;
+    rig.rotation.x =
+      -0.2 + curY * 0.16 + Math.cos(t * 0.8) * 0.02 - explodeShown * 0.12;
+    rig.rotation.z = explodeShown * 0.05;
+    // ease back as it opens up, so the wider spread still stays in frame
+    rig.scale.setScalar(1 - explodeShown * 0.2);
     rig.position.y = Math.sin(t * 1.2) * 0.05;
 
     // clipping planes live in world space, so re-derive it from the tilted rig
