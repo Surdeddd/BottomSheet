@@ -647,7 +647,8 @@ kbd {
   grid-area:node;
   font-size:11px;
   letter-spacing:.02em;
-  color:var(--muted);
+  /* --muted resolves to 4.2:1 against paper here — under the AA floor */
+  color:var(--ink-2);
   background:color-mix(in oklab,var(--ink),transparent 94%);
   border-radius:3px;
   padding:3px 7px;
