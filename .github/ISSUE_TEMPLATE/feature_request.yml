@@ -1,0 +1,42 @@
+name: Feature request
+description: Propose a capability the library does not have
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The engine's public surface is deliberately small, and additions are
+        weighed against bundle size — every consumer pays for what lands in the
+        main entry. Describing the problem is more useful than describing the
+        API you have in mind.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do that you cannot do today?
+      placeholder: |
+        I need the sheet to stop at a snap point that depends on the height of
+        an element outside the sheet, recomputed when that element resizes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What are you doing instead right now?
+      description: Existing APIs you tried, and where they fall short.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: shape
+    attributes:
+      label: Where would this belong?
+      options:
+        - "Engine core — everyone pays for it"
+        - "An optional feature, registered through `features`"
+        - "A subpath, like /overlay or /webgl"
+        - "A plugin I could write myself if the seam existed"
+        - "Not sure"
+    validations:
+      required: true

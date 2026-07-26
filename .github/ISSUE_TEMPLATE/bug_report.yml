@@ -1,0 +1,75 @@
+name: Bug report
+description: Something behaves differently than documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gestures and layout bugs are usually environment-specific. The browser,
+        the adapter and a reproduction matter more than a description of the
+        symptom — please do not skip them.
+
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens, and what you expected instead
+      placeholder: |
+        Dragging the handle down past the last snap point closes the sheet even
+        though `disableClose: true` is set. I expected it to rubber-band and
+        settle back.
+    validations:
+      required: true
+
+  - type: input
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A StackBlitz/CodeSandbox link, or a repository. A failing test is even better.
+      placeholder: https://stackblitz.com/edit/...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: adapter
+    attributes:
+      label: Adapter
+      options:
+        - Vanilla core
+        - React
+        - Preact
+        - Vue
+        - Svelte
+        - Solid
+        - Qwik
+        - Custom element
+        - Overlay subpath
+        - WebGL renderer
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 0.14.0
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      description: Include the version. "latest Chrome" ages badly in an issue tracker.
+      placeholder: Safari 17.4, iOS 17.4 (iPhone 13)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before filing
+      options:
+        - label: I checked this against the latest release
+          required: true
+        - label: I read docs/browser-support.md and my browser is at or above the baseline
+          required: true
