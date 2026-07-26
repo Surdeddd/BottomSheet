@@ -31,14 +31,27 @@ export const initCountUp = (selector = ".stat-num"): void => {
     if (!node || node.nodeType !== Node.TEXT_NODE) return;
     const target = parseInt(node.textContent ?? "", 10);
     if (!Number.isFinite(target) || target <= 0) return;
-    const start = performance.now() + i * 90;
+    const delay = i * 90;
     const duration = 900;
+    const start = performance.now() + delay;
+    let done = false;
+    const finish = (): void => {
+      if (done) return;
+      done = true;
+      node.textContent = String(target);
+    };
     const tick = (now: number): void => {
+      if (done) return;
       const t = Math.min(Math.max((now - start) / duration, 0), 1);
+      if (t >= 1) {
+        finish();
+        return;
+      }
       node.textContent = String(Math.round(target * (1 - Math.pow(1 - t, 3))));
-      if (t < 1) requestAnimationFrame(tick);
+      requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+    window.setTimeout(finish, delay + duration + 400);
   });
 };
 
