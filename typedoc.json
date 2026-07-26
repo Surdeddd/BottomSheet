@@ -10,7 +10,8 @@
     "src/qwik/index.tsx",
     "src/preact/index.ts",
     "src/web-component/index.ts",
-    "src/core/overlay.ts"
+    "src/core/overlay.ts",
+    "src/webgl/index.ts"
   ],
   "out": "docs/api",
   "tsconfig": "tsconfig.json",
@@ -24,7 +25,9 @@
     "Breaking changes": "https://github.com/Surdeddd/BottomSheet/blob/main/docs/migration-v2.md"
   },
   "categorizeByGroup": true,
-  "sort": ["source-order"],
+  "sort": [
+    "source-order"
+  ],
   "githubPages": false,
   "validation": {
     "notExported": false,

@@ -58,7 +58,7 @@ jobs:
         run: |
           npx publint
           npx attw --pack . --profile node16 --exclude-entrypoints ./styles ./styles.css ./themes/ios ./themes/ios.css ./themes/material ./themes/material.css ./themes/vercel ./themes/vercel.css
-          for f in index react preact vue element svelte overlay qwik core features debug; do node -e "import('./dist/$f.js')"; done
+          for f in index react preact vue element svelte overlay qwik core features debug webgl; do node -e "import('./dist/$f.js')"; done
           node -e "import('./dist/qwik-lib/index.qwik.mjs')"
       - name: Qwik consumer SSR contract
         if: matrix.node == '22'
