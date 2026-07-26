@@ -19,8 +19,13 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx playwright install --with-deps chromium webkit
+      # `--update-snapshots` defaults to "changed", which only rewrites a
+      # baseline when the diff exceeds maxDiffPixelRatio (2%). A stale-but-
+      # tolerated baseline therefore survives every regeneration: the hero
+      # counters sat frozen mid-count in these files for that reason. "all"
+      # rewrites unconditionally.
       - name: Generate linux snapshots
-        run: npx playwright test tests/e2e/visual-regression.spec.ts --update-snapshots
+        run: npx playwright test tests/e2e/visual-regression.spec.ts --update-snapshots=all
       - uses: actions/upload-artifact@v4
         with:
           name: visual-baselines-linux
