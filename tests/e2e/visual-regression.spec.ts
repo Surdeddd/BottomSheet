@@ -37,26 +37,24 @@ const waitForSnap = async (
   await waitForSheetSettled(page);
 };
 
-// The hero stat counters animate from 0 on load. `reducedMotion` skips them,
-// but that gate is not reached on every runner — the linux baselines were
-// captured mid-count ("9 KB gzip" instead of 21), which pins the snapshot to
-// one runner's speed. Wait for the numbers to stop changing instead of
-// trusting the media gate.
+// The hero stat counters animate from 0 on load, and the numbers they pass
+// through are not the numbers the page means. Waiting for them to stop moving
+// is not enough: when rAF stalls they hold a partial value and read as settled,
+// which is how "9 KB gzip" ended up baked into the linux baselines. The demo
+// marks each counter done once its final value is written — wait for that.
 const waitForCountersSettled = async (
   page: import("@playwright/test").Page,
 ) => {
   await page.waitForFunction(
     () => {
-      const read = Array.from(document.querySelectorAll(".stat-num"))
-        .map(n => n.firstChild?.textContent ?? "")
-        .join("|");
-      const w = window as unknown as { __statsPrev?: string };
-      const settled = w.__statsPrev !== undefined && w.__statsPrev === read;
-      w.__statsPrev = read;
-      return settled;
+      const all = Array.from(document.querySelectorAll(".stat-num"));
+      return (
+        all.length > 0 &&
+        all.every(n => (n as HTMLElement).dataset.countDone === "true")
+      );
     },
     undefined,
-    { timeout: 5000, polling: 120 },
+    { timeout: 8000, polling: 120 },
   );
 };
 

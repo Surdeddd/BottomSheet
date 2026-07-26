@@ -25,12 +25,24 @@ export const initScrollProgress = (barId = "scroll-progress"): void => {
 };
 
 export const initCountUp = (selector = ".stat-num"): void => {
-  if (reducedMotion()) return;
-  document.querySelectorAll<HTMLElement>(selector).forEach((el, i) => {
+  const all = document.querySelectorAll<HTMLElement>(selector);
+  if (reducedMotion()) {
+    all.forEach(el => {
+      el.dataset.countDone = "true";
+    });
+    return;
+  }
+  all.forEach((el, i) => {
     const node = el.firstChild;
-    if (!node || node.nodeType !== Node.TEXT_NODE) return;
+    if (!node || node.nodeType !== Node.TEXT_NODE) {
+      el.dataset.countDone = "true";
+      return;
+    }
     const target = parseInt(node.textContent ?? "", 10);
-    if (!Number.isFinite(target) || target <= 0) return;
+    if (!Number.isFinite(target) || target <= 0) {
+      el.dataset.countDone = "true";
+      return;
+    }
     const delay = i * 90;
     const duration = 900;
     const start = performance.now() + delay;
@@ -39,6 +51,7 @@ export const initCountUp = (selector = ".stat-num"): void => {
       if (done) return;
       done = true;
       node.textContent = String(target);
+      el.dataset.countDone = "true";
     };
     const tick = (now: number): void => {
       if (done) return;
