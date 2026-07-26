@@ -37,6 +37,29 @@ const waitForSnap = async (
   await waitForSheetSettled(page);
 };
 
+// The hero stat counters animate from 0 on load. `reducedMotion` skips them,
+// but that gate is not reached on every runner — the linux baselines were
+// captured mid-count ("9 KB gzip" instead of 21), which pins the snapshot to
+// one runner's speed. Wait for the numbers to stop changing instead of
+// trusting the media gate.
+const waitForCountersSettled = async (
+  page: import("@playwright/test").Page,
+) => {
+  await page.waitForFunction(
+    () => {
+      const read = Array.from(document.querySelectorAll(".stat-num"))
+        .map(n => n.firstChild?.textContent ?? "")
+        .join("|");
+      const w = window as unknown as { __statsPrev?: string };
+      const settled = w.__statsPrev !== undefined && w.__statsPrev === read;
+      w.__statsPrev = read;
+      return settled;
+    },
+    undefined,
+    { timeout: 5000, polling: 120 },
+  );
+};
+
 test.describe("Visual regression — demo layout", () => {
   test.beforeEach(async ({ page }) => {
     // Emulate here, not just via the project's `use`: that setting does not
@@ -48,6 +71,7 @@ test.describe("Visual regression — demo layout", () => {
     await page.waitForSelector(REACT_SHEET);
     await page.waitForLoadState("networkidle");
     await waitForSnap(page, "minimized");
+    await waitForCountersSettled(page);
   });
 
   test("hero + adapter row", async ({ page }) => {
