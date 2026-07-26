@@ -13,8 +13,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.advanced": "§ 04 — advanced",
     "asm.title": "Five layers, one gesture",
     "asm.lede":
-      "Every layer below is a real node the engine owns — nothing here is a picture of a sheet.",
-    "asm.hint": "↓ scroll to pull it apart",
+      "Scroll and the sheet assembles from its own parts. Every layer is a real node the engine owns — nothing here is a picture of a sheet.",
+    "asm.hint": "↓ scroll to build it",
     "asm.l1": "Backdrop",
     "asm.l1.note": "opacity tracks progress",
     "asm.l2": "Scrim",
@@ -75,7 +75,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.scrim.floating": "floating action",
     "ctrl.scrim.floating.btn": "Quick action",
     "features.title.a": "What's inside",
-    "features.title.b": "— twelve+",
+    "features.title.b": "— sixteen",
     "f01.title": "Spring physics",
     "f01.body":
       "Critical-damped harmonic oscillator. Drag <em>velocity</em> carries into the settle — no jerk on flick. Sub-stepped at 240Hz, one DOM write per RAF.",
@@ -112,6 +112,18 @@ const DICT: Record<Lang, Record<string, string>> = {
     "f12.title": "Tested",
     "f12.body":
       "500+ unit tests (vitest + happy-dom) covering snap math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. ~200 e2e via Playwright on Chromium, WebKit and Firefox. All green.",
+    "f13.title": "Drag zones",
+    "f13.body":
+      "<code>dragFrom</code>: handle, whole sheet, or opt-in <code>[data-bs-drag]</code> islands. <code>[data-bs-no-drag]</code> excludes a subtree, so carousels keep their own gesture.",
+    "f14.title": "Anchored UI",
+    "f14.body":
+      "Elements ride the sheet edge on the compositor via <code>--bs-size</code>. Scrim stages swap content per state; docked bars let the sheet slide under them.",
+    "f15.title": "Pay for what you use",
+    "f15.body":
+      "<code>/core</code> is the engine alone at ~18&nbsp;KB. Route, persist, auto-collapse and the rest are opt-in <code>EngineFeature</code>s you register per instance.",
+    "f16.title": "Debuggable",
+    "f16.body":
+      "<code>attachDebugOverlay(engine)</code> prints live snap, size, progress and flags from public events only — and ships zero bytes into every other bundle.",
     "adv.editor.title": "Snap-point editor",
     "adv.editor.sub": "Add, remove, edit, reorder snaps. Sheet remounts live.",
     "adv.editor.add": "+ add snap",
@@ -137,8 +149,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.advanced": "§ 04 — расширенное",
     "asm.title": "Пять слоёв, один жест",
     "asm.lede":
-      "Каждый слой ниже — реальный узел, которым владеет движок, а не картинка листа.",
-    "asm.hint": "↓ прокрути, чтобы разобрать",
+      "Прокрути — и лист соберётся из своих частей. Каждый слой — реальный узел, которым владеет движок, а не картинка листа.",
+    "asm.hint": "↓ прокрути, чтобы собрать",
     "asm.l1": "Подложка",
     "asm.l1.note": "прозрачность идёт за прогрессом",
     "asm.l2": "Затемнение",
@@ -199,7 +211,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.scrim.floating": "плавающая кнопка",
     "ctrl.scrim.floating.btn": "Быстрое действие",
     "features.title.a": "Что внутри",
-    "features.title.b": "— двенадцать+",
+    "features.title.b": "— шестнадцать",
     "f01.title": "Пружинная физика",
     "f01.body":
       "Критически демпфированный гармонический осциллятор. <em>Скорость</em> перетаскивания переносится в затухание — без рывка на флике. Подшаг 240 Гц, одна запись в DOM на RAF.",
@@ -236,6 +248,18 @@ const DICT: Record<Lang, Record<string, string>> = {
     "f12.title": "Покрытие тестами",
     "f12.body":
       "500+ unit-тестов (vitest + happy-dom) на snap-math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. ~200 e2e через Playwright на Chromium, WebKit и Firefox. Все зелёные.",
+    "f13.title": "Зоны перетаскивания",
+    "f13.body":
+      "<code>dragFrom</code>: ручка, весь лист или только острова <code>[data-bs-drag]</code>. <code>[data-bs-no-drag]</code> исключает поддерево — карусель сохраняет свой жест.",
+    "f14.title": "Привязанный интерфейс",
+    "f14.body":
+      "Элементы едут по краю листа на композиторе через <code>--bs-size</code>. Сцены затемнения меняют контент по состоянию; докнутые панели пропускают лист под собой.",
+    "f15.title": "Платишь за то, что берёшь",
+    "f15.body":
+      "<code>/core</code> — только движок, ~18&nbsp;КБ. Роутинг, persist, авто-сворачивание и прочее — опциональные <code>EngineFeature</code>, подключаемые на инстанс.",
+    "f16.title": "Отлаживаемый",
+    "f16.body":
+      "<code>attachDebugOverlay(engine)</code> показывает живой снап, размер, прогресс и флаги — только из публичных событий, и ноль байт в остальных бандлах.",
     "adv.editor.title": "Редактор snap-точек",
     "adv.editor.sub": "Добавляйте, удаляйте, меняйте порядок. Шторка пересобирается на лету.",
     "adv.editor.add": "+ добавить",

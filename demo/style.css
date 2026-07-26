@@ -536,8 +536,8 @@ kbd {
   max-width:1320px;
   margin:0 auto;
   padding:0 48px;
-  /* a longer track: the separation used to be over in a flick of the wheel */
-  min-height:190vh;
+  /* a long track: the assembly used to be over in a flick of the wheel */
+  min-height:360vh;
   position:relative;
   z-index:1
 }
@@ -940,10 +940,14 @@ kbd {
   transition:none;
   z-index:0
 }
+/* Pinned in the anatomy section there is no stats row to clear, so the stage
+   takes the whole right half — it was reading as a thumbnail out there. */
 .hero-stage.is-pinned {
   position:fixed;
-  top:88px;
-  right:max(24px,calc((100vw - 1320px) / 2 + 24px))
+  top:11vh;
+  right:max(16px,calc((100vw - 1320px) / 2 + 8px));
+  width:min(50vw,760px);
+  height:78vh
 }
 .adapter-row,
 .showcase,
@@ -2625,12 +2629,29 @@ kbd {
 }
 
 /* ——— footer install copy ——— */
+/* The button used to sit absolutely over the command with a hand-tuned 92px
+   reserve — which "копировать" (105px) overran, covering the package name.
+   A flex row makes the reserve automatic in every language. */
 .install-row {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   max-width: 100%;
+  background: var(--ink);
+  border-radius: 4px;
+  padding: 8px 10px 8px 0
 }
 .install-row .install {
-  padding-right: 92px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border-radius: 0;
+  padding: 10px 0 10px 22px;
+  overflow-x: auto
+}
+.install-row .install-copy {
+  position: static;
+  flex-shrink: 0
 }
 .install-copy {
   position: absolute;

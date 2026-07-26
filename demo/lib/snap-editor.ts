@@ -115,11 +115,19 @@ export const mountSnapEditor = (deps: SnapEditorDeps): void => {
   render();
 
   $<HTMLButtonElement>("#snap-add").addEventListener("click", () => {
-    customSnaps = [
-      ...(customSnaps ?? defaultSnaps()),
-      { id: `snap-${Date.now() % 1000}`, size: 200 },
-    ];
+    const base = customSnaps ?? defaultSnaps();
+    // `Date.now() % 1000` collided often enough to produce duplicate ids, which
+    // the engine warns about and which make the row ambiguous to edit.
+    const taken = new Set(base.map(s => s.id));
+    let n = base.length + 1;
+    while (taken.has(`snap-${n}`)) n++;
+
+    customSnaps = [...base, { id: `snap-${n}`, size: 200 }];
+    // remove/edit both reconcile and refresh the chips; add did neither, so a
+    // new point never reached the chip row or the active-snap check.
+    reconcileInitialSnap(settings, customSnaps);
     render();
+    onChipUpdate();
     onChange();
   });
 };

@@ -219,8 +219,10 @@ const updateChipsForMode = (): void => {
     snapChips.append(make("open", false), make("close", false));
     return;
   }
-  const custom = window.__bsCustomSnaps?.();
-  const ids = custom ? custom.map(s => s.id) : ["minimized", "half", "full", "closed"];
+  // Same resolver the engine uses, rather than reading the custom list directly:
+  // that path skipped the `closed` stop, so editing snaps silently removed the
+  // only chip that could close the sheet.
+  const ids = resolveSnapPoints(settings.mode).map(s => s.id);
   for (const id of ids) {
     snapChips.append(make(id, id === settings.initial));
   }

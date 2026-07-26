@@ -112,8 +112,8 @@ export const initHero3D = async (
 
   const scene = new THREE.Scene();
   // closer and wider: the phone was reading as a thumbnail in the corner
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-  camera.position.set(0, 0, 8.2);
+  const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 100);
+  camera.position.set(0, 0, 6.9);
 
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -209,6 +209,32 @@ export const initHero3D = async (
   notch.position.y = PHONE_H / 2 - 0.18;
   const sideButton = addShape(roundedRect(0.05, 0.34, 0.025), "ink", -0.05, 0.4);
   sideButton.position.set(PHONE_W / 2 + 0.02, 0.55, -0.05);
+
+  // volume pair on the opposite edge
+  for (const [i, y] of [0.72, 0.34].entries()) {
+    const vol = addShape(roundedRect(0.045, 0.22, 0.022), "ink", -0.05, 0.34);
+    vol.position.set(-PHONE_W / 2 - 0.02, y, -0.05);
+    vol.name = `vol-${i}`;
+  }
+
+  // camera dot and speaker slit inside the notch
+  const lens = addShape(roundedRect(0.07, 0.07, 0.035), "ink", 0.05, 0.75);
+  lens.position.set(0.22, PHONE_H / 2 - 0.18, 0.05);
+  const speaker = addShape(roundedRect(0.26, 0.035, 0.017), "ink", 0.05, 0.5);
+  speaker.position.set(-0.05, PHONE_H / 2 - 0.18, 0.05);
+
+  // home indicator at the foot of the screen
+  const homeBar = addShape(roundedRect(0.62, 0.045, 0.022), "ink", 0.05, 0.3);
+  homeBar.position.y = -SCREEN_H / 2 + 0.12;
+
+  // a soft contact shadow so the device sits on the page, not against it
+  const shadow = addShape(
+    roundedRect(PHONE_W * 0.92, PHONE_H * 0.97, 0.34),
+    "ink",
+    -0.3,
+    0.07,
+  );
+  shadow.position.set(0.14, -0.12, -0.3);
   const screenMesh = addShape(
     roundedRect(SCREEN_W, SCREEN_H, 0.26),
     "ink",
@@ -346,16 +372,36 @@ export const initHero3D = async (
     handle,
     rowsGroup,
   ];
-  const mid = (explodeOrder.length - 1) / 2;
+  /**
+   * The section assembles rather than explodes: each layer flies in from its
+   * own edge of the frame and lands, so the sheet is built in front of the
+   * reader instead of being torn apart. Pulling apart read as breakage; this
+   * reads as construction, which is what the copy actually claims.
+   */
+  const ENTRY_FROM: { x: number; y: number; z: number }[] = [
+    { x: -3.4, y: 1.1, z: -1.6 }, // backdrop — in from the left
+    { x: 3.2, y: -1.3, z: -0.9 }, // scrim — in from the right
+    { x: 0, y: -3.6, z: 0.7 }, // surface — up from below, like a real sheet
+    { x: 0.4, y: 3.0, z: 1.2 }, // handle — down from above
+    { x: 3.6, y: 1.8, z: 1.6 }, // content — in from the top right
+  ];
   const explodeTargets = explodeOrder.map((obj, i) => ({
     obj,
-    z: (i - mid) * STEP_Z,
-    y: (i - mid) * STEP_Y,
+    z: ENTRY_FROM[i]!.z,
+    y: ENTRY_FROM[i]!.y,
+    x: ENTRY_FROM[i]!.x,
   }));
   const restState = explodeTargets.map(t => ({
     z: t.obj.position.z,
     y: t.obj.position.y,
+    x: t.obj.position.x,
   }));
+  /** Per-layer progress, staggered so the stack lands piece by piece. */
+  const layerProgress = (t: number, i: number): number => {
+    const span = 0.52;
+    const start = (i / explodeOrder.length) * (1 - span);
+    return Math.min(Math.max((t - start) / span, 0), 1);
+  };
   let explode = 0;
   let explodeShown = 0;
 
@@ -495,16 +541,32 @@ export const initHero3D = async (
     velocity += accel * dt;
     current += velocity * dt;
 
-    // ease the layers apart; eased here rather than per-scroll so it glides
+    // eased here rather than per-scroll event so the assembly glides
     explodeShown += (explode - explodeShown) * 0.09;
     explodeTargets.forEach((tgt, i) => {
       const rest = restState[i]!;
-      tgt.obj.position.z = rest.z + tgt.z * explodeShown;
-      // sheet-borne layers take their rise through layout, so they stay aligned
-      if (tgt.obj === sheet) sheetOffsetY = tgt.y * explodeShown;
-      else if (tgt.obj === handle) handleOffsetY = tgt.y * explodeShown;
-      else if (tgt.obj === rowsGroup) rowsOffsetY = tgt.y * explodeShown;
-      else tgt.obj.position.y = rest.y + tgt.y * explodeShown;
+      // 1 = scattered off-frame, 0 = landed in place
+      const away = 1 - layerProgress(explodeShown, i);
+      const ease = away * away;
+      tgt.obj.position.x = rest.x + tgt.x * ease;
+      tgt.obj.position.z = rest.z + tgt.z * ease;
+      // each piece rights itself as it lands, so parts arrive rather than slide
+      tgt.obj.rotation.z = ease * (i % 2 === 0 ? -0.22 : 0.22);
+      tgt.obj.rotation.x = ease * 0.3;
+      // sheet-borne layers take their offset through layout, so they stay aligned
+      if (tgt.obj === sheet) sheetOffsetY = tgt.y * ease;
+      else if (tgt.obj === handle) handleOffsetY = tgt.y * ease;
+      else if (tgt.obj === rowsGroup) rowsOffsetY = tgt.y * ease;
+      else tgt.obj.position.y = rest.y + tgt.y * ease;
+      // fade each piece in as it arrives
+      const alpha = 1 - away;
+      tgt.obj.traverse(node => {
+        const m = (node as { material?: { opacity: number; transparent: boolean; userData: { base?: number } } }).material;
+        if (!m) return;
+        if (m.userData.base === undefined) m.userData.base = m.opacity;
+        m.transparent = true;
+        m.opacity = m.userData.base * alpha;
+      });
     });
     layoutSheet(current);
 

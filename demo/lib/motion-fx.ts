@@ -287,8 +287,51 @@ export const initStatsOnView = (): FxHandle => {
   return { destroy: () => stop() };
 };
 
+/** Readouts, adapter tiles and control groups arrive in sequence. */
+export const initSequences = (): FxHandle => {
+  if (reduced()) return { destroy: () => {} };
+  const groups: [string, string][] = [
+    [".readouts", ".readout"],
+    [".adapter-row", ".adapter"],
+    [".controls", ".control-group"],
+    [".advanced-grid", ".advanced-card"],
+    [".footer", ".footer-links a"],
+  ];
+  const stops: (() => void)[] = [];
+
+  for (const [container, child] of groups) {
+    const host = document.querySelector<HTMLElement>(container);
+    if (!host) continue;
+    const items = Array.from(host.querySelectorAll<HTMLElement>(child));
+    if (items.length === 0) continue;
+    stops.push(
+      inView(
+        host,
+        () => {
+          animate(
+            items,
+            { opacity: [0, 1], y: [16, 0] },
+            {
+              duration: 0.5,
+              delay: stagger(0.05),
+              ease: [0.2, 0.8, 0.3, 1],
+            },
+          );
+        },
+        { amount: 0.2 },
+      ),
+    );
+  }
+  return {
+    destroy: () => {
+      for (const s of stops) s();
+    },
+  };
+};
+
 export const initMotionFx = (): FxHandle => {
   const parts = [
+    initSequences(),
     initCursor(),
     initMagnetic(),
     initSpotlight(),
