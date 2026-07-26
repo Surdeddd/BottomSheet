@@ -99,15 +99,27 @@ Degradation is not an error path — it is a supported mode. A consumer who ship
 
 ## Phases
 
-Phase 1 is this change; the rest follow separately, each with a full gate run.
+All three shipped.
 
 1. **Frame** — subpath, context lifecycle, sheet surface on the GPU (panel,
    corner radii, shadow), engine sync, degradation, size budget, tests, docs.
-2. **Content from data** — a node schema (`title` / `text` / `row` / `button` /
-   `divider`), DOM generation from it, text drawn through a Canvas2D atlas
-   keyed by DPR and theme.
-3. **Effects** — jelly deformation driven by drag velocity, refraction of the
-   backdrop, specular edge light.
+2. **Content in motion** — text lifted into a texture on `dragstart` and handed
+   back on settle, so the whole sheet bends as one surface. This replaced the
+   originally drafted "content from data" node schema: capturing the DOM the
+   consumer already wrote covers the same ground without inventing a second
+   layout system, and it works with arbitrary markup instead of a fixed set of
+   node types.
+3. **Effects** — velocity-driven bend, edge and top-light sheen, and glass
+   refraction of the lifted content that scales with the bend.
+
+### The refraction that is not there
+
+The draft promised "refraction of the backdrop". That is not achievable and the
+shipped renderer does not claim it: WebGL cannot read the pixels the browser
+composited for the rest of the page, and no API exposes them. What ships
+refracts the sheet's own captured content — real distortion of real pixels.
+Background refraction would require re-rendering the page into the texture,
+which is a different product.
 
 ## Testing
 

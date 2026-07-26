@@ -1,7 +1,9 @@
 export type WebGLRendererOptions = {
   jelly?: number;
-  refraction?: boolean;
   shadow?: number;
+  sheen?: number;
+  glass?: number;
+  liftContent?: boolean;
   dpr?: number;
   onUnsupported?: (reason: WebGLUnsupportedReason) => void;
 };

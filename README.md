@@ -431,9 +431,11 @@ const engine = new BottomSheetEngine({
 });
 ```
 
-Paints the sheet surface — panel, radii, shadow, and a bend that follows drag
-velocity — on the GPU, while layout, scrolling, gestures and the accessibility
-tree stay in the DOM where they belong. 2.6 KB gzip, and only if you import it.
+Paints the sheet surface — panel, radii, shadow, edge sheen — on the GPU. The
+moment a drag starts, the sheet's text is lifted into a texture so the whole
+sheet bends as one surface, and handed straight back to the DOM once it
+settles. Layout, scrolling, gestures and the accessibility tree never leave the
+DOM. 4.2 KB gzip, and only if you import it.
 Falls back to the DOM renderer, silently and mid-session if it has to, when
 there is no WebGL, under `prefers-reduced-motion`, or when the browser drops
 the GL context.

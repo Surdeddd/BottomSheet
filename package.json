@@ -297,7 +297,7 @@
     {
       "name": "webgl renderer (subpath)",
       "path": "dist/webgl.js",
-      "limit": "3 KB",
+      "limit": "4.5 KB",
       "gzip": true
     }
   ],

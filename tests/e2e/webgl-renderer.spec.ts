@@ -91,6 +91,47 @@ test.describe("WebGL renderer", () => {
     await expect(page.locator("canvas")).toHaveCount(0);
   });
 
+  test("lifts the content into the texture while dragging and hands it back", async ({
+    page,
+  }) => {
+    const unsupported = await page.getAttribute("#status", "data-unsupported");
+    test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
+
+    const readColor = () =>
+      page.$eval(".sheet-body", el => (el as HTMLElement).style.color);
+
+    expect(await readColor()).toBe("");
+
+    const box = await page.locator(".bs-handle").boundingBox();
+    if (!box) throw new Error("no handle box");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) {
+      await page.mouse.move(
+        box.x + box.width / 2,
+        box.y + box.height / 2 - i * 24,
+      );
+    }
+
+    await page.waitForFunction(
+      () =>
+        (document.querySelector(".sheet-body") as HTMLElement).style.color ===
+        "transparent",
+      undefined,
+      { timeout: 3000 },
+    );
+
+    await page.mouse.up();
+
+    await page.waitForFunction(
+      () =>
+        (document.querySelector(".sheet-body") as HTMLElement).style.color ===
+        "",
+      undefined,
+      { timeout: 5000 },
+    );
+  });
+
   test("the sheet keeps its accessibility contract under the renderer", async ({
     page,
   }) => {
