@@ -148,6 +148,16 @@
         "default": "./dist/features.cjs"
       }
     },
+    "./webgl": {
+      "import": {
+        "types": "./dist/webgl.d.ts",
+        "default": "./dist/webgl.js"
+      },
+      "require": {
+        "types": "./dist/webgl.d.cts",
+        "default": "./dist/webgl.cjs"
+      }
+    },
     "./qwik": {
       "import": {
         "types": "./dist/qwik.d.ts",
@@ -282,6 +292,12 @@
       "name": "features (subpath)",
       "path": "dist/features.js",
       "limit": "2.6 KB",
+      "gzip": true
+    },
+    {
+      "name": "webgl renderer (subpath)",
+      "path": "dist/webgl.js",
+      "limit": "3 KB",
       "gzip": true
     }
   ],

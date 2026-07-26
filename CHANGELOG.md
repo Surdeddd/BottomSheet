@@ -5,6 +5,13 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **WebGL renderer — `@surdeddd/bottom-sheet/webgl`** — an opt-in second renderer that paints the sheet surface on the GPU: panel, corner radii, shadow, and a bend that follows drag velocity. Registered as a feature (`features: [webglRenderer()]`), so it costs nothing unless imported — measured 2.6 KB gzip, with the main entry unchanged. Layout, scrolling, gestures and the accessibility tree stay in the DOM, which is what makes the fallback free: no WebGL, `prefers-reduced-motion`, SSR, or a lost GL context and the sheet simply paints itself again, mid-session if it has to. Options: `jelly`, `shadow`, `dpr`, `onUnsupported`. See `docs/webgl.md`.
+- **Browser support matrix — `docs/browser-support.md`** — the baseline (Chrome/Edge 80, Safari 13.1, iOS 13.4, Firefox 72) with what sets it, every progressive feature and what its absence costs, adapter peer ranges, and an explicit note on which claims CI actually exercises.
+
 ## [0.14.0]
 
 ### Removed

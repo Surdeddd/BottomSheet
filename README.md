@@ -420,6 +420,26 @@ trap, scroll lock, scrim, stacking) is core. Setting an option whose feature
 is missing dev-warns once and is ignored in production. Custom features
 implement `{ name, install(ctx) }` — the same seam the built-ins use.
 
+### WebGL renderer (opt-in)
+
+```ts
+import { webglRenderer } from '@surdeddd/bottom-sheet/webgl';
+
+const engine = new BottomSheetEngine({
+  element, handle, snapPoints,
+  features: [webglRenderer({ jelly: 0.6 })],
+});
+```
+
+Paints the sheet surface — panel, radii, shadow, and a bend that follows drag
+velocity — on the GPU, while layout, scrolling, gestures and the accessibility
+tree stay in the DOM where they belong. 2.6 KB gzip, and only if you import it.
+Falls back to the DOM renderer, silently and mid-session if it has to, when
+there is no WebGL, under `prefers-reduced-motion`, or when the browser drops
+the GL context.
+
+[Full WebGL docs →](docs/webgl.md)
+
 ### Debug overlay
 
 ```ts
@@ -529,6 +549,15 @@ npm run demo
 The editorial demo showcases the adapters, every gesture, every mode
 (`bottom · top · left · right · overlay`), and live engine readouts (active
 snap, progress, velocity, FPS). EN/RU and light/dark toggles in the corner.
+
+## Browser support
+
+Baseline: Chrome/Edge 80, Safari 13.1 (iOS 13.4), Firefox 72 — set by the
+ES2020 build target and the APIs the engine cannot work without (Pointer
+Events, CSS custom properties, `ResizeObserver`). Everything else, from
+`inert` to `backdrop-filter` to WebGL, is capability-checked and degrades.
+
+[Full support matrix →](docs/browser-support.md)
 
 ## Testing
 

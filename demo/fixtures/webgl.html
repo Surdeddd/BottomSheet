@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>webgl renderer fixture</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #101014;
+        font-family: system-ui, sans-serif;
+        color: #e8e8ea;
+      }
+      #controls {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 999;
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        background: #1c1c22;
+      }
+      #controls button {
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+      #status {
+        position: fixed;
+        top: 56px;
+        left: 12px;
+        z-index: 999;
+        font: 12px ui-monospace, monospace;
+      }
+      #mount .bs-sheet {
+        background: #23232b;
+        --bs-handle-color: #6d6d7a;
+      }
+      .sheet-body {
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <button id="to-full" type="button">full</button>
+      <button id="to-min" type="button">minimized</button>
+      <button id="lose-context" type="button">lose context</button>
+    </div>
+    <div id="status" data-unsupported="">renderer: pending</div>
+    <div id="mount"></div>
+    <script type="module" src="./webgl.ts"></script>
+  </body>
+</html>

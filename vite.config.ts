@@ -23,6 +23,7 @@ export default defineConfig({
         __dirname,
         "src/web-component/index.ts",
       ),
+      "@surdeddd/bottom-sheet/webgl": resolve(__dirname, "src/webgl/index.ts"),
       "@surdeddd/bottom-sheet/styles": resolve(
         __dirname,
         "src/styles/bottom-sheet.css",
@@ -53,6 +54,7 @@ export default defineConfig({
         mountOpen: resolve(__dirname, "demo/fixtures/mount-open.html"),
         waapi: resolve(__dirname, "demo/fixtures/waapi.html"),
         dragZones: resolve(__dirname, "demo/fixtures/drag-zones.html"),
+        webgl: resolve(__dirname, "demo/fixtures/webgl.html"),
       },
     },
   },

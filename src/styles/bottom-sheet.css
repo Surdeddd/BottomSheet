@@ -115,6 +115,14 @@
   visibility: hidden;
 }
 
+.bs-sheet[data-bs-webgl="on"],
+.bs-sheet[data-bs-webgl="on"] .bs-handle,
+.bs-sheet[data-bs-webgl="on"] .bs-header,
+.bs-sheet[data-bs-webgl="on"] .bs-footer {
+  background: transparent;
+  box-shadow: none;
+}
+
 .bs-sheet[data-mode="left"] .bs-content {
   padding-right: 36px;
 }

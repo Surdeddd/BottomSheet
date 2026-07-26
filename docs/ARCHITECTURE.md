@@ -326,5 +326,8 @@ other entries are pure for tree-shaking.
 
 - `docs/plugins.md` — plugin contract with a worked analytics-tracker example
 - `docs/migration-v2.md` — breaking changes and the stable-surface plan
+- `docs/webgl.md` — the opt-in GPU renderer, and what stays in the DOM
+- `docs/webgl-renderer-design.md` — why that split, and the phases ahead
+- `docs/browser-support.md` — baseline, progressive features, what CI verifies
 - `docs/{framework}.md` — per-adapter usage docs
 - `CONTRIBUTING.md` — development workflow
