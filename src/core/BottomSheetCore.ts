@@ -1,4 +1,4 @@
-import { sheetStack } from "./lifecycle/sheetStack";
+import { sheetStack } from "./lifecycle/sheet-stack";
 import {
   buildTransformTemplate,
   layoutAxis,
@@ -8,7 +8,7 @@ import { nextInstanceId } from "./primitives/instance-id";
 import { createEventBus, type EventBus } from "./primitives/event-bus";
 import { auditVhUsage } from "./primitives/snap-points";
 import { emitCancelable } from "./primitives/cancelable-emit";
-import { devWarn } from "./primitives/devWarn";
+import { devWarn } from "./primitives/dev-warn";
 import { SnapResolver } from "./primitives/snap-resolver";
 import { notifyLinkedSheets } from "./features/linked-sheets";
 import { installResizeObserver } from "./features/resize-observer";
@@ -567,7 +567,6 @@ export class BottomSheetCore {
     if (targetSize === 0) this.emitCloseSequence();
   }
 
-  /** Fully-closed sheets stay mounted; the flag lets CSS drop their shadow and hit-testing. */
   private setRestClosed(closed: boolean): void {
     if (closed === this.restClosed) return;
     this.restClosed = closed;
@@ -662,7 +661,6 @@ export class BottomSheetCore {
     this.dragFromContentDefault = value;
   }
 
-  /** Remounts the sheet gesture — the drag surface differs per mode. */
   setDragFrom(mode: DragFrom): void {
     if (this.destroyed || mode === this.dragFromMode) return;
     this.gesture?.forceClearDragState();
@@ -1068,7 +1066,6 @@ export class BottomSheetCore {
     };
   }
 
-  /** Whether the active snap point lets a content gesture move the sheet. */
   private isContentDragAllowed(): boolean {
     if (this.disableDragFlag) return false;
     const point = this.snapPointsRaw.find(p => p.id === this.activeId);
@@ -1119,7 +1116,6 @@ export class BottomSheetCore {
     };
   }
 
-  /** The handle gesture covers the handle only; wider modes move to the sheet element. */
   private sheetDragSurface(): HTMLElement {
     return this.dragFromMode === "handle" ? this.handle : this.element;
   }
@@ -1129,13 +1125,13 @@ export class BottomSheetCore {
     const target = e.target as Element | null;
     const scoped = typeof target?.closest === "function";
     if (scoped && target.closest(NO_DRAG_SELECTOR)) return false;
-    // The handle drags in every mode, zones or not.
+
     if (this.handle !== this.element && scoped && this.handle.contains(target)) {
       return true;
     }
     if (!isDragAllowedFrom(e.target, this.dragFromMode)) return false;
     if (this.dragFromMode === "handle") return true;
-    // The scroll container runs its own gesture; only an explicit zone overrides it.
+
     if (
       this.scrollContainer &&
       scoped &&
@@ -1147,7 +1143,6 @@ export class BottomSheetCore {
     return true;
   }
 
-  /** Kept re-runnable so `setDragFrom` can move the gesture to another surface. */
   private mountSheetGesture(): void {
     const surface = this.sheetDragSurface();
     const controller = new GestureController(
@@ -1343,7 +1338,6 @@ export class BottomSheetCore {
       }
     }
   }
-
 
   private applySize(size: number, skipTransform = false): void {
     const cap = this.snaps.getMaxAxisSize();

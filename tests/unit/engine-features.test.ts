@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import { __resetRouteCoordinatorForTests } from "../../src/core/features/route";
 import type { Plugin } from "../../src/core/types";
 import { makeDom } from "./_helpers/makeDom";
@@ -2240,7 +2240,7 @@ describe("snap-points — defensive NaN/negative clamp (E4 regression)", () => {
       "../../src/core/primitives/snap-points"
     );
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const mod = await import("../../src/core/primitives/cssLength");
+    const mod = await import("../../src/core/primitives/css-length");
     const realResolveSnap = mod.resolveSnap;
     const result = resolveSnapList(
       [

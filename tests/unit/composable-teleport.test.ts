@@ -3,9 +3,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { useBottomSheet } from "../../src/react/useBottomSheet";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;

@@ -1,4 +1,3 @@
-
 export type Token = {
   text: string;
   cls: "" | "c-c" | "c-k" | "c-i" | "c-s" | "c-a";

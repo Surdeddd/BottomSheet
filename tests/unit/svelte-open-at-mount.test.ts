@@ -3,9 +3,9 @@ import { readFileSync, writeFileSync, rmSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve } from "node:path";
 import { compile } from "svelte/compiler";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const sfcPath = resolve(here, "../../src/svelte/BottomSheet.svelte");

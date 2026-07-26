@@ -1,4 +1,3 @@
-
 import type { DemoSettings } from "../../apps/shared";
 import {
   SNIPPET_DEFAULTS,

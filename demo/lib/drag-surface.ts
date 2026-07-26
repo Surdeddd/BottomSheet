@@ -9,11 +9,6 @@ export type DragSurfaceOptions = {
   onChange?: () => void;
 };
 
-/**
- * The sheet header is the opt-in drag zone for "zones" mode. Marking it here
- * rather than in each adapter keeps all seven demos in sync from one place;
- * shadow-DOM adapters expose their sheet through the host's shadowRoot.
- */
 const markZones = (screen: HTMLElement | null): void => {
   if (!screen) return;
   const roots: ParentNode[] = [screen];

@@ -1,5 +1,5 @@
-import { installFocusTrap } from "../lifecycle/focusTrap";
-import { lockBodyScroll } from "../lifecycle/scrollLock";
+import { installFocusTrap } from "../lifecycle/focus-trap";
+import { lockBodyScroll } from "../lifecycle/scroll-lock";
 import {
   createInertSiblings,
   type InertSiblingsHandle,

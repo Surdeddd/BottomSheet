@@ -1,11 +1,9 @@
-/** @deprecated Engine-internal easing helper, slated for removal in 2.0. */
 export const easeOutBack = (t: number): number => {
   const c1 = 1.40158;
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 };
 
-/** @deprecated Engine-internal easing helper, slated for removal in 2.0. */
 export const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
 
 export const easeLinear = (t: number): number => t;
@@ -25,11 +23,6 @@ export type TweenOptions = {
   onUpdate: (value: number) => void;
 };
 
-/**
- * @deprecated Engine-internal tween runner, slated for removal in 2.0. Drive
- * motion through the engine's `animation` / `spring` / `duration` options, or
- * inline the curve — it is a few lines.
- */
 export const tween = ({
   from,
   to,
@@ -74,11 +67,6 @@ export const tween = ({
   };
 };
 
-/**
- * @deprecated Slated for removal in 2.0. Read the media query directly:
- * `matchMedia("(prefers-reduced-motion: reduce)").matches`. The engine no
- * longer uses this helper — it subscribes to a live listener.
- */
 export const prefersReducedMotion = (): boolean => {
   if (typeof window === "undefined" || !window.matchMedia) return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;

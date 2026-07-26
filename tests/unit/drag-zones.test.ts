@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import { isDragAllowedFrom } from "../../src/core/primitives/drag-zones";
 import { decideContentGesture } from "../../src/core/primitives/content-gesture";
 import { makeDom } from "./_helpers/makeDom";

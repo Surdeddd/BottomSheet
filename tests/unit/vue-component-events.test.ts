@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import * as vue from "vue";
 import * as composable from "../../src/vue/useBottomSheet";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const sfcPath = resolve(here, "../../src/vue/BottomSheet.vue");

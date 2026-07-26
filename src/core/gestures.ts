@@ -11,14 +11,11 @@ export type GestureCallbacks = {
 };
 
 export type GestureOptions = {
-  /** Rejects a pointerdown outright — used for drag zones. */
+
   shouldStart?: (e: PointerEvent) => boolean;
-  /**
-   * Postpones the gesture to the first move: `true` starts it, `false` hands the
-   * pointer back to the browser, `null` waits for more movement.
-   */
+
   deferStart?: (e: PointerEvent, delta: number) => boolean | null;
-  /** Scroll containers must keep their own touch-action. */
+
   manageTouchAction?: boolean;
 };
 
@@ -140,7 +137,7 @@ export const installGestures = (
       }
       if (verdict !== true) return;
       pendingStart = false;
-      // Restart from where the finger is now, so the sheet does not jump by the slop.
+
       startCoord = coord;
       lastCoord = coord;
       samples.reset();
@@ -212,9 +209,3 @@ export const installGestures = (
     }
   };
 };
-
-/**
- * @deprecated Renamed to `installGestures`, for consistency with the other
- * `installX` factories. Slated for removal in 2.0; behaviour is identical.
- */
-export const attachGestures = installGestures;

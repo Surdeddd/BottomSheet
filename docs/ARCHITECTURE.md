@@ -232,8 +232,8 @@ try/catch — one buggy feature can't take down siblings or the engine.
 | `createX(deps)` | handle object | `createInertSiblings`, `createScrollCache` |
 | `notifyX(...)` | one-shot pure function | `notifyLinkedSheets` |
 
-`attachGestures` is preserved as a deprecated alias of `installGestures`
-during the v1 → v2 migration window. See `docs/migration-v2.md`.
+`attachGestures` was removed in 0.14.0 — `installGestures` is the only name.
+See `docs/migration-v2.md`.
 
 ## Plugin contract
 
@@ -325,6 +325,6 @@ other entries are pure for tree-shaking.
 ## Further reading
 
 - `docs/plugins.md` — plugin contract with a worked analytics-tracker example
-- `docs/migration-v2.md` — planned breaking changes for v2
+- `docs/migration-v2.md` — breaking changes and the stable-surface plan
 - `docs/{framework}.md` — per-adapter usage docs
 - `CONTRIBUTING.md` — development workflow

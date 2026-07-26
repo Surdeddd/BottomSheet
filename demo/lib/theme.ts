@@ -1,7 +1,6 @@
 import type { Theme, ThemePreset } from "./types";
 import { startViewTransition } from "./view-transition";
 
-
 export const detectTheme = (): Theme =>
   (localStorage.getItem("bs-demo-theme") as Theme | null) ??
   (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -35,7 +34,6 @@ export const wireThemeToggle = (): void => {
     });
   });
 };
-
 
 const presetLoaders: Record<
   Exclude<ThemePreset, "default">,

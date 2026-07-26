@@ -1,14 +1,5 @@
 import { animate, inView, scroll, stagger } from "motion";
 
-/**
- * The expensive-feeling layer: magnetic targets, a spring-tracked cursor and
- * scroll-linked section work, all on Motion's WAAPI/spring engine.
- *
- * Every effect is capability-gated — coarse pointers skip the cursor and
- * magnetism, and prefers-reduced-motion skips the lot — so the page degrades to
- * plain, fully usable typography instead of half-played animation.
- */
-
 const reduced = (): boolean =>
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -23,7 +14,6 @@ const MAGNETIC_SELECTOR = ".adapter, .chip, .topbar button, .install-copy";
 const MAGNET_STRENGTH = 0.28;
 const MAGNET_RADIUS = 90;
 
-/** Interactive targets lean toward the cursor, then spring home on leave. */
 export const initMagnetic = (): FxHandle => {
   if (reduced() || !finePointer()) return { destroy: () => {} };
 
@@ -67,7 +57,6 @@ export const initMagnetic = (): FxHandle => {
   };
 };
 
-/** A trailing ring that widens over anything clickable. */
 export const initCursor = (): FxHandle => {
   if (reduced() || !finePointer()) return { destroy: () => {} };
 
@@ -112,10 +101,6 @@ export const initCursor = (): FxHandle => {
   };
 };
 
-/**
- * Section headings draw their rule across as they enter, feature cards arrive
- * in a stagger, and the hero settles back as the page scrolls past it.
- */
 export const initScrollScenes = (): FxHandle => {
   if (reduced()) return { destroy: () => {} };
   const stops: (() => void)[] = [];
@@ -179,7 +164,6 @@ export const initScrollScenes = (): FxHandle => {
 
 const SPOTLIGHT_SELECTOR = ".feature, .advanced-card, .control-group";
 
-/** A soft light that tracks the cursor inside each card. */
 export const initSpotlight = (): FxHandle => {
   if (reduced() || !finePointer()) return { destroy: () => {} };
 
@@ -211,7 +195,6 @@ export const initSpotlight = (): FxHandle => {
   };
 };
 
-/** Section rules draw themselves left-to-right as they come into view. */
 export const initLineDraw = (): FxHandle => {
   if (reduced()) return { destroy: () => {} };
   const rules = Array.from(
@@ -233,11 +216,6 @@ export const initLineDraw = (): FxHandle => {
   };
 };
 
-/**
- * Depth parallax: elements drift at their own rate against the scroll, so the
- * page reads as layered rather than flat. Driven off Motion's scroll timeline,
- * which stays on the compositor.
- */
 export const initDepthParallax = (): FxHandle => {
   if (reduced()) return { destroy: () => {} };
   const stops: (() => void)[] = [];
@@ -266,7 +244,6 @@ export const initDepthParallax = (): FxHandle => {
   };
 };
 
-/** Hero stats count up when they actually reach the viewport. */
 export const initStatsOnView = (): FxHandle => {
   if (reduced()) return { destroy: () => {} };
   const stats = document.querySelector<HTMLElement>(".hero-stats");
@@ -287,7 +264,6 @@ export const initStatsOnView = (): FxHandle => {
   return { destroy: () => stop() };
 };
 
-/** Readouts, adapter tiles and control groups arrive in sequence. */
 export const initSequences = (): FxHandle => {
   if (reduced()) return { destroy: () => {} };
   const groups: [string, string][] = [

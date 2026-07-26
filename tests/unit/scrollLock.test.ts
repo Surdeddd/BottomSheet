@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import {
   lockBodyScroll,
   __resetScrollLockForTests,
-} from "../../src/core/lifecycle/scrollLock";
+} from "../../src/core/lifecycle/scroll-lock";
 
 describe("lockBodyScroll", () => {
   beforeEach(() => {

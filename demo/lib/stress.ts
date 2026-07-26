@@ -12,12 +12,6 @@ const START_INTERVAL_MS = 1000;
 const MIN_INTERVAL_MS = 60;
 const DECAY = 0.85;
 
-/**
- * Cycles the sheet between its smallest and largest snap at a shrinking
- * interval. It never navigates or remounts anything — it only calls snapTo —
- * but it used to abandon the sheet wherever the last cycle landed and keep its
- * timer alive after the page moved on, which read as the demo resetting itself.
- */
 export const wireStressTest = (deps: StressDeps): (() => void) => {
   const status = $<HTMLElement>("#stress-status");
   const button = $<HTMLButtonElement>("#stress-start");
@@ -33,7 +27,7 @@ export const wireStressTest = (deps: StressDeps): (() => void) => {
     }
     button.textContent = idleLabel;
     button.setAttribute("aria-pressed", "false");
-    // put the sheet back where the run found it
+
     if (restoreTo) {
       deps.getController()?.snapTo(restoreTo);
       restoreTo = null;
@@ -80,7 +74,6 @@ export const wireStressTest = (deps: StressDeps): (() => void) => {
   };
   button.addEventListener("click", onClick);
 
-  // a run that outlives its page keeps snapping into a dead controller
   const onPageHide = (): void => {
     if (timer !== null) stop("stopped");
   };

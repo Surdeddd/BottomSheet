@@ -2,7 +2,6 @@ const reducedMotion = (): boolean =>
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Thin vermillion progress line pinned to the top of the page. */
 export const initScrollProgress = (barId = "scroll-progress"): void => {
   const bar = document.getElementById(barId);
   if (!bar) return;
@@ -25,7 +24,6 @@ export const initScrollProgress = (barId = "scroll-progress"): void => {
   update();
 };
 
-/** Count the hero stats up from 0 on load. Skipped under reduced-motion. */
 export const initCountUp = (selector = ".stat-num"): void => {
   if (reducedMotion()) return;
   document.querySelectorAll<HTMLElement>(selector).forEach((el, i) => {
@@ -44,7 +42,6 @@ export const initCountUp = (selector = ".stat-num"): void => {
   });
 };
 
-/** Subtle parallax: the hero title sinks slower than the page scroll. */
 export const initHeroParallax = (selector = ".hero-title"): void => {
   if (reducedMotion()) return;
   const el = document.querySelector<HTMLElement>(selector);

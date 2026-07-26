@@ -1,4 +1,3 @@
-
 import type { DemoSettings } from "../../apps/shared";
 import type { ScrimPresetKey } from "../types";
 
@@ -124,7 +123,6 @@ export const scrimSnippetReact = (
   lines.push(`}, []);`);
   return lines.join("\n");
 };
-
 
 const scrimIsDefault = (s: DemoSettings): boolean =>
   s.scrimPreset === "monitoring" &&

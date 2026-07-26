@@ -12,7 +12,6 @@ const asElement = (target: EventTarget | null): ClosestLike | null => {
     : null;
 };
 
-/** Whether a pointer landing on `target` may start a sheet drag. */
 export function isDragAllowedFrom(
   target: EventTarget | null,
   mode: DragFrom,

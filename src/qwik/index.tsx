@@ -11,7 +11,7 @@ import {
   type QRL,
 } from "@builder.io/qwik";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
-import { devWarn } from "../core/primitives/devWarn";
+import { devWarn } from "../core/primitives/dev-warn";
 import {
   resolveTeleportTarget,
   teleportElements,

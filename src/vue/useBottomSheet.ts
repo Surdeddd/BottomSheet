@@ -27,8 +27,7 @@ export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
   teleportTo?: TeleportTarget;
-  // When false, suppress the engine-level teleport too (not just the Vue
-  // <Teleport>) so `teleport={false}` keeps the sheet fully in place.
+
   teleport?: boolean;
   backdropColor?: string;
   backdropOpacity?: number;

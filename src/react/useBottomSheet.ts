@@ -51,15 +51,6 @@ export type UseBottomSheetReturn<TId extends string = string> =
       opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
     ) => () => void;
     recompute: () => void;
-    /**
-     * @deprecated Use `getEngine()`. Under React Strict Mode the layout effect
-     * double-invokes: teardown nulls the ref, so this field reads `null` for a
-     * render and only the second mount restores a live engine. `getEngine()`
-     * reads the ref at call time and is safe across that window, plus the
-     * resize / setSnapPoints paths that fire no React-tracked event. Slated for
-     * removal in 2.0.
-     */
-    engine: BottomSheetEngine | null;
     getEngine: () => BottomSheetEngine | null;
   };
 
@@ -303,7 +294,6 @@ export function useBottomSheet<TId extends string = string>(
         addAnchor,
         setScrimStages,
         recompute,
-        engine: engineRef.current,
         getEngine,
       }) as unknown as UseBottomSheetReturn<TId>,
     [

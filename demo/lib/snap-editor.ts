@@ -3,11 +3,6 @@ import { snapPoints } from "../apps/shared";
 
 export type EditableSnap = { id: string; size: number };
 
-/**
- * Derived from the demo's own snap config rather than restated here — the two
- * lists had already drifted (the editor offered full: 620 against the sheet's
- * 520), so the editor opened pre-seeded with sizes the sheet never used.
- */
 export const defaultSnaps = (): EditableSnap[] =>
   snapPoints("bottom")
     .filter(s => s.id !== "closed" && typeof s.size === "number")
@@ -116,15 +111,13 @@ export const mountSnapEditor = (deps: SnapEditorDeps): void => {
 
   $<HTMLButtonElement>("#snap-add").addEventListener("click", () => {
     const base = customSnaps ?? defaultSnaps();
-    // `Date.now() % 1000` collided often enough to produce duplicate ids, which
-    // the engine warns about and which make the row ambiguous to edit.
+
     const taken = new Set(base.map(s => s.id));
     let n = base.length + 1;
     while (taken.has(`snap-${n}`)) n++;
 
     customSnaps = [...base, { id: `snap-${n}`, size: 200 }];
-    // remove/edit both reconcile and refresh the chips; add did neither, so a
-    // new point never reached the chip row or the active-snap check.
+
     reconcileInitialSnap(settings, customSnaps);
     render();
     onChipUpdate();

@@ -1,9 +1,9 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { measureSheetNatural } from "../../src/core/features/fit-measurement";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import { __resetRouteCoordinatorForTests } from "../../src/core/features/route";
 
 const layoutOffsetHeight = (el: HTMLElement, natural: () => number): void => {

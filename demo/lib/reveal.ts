@@ -1,14 +1,6 @@
 const STAGGER_STEP_MS = 60;
 const FAILSAFE_MS = 2500;
 
-/**
- * One-shot scroll-reveal: elements carrying [data-reveal] get .reveal (hidden,
- * shifted) and reveal on intersection. No-JS / reduced-motion / no-IO → no
- * classes are added, content stays fully visible.
- *
- * .reveal hides with `visibility`, so a never-firing observer would strand the
- * content: anything already scrolled into view is force-revealed as a backstop.
- */
 export const initReveal = (root: ParentNode = document): void => {
   const els = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal]"));
   if (els.length === 0) return;

@@ -21,7 +21,7 @@
   "readme": "README.md",
   "navigationLinks": {
     "GitHub": "https://github.com/Surdeddd/BottomSheet",
-    "Migration v2": "https://github.com/Surdeddd/BottomSheet/blob/main/docs/migration-v2.md"
+    "Breaking changes": "https://github.com/Surdeddd/BottomSheet/blob/main/docs/migration-v2.md"
   },
   "categorizeByGroup": true,
   "sort": ["source-order"],

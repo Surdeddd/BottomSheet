@@ -1,7 +1,4 @@
-/* ——— motion system ———
-   One vocabulary for every transition on the page: three curves, four speeds.
-   Anything that moves picks from these, so the whole site feels authored by
-   one hand rather than assembled from snippets. */
+
 :root {
   --e-out: cubic-bezier(0.2, 0.8, 0.3, 1);
   --e-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -378,15 +375,13 @@
   --paper-deep: #ece2d0;
   --ink: #1a1614;
   --ink-2: #3a322c;
-  /* deepened: at #6b6359 it measured 3.7:1 once composited over the
-     translucent row tints and the canvas, under the AA floor */
+
   --muted: #585047;
   --hairline: rgba(26, 22, 20, .14);
   --hairline-strong: rgba(26, 22, 20, .32);
   --vermillion: #c12d1c;
   --vermillion-dim: #9a2516;
-  /* WebGL scene reads these directly — the sheet has to sit above the page,
-     not merge into it, which needs its own values per theme. */
+
   --scene-shell: #e3d8c4;
   --scene-surface: #f7f2e8
 }
@@ -449,7 +444,7 @@ body {
   position:fixed;
   top:16px;
   right:24px;
-  /* above .grain (9999) so toggles stay hittable even if pointer-events regress */
+
   z-index:10001;
   display:flex;
   gap:6px
@@ -516,9 +511,7 @@ kbd {
   border-radius:4px;
   background:#fffaf099
 }
-/* Dark theme: the translucent light keycap composites to a light grey that
-   clashes with inherited --muted text (1.12:1). Give it an opaque dark cap
-   with light ink so the keycap stays legible (WCAG AA). */
+
 :root[data-theme=dark] kbd {
   background:var(--paper-deep);
   color:var(--ink-2)
@@ -529,14 +522,12 @@ kbd {
   padding:56px 48px 32px;
   position:relative
 }
-/* ——— anatomy: tall scroll section, pinned copy, scene pulls apart ——— */
-/* Left transparent on purpose — this is the one section the pinned scene is
-   meant to show through, beside the legend. */
+
 .assembly {
   max-width:1320px;
   margin:0 auto;
   padding:0 48px;
-  /* a long track: the assembly used to be over in a flick of the wheel */
+
   min-height:360vh;
   position:relative;
   z-index:1
@@ -565,8 +556,7 @@ kbd {
   margin:0 0 28px;
   max-width:44ch
 }
-/* Only meaningful where the scene exists; below 900px there is nothing to
-   pull apart, so the instruction would be a lie. */
+
 .assembly-hint {
   font-size:11px;
   letter-spacing:.14em;
@@ -586,7 +576,7 @@ kbd {
   gap:2px;
   position:relative
 }
-/* progress spine: fills as the layers separate */
+
 .assembly-legend::before {
   content:"";
   position:absolute;
@@ -598,8 +588,7 @@ kbd {
   transition:height var(--t-base) var(--e-out);
   z-index:1
 }
-/* Dormant rows stay fully legible — the state reads through the rule and the
-   number, never by fading text below its contrast floor. */
+
 .asm-item {
   display:grid;
   grid-template-columns:32px 1fr auto;
@@ -643,13 +632,12 @@ kbd {
   color:var(--muted);
   margin-top:3px
 }
-/* the actual selector each layer maps to — the block claims these are real
-   nodes, so it should name them */
+
 .asm-node {
   grid-area:node;
   font-size:11px;
   letter-spacing:.02em;
-  /* --muted resolves to 4.2:1 against paper here — under the AA floor */
+
   color:var(--ink-2);
   background:color-mix(in oklab,var(--ink),transparent 94%);
   border-radius:3px;
@@ -687,7 +675,6 @@ kbd {
   }
 }
 
-/* ——— footer links ——— */
 .footer-links {
   display:flex;
   flex-wrap:wrap;
@@ -729,7 +716,6 @@ kbd {
   transform:scaleX(1)
 }
 
-/* ——— per-feature diagrams ——— */
 .feature-viz {
   margin:4px 0 2px;
   opacity:.9
@@ -742,7 +728,6 @@ kbd {
   opacity:1
 }
 
-/* ——— section rules that draw themselves ——— */
 .sec-cap,
 .features-head {
   position:relative
@@ -765,7 +750,6 @@ kbd {
   transform:scaleX(1)
 }
 
-/* ——— terminal caret on the install line ——— */
 .caret {
   display:inline-block;
   width:8px;
@@ -783,7 +767,6 @@ kbd {
   .caret { animation:none; opacity:.8 }
 }
 
-/* ——— section rail ——— */
 .section-rail {
   position:fixed;
   top:50%;
@@ -829,7 +812,6 @@ kbd {
   .section-rail { display:none }
 }
 
-/* ——— depth: cards sit in space rather than on a flat plane ——— */
 .features-grid,
 .advanced-grid {
   perspective:1400px;
@@ -849,7 +831,7 @@ kbd {
 :root[data-theme=dark] .advanced-card.has-spotlight:hover {
   box-shadow:0 26px 60px -30px rgba(0,0,0,.85)
 }
-/* the device gets a real cast shadow so it reads as an object on the page */
+
 .device-bezel {
   box-shadow:0 60px 90px -50px rgba(26,22,20,.55),0 2px 6px rgba(26,22,20,.12)
 }
@@ -863,7 +845,6 @@ kbd {
   }
 }
 
-/* ——— cursor spotlight on cards ——— */
 .has-spotlight {
   position:relative;
   isolation:isolate
@@ -892,7 +873,6 @@ kbd {
   transform:translateY(-3px)
 }
 
-/* ——— cursor ring (fine pointers, motion allowed) ——— */
 .cursor-ring {
   position:fixed;
   top:0;
@@ -917,10 +897,6 @@ kbd {
   .cursor-ring { display:none }
 }
 
-/* WebGL stage sits behind the type; it only ever mounts when the scene runs. */
-/* Sticky so the phone stays in frame while the sheet walks its snap ladder. */
-/* Clears the kicker line above and the stats row below: the scene sits in the
-   band between them, so it never has to compete with type it cannot move. */
 .hero-stage {
   position:absolute;
   top:76px;
@@ -932,16 +908,12 @@ kbd {
   opacity:0;
   transition:opacity .9s ease
 }
-/* Lives inside the hero by default so the stats row below can never slide
-   under it, and only pins once the anatomy section reaches the top. Behind the
-   page either way: a fixed element outranks static siblings whatever its
-   z-index claims. */
+
 .hero-stage.is-live {
   transition:none;
   z-index:0
 }
-/* Pinned in the anatomy section there is no stats row to clear, so the stage
-   takes the whole right half — it was reading as a thumbnail out there. */
+
 .hero-stage.is-pinned {
   position:fixed;
   top:11vh;
@@ -972,7 +944,7 @@ kbd {
   position:relative;
   z-index:1
 }
-/* The scene never mounts below this width, so the stage collapses with it. */
+
 @media (max-width:900px) {
   .hero-stage {
     display:none
@@ -1439,8 +1411,7 @@ kbd {
   line-height:1.65;
   border-radius:4px;
   overflow-x:auto;
-  /* Wrap rather than clip: the snippet is the point of the panel, and a
-     horizontal scrollbar hid the right-hand half of every long line. */
+
   white-space:pre-wrap;
   overflow-wrap:anywhere;
   letter-spacing:-.005em;
@@ -1476,8 +1447,7 @@ kbd {
 .c-a {
   color:#c4a47a
 }
-/* Six groups, so the track count has to divide six or the last row leaves a
-   ragged hole: 340px lands on 3 / 2 / 1 columns as the page narrows. */
+
 .controls {
   max-width:1320px;
   margin:0 auto;
@@ -1502,7 +1472,7 @@ kbd {
   border-right:none;
   padding-right:0
 }
-/* the rule belongs at the end of each row, not just the end of the list */
+
 @media (min-width:781px) {
   .control-group:nth-child(3n) {
     border-right:none
@@ -1594,7 +1564,7 @@ kbd {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  /* the visible track stays 2px; the grab area is what needs the height */
+
   height: 34px;
   background: transparent;
   cursor: pointer;
@@ -1642,7 +1612,7 @@ kbd {
   outline-offset: 4px;
   border-radius: 4px;
 }
-/* The label is the tap target, so it carries the height, not the 20px switch. */
+
 .toggle {
   display:flex;
   align-items:center;
@@ -1809,7 +1779,7 @@ kbd {
 .snap-editor-row .remove {
   background:transparent;
   border:none;
-  /* --vermillion lands at 4.47:1 on the editor row — just under the floor */
+
   color:var(--vermillion-dim);
   cursor:pointer;
   font-size:14px;
@@ -2006,7 +1976,7 @@ kbd {
   font-family:var(--mono);
   font-size:10px;
   letter-spacing:.22em;
-  /* was #dc3522f2 on the dark banner — 3.9:1, under the 4.5 floor */
+
   color:#ff8f7d;
   text-transform:uppercase
 }
@@ -2378,8 +2348,7 @@ kbd {
     font-size:11px
   }
 }
-/* ——— scroll reveal (JS adds .reveal; no-JS stays visible) ——— */
-/* ——— hero entrance ——— */
+
 .title-inner {
   display: block;
   transform: translateY(112%);
@@ -2399,8 +2368,7 @@ kbd {
 .hero-meta { animation-delay: 0.02s; }
 .hero-lede { animation-delay: 0.32s; }
 .hero-stats { animation-delay: 0.48s; }
-/* visibility, not opacity alone: a transparent ancestor still exposes its text
-   to contrast tooling and screen readers while being invisible on screen. */
+
 .reveal {
   opacity: 0;
   visibility: hidden;
@@ -2417,8 +2385,7 @@ kbd {
   transform: none;
   will-change: auto;
 }
-/* Large containers fade without translate: a moving transform on an ancestor
-   desyncs Playwright's element screenshots (layout box vs rendered pixels). */
+
 .footer.reveal {
   transform: none;
 }
@@ -2537,7 +2504,6 @@ kbd {
   background: color-mix(in srgb, var(--vermillion, #c12d1c) 12%, transparent);
 }
 
-/* ——— section captions ——— */
 .sec-cap {
   max-width: 1320px;
   margin: 0 auto;
@@ -2560,7 +2526,6 @@ kbd {
   background: var(--vermillion);
 }
 
-/* ——— scroll progress hairline ——— */
 .scroll-progress {
   position: fixed;
   top: 0;
@@ -2574,7 +2539,6 @@ kbd {
   pointer-events: none;
 }
 
-/* ——— feature hover accent ——— */
 .feature::after {
   content: "";
   position: absolute;
@@ -2591,7 +2555,6 @@ kbd {
   transform: scaleX(1);
 }
 
-/* ——— chip press + focus rings ——— */
 .chip:active {
   transform: scale(0.95);
 }
@@ -2602,7 +2565,6 @@ kbd {
   outline-offset: 2px;
 }
 
-/* ——— control / advanced hover treatment ——— */
 .control-group,
 .advanced-card {
   position: relative;
@@ -2628,10 +2590,6 @@ kbd {
   transform: scaleX(1);
 }
 
-/* ——— footer install copy ——— */
-/* The button used to sit absolutely over the command with a hand-tuned 92px
-   reserve — which "копировать" (105px) overran, covering the package name.
-   A flex row makes the reserve automatic in every language. */
 .install-row {
   display: flex;
   align-items: center;
@@ -2666,7 +2624,6 @@ kbd {
   .sec-cap { padding: 14px 16px 0; }
 }
 
-/* ——— view transitions (adapter / language switch) ——— */
 ::view-transition-old(root) {
   animation: vt-root-out 0.22s ease both;
 }

@@ -1,4 +1,4 @@
-import { devWarn } from "../core/primitives/devWarn";
+import { devWarn } from "../core/primitives/dev-warn";
 import type { SheetMode, SnapPoint } from "../core/types";
 
 export type SheetConfig = {

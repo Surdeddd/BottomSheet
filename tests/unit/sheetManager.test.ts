@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSheetManager } from "../../src/core/lifecycle/sheetManager";
+import { createSheetManager } from "../../src/core/lifecycle/sheet-manager";
 
 describe("createSheetManager", () => {
   it("registers and resolves configs by key", () => {

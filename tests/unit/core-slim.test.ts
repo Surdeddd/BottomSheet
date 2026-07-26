@@ -7,9 +7,9 @@ import {
   persistFeature,
   autoCollapseFeature,
 } from "../../src/core/features-entry";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import { __resetHistoryCoordinatorForTests } from "../../src/core/features/history-coordinator";
 
 const settle = () => new Promise(r => setTimeout(r, 30));

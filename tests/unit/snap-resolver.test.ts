@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { SnapResolver } from "../../src/core/primitives/snap-resolver";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import type { SnapPointDef } from "../../src/core/types";
 
 const flush = (): void => __resetCssLengthProbeForTests();

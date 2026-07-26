@@ -206,7 +206,7 @@
     {
       "name": "core (engine + types)",
       "path": "dist/index.js",
-      "limit": "25 KB",
+      "limit": "21.5 KB",
       "gzip": true
     },
     {
@@ -269,7 +269,7 @@
     {
       "name": "debug overlay (subpath)",
       "path": "dist/debug.js",
-      "limit": "3 KB",
+      "limit": "1.2 KB",
       "gzip": true
     },
     {
@@ -281,7 +281,7 @@
     {
       "name": "features (subpath)",
       "path": "dist/features.js",
-      "limit": "4 KB",
+      "limit": "2.6 KB",
       "gzip": true
     }
   ],

@@ -1,7 +1,3 @@
-/**
- * Pointer capture does not stop native touch scrolling — only a non-passive
- * preventDefault does. Kept separate so surfaces can opt in per drag.
- */
 export function installTouchScrollGuard(
   surface: HTMLElement,
   isDragging: () => boolean,

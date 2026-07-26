@@ -15,44 +15,13 @@ export type {
   EngineFeatureStage,
 } from "./types";
 
-// The @deprecated tags live on the declarations themselves, not here: JSDoc on
-// an export specifier is dropped when the .d.ts is rolled up, and re-binding
-// through `const` aliases defeats tree-shaking (measured: +0.5 KB gzip on the
-// core entry, over budget). Plain re-exports carry the tag through both.
-export {
-  tween,
-  easeOutBack,
-  easeOutCubic,
-  prefersReducedMotion,
-} from "./animation/animation";
-export { runSpring, DEFAULT_SPRING } from "./animation/spring";
-export {
-  findNearest,
-  findById,
-  allowedRange,
-} from "./primitives/snap-points";
 export { resolveSnap, resolveSnapList } from "./primitives/snap-points";
-export { installGestures, attachGestures } from "./gestures";
+export { installGestures } from "./gestures";
 
-export { installFocusTrap } from "./lifecycle/focusTrap";
-export { lockBodyScroll } from "./lifecycle/scrollLock";
-export { sheetStack } from "./lifecycle/sheetStack";
-export { createSheetManager } from "./lifecycle/sheetManager";
-
-export { OverlayEngine, Overlay, createOverlay } from "./overlay";
-export type {
-  OverlayOptions,
-  OverlayState,
-  OverlayEdge,
-  OverlayEventMap,
-  OverlayPreset,
-  OverlayUpdate,
-  OverlayAnimation,
-  OverlayCloseReason,
-  SwipeToCloseConfig,
-  OverlayMountTarget,
-} from "./overlay";
-export { OVERLAY_PRESETS } from "./overlay";
+export { installFocusTrap } from "./lifecycle/focus-trap";
+export { lockBodyScroll } from "./lifecycle/scroll-lock";
+export { sheetStack } from "./lifecycle/sheet-stack";
+export { createSheetManager } from "./lifecycle/sheet-manager";
 
 export type {
   SnapPoint,
@@ -78,8 +47,8 @@ export type {
   SpringRunOptions,
   SpringHandle,
 } from "./animation/spring";
-export type { StackEntry } from "./lifecycle/sheetStack";
-export type { SheetConfig, SheetManager } from "./lifecycle/sheetManager";
+export type { StackEntry } from "./lifecycle/sheet-stack";
+export type { SheetConfig, SheetManager } from "./lifecycle/sheet-manager";
 export type {
   AnchorOptions,
   AnchorPosition,

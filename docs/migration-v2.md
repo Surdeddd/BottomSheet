@@ -1,208 +1,199 @@
-# Migration plan: 1.0 → 2.0 (draft)
+# Breaking changes and the stable-surface plan
 
-> **Status:** the package is currently **0.x** (see `version` in
-> `package.json`). Neither v1.0 nor v2.0 has shipped. This document is the
-> **draft plan** for the deprecations the 1.0 line is expected to carry and the
-> breaking changes slated for the eventual 2.0. Nothing here has a release
-> date, and the "1.x" labels below describe the *planned* 1.0 stable line — not
-> a released version.
+> **Status:** the package is **0.x** (see `version` in `package.json`). Neither
+> 1.0 nor 2.0 has shipped, and both are still far off. Under 0.x semver, a minor
+> bump may break API — so the curation once drafted for "2.0" landed in
+> **0.14.0** instead, and the version line continues 0.14 → 0.15 → … This
+> document records what changed and what the eventual stable surface is expected
+> to freeze.
 
-## Status legend
+## Removed in 0.14.0
 
-- ⚠️ **Planned deprecation (1.0 line)** — will carry a TS `@deprecated`
-  strikethrough once tagged; keeps working at runtime
-- 🔥 **Planned removal (2.0)** — slated for removal; the replacement already
-  exists today
+Each removal has a replacement that already existed before the change. If you
+are on 0.13.x, apply these edits and nothing else changes at runtime.
 
-## Public API curation
-
-### `OverlayEngine` no longer barrel-exported
-
-⚠️ Planned deprecation (1.0) · 🔥 Planned removal (2.0)
+### `OverlayEngine` is subpath-only
 
 ```ts
-// Today (still exported; slated for deprecation):
+// Before (0.13):
 import { OverlayEngine, Overlay, createOverlay } from "@surdeddd/bottom-sheet";
 
-// Recommended (works now, and after 2.0):
+// Now:
 import { OverlayEngine, Overlay, createOverlay } from "@surdeddd/bottom-sheet/overlay";
 ```
 
-The same change applies to `OverlayOptions`, `OverlayState`, `OverlayEdge`,
-`OverlayEventMap` types.
+The same applies to `OVERLAY_PRESETS` and the `OverlayOptions`, `OverlayState`,
+`OverlayEdge`, `OverlayEventMap`, `OverlayPreset`, `OverlayUpdate`,
+`OverlayAnimation`, `OverlayCloseReason`, `SwipeToCloseConfig`,
+`OverlayMountTarget` types.
 
-**Why:** the barrel pulls `OverlayEngine` (~4 KB gzip) into bundles that
-don't need it. Bundlers with imperfect tree-shaking (older Webpack, esbuild
-without sideEffects-array support) keep the dead code. The subpath import
-is bundle-size-safe.
+**Why:** the barrel pulled `OverlayEngine` (~4 KB gzip) into bundles that never
+used it. Bundlers with imperfect tree-shaking (older Webpack, esbuild without
+sideEffects-array support) kept the dead code. The subpath import is
+bundle-size-safe.
 
-### `attachGestures` renamed to `installGestures`
-
-⚠️ Planned deprecation (1.0) · 🔥 Planned removal (2.0)
+### `attachGestures` → `installGestures`
 
 ```ts
-// Today (still exported; slated for deprecation):
+// Before (0.13):
 import { attachGestures } from "@surdeddd/bottom-sheet";
 
-// Recommended (works now, and after 2.0):
+// Now:
 import { installGestures } from "@surdeddd/bottom-sheet";
 ```
 
-**Why:** naming consistency with the other `installX` feature factories
-(`installPersist`, `installRoute`, `installAutoCollapse`,
-`installResizeObserver`, `installSliderKeyboard`, etc.).
+Behaviour is identical — it was an alias. The name now matches the other
+`installX` factories (`installPersist`, `installRoute`, `installAutoCollapse`,
+`installResizeObserver`, `installSliderKeyboard`).
 
-### Internal helpers will be moved off the public surface
+### Engine-internal helpers are off the public surface
 
-🔥 Planned removal (2.0)
-
-The following are exported from the barrel for legacy compatibility but
-are marked `@internal`. The 2.0 plan removes them entirely:
+No longer exported from the barrel:
 
 - `tween`, `easeOutBack`, `easeOutCubic`, `prefersReducedMotion`
 - `runSpring`, `DEFAULT_SPRING`
 - `findNearest`, `findById`, `allowedRange`
-- `attachGestures` (use `installGestures`)
 
-Consumers using any of these are doing engine-internal work and should
-either:
+They remain inside the engine — only the public export is gone. Consumers using
+any of them were doing engine-internal work and should either:
 
 1. Switch to the public engine API (`engine.snapTo`, `engine.on`,
    `engine.state`) for state observation, or
-2. Inline the helper themselves (most are <10 lines), or
-3. File an issue describing the use case so we can promote a curated
-   replacement to the public surface.
+2. Inline the helper (most are under 10 lines), or
+3. File an issue describing the use case, so a curated replacement can be
+   promoted to the public surface.
 
-`prefersReducedMotion()` specifically: replace with the one-liner
-`window.matchMedia("(prefers-reduced-motion: reduce)").matches` directly.
-The engine no longer uses the helper internally — it subscribes to the
-media query via a live listener.
+`prefersReducedMotion()` specifically: use
+`window.matchMedia("(prefers-reduced-motion: reduce)").matches`. The engine no
+longer uses the helper internally — it subscribes to the media query with a live
+listener.
 
-## React adapter
-
-### `engine` field on `useBottomSheet` return value
-
-⚠️ Planned deprecation (1.0) · 🔥 Planned removal (2.0)
+### React: the `engine` field is gone
 
 ```ts
-// Today (still exported; slated for deprecation):
+// Before (0.13):
 const sheet = useBottomSheet({ snapPoints });
 sheet.engine?.snapTo("full");
 
-// Recommended (works now, and after 2.0):
+// Now:
 const sheet = useBottomSheet({ snapPoints });
 sheet.getEngine()?.snapTo("full");
 ```
 
-**Why:** under React Strict Mode the layout effect double-invokes — the
-effect tears down (`engineRef.current = null`), the next render reads the
-bare `engine` field as `null` for one frame, and only the second mount
-restores a live engine. Consumers calling methods through this field
-during that window get `null`. `getEngine()` reads the live ref at call
-time and is Strict-Mode-safe across all render-phase races, plus
-resize/setSnapPoints paths that don't fire React-tracked events.
+**Why:** under React Strict Mode the layout effect double-invokes — teardown
+sets `engineRef.current = null`, the next render read the bare `engine` field as
+`null` for one frame, and only the second mount restored a live engine.
+Consumers calling methods through the field during that window got `null`.
+`getEngine()` reads the live ref at call time and is Strict-Mode-safe, plus it
+covers the resize / `setSnapPoints` paths that fire no React-tracked event.
 
-## Files that may move (no API change)
+### Internal file renames (no API change)
 
-The following files use camelCase but everything else under `src/core/` is
-kebab-case. If/when v2 standardises naming, these files would rename
-without API changes:
+`src/core/` is now uniformly kebab-case:
 
-- `src/core/focusTrap.ts` → `src/core/focus-trap.ts`
-- `src/core/scrollLock.ts` → `src/core/scroll-lock.ts`
-- `src/core/sheetStack.ts` → `src/core/sheet-stack.ts`
-- `src/core/sheetManager.ts` → `src/core/sheet-manager.ts`
-- `src/core/cssLength.ts` → `src/core/css-length.ts`
-- `src/core/snapPoints.ts` → `src/core/snap-points.ts`
+| Before | After |
+| --- | --- |
+| `lifecycle/focusTrap.ts` | `lifecycle/focus-trap.ts` |
+| `lifecycle/scrollLock.ts` | `lifecycle/scroll-lock.ts` |
+| `lifecycle/sheetStack.ts` | `lifecycle/sheet-stack.ts` |
+| `lifecycle/sheetManager.ts` | `lifecycle/sheet-manager.ts` |
+| `primitives/cssLength.ts` | `primitives/css-length.ts` |
+| `primitives/devWarn.ts` | `primitives/dev-warn.ts` |
 
-Consumers importing through the public package don't see file paths — only
-internal contributors and tooling that hard-codes paths would notice. v2
-may or may not do this.
+Consumers importing through the package see no file paths — only internal
+contributors and tooling that hard-codes paths are affected.
+`BottomSheetEngine.ts` keeps its name: the file matches the exported class,
+which is the standard exception. React-style hook files (`useBottomSheet.ts`)
+also stay camelCase, per the ecosystem convention.
 
-`BottomSheetEngine.ts` stays as-is: file name matches the exported class,
-which is the standard exception.
+## Migration scripts
 
-## Things that are NOT changing in v2
+```bash
+# attachGestures → installGestures
+git ls-files | grep -E '\.(ts|tsx|js|jsx)$' | xargs sed -i '' \
+  's/\battachGestures\b/installGestures/g'
 
-Listed for clarity:
+# OverlayEngine barrel → subpath
+git ls-files | grep -E '\.(ts|tsx|js|jsx)$' | xargs sed -i '' \
+  -E 's|from ["'\'']@surdeddd/bottom-sheet["'\'']|FROM_BARREL|; \
+      s|FROM_BARREL.*\b(OverlayEngine\|Overlay\|createOverlay)\b|from "@surdeddd/bottom-sheet/overlay"|'
+
+# (Review the diff manually — sed-based migrations are best-effort.)
+```
+
+Since the removed symbols no longer exist, `tsc` reports every remaining call
+site as an error — the compiler is the migration checklist.
+
+## Not changing
 
 - The engine's public method shape (`snapTo`, `dragTo`, `open`, `close`,
   `setAllowed`, `setSnapPoints`, `on`, `use`, `destroy`, `state` getter)
 - `EngineOptions` field names (additions allowed; renames are out)
 - The plugin contract (`engine.use(plugin)`)
 - The event map (`SheetEventMap`)
-- All adapter return shapes — `useBottomSheet`'s return object loses the
-  deprecated `engine` field but everything else stays
-- Subpath exports for adapters (`/react`, `/vue`, etc.)
-- The Custom Element's HTML attribute names (`snap-points`, `mode`,
-  `allowed`, etc.) and dispatched events (`snap`, `open`, `close`,
-  `progress`)
+- Adapter return shapes, aside from React's removed `engine` field
+- Subpath exports for adapters (`/react`, `/vue`, …)
+- The Custom Element's attribute names (`snap-points`, `mode`, `allowed`, …)
+  and dispatched events (`snap`, `open`, `close`, `progress`)
 
-## Behaviour clarifications (NOT breaking)
+## Behaviour clarifications (not breaking)
 
-The following are NOT API changes — they document existing semantics that
-were either implicit before or relaxed in 1.x patch releases. Listed here
-so you know what to expect without reading the source.
+These document existing semantics that were implicit before.
 
 ### `Plugin.install` is transactional via the optional `scope` arg
 
-Plugins can register partial cleanups before risky steps. Engine drains
-the scope on install failure, so a `plugin.install` that throws midway
-no longer leaks listeners. Old plugins (no `scope` arg) keep working
-unchanged.
+Plugins can register partial cleanups before risky steps. The engine drains the
+scope on install failure, so a `plugin.install` that throws midway leaks no
+listeners. Plugins without the `scope` arg keep working unchanged.
 
 ```ts
 const myPlugin: Plugin = {
   name: "analytics",
   install: (engine, scope) => {
     const off = engine.on("snap", trackSnap);
-    scope.add(off);                    // cleaned up on install throw
-    riskyFeatureProbe();               // if this throws, off() runs
-    return () => trackPluginDestroyed(); // also runs on destroy()
+    scope.add(off);
+    riskyFeatureProbe();
+    return () => trackPluginDestroyed();
   },
 };
 ```
 
-`TeardownScope` is exported from the public surface for plugin authors.
+`TeardownScope` is exported for plugin authors.
 
-### `"drag"` event payload is reused across emissions
+### The `"drag"` payload is reused across emissions
 
-The `{size, delta}` payload object emitted on every `onMove` is the SAME
-object identity across frames — engine mutates it instead of allocating
-per frame. Consumers must NOT retain the reference (e.g. push to array
-without cloning), same as you'd never retain a browser `PointerEvent`.
+The `{size, delta}` object emitted on every `onMove` is the SAME object identity
+across frames — the engine mutates it instead of allocating per frame. Do not
+retain the reference, the same way you would never retain a browser
+`PointerEvent`.
 
 ```ts
-// ❌ Wrong — captures a moving target. All entries hold the same object.
+// Wrong — every entry holds the same moving object.
 const samples: { size: number; delta: number }[] = [];
 engine.on("drag", payload => samples.push(payload));
 
-// ✓ Right — clone what you need.
+// Right — clone what you need.
 engine.on("drag", payload => samples.push({ ...payload }));
 ```
 
-This was always the intended contract; explicit JSDoc was added in 1.x.
-
 ### `OverlayEngine.destroy()` while open restores focus exactly once
 
-`returnFocus` (or its callable form) fires once per open cycle. If you
-call `close()` then `destroy()`, focus is NOT moved twice — the controller
-seals after the first release. Older betas could double-fire.
+`returnFocus` (or its callable form) fires once per open cycle. Calling
+`close()` then `destroy()` does not move focus twice — the controller seals
+after the first release.
 
 ### Plugin install errors don't crash the engine
 
-If `plugin.install()` throws, the engine catches it, drains any partial
-`scope.add` cleanups (LIFO), and rethrows the error via
-`queueMicrotask` so dev tools surface it on the next tick. Sibling
-plugins still install. The engine remains usable.
+If `plugin.install()` throws, the engine catches it, drains partial `scope.add`
+cleanups (LIFO), and rethrows via `queueMicrotask` so dev tools surface it on
+the next tick. Sibling plugins still install; the engine stays usable.
 
-## Planned 1.0 stable contract (draft)
+## Planned stable contract
 
-The following surface is the one the 1.0 release is expected to **freeze** —
-once 1.0 ships, additions are allowed but no rename, removal, signature
-change, or behaviour change without a 2.0 breaking-change cycle. Documented
-here (ahead of 1.0) so every contributor (human + AI agent) has one canonical
-reference for what the stable surface will be.
+The surface a 1.0 release would **freeze**. Once frozen, additions are allowed
+but no rename, removal, signature change, or behaviour change without a major
+cycle. Documented ahead of time so every contributor has one canonical
+reference.
 
 ### Engine
 
@@ -218,65 +209,47 @@ reference for what the stable surface will be.
   - `use(plugin: Plugin): this`
   - `destroy(): void`
   - `getAllowedIds(): string[]`
-  - **Scrim**: `setScrimMode`, `setScrimEnabled`, `setScrimTapToClose`, `setScrimColor`, `setScrimBlur`, `setScrimInteractive`, `setBackdropRange`, `setScreenRange`, `setScrim`, `setScrimOverlay`, `getScrimState`
-- Public getters: `state` (returns `EngineState` snapshot)
+  - **Drag control**: `setDragFrom`, `getDragFrom`, `setDragFromContent`,
+    `attachDragSurface`
+  - **Scrim**: `setScrimMode`, `setScrimEnabled`, `setScrimTapToClose`,
+    `setScrimColor`, `setScrimBlur`, `setScrimInteractive`, `setBackdropRange`,
+    `setScreenRange`, `setScrim`, `setScrimOverlay`, `getScrimState`
+- Public getters: `state` (returns an `EngineState` snapshot)
 
 ### Overlay (`@surdeddd/bottom-sheet/overlay` subpath)
 
 - `class OverlayEngine` — constructor `new OverlayEngine(opts: OverlayOptions)`
 - Public methods: `open`, `close`, `toggle`, `destroy`, `on`
-- **Setters**: `setBackdropOpacity`, `setBackdropFilter`, `setSwipeToClose`, `setEnterAnimation`, `setExitAnimation`, `setReturnFocus`, `setOverlay`, `setOverlayChildren`, `clearOverlayChildren`
-- **Presets**: `OVERLAY_PRESETS` const (`'sheet' | 'dialog' | 'sidebar' | 'toast'`)
+- **Setters**: `setBackdropOpacity`, `setBackdropFilter`, `setSwipeToClose`,
+  `setEnterAnimation`, `setExitAnimation`, `setReturnFocus`, `setOverlay`,
+  `setOverlayChildren`, `clearOverlayChildren`
+- **Presets**: `OVERLAY_PRESETS` (`'sheet' | 'dialog' | 'sidebar' | 'toast'`)
 
-### Types pinned for v1
+### Pinned types
 
 `SnapPoint`, `SnapPointDef`, `SnapId<T>`, `SheetMode`, `SheetEventMap`,
-`EngineOptions`, `EngineState`, `Plugin`, `ScrimPreset`, `ScrimUpdate`,
-`ScrimOverlayOptions`, `ScrimOverlayPosition`, `OverlayPreset`,
+`EngineOptions`, `EngineState`, `Plugin`, `DragFromMode`, `ScrimPreset`,
+`ScrimUpdate`, `ScrimOverlayOptions`, `ScrimOverlayPosition`, `OverlayPreset`,
 `OverlayUpdate`, `OverlayAnimation`, `OverlayCloseReason`,
 `SwipeToCloseConfig`, `OverlayMountTarget`.
 
 ### Adapter pin
 
-- `useBottomSheet` (React/Vue/Svelte/Solid/Qwik) — return shape stable.
-  Hooks accept `onSnap?: (id) => void` callback consistently.
+- `useBottomSheet` (React/Vue/Svelte/Solid/Qwik) — return shape stable. Hooks
+  accept `onSnap?: (id) => void` consistently.
 - `BottomSheet` component (React) — props pinned.
-- Custom Element `<bottom-sheet>` (the `defineBottomSheet()` default tag) — attribute names + dispatched events stable.
+- Custom Element `<bottom-sheet>` (the `defineBottomSheet()` default tag) —
+  attribute names and dispatched events stable.
 
-### Internal — NOT pinned (subject to refactor without notice)
+### Internal — not pinned
 
 Anything under `src/core/controllers/`, `src/core/primitives/` (other than
-public type re-exports), `src/core/features/`, the engine's private
-fields, ScrimController class shape, AnimationRunner / LifecycleController
-(post-extraction). Tests reading internals via `as unknown as` casts may
-break on refactor — use the public introspection APIs (`engine.state`,
-`engine.getScrimState()`, etc.) when possible.
-
-## Bumping ahead of v2
-
-There's no need to migrate everything immediately. The TypeScript
-`@deprecated` tag surfaces in editor intellisense as a strikethrough; CI
-linters can treat it as a warning or error per project preference. Run
-`tsc` with `--strict` and a TS-deprecation rule (e.g.
-`@typescript-eslint/no-deprecated`) to find every call site.
-
-Migration scripts for the rename:
-
-```bash
-# attachGestures → installGestures
-git ls-files | grep -E '\.(ts|tsx|js|jsx)$' | xargs sed -i '' \
-  's/\battachGestures\b/installGestures/g'
-
-# OverlayEngine barrel → subpath
-git ls-files | grep -E '\.(ts|tsx|js|jsx)$' | xargs sed -i '' \
-  -E 's|from ["'\'']@surdeddd/bottom-sheet["'\'']|FROM_BARREL|; \
-      s|FROM_BARREL.*\b(OverlayEngine\|Overlay\|createOverlay)\b|from "@surdeddd/bottom-sheet/overlay"|'
-
-# (Review the diff manually — sed-based migrations are best-effort.)
-```
+public type re-exports), `src/core/features/`, the engine's private fields, the
+ScrimController shape, AnimationRunner / LifecycleController. Tests reading
+internals through `as unknown as` casts may break on refactor — prefer the
+public introspection APIs (`engine.state`, `engine.getScrimState()`).
 
 ## Reporting issues
 
-If you discover a v1 → v2 migration path that isn't covered here, please
-file an issue. We'll add the migration step to this document and ensure
-the deprecation marker is in place across the affected symbol.
+If you hit a migration path this document doesn't cover, file an issue and the
+step will be added here.

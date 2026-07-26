@@ -1,11 +1,5 @@
 import { animate, inView } from "motion";
 
-/**
- * Each feature card can carry a small diagram of the thing it describes,
- * drawn as inline SVG and played on entry and on hover. Only cards that have
- * something worth drawing get one — the rest stay clean type.
- */
-
 export type VizKind =
   | "spring"
   | "frames"
@@ -41,7 +35,6 @@ const el = <K extends keyof SVGElementTagNameMap>(
   return node;
 };
 
-/** Damped oscillation — the settle curve the engine actually produces. */
 const springPath = (): string => {
   const pts: string[] = [];
   for (let i = 0; i <= 60; i++) {
@@ -186,7 +179,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "pointers") {
-    // a touch blob and a mouse arrow, each with its own velocity trail
+
     const midY = H / 2;
     svg.append(el("circle", { cx: 34, cy: midY, r: 9, fill: stroke, opacity: 0.85, "data-touch": "1" }));
     for (let i = 0; i < 4; i++) {
@@ -204,7 +197,7 @@ const build = (kind: VizKind): SVGSVGElement => {
 
   if (kind === "safearea") {
     svg.append(el("rect", { x: 52, y: 3, width: 96, height: H - 6, rx: 10, stroke: faint, "stroke-width": 1 }));
-    // inset guides marking the safe area
+
     svg.append(
       el("rect", { x: 58, y: 9, width: 84, height: H - 18, rx: 6, stroke, "stroke-width": 1, "stroke-dasharray": "3 4", "data-safe": "1" }),
     );
@@ -213,7 +206,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "layers") {
-    // headless core with two framing options branching off it
+
     svg.append(el("rect", { x: 8, y: H / 2 - 8, width: 54, height: 16, rx: 3, fill: stroke, opacity: 0.85, "data-core": "1" }));
     svg.append(el("line", { x1: 62, y1: H / 2, x2: 84, y2: H / 2 - 12, stroke: faint, "stroke-width": 1 }));
     svg.append(el("line", { x1: 62, y1: H / 2, x2: 84, y2: H / 2 + 12, stroke: faint, "stroke-width": 1 }));
@@ -222,7 +215,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "hydrate") {
-    // server box → wire → client box, no mismatch in between
+
     svg.append(el("rect", { x: 6, y: H / 2 - 13, width: 52, height: 26, rx: 3, stroke: faint, "stroke-width": 1 }));
     svg.append(el("rect", { x: 142, y: H / 2 - 13, width: 52, height: 26, rx: 3, stroke: faint, "stroke-width": 1 }));
     svg.append(el("line", { x1: 58, y1: H / 2, x2: 142, y2: H / 2, stroke: faint, "stroke-width": 1, "stroke-dasharray": "4 4" }));
@@ -232,7 +225,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "registry") {
-    // one registry node fanning out to route keys
+
     const cx = 30;
     const cy = H / 2;
     svg.append(el("circle", { cx, cy, r: 7, fill: stroke, opacity: 0.9 }));
@@ -244,7 +237,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "zones") {
-    // a sheet split into draggable and excluded regions
+
     svg.append(el("rect", { x: 22, y: 4, width: 156, height: H - 8, rx: 4, stroke: faint, "stroke-width": 1 }));
     svg.append(el("rect", { x: 76, y: 8, width: 48, height: 5, rx: 2.5, fill: stroke, "data-zhandle": "1" }));
     svg.append(el("rect", { x: 28, y: 19, width: 66, height: H - 27, rx: 3, fill: stroke, opacity: 0.22, "data-zone": "yes" }));
@@ -253,7 +246,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "anchors") {
-    // a bar riding the sheet edge, tracked by a guide line
+
     svg.append(el("rect", { x: 30, y: H - 16, width: 140, height: 12, rx: 3, fill: faint, opacity: 0.5 }));
     svg.append(el("line", { x1: 30, y1: H - 18, x2: 170, y2: H - 18, stroke, "stroke-width": 1, "stroke-dasharray": "3 3", "data-anchor-edge": "1" }));
     svg.append(el("rect", { x: 138, y: H - 30, width: 30, height: 12, rx: 6, fill: stroke, opacity: 0.9, "data-fab": "1" }));
@@ -261,7 +254,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "modules") {
-    // a solid core with optional blocks clipping on beside it
+
     svg.append(el("rect", { x: 8, y: H / 2 - 12, width: 58, height: 24, rx: 3, fill: stroke, opacity: 0.85, "data-mcore": "1" }));
     for (let i = 0; i < 4; i++) {
       svg.append(
@@ -275,7 +268,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "probe") {
-    // a readout panel with a live trace
+
     svg.append(el("rect", { x: 6, y: 4, width: 188, height: H - 8, rx: 3, stroke: faint, "stroke-width": 1 }));
     const pts: string[] = [];
     for (let i = 0; i <= 40; i++) {
@@ -290,7 +283,7 @@ const build = (kind: VizKind): SVGSVGElement => {
   }
 
   if (kind === "grid") {
-    // a test grid filling in, one cell per pass
+
     const cols = 20;
     const rows = 3;
     for (let r = 0; r < rows; r++) {
@@ -427,7 +420,7 @@ export const initFeatureViz = (): { destroy: () => void } => {
     slot.className = "feature-viz";
     const svg = build(kind);
     slot.appendChild(svg);
-    // sits above the spec line, below the body copy
+
     const spec = host.querySelector(".feature-spec");
     host.insertBefore(slot, spec ?? null);
 

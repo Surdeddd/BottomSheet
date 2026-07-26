@@ -13,7 +13,7 @@ import {
   RANGE_DIVISION_EPSILON,
 } from "../primitives/hot-path-thresholds";
 import { WriteSentinel } from "../primitives/opacity-dedup";
-import { devWarn } from "../primitives/devWarn";
+import { devWarn } from "../primitives/dev-warn";
 import { applyOverlayPosition } from "../primitives/overlay-position";
 
 const VALID_CSS_LENGTH = /^-?\d+(?:\.\d+)?(?:px|em|rem|%)$/;

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { sheetStack, __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
+import { sheetStack, __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
 
 beforeEach(() => __resetSheetStackForTests());
 

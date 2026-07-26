@@ -44,9 +44,7 @@ export const snapPoints = (mode: DemoSettings["mode"]): SnapPointDef[] => {
   const custom =
     typeof window !== "undefined" ? window.__bsCustomSnaps?.() : null;
   if (custom && custom.length > 0) {
-    // The editor only lists the visible stops, so a custom list arrives without
-    // `closed`. Re-add it: without a zero-size point the sheet has nothing to
-    // close to, and the chip row loses its close button entirely.
+
     return custom.some(s => s.size === 0)
       ? custom
       : [{ id: "closed", size: 0 }, ...custom];
@@ -69,8 +67,7 @@ export const snapPoints = (mode: DemoSettings["mode"]): SnapPointDef[] => {
   }
   return [
     { id: "closed", size: 0 },
-    // 44px handle + 80px header = 124px of chrome; at 110 the sheet's own
-    // title was sliced in half by the screen edge.
+
     { id: "minimized", size: 136 },
     { id: "half", size: 320 },
     { id: "full", size: 520 },

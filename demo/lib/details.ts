@@ -1,18 +1,11 @@
 import { animate, inView } from "motion";
 
-/**
- * The small stuff: a blinking terminal caret, a section rail that tracks where
- * you are, and section captions that stamp in. Each is independently gated so
- * a missing element or reduced motion simply skips that piece.
- */
-
 export type DetailsHandle = { destroy: () => void };
 
 const reduced = (): boolean =>
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** A caret that blinks at the end of the install command. */
 const initCaret = (): (() => void) => {
   const install = document.querySelector<HTMLElement>(".install");
   if (!install || install.querySelector(".caret")) return () => {};
@@ -23,10 +16,6 @@ const initCaret = (): (() => void) => {
   return () => caret.remove();
 };
 
-/**
- * A rail of section marks down the right edge. Clicking one scrolls there;
- * the active mark tracks the section currently filling the viewport.
- */
 const initSectionRail = (): (() => void) => {
   const sections = Array.from(
     document.querySelectorAll<HTMLElement>("main > section, main > header"),
@@ -75,7 +64,6 @@ const initSectionRail = (): (() => void) => {
   };
 };
 
-/** Section captions stamp in rather than simply appearing. */
 const initCaptionStamp = (): (() => void) => {
   if (reduced()) return () => {};
   const caps = Array.from(document.querySelectorAll<HTMLElement>(".sec-cap"));

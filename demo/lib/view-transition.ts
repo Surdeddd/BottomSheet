@@ -8,11 +8,6 @@ type DocVT = Document & {
   startViewTransition?: (callback: () => void) => ViewTransition;
 };
 
-/**
- * Run a DOM update optionally wrapped in View Transitions.
- * Falls back to a sync callback when VT is missing, reduced-motion is on,
- * or the API throws (headless Chromium flakes).
- */
 export const startViewTransition = (cb: () => void): void => {
   const prefersReduced =
     typeof matchMedia === "function" &&
@@ -29,7 +24,7 @@ export const startViewTransition = (cb: () => void): void => {
       transition.finished.catch(() => {});
       return;
     } catch {
-      // fall through to sync
+
     }
   }
   cb();

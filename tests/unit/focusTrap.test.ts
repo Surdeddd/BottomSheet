@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { installFocusTrap } from "../../src/core/lifecycle/focusTrap";
+import { installFocusTrap } from "../../src/core/lifecycle/focus-trap";
 
 const buildContainer = (): HTMLElement => {
   const container = document.createElement("div");

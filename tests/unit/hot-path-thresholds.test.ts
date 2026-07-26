@@ -5,9 +5,9 @@ import {
   POINTER_EVENTS_OPACITY_THRESHOLD,
   SIZE_WRITE_EPSILON,
 } from "../../src/core/primitives/hot-path-thresholds";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import { makeDom } from "./_helpers/makeDom";
 
 describe("Hot-path threshold regressions", () => {

@@ -1,6 +1,6 @@
-import { sheetStack } from "./lifecycle/sheetStack";
-import { resolveSnap } from "./primitives/cssLength";
-import { devWarn } from "./primitives/devWarn";
+import { sheetStack } from "./lifecycle/sheet-stack";
+import { resolveSnap } from "./primitives/css-length";
+import { devWarn } from "./primitives/dev-warn";
 import { nextInstanceId } from "./primitives/instance-id";
 import { createEventBus, type EventBus } from "./primitives/event-bus";
 import { LifecycleController } from "./controllers/lifecycle-controller";

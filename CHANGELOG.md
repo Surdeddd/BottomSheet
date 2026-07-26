@@ -5,7 +5,25 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.14.0]
+
+### Removed
+
+The package is `0.x`, where a minor bump may break API. The curation once
+drafted for a distant 2.0 lands here instead; every removal has a replacement
+that already existed in 0.13. See `docs/migration-v2.md` for the mechanical
+edits — since the symbols are gone, `tsc` reports each remaining call site.
+
+- **`OverlayEngine` / `Overlay` / `createOverlay` / `OVERLAY_PRESETS` and the Overlay types are subpath-only** — import them from `@surdeddd/bottom-sheet/overlay`. The barrel pulled ~4 KB gzip of overlay code into bundles that never touched it, and bundlers with imperfect tree-shaking kept it.
+- **`attachGestures`** — use `installGestures`, which it aliased. The name now matches the other `installX` factories.
+- **Engine-internal helpers off the public surface** — `tween`, `easeOutBack`, `easeOutCubic`, `prefersReducedMotion`, `runSpring`, `DEFAULT_SPRING`, `findNearest`, `findById`, `allowedRange`. They still run inside the engine; only the exports are gone. Observe state through `engine.state` / `engine.on(…)`, or inline the helper. For `prefersReducedMotion()`, read `matchMedia("(prefers-reduced-motion: reduce)").matches` — the engine now subscribes to a live listener.
+- **React's `engine` field on the `useBottomSheet` return value** — use `getEngine()`. Under Strict Mode the layout effect double-invokes: teardown nulled the ref, so the field read `null` for a render and only the second mount restored a live engine. `getEngine()` reads the ref at call time and also covers the resize / `setSnapPoints` paths that fire no React-tracked event.
+
+### Changed
+
+- **Content gestures follow the finger** — a gesture on the scroll container now drags the sheet in real time (same physics, rubber band and `drag` / `dragend` events as the handle) instead of jumping to the neighbouring snap point after a 60 px threshold swipe. The gesture engages only while the scroller sits at its top; anywhere else the browser keeps the scroll. The `content-swipe` feature keeps its registry name.
+- **All comments stripped from library and demo source** — only build-required pragmas (`@jsxImportSource`, `@ts-*`, `@vitest-environment`) remain. Type documentation lives in `docs/`, not in JSDoc, so editors no longer surface per-symbol hints from the published `.d.ts`.
+- **`src/core/` is uniformly kebab-case** — `focusTrap` → `focus-trap`, `scrollLock` → `scroll-lock`, `sheetStack` → `sheet-stack`, `sheetManager` → `sheet-manager`, `cssLength` → `css-length`, `devWarn` → `dev-warn`. Internal paths only; consumers importing through the package see nothing. `BottomSheetEngine.ts` keeps its class-matching name, and React-style hook files stay camelCase.
 
 ### Added
 
@@ -13,6 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`dragFromContent`, per engine and per snap point** — gates whether a touch gesture on the scroll container moves the sheet. Set it globally (`dragFromContent: false`), per point (`{ id: "full", size: "92%", dragFromContent: false }` — content only scrolls while expanded), or at runtime via `setDragFromContent()`. Exposed in every adapter; the custom element reads `drag-from` / `drag-from-content`.
 - **`setDragFrom()` / `getDragFrom()`** — the drag surface is switchable at runtime: the engine tears the gesture off its current surface and remounts it on the new one (handle ↔ sheet ↔ zones), so a sheet can go from handle-only while collapsed to fully draggable while expanded without a remount. Reactive in every adapter; `drag-from` is now a live attribute on the custom element.
 - **`attachDragSurface` on `EngineFeatureContext`** — features can hand another element to the engine's own drag physics instead of reimplementing them.
+
+### Fixed
+
+- **Closed sheets no longer paint a shadow band** — a closed sheet stays mounted and is hidden by a transform, which does not clip `box-shadow`, so its upward shadow painted inside the viewport; several pre-mounted closed sheets stacked into a visible band above the tab bar. `--bs-shadow-auto` now fades its alpha to a true zero over the last stretch of travel (identical at full extension), and a fully-closed sheet gets `data-bs-rest="closed"`, which drops `box-shadow` and `visibility` — covering static custom `--bs-shadow` values and the bundled themes as well, and keeping closed sheets out of hit-testing and the accessibility tree.
+- **Bundle budgets were not enforced on `main`** — `size-limit` ran only on pull requests, so growth merged unmeasured; by the time the gate was added every entry had drifted over budget (core +426 B, react +440 B, vue +683 B, and so on). The check now runs in CI on push, and the ceilings were re-based on current measurements.
+- **Demo stress test left the sheet where it stopped** — the run abandoned the sheet at whatever snap the last cycle hit and kept its timer alive after the page moved on. It now restores the starting snap, toggles its own label, and cancels on `pagehide`. It never reloaded the page: measured 0 navigations and 0 remounts across a full run.
+
+## [0.13.0]
+
+### Added
 
 - **Slim core entry `@surdeddd/bottom-sheet/core`** — `BottomSheetCore`, the engine without optional features (~17.5 KB gzip vs ~23 KB full). Optional behaviors are now composable `EngineFeature`s registered per instance via the new `features` option; the default `BottomSheetEngine` keeps every feature preinstalled and its behavior is unchanged.
 - **Feature factories entry `@surdeddd/bottom-sheet/features`** — `routeFeature()` (closeOnBack / routedTo / closeOnRouteChange), `visualViewportFeature()`, `contentSwipeFeature()`, `persistFeature()`, `autoCollapseFeature()`, plus `defaultEngineFeatures()`. Passing an option that needs a missing feature dev-warns once.
@@ -22,13 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Performance regression gate** — `npm run bench:check` compares hot-path benches against a committed baseline with a 10× floor (order-of-magnitude guard, CI-runner tolerant); wired into CI.
 - **API docs on GitHub Pages** — typedoc build published via `docs-pages.yml` on version tags; https://surdeddd.github.io/BottomSheet/.
 
-### Changed
-
-- **Content gestures follow the finger** — a gesture on the scroll container now drags the sheet in real time (same physics, rubber band and `drag` / `dragend` events as the handle) instead of jumping to the neighbouring snap point after a 60 px threshold swipe. The gesture engages only while the scroller sits at its top; anywhere else the browser keeps the scroll. The `content-swipe` feature keeps its registry name.
-
 ### Fixed
 
-- **Closed sheets no longer paint a shadow band** — a closed sheet stays mounted and is hidden by a transform, which does not clip `box-shadow`, so its upward shadow painted inside the viewport; several pre-mounted closed sheets stacked into a visible band above the tab bar. `--bs-shadow-auto` now fades its alpha to a true zero over the last stretch of travel (identical at full extension), and a fully-closed sheet gets `data-bs-rest="closed"`, which drops `box-shadow` and `visibility` — covering static custom `--bs-shadow` values and the bundled themes as well, and keeping closed sheets out of hit-testing and the accessibility tree.
 - **history-coordinator rebrand queue** — two programmatic middle-of-stack closes in the same tick could drop one marker rebrand (single pending slot); rebrands are now a FIFO queue paired 1:1 with suppressed history pops.
 - `docs:api` script referenced a typedoc that was never installed; typedoc `0.28` is now a real devDependency (and TypeScript is pinned honest at `^5.9.3` — installing the old typedoc `0.25` silently downgraded TS below what `unplugin-vue` typings require).
 

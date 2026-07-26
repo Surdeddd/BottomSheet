@@ -77,7 +77,6 @@ engine.on("snap", payload => {
   main.sheet.dataset.active = String(payload.id);
 });
 
-// Several sheets that stay closed — the shadow-band case.
 for (let i = 0; i < 6; i++) {
   const idle = buildSheet(`idle-${i}`);
   idleMount.append(idle.root);

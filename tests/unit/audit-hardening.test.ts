@@ -1,12 +1,12 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
 import {
   lockBodyScroll,
   __resetScrollLockForTests,
-} from "../../src/core/lifecycle/scrollLock";
-import { installFocusTrap } from "../../src/core/lifecycle/focusTrap";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+} from "../../src/core/lifecycle/scroll-lock";
+import { installFocusTrap } from "../../src/core/lifecycle/focus-trap";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 
 const makeDom = () => {
   const sheet = document.createElement("section");

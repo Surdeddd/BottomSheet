@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, it, beforeEach } from "vitest";
-import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheetStack";
-import { __resetScrollLockForTests } from "../../src/core/lifecycle/scrollLock";
-import { __resetCssLengthProbeForTests } from "../../src/core/primitives/cssLength";
+import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
+import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
+import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import type { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import type { SheetEventMap } from "../../src/core/types";
 
