@@ -213,4 +213,8 @@ export const installGestures = (
   };
 };
 
+/**
+ * @deprecated Renamed to `installGestures`, for consistency with the other
+ * `installX` factories. Slated for removal in 2.0; behaviour is identical.
+ */
 export const attachGestures = installGestures;

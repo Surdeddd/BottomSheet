@@ -39,6 +39,10 @@ export const auditVhUsage = (points: SnapPointDef[]): void => {
   }
 };
 
+/**
+ * @deprecated Engine-internal snap math, slated for removal in 2.0. Observe
+ * state through `engine.state` or `engine.on("snap", …)` instead.
+ */
 export const findNearest = (
   size: number,
   resolved: ResolvedSnap[],
@@ -62,6 +66,7 @@ export const findNearest = (
   return best;
 };
 
+/** @deprecated Engine-internal snap math, slated for removal in 2.0. */
 export const allowedRange = (
   resolved: ResolvedSnap[],
   allowed: string[],
@@ -74,6 +79,7 @@ export const allowedRange = (
   };
 };
 
+/** @deprecated Engine-internal snap math, slated for removal in 2.0. */
 export const findById = (
   id: string,
   resolved: ResolvedSnap[],

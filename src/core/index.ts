@@ -15,6 +15,10 @@ export type {
   EngineFeatureStage,
 } from "./types";
 
+// The @deprecated tags live on the declarations themselves, not here: JSDoc on
+// an export specifier is dropped when the .d.ts is rolled up, and re-binding
+// through `const` aliases defeats tree-shaking (measured: +0.5 KB gzip on the
+// core entry, over budget). Plain re-exports carry the tag through both.
 export {
   tween,
   easeOutBack,
@@ -22,16 +26,13 @@ export {
   prefersReducedMotion,
 } from "./animation/animation";
 export { runSpring, DEFAULT_SPRING } from "./animation/spring";
-
-export { resolveSnap, resolveSnapList } from "./primitives/snap-points";
 export {
   findNearest,
   findById,
   allowedRange,
 } from "./primitives/snap-points";
-
-export { installGestures } from "./gestures";
-export { attachGestures } from "./gestures";
+export { resolveSnap, resolveSnapList } from "./primitives/snap-points";
+export { installGestures, attachGestures } from "./gestures";
 
 export { installFocusTrap } from "./lifecycle/focusTrap";
 export { lockBodyScroll } from "./lifecycle/scrollLock";

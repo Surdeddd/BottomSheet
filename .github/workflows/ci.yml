@@ -49,6 +49,11 @@ jobs:
       - name: Perf regression floor (10x)
         if: matrix.node == '22'
         run: npm run bench:check
+      # size-limit only ran on pull requests, so growth merged to main went
+      # unmeasured — every entry had drifted over budget before this was added.
+      - name: Bundle size budgets (size-limit)
+        if: matrix.node == '22'
+        run: npm run size
       - name: Package contract (publint + attw + dist smoke imports)
         run: |
           npx publint

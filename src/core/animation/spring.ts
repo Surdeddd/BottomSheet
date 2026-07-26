@@ -6,6 +6,7 @@ export type SpringConfig = {
   restSpeed?: number;
 };
 
+/** @deprecated Engine-internal spring defaults, slated for removal in 2.0. */
 export const DEFAULT_SPRING: SpringConfig = {
   stiffness: 220,
   damping: 26,
@@ -29,6 +30,10 @@ export type SpringHandle = {
 
 const MAX_DT = 1 / 30;
 
+/**
+ * @deprecated Engine-internal spring runner, slated for removal in 2.0. Use
+ * the engine's `animation: "spring"` with the `spring` option instead.
+ */
 export const runSpring = ({
   from,
   to,
