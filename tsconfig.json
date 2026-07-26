@@ -40,6 +40,9 @@
       ],
       "@surdeddd/bottom-sheet/solid": [
         "./src/solid/index.tsx"
+      ],
+      "@surdeddd/bottom-sheet/webgl": [
+        "./src/webgl/index.ts"
       ]
     }
   },
