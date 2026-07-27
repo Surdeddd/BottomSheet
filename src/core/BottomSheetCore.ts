@@ -847,12 +847,28 @@ export class BottomSheetCore {
     auditVhUsage(points);
     this.auditDuplicateSnapIds(points);
     this.snaps.setRaw(points);
-    if (allowed) this.snaps.setAllowedIds(allowed);
+    if (allowed) {
+      this.snaps.setAllowedIds(allowed);
+    } else {
+      const present = this.snaps.getResolvedSnaps().map(s => s.id);
+      const kept = this.snaps.getAllowedIds().filter(id => present.includes(id));
+      this.snaps.setAllowedIds(kept.length ? kept : present);
+    }
     this.scrollCache.clear();
     this.scrim.invalidateOpacityCache();
     const current = this.snaps.findById(this.activeId);
     if (current) {
       this.applySize(current.size);
+    } else {
+      const fallback =
+        this.snaps
+          .getResolvedSnaps()
+          .find(s => this.snaps.getAllowedIds().includes(s.id)) ??
+        this.snaps.getResolvedSnaps()[0];
+      if (fallback) {
+        this.activeId = fallback.id;
+        this.applySize(fallback.size);
+      }
     }
     this.updateAriaSlider();
   }

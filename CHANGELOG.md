@@ -5,14 +5,13 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.14.0]
 
 ### Added
 
 - **WebGL renderer — `@surdeddd/bottom-sheet/webgl`** — an opt-in second renderer that paints the sheet on the GPU. At rest it draws the surface (panel, corner radii, shadow, edge sheen) and leaves text native, so it stays sharp and selectable. On `dragstart` the text is lifted into a texture and the whole sheet becomes one deformable surface — it bends with drag velocity, with glass refraction that scales with the bend — then hands the text straight back when the sheet settles. Registered as a feature (`features: [webglRenderer()]`), so it costs nothing unless imported: measured 4.2 KB gzip, main entry unchanged. Layout, scrolling, gestures and the accessibility tree never leave the DOM, which is what makes the fallback free — no WebGL, `prefers-reduced-motion`, SSR, or a lost GL context and the sheet simply paints itself again, mid-session if it has to. Options: `jelly`, `sheen`, `glass`, `shadow`, `liftContent`, `dpr`, `onUnsupported`. Refraction of the page *behind* the sheet is not offered and is not achievable: WebGL cannot read the pixels the browser composited for the rest of the document. See `docs/webgl.md`.
 - **Browser support matrix — `docs/browser-support.md`** — the baseline (Chrome/Edge 80, Safari 13.1, iOS 13.4, Firefox 72) with what sets it, every progressive feature and what its absence costs, adapter peer ranges, and an explicit note on which claims CI actually exercises.
-
-## [0.14.0]
+- **Security policy and contribution templates** — `SECURITY.md` with an explicit threat model (host-supplied markup is out of scope, exactly as with `innerHTML`), issue forms for bugs and feature requests, and a PR checklist covering this repo's actual traps.
 
 ### Removed
 
@@ -43,6 +42,7 @@ edits — since the symbols are gone, `tsc` reports each remaining call site.
 
 - **Closed sheets no longer paint a shadow band** — a closed sheet stays mounted and is hidden by a transform, which does not clip `box-shadow`, so its upward shadow painted inside the viewport; several pre-mounted closed sheets stacked into a visible band above the tab bar. `--bs-shadow-auto` now fades its alpha to a true zero over the last stretch of travel (identical at full extension), and a fully-closed sheet gets `data-bs-rest="closed"`, which drops `box-shadow` and `visibility` — covering static custom `--bs-shadow` values and the bundled themes as well, and keeping closed sheets out of hit-testing and the accessibility tree.
 - **Bundle budgets were not enforced on `main`** — `size-limit` ran only on pull requests, so growth merged unmeasured; by the time the gate was added every entry had drifted over budget (core +426 B, react +440 B, vue +683 B, and so on). The check now runs in CI on push, and the ceilings were re-based on current measurements.
+- **`setSnapPoints()` left the sheet unreachable when the id set changed** — calling it without the optional `allowed` argument kept the previous allow-list, so a wholesale swap of the point list left every new id blocked and the active id pointing at a point that no longer existed. `snapTo()` for any new id then failed silently: the sheet stayed at the removed point's size. The allow-list is now carried over only for ids that still exist, falling back to the full new set, and an active id that has disappeared moves to the first allowed point. Passing `allowed` explicitly behaves as before.
 - **Demo stress test left the sheet where it stopped** — the run abandoned the sheet at whatever snap the last cycle hit and kept its timer alive after the page moved on. It now restores the starting snap, toggles its own label, and cancels on `pagehide`. It never reloaded the page: measured 0 navigations and 0 remounts across a full run.
 
 ## [0.13.0]
