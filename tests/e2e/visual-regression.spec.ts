@@ -68,6 +68,12 @@ test.describe("Visual regression — demo layout", () => {
     await page.goto("/");
     await page.waitForSelector(REACT_SHEET);
     await page.waitForLoadState("networkidle");
+    // The demo loads Fraunces / Hanken Grotesk / JetBrains Mono with
+    // display=swap: text paints in a fallback face first and is re-rendered
+    // when the real one arrives. networkidle does not cover that swap, so a
+    // snapshot taken between the two shows different type — the wobble the 2%
+    // tolerance used to absorb.
+    await page.evaluate(() => document.fonts.ready);
     await waitForSnap(page, "minimized");
     await waitForCountersSettled(page);
   });
@@ -93,9 +99,16 @@ test.describe("Visual regression — demo layout", () => {
       };
     });
 
+    // Looser than the 0.2% the rest of the suite runs at. This frame reaches
+    // past the hero into the adapter row, where scroll-triggered reveals and
+    // the count-up land on slightly different frames depending on how loaded
+    // the machine is. The device-frame snapshots below carry the strict budget
+    // and are the ones that would catch a real layout regression; this one is
+    // a composition check.
     await expect(page).toHaveScreenshot("hero-and-adapters.png", {
       fullPage: false,
       clip,
+      maxDiffPixelRatio: 0.02,
     });
   });
 
