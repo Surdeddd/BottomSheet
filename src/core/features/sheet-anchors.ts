@@ -1,4 +1,4 @@
-import type { ScrimOverlayPosition, SheetEventMap, SheetMode } from "../types";
+import type { ScrimOverlayPosition, SheetEventMap, PhysicalSheetMode } from "../types";
 import { applyOverlayPosition } from "../primitives/overlay-position";
 import {
   runAnchorTransition,
@@ -25,7 +25,7 @@ export type AnchorOptions = {
 };
 
 export type AnchorDeps = {
-  mode: SheetMode;
+  mode: PhysicalSheetMode;
   host: HTMLElement;
   getState: () => AnchorState;
   on: <K extends keyof SheetEventMap>(

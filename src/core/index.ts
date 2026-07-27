@@ -28,6 +28,8 @@ export type {
   SnapPointDef,
   SnapId,
   SheetMode,
+  PhysicalSheetMode,
+  LogicalSheetMode,
   SheetEventMap,
   CloseReason,
   EngineOptions,

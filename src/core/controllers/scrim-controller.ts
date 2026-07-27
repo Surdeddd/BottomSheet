@@ -2,6 +2,7 @@ import type {
   ScrimOverlayOptions,
   ScrimUpdate,
   SheetMode,
+  PhysicalSheetMode,
 } from "../types";
 import { SCRIM_PRESETS } from "../types";
 import type { ResolvedSnap } from "../primitives/snap-points";
@@ -20,7 +21,7 @@ const VALID_CSS_LENGTH = /^-?\d+(?:\.\d+)?(?:px|em|rem|%)$/;
 const DEFAULT_SCRIM_DIM = "rgba(0, 0, 0, 0.4)";
 
 export type ScrimControllerDeps = {
-  mode: SheetMode;
+  mode: PhysicalSheetMode;
   screenComponent: HTMLElement | undefined;
   backdrop: HTMLElement | undefined;
   isDestroyed: () => boolean;
@@ -45,7 +46,7 @@ export type ScrimControllerOptions = {
 export class ScrimController {
   private screenComponent: HTMLElement | undefined;
   private backdrop: HTMLElement | undefined;
-  private mode: SheetMode;
+  private mode: PhysicalSheetMode;
 
   private isDestroyed: () => boolean;
   private isTopSheet: () => boolean;
@@ -447,7 +448,7 @@ export class ScrimController {
 
   private applyAboveSheetInset(): void {
     if (!this.screenComponent) return;
-    const insetByMode: Record<SheetMode, string> = {
+    const insetByMode: Record<PhysicalSheetMode, string> = {
       bottom: "0 0 var(--bs-size) 0",
       top: "var(--bs-size) 0 0 0",
       left: "0 0 0 var(--bs-size)",

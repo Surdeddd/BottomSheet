@@ -1,4 +1,5 @@
-import type { DragFrom, EngineOptions, SheetMode } from "../types";
+import type { DragFrom, EngineOptions, PhysicalSheetMode } from "../types";
+import { resolveMode } from "./logical-mode";
 import type { ScrimControllerOptions } from "../controllers/scrim-controller";
 import type { AnimationRunnerOptions } from "../controllers/animation-runner";
 import type { LifecycleControllerOptions } from "../controllers/lifecycle-controller";
@@ -8,7 +9,7 @@ export const DEFAULT_DURATION = 220;
 
 export type ResolvedEngineOptions = {
 
-  mode: SheetMode;
+  mode: PhysicalSheetMode;
 
   flickVelocity: number;
 
@@ -69,7 +70,7 @@ export function resolveEngineOptions(
   }
 
   return {
-    mode: opts.mode ?? "bottom",
+    mode: resolveMode(opts.mode ?? "bottom", opts.element),
     flickVelocity: opts.flickVelocity ?? DEFAULT_FLICK_VELOCITY,
     dragThreshold: opts.dragThreshold ?? DEFAULT_DRAG_THRESHOLD,
     dragFrom: opts.dragFrom ?? (opts.handle ? "handle" : "sheet"),

@@ -68,7 +68,7 @@ import type {
   ScrimOverlayOptions,
   ScrimUpdate,
   SheetEventMap,
-  SheetMode,
+  PhysicalSheetMode,
   TeardownScope,
 } from "./types";
 
@@ -86,7 +86,7 @@ export class BottomSheetCore {
   private backdrop?: HTMLElement;
   private screenComponent?: HTMLElement;
   private scrimParent: HTMLElement | null = null;
-  private mode: SheetMode;
+  private mode: PhysicalSheetMode;
   private flickVelocity: number;
   private dragThreshold: number;
   private dragFromMode: DragFrom;

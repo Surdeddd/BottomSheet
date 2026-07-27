@@ -23,7 +23,12 @@ export type SnapId<
     ? U
     : never;
 
-export type SheetMode = import("./primitives/transform").TransformAxis;
+export type PhysicalSheetMode = import("./primitives/transform").TransformAxis;
+
+export type LogicalSheetMode =
+  import("./primitives/logical-mode").LogicalAxis;
+
+export type SheetMode = PhysicalSheetMode | LogicalSheetMode;
 
 export type DragFrom = import("./primitives/drag-zones").DragFrom;
 

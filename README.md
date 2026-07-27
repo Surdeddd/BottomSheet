@@ -552,6 +552,19 @@ The editorial demo showcases the adapters, every gesture, every mode
 (`bottom · top · left · right · overlay`), and live engine readouts (active
 snap, progress, velocity, FPS). EN/RU and light/dark toggles in the corner.
 
+## Right-to-left
+
+`left` and `right` are physical edges and stay physical. For interfaces that
+flip with the writing direction, use the logical modes — `start` and `end`
+resolve against the direction that applies to the sheet, so `start` is the left
+edge in English and the right edge in Arabic:
+
+```ts
+new BottomSheetEngine({ element, handle, mode: 'start', snapPoints });
+```
+
+[Full RTL docs →](docs/rtl.md)
+
 ## Browser support
 
 Baseline: Chrome/Edge 80, Safari 13.1 (iOS 13.4), Firefox 72 — set by the

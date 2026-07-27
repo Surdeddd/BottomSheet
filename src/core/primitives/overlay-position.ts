@@ -1,4 +1,4 @@
-import type { ScrimOverlayPosition, SheetMode } from "../types";
+import type { ScrimOverlayPosition, PhysicalSheetMode } from "../types";
 
 export type SheetAnchoredStyle = {
   top?: string;
@@ -9,7 +9,7 @@ export type SheetAnchoredStyle = {
 };
 
 export function resolveSheetAnchoredStyle(
-  mode: SheetMode,
+  mode: PhysicalSheetMode,
   position: "sheet-top-left" | "sheet-top-center" | "sheet-top-right",
   inset: string,
 ): SheetAnchoredStyle {
@@ -36,7 +36,7 @@ export function resolveSheetAnchoredStyle(
 
 export function applyOverlayPosition(
   ws: CSSStyleDeclaration,
-  mode: SheetMode,
+  mode: PhysicalSheetMode,
   position: ScrimOverlayPosition,
   inset: string,
 ): void {

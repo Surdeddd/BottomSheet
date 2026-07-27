@@ -5,6 +5,12 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Right-to-left support — logical `start` / `end` modes** — `left` and `right` are physical edges and stay physical; the new modes resolve against the direction that applies to the sheet, so `start` is the left edge in English and the right edge in Arabic. Direction comes from `getComputedStyle(element).direction`, falling back to the nearest ancestor with a `dir` attribute, and to `ltr` when neither is readable — a detached element resolves rather than throws. Resolution happens once, at construction: a page that flips direction mid-session must rebuild the sheet, which is deliberate rather than a `getComputedStyle` on the hot path. `SheetMode` now accepts both; everything downstream sees the resolved `PhysicalSheetMode`. See `docs/rtl.md`.
+
 ## [0.14.0]
 
 ### Added

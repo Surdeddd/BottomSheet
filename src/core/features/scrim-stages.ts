@@ -1,4 +1,4 @@
-import type { ScrimOverlayPosition, SheetEventMap, SheetMode } from "../types";
+import type { ScrimOverlayPosition, SheetEventMap, PhysicalSheetMode } from "../types";
 import { applyOverlayPosition } from "../primitives/overlay-position";
 import {
   runAnchorTransition,
@@ -26,7 +26,7 @@ export type ScrimStagesOptions = {
 };
 
 export type ScrimStagesDeps = {
-  mode: SheetMode;
+  mode: PhysicalSheetMode;
   host: HTMLElement;
   getState: () => { activeId: string; size: number; progress: number };
   on: <K extends keyof SheetEventMap>(
