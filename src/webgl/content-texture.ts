@@ -54,6 +54,82 @@ const wrapLines = (
   return lines;
 };
 
+const isPaintedColor = (value: string): boolean =>
+  !!value && value !== "transparent" && !/rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(value);
+
+const roundedPath = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void => {
+  const rad = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  if (rad <= 0) {
+    ctx.rect(x, y, w, h);
+    return;
+  }
+  ctx.moveTo(x + rad, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rad);
+  ctx.arcTo(x + w, y + h, x, y + h, rad);
+  ctx.arcTo(x, y + h, x, y, rad);
+  ctx.arcTo(x, y, x + w, y, rad);
+  ctx.closePath();
+};
+
+const drawBox = (
+  ctx: CanvasRenderingContext2D,
+  cs: CSSStyleDeclaration,
+  rect: DOMRect,
+  rootRect: DOMRect,
+): boolean => {
+  const bg = cs.backgroundColor;
+  const borderWidth = parseFloat(cs.borderTopWidth) || 0;
+  const hasBorder = borderWidth > 0 && isPaintedColor(cs.borderTopColor);
+  if (!isPaintedColor(bg) && !hasBorder) return false;
+
+  const x = rect.left - rootRect.left;
+  const y = rect.top - rootRect.top;
+  const radius = parseFloat(cs.borderTopLeftRadius) || 0;
+
+  if (isPaintedColor(bg)) {
+    roundedPath(ctx, x, y, rect.width, rect.height, radius);
+    ctx.fillStyle = bg;
+    ctx.fill();
+  }
+  if (hasBorder) {
+    roundedPath(ctx, x, y, rect.width, rect.height, radius);
+    ctx.strokeStyle = cs.borderTopColor;
+    ctx.lineWidth = borderWidth;
+    ctx.stroke();
+  }
+  return true;
+};
+
+const drawImage = (
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  rootRect: DOMRect,
+): boolean => {
+  if (!img.complete || img.naturalWidth === 0) return false;
+  const rect = img.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return false;
+  try {
+    ctx.drawImage(
+      img,
+      rect.left - rootRect.left,
+      rect.top - rootRect.top,
+      rect.width,
+      rect.height,
+    );
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const captureContent = (
   gl: WebGLRenderingContext,
   root: HTMLElement,
@@ -77,14 +153,29 @@ export const captureContent = (
 
   while (walker.nextNode()) {
     const el = walker.currentNode as HTMLElement;
+
+    if (el.tagName === "IMG") {
+      if (drawImage(ctx, el as HTMLImageElement, rootRect)) {
+        painted++;
+        hiddenNodes.push(el);
+      }
+      continue;
+    }
+
     if (!isRenderable(el)) continue;
-    const text = directText(el);
-    if (!text) continue;
 
     const rect = el.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) continue;
 
     const cs = getComputedStyle(el);
+    const boxed = drawBox(ctx, cs, rect, rootRect);
+    if (boxed) {
+      painted++;
+      hiddenNodes.push(el);
+    }
+
+    const text = directText(el);
+    if (!text) continue;
     ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
     ctx.fillStyle = cs.color;
     ctx.textBaseline = "top";
@@ -116,7 +207,7 @@ export const captureContent = (
 
     if (lines.length) {
       painted++;
-      hiddenNodes.push(el);
+      if (!boxed) hiddenNodes.push(el);
     }
   }
 
@@ -126,14 +217,23 @@ export const captureContent = (
   if (!texture) return null;
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    surface,
-  );
+  try {
+    // A cross-origin image without CORS headers taints the canvas, and the
+    // upload throws only here — drawImage itself succeeds. Losing the texture
+    // is the correct outcome: the sheet keeps its DOM content and simply does
+    // not deform it.
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      surface,
+    );
+  } catch {
+    gl.deleteTexture(texture);
+    return null;
+  }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -143,9 +243,29 @@ export const captureContent = (
 };
 
 export const hideCapturedText = (nodes: HTMLElement[]): (() => void) => {
-  const restore = nodes.map(el => ({ el, prev: el.style.color }));
-  for (const { el } of restore) el.style.color = "transparent";
+  const restore = nodes.map(el => ({
+    el,
+    color: el.style.color,
+    background: el.style.background,
+    borderColor: el.style.borderColor,
+    opacity: el.style.opacity,
+    isImage: el.tagName === "IMG",
+  }));
+  for (const entry of restore) {
+    if (entry.isImage) {
+      entry.el.style.opacity = "0";
+      continue;
+    }
+    entry.el.style.color = "transparent";
+    entry.el.style.background = "transparent";
+    entry.el.style.borderColor = "transparent";
+  }
   return () => {
-    for (const { el, prev } of restore) el.style.color = prev;
+    for (const entry of restore) {
+      entry.el.style.color = entry.color;
+      entry.el.style.background = entry.background;
+      entry.el.style.borderColor = entry.borderColor;
+      entry.el.style.opacity = entry.opacity;
+    }
   };
 };

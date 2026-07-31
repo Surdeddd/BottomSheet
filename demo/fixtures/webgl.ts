@@ -31,6 +31,24 @@ body.className = "sheet-body";
 body.textContent = "GPU-rendered surface, DOM content";
 content.append(body);
 
+const card = document.createElement("div");
+card.className = "sheet-card";
+card.textContent = "Card with a background and a border";
+content.append(card);
+
+const swatch = document.createElement("img");
+swatch.className = "sheet-swatch";
+swatch.alt = "";
+swatch.width = 48;
+swatch.height = 48;
+swatch.src =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">' +
+      '<rect width="48" height="48" rx="10" fill="#ff6b4a"/></svg>',
+  );
+content.append(swatch);
+
 sheet.append(handle, content);
 root.append(sheet);
 mount.append(root);

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The WebGL capture now lifts backgrounds, borders and images** — phase 3 put only text into the texture, so during a drag a card's background and its icon stayed flat in the DOM while the type around them bent with the surface, and the layering was visible. Element backgrounds (with corner radii), borders and `<img>` content are now drawn into the same texture and hidden from the DOM for the duration of the gesture. A cross-origin image without CORS headers taints the 2D canvas — which surfaces at texture upload, not at draw — and the capture is dropped rather than failing, leaving the sheet with undeformed DOM content.
 - **`setMode()` / `getMode()` — the sheet's edge is changeable at runtime** — previously the edge was fixed at construction and there was no way to move it at all; a drawer that wanted to switch sides, or a page that flipped writing direction, had to tear the sheet down and rebuild it. `setMode` accepts both physical edges and the logical `start` / `end`, re-resolving the latter against the direction in effect at the time of the call, which is what makes right-to-left switching work without a rebuild. The active snap point survives the change. It re-seats every part the edge decides: transform template, drag gesture (its sign flips), keyboard step direction, snap resolver, scrim insets, `data-mode`, and the ARIA slider orientation — that last one only when the axis actually changes, since left and right are both horizontal.
 
 ### Fixed

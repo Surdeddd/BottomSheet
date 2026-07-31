@@ -148,6 +148,54 @@ test.describe("WebGL renderer", () => {
     );
   });
 
+  test("lifts backgrounds, borders and images too, not just text", async ({
+    page,
+  }) => {
+    const unsupported = await page.getAttribute("#status", "data-unsupported");
+    test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
+
+    const box = await page.locator(".bs-handle").boundingBox();
+    if (!box) throw new Error("no handle box");
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(cx, cy - i * 26);
+
+    const lifted = await page
+      .waitForFunction(
+        () => {
+          const card = document.querySelector(".sheet-card") as HTMLElement;
+          const img = document.querySelector(".sheet-swatch") as HTMLElement;
+          if (card.style.background === "transparent" && img.style.opacity === "0")
+            return "lifted";
+          const gone = !document
+            .querySelector(".bs-sheet")
+            ?.hasAttribute("data-bs-webgl");
+          return gone ? "withdrawn" : false;
+        },
+        undefined,
+        { timeout: 5000 },
+      )
+      .then(h => h.jsonValue());
+
+    await page.mouse.up();
+    if (lifted === "withdrawn") {
+      test.skip(true, "renderer withdrew — no GL context available");
+      return;
+    }
+
+    await page.waitForFunction(
+      () => {
+        const card = document.querySelector(".sheet-card") as HTMLElement;
+        const img = document.querySelector(".sheet-swatch") as HTMLElement;
+        return card.style.background === "" && img.style.opacity === "";
+      },
+      undefined,
+      { timeout: 8000 },
+    );
+  });
+
   test("the sheet keeps its accessibility contract under the renderer", async ({
     page,
   }) => {

@@ -50,12 +50,19 @@ technology — so the texture exists only while the sheet is in motion, when non
 of that is reachable anyway. Keeping content in the DOM the rest of the time
 costs nothing and keeps the accessibility contract intact.
 
-**What the capture covers.** Text nodes with a computed font, colour and
-alignment, wrapped to their element's width. It deliberately skips inputs,
-buttons, images, SVG, canvas, video and iframes: those keep painting as DOM on
-top of the surface, so during a drag they slide with the sheet without bending
-with it. If your sheet is mostly form controls, set `liftContent: false` — the
-surface still renders on the GPU and the content simply rides along.
+**What the capture covers.** Text with its computed font, colour and alignment,
+wrapped to the element's width; element backgrounds and borders, including
+corner radii; and `<img>` content drawn at its laid-out size.
+
+It deliberately skips inputs, buttons, select, SVG, canvas, video and iframes.
+Those keep painting as DOM on top of the surface, so during a drag they slide
+with the sheet without bending with it. If your sheet is mostly form controls,
+set `liftContent: false` — the surface still renders on the GPU and the content
+simply rides along.
+
+A cross-origin image without CORS headers taints the 2D canvas, and the texture
+upload — not the draw — is where that surfaces. The capture is dropped and the
+sheet keeps its DOM content undeformed rather than failing.
 
 While the renderer is active the sheet's chassis stops painting — the library
 stylesheet drops the background and shadow of `.bs-sheet`, `.bs-handle`,
