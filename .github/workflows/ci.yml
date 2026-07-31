@@ -93,8 +93,21 @@ jobs:
       - run: npm ci
       - name: Build library (demo + dist-dependent tests need it)
         run: npm run build
+      # Downloading the browser dominated this job: 16 of its 22 minutes on the
+      # webkit run, against 5 minutes of actual tests. The binary only changes
+      # when the Playwright version does, so key the cache on the lockfile.
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.project }}-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright browser (${{ matrix.project }})
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps ${{ matrix.project }}
+      - name: Install system deps only (browser restored from cache)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ matrix.project }}
       - name: E2E tests (${{ matrix.playwright_project }})
         run: npx playwright test --project=${{ matrix.playwright_project }}
       - uses: actions/upload-artifact@v4
@@ -116,8 +129,18 @@ jobs:
       - run: npm ci
       - name: Build library (demo needs dist for theme resolution)
         run: npm run build
+      - name: Cache Playwright browsers
+        id: pw-cache-visual
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-visual-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright browsers
+        if: steps.pw-cache-visual.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium webkit
+      - name: Install system deps only (browsers restored from cache)
+        if: steps.pw-cache-visual.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
       - name: Visual-regression tests
         run: npx playwright test tests/e2e/visual-regression.spec.ts
       - uses: actions/upload-artifact@v4
