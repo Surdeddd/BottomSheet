@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The demo re-broke the closed-sheet shadow fix** — `demo/style.css` paints its own per-mode shadow through `.bs-sheet[data-mode=bottom]` and never mentioned `data-bs-rest`. Same specificity as the library's closed-state rule, declared later, so it won: closed sheets in the demo painted a shadow again, undoing the fix released in 0.14.0. The library was never affected; only the demo. Found by the new computed-style tests, which pixel snapshots had been missing.
+
 ### Added
 
+- **Computed-style E2E tests — `tests/e2e/computed-styles.spec.ts`** — assert the sheet's painted contract (radius, background, position, overflow, flex direction, overscroll), the handle bar's dimensions, the scroll container's overflow, the exposed `--bs-size` / `--bs-progress`, and the closed-state rule. Pixel snapshots are weak on small areas — a 3px radius change is tens of pixels out of hundreds of thousands, well under any workable ratio — and this closes that gap: verified by injecting exactly that change and watching it fail. Every assertion polls, because a single read catches pre-adapter values under a loaded parallel run.
 - **Right-to-left support — logical `start` / `end` modes** — `left` and `right` are physical edges and stay physical; the new modes resolve against the direction that applies to the sheet, so `start` is the left edge in English and the right edge in Arabic. Direction comes from `getComputedStyle(element).direction`, falling back to the nearest ancestor with a `dir` attribute, and to `ltr` when neither is readable — a detached element resolves rather than throws. Resolution happens once, at construction: a page that flips direction mid-session must rebuild the sheet, which is deliberate rather than a `getComputedStyle` on the hot path. `SheetMode` now accepts both; everything downstream sees the resolved `PhysicalSheetMode`. See `docs/rtl.md`.
 
 ## [0.14.0]
