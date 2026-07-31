@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1]
+
 ### Fixed
 
 - **WebGL surface wobbled at high pixel ratios** — the signed distance field is evaluated in drawing-buffer pixels, which pass four thousand on a dpr-3 display, and the fragment shader ran at `mediump`. That is ten bits of mantissa in Chromium — around ±4px of error at those magnitudes — so edges crawled and corners missed their radius. WebKit hides it by making `mediump` a synonym for `highp`, which is why it only looked broken in some browsers. The shader now compiles as `highp`, with a `mediump` fallback for drivers that advertise it and then refuse to compile it.
