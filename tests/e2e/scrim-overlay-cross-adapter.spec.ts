@@ -28,12 +28,31 @@ const fabSelector = `${overlaySelector} button.floating-action`;
 const floatingToggle = "#tg-scrim-floating";
 const cinematicPresetChip = `[data-scrim-preset="cinematic"]`;
 
+const fabTopWithinScreen = async (
+  page: import("@playwright/test").Page,
+  adapter: AdapterKey,
+) => {
+  const fabTop = await page
+    .locator(fabSelector)
+    .evaluate(el => (el as HTMLElement).getBoundingClientRect().top);
+  const screenTop = await page
+    .locator(screenSelector(adapter))
+    .evaluate(el => (el as HTMLElement).getBoundingClientRect().top);
+  return fabTop - screenTop;
+};
+
+const pickCinematicPreset = async (
+  page: import("@playwright/test").Page,
+) => {
+  const chip = page.locator(cinematicPresetChip).first();
+  await chip.scrollIntoViewIfNeeded();
+  await chip.click();
+};
+
 const activate = async (
   page: import("@playwright/test").Page,
   key: AdapterKey,
 ) => {
-  // A plain click waits for the button to stop moving; force:true does not, and
-  // the demo's reveal/parallax animations can shift it mid-click (WebKit).
   const adapterBtn = page.locator(`.adapter[data-adapter="${key}"]`);
   await adapterBtn.scrollIntoViewIfNeeded();
   await adapterBtn.click();
@@ -112,7 +131,7 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       page,
     }, testInfo) => {
       await activate(page, adapter);
-      await page.locator(cinematicPresetChip).first().click({ force: true });
+      await pickCinematicPreset(page);
       await clickSnap(page, "half");
       await waitForSnap(page, adapter, "half");
 
@@ -151,7 +170,7 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       page,
     }, testInfo) => {
       await activate(page, adapter);
-      await page.locator(cinematicPresetChip).first().click({ force: true });
+      await pickCinematicPreset(page);
       await page.locator(floatingToggle).check();
       await clickSnap(page, "half");
       await waitForSnap(page, adapter, "half");
@@ -199,7 +218,7 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       page,
     }, testInfo) => {
       await activate(page, adapter);
-      await page.locator(cinematicPresetChip).first().click({ force: true });
+      await pickCinematicPreset(page);
       await page.locator(floatingToggle).check();
 
       await clickSnap(page, "minimized");
@@ -226,9 +245,7 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
         { timeout: 8000 },
       );
       await expect(page.locator(fabSelector)).toBeVisible();
-      const topMin = await page
-        .locator(fabSelector)
-        .evaluate(el => (el as HTMLElement).getBoundingClientRect().top);
+      const topMin = await fabTopWithinScreen(page, adapter);
 
       await clickSnap(page, "full");
       await waitForSnap(page, adapter, "full");
@@ -253,9 +270,7 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
         adapter,
         { timeout: 8000 },
       );
-      const topFull = await page
-        .locator(fabSelector)
-        .evaluate(el => (el as HTMLElement).getBoundingClientRect().top);
+      const topFull = await fabTopWithinScreen(page, adapter);
 
       expect(
         topFull,
@@ -267,7 +282,7 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       page,
     }, testInfo) => {
       await activate(page, adapter);
-      await page.locator(cinematicPresetChip).first().click({ force: true });
+      await pickCinematicPreset(page);
       await page.locator(floatingToggle).check();
       await clickSnap(page, "half");
       await waitForSnap(page, adapter, "half");
@@ -298,7 +313,7 @@ test.describe("Scrim overlay (FAB) — cross-adapter", () => {
       page,
     }, testInfo) => {
       await activate(page, adapter);
-      await page.locator(cinematicPresetChip).first().click({ force: true });
+      await pickCinematicPreset(page);
       await clickSnap(page, "half");
       await waitForSnap(page, adapter, "half");
 
