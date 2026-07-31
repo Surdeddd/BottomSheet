@@ -162,12 +162,16 @@ test.describe("WebGL renderer", () => {
     await page.mouse.down();
     for (let i = 1; i <= 6; i++) await page.mouse.move(cx, cy - i * 26);
 
+    // Read the computed value, never the inline string: WebKit serialises
+    // `background: transparent` back as `none`, which is how this assertion
+    // failed there while the behaviour was correct.
     const lifted = await page
       .waitForFunction(
         () => {
           const card = document.querySelector(".sheet-card") as HTMLElement;
           const img = document.querySelector(".sheet-swatch") as HTMLElement;
-          if (card.style.background === "transparent" && img.style.opacity === "0")
+          const bg = getComputedStyle(card).backgroundColor;
+          if (bg === "rgba(0, 0, 0, 0)" && img.style.opacity === "0")
             return "lifted";
           const gone = !document
             .querySelector(".bs-sheet")
@@ -189,7 +193,10 @@ test.describe("WebGL renderer", () => {
       () => {
         const card = document.querySelector(".sheet-card") as HTMLElement;
         const img = document.querySelector(".sheet-swatch") as HTMLElement;
-        return card.style.background === "" && img.style.opacity === "";
+        return (
+          getComputedStyle(card).backgroundColor !== "rgba(0, 0, 0, 0)" &&
+          img.style.opacity === ""
+        );
       },
       undefined,
       { timeout: 8000 },
