@@ -386,13 +386,13 @@
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.62.1",
     "@size-limit/preset-small-lib": "^12.1.0",
-    "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@types/three": "^0.185.1",
-    "@vitejs/plugin-react": "^4.7.0",
-    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/coverage-v8": "^4.1.10",
     "esbuild-plugin-solid": "^0.6.0",
     "esbuild-svelte": "0.9.4",
@@ -414,11 +414,11 @@
     "typedoc": "^0.28.20",
     "typescript": "^5.9.3",
     "unplugin-vue": "^7.2.0",
-    "vite": "^5.4.21",
+    "vite": "^7.3.6",
     "vite-plugin-solid": "^2.11.14",
     "vitest": "^4.1.10",
     "vue": "^3.5.40",
-    "vue-tsc": "^1.8.27"
+    "vue-tsc": "^3.3.9"
   },
   "engines": {
     "node": ">=20"
