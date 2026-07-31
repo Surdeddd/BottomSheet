@@ -54,13 +54,26 @@ to you. After mount the attribute always holds a physical edge.
 
 ## What this does not do
 
-**It does not re-resolve when direction changes at runtime.** Flipping
-`dir="rtl"` on a mounted page leaves an already-built sheet on the edge it was
-constructed with. Applications that let the user switch language mid-session
-should rebuild the sheet — the same as they would for any other layout
-direction change. This is a deliberate limit: watching `direction` per frame
-would cost a `getComputedStyle` on the hot path for a property that changes
-approximately never.
+**It does not watch for direction changes.** Flipping `dir="rtl"` on a mounted
+page does not move an existing sheet on its own — polling `direction` per frame
+would put a `getComputedStyle` on the hot path for a property that changes
+approximately never. Re-apply the mode when your app switches language:
+
+```ts
+engine.setMode("start"); // re-resolves against the direction in effect now
+```
+
+`setMode` accepts physical edges too, so it doubles as a runtime edge switch:
+
+```ts
+engine.setMode("right"); // drawer, whatever the writing direction
+```
+
+The active snap point is preserved across the change. Under the hood it
+re-seats everything the edge decides: the transform template, the drag gesture
+(its sign flips), the keyboard step direction, the snap resolver, the scrim
+insets, `data-mode`, and — only when the axis itself changes — the ARIA slider
+orientation.
 
 **It does not mirror your content.** The sheet's own chrome is symmetric, and
 everything inside it is your markup. Use CSS logical properties

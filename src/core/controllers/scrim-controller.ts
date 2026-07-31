@@ -214,6 +214,12 @@ export class ScrimController {
     this.applyScrimStyles({ interactive });
   }
 
+  setSheetMode(mode: PhysicalSheetMode): void {
+    if (this.isDestroyed() || mode === this.mode) return;
+    this.mode = mode;
+    this.invalidateOpacityCache();
+  }
+
   setScrimMode(
     mode: "full" | "above-sheet" | "off",
     applySize: () => void,

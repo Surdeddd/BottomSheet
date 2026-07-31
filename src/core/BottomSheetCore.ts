@@ -16,6 +16,7 @@ import { installFitObserver } from "./features/fit-observer";
 import {
   createMaxHeightController,
   type MaxHeightController,
+  type MaxHeightControllerDeps,
 } from "./features/max-height-controller";
 import {
   measureFitSize,
@@ -37,6 +38,7 @@ import {
   type DragFrom,
 } from "./primitives/drag-zones";
 import { decideContentGesture } from "./primitives/content-gesture";
+import { resolveMode } from "./primitives/logical-mode";
 import { installTouchScrollGuard } from "./primitives/touch-scroll-guard";
 import { AriaSliderWriter } from "./primitives/aria-slider-writer";
 import {
@@ -69,6 +71,7 @@ import type {
   ScrimUpdate,
   SheetEventMap,
   PhysicalSheetMode,
+  SheetMode,
   TeardownScope,
 } from "./types";
 
@@ -103,6 +106,7 @@ export class BottomSheetCore {
   private disableDragFlag: boolean;
   private closeOnRouteChange: boolean;
   private maxHeight!: MaxHeightController;
+  private maxHeightDeps!: MaxHeightControllerDeps;
 
   private snapPointsRaw: EngineOptions["snapPoints"];
   private snaps!: SnapResolver;
@@ -112,6 +116,7 @@ export class BottomSheetCore {
   private gesture: GestureController | undefined;
   private contentGesture: GestureController | undefined;
   private detachSheetGesture: (() => void) | null = null;
+  private detachSliderKeyboard: (() => void) | null = null;
   private rootEl: HTMLElement | null = null;
   private destroyed = false;
   private restClosed = false;
@@ -248,7 +253,7 @@ export class BottomSheetCore {
     this.auditDuplicateSnapIds(this.snapPointsRaw);
 
     this.rootEl = this.element.closest<HTMLElement>(".bs-root");
-    this.maxHeight = createMaxHeightController({
+    this.maxHeightDeps = {
       element: this.element,
       mode: this.mode,
       getMaxAxisSize: () => this.snaps.getMaxAxisSize(),
@@ -256,7 +261,8 @@ export class BottomSheetCore {
         this.snaps.setMaxAxisSize(size);
       },
       recompute: () => this.recompute(),
-    });
+    };
+    this.maxHeight = createMaxHeightController(this.maxHeightDeps);
     this.fitDeps = {
       element: this.element,
       scrollContainer: this.scrollContainer,
@@ -672,6 +678,45 @@ export class BottomSheetCore {
 
   getDragFrom(): DragFrom {
     return this.dragFromMode;
+  }
+
+  setMode(mode: SheetMode): void {
+    if (this.destroyed) return;
+    const next = resolveMode(mode, this.element);
+    if (next === this.mode) return;
+
+    const wasVertical = this.mode === "bottom" || this.mode === "top";
+    const nowVertical = next === "bottom" || next === "top";
+
+    this.gesture?.forceClearDragState();
+    this.detachSheetGesture?.();
+    this.animation.cancel();
+
+    this.element.style.removeProperty(layoutAxis(this.mode as TransformAxis));
+    this.mode = next;
+    this.element.dataset.mode = next;
+    this.transformTemplate = buildTransformTemplate(next as TransformAxis);
+    this.maxHeightDeps.mode = next;
+    this.fitDeps.mode = next;
+    this.snaps.setMode(next);
+    this.scrim.setSheetMode(next);
+
+    if (wasVertical !== nowVertical) {
+      this.aria = new AriaSliderWriter(this.handle, next);
+    }
+
+    this.detachSliderKeyboard?.();
+    this.mountSliderKeyboard();
+    this.mountSheetGesture();
+
+    this.recompute();
+    const active = this.snaps.findById(this.activeId);
+    if (active) this.applySize(active.size);
+    this.updateAriaSlider();
+  }
+
+  getMode(): PhysicalSheetMode {
+    return this.mode;
   }
 
   isTop(): boolean {
@@ -1263,7 +1308,13 @@ export class BottomSheetCore {
 
     }
 
-    this.teardowns.add(installSliderKeyboard({
+    this.mountSliderKeyboard();
+
+    this.scrim.attach();
+  }
+
+  private mountSliderKeyboard(): void {
+    const detach = installSliderKeyboard({
       handle: this.handle,
       mode: this.mode as TransformAxis,
       isDestroyed: () => this.destroyed,
@@ -1272,9 +1323,12 @@ export class BottomSheetCore {
       snapTo: id => {
         void this.snapTo(id);
       },
-    }));
-
-    this.scrim.attach();
+    });
+    this.detachSliderKeyboard = detach;
+    this.teardowns.add(() => {
+      this.detachSliderKeyboard?.();
+      this.detachSliderKeyboard = null;
+    });
   }
 
   private settleAfterDrag(

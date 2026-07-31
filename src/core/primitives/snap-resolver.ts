@@ -52,6 +52,12 @@ export class SnapResolver {
     this.recompute();
   }
 
+  setMode(mode: SheetMode): void {
+    if (mode === this.mode) return;
+    this.mode = mode;
+    this.recompute();
+  }
+
   setAllowedIds(ids: string[]): void {
     this.allowedIds = ids;
     this.rangeCache = null;

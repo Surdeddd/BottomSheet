@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`setMode()` / `getMode()` — the sheet's edge is changeable at runtime** — previously the edge was fixed at construction and there was no way to move it at all; a drawer that wanted to switch sides, or a page that flipped writing direction, had to tear the sheet down and rebuild it. `setMode` accepts both physical edges and the logical `start` / `end`, re-resolving the latter against the direction in effect at the time of the call, which is what makes right-to-left switching work without a rebuild. The active snap point survives the change. It re-seats every part the edge decides: transform template, drag gesture (its sign flips), keyboard step direction, snap resolver, scrim insets, `data-mode`, and the ARIA slider orientation — that last one only when the axis actually changes, since left and right are both horizontal.
+
 ### Fixed
 
 - **A logical mode reached the DOM unresolved** — every adapter renders `data-mode` from the value you passed, and the stylesheet only has rules for physical edges, so `mode: "start"` would have left the sheet with `[data-mode="start"]` and no positioning at all. The engine now writes the resolved edge to `data-mode` itself, which fixes every adapter at once and makes the engine the single owner of that attribute. A logical value still appears in server-rendered markup until the engine mounts.
