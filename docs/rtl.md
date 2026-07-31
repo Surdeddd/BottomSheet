@@ -45,6 +45,13 @@ from the document, or an environment without `getComputedStyle`, resolves to
 </html>
 ```
 
+The engine writes the resolved value to `data-mode` on the sheet element, which
+is what the stylesheet matches on (`[data-mode="left"]`, `[data-mode="right"]`,
+…). Adapters render the mode you passed, so a logical one briefly appears in
+the markup before the engine mounts — there is no `[data-mode="start"]` rule,
+so make sure the sheet is not visible before mount if that flash would matter
+to you. After mount the attribute always holds a physical edge.
+
 ## What this does not do
 
 **It does not re-resolve when direction changes at runtime.** Flipping

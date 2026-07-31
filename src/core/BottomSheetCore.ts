@@ -176,6 +176,7 @@ export class BottomSheetCore {
     this.screenComponent = opts.scrim ?? opts.screenComponent;
     this.scrimParent = this.screenComponent?.parentElement ?? null;
     this.mode = resolved.mode;
+    this.element.dataset.mode = this.mode;
     this.transformTemplate = buildTransformTemplate(this.mode as TransformAxis);
     this.aria = new AriaSliderWriter(this.handle, this.mode);
     this.flickVelocity = resolved.flickVelocity;

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A logical mode reached the DOM unresolved** — every adapter renders `data-mode` from the value you passed, and the stylesheet only has rules for physical edges, so `mode: "start"` would have left the sheet with `[data-mode="start"]` and no positioning at all. The engine now writes the resolved edge to `data-mode` itself, which fixes every adapter at once and makes the engine the single owner of that attribute. A logical value still appears in server-rendered markup until the engine mounts.
 - **The demo re-broke the closed-sheet shadow fix** — `demo/style.css` paints its own per-mode shadow through `.bs-sheet[data-mode=bottom]` and never mentioned `data-bs-rest`. Same specificity as the library's closed-state rule, declared later, so it won: closed sheets in the demo painted a shadow again, undoing the fix released in 0.14.0. The library was never affected; only the demo. Found by the new computed-style tests, which pixel snapshots had been missing.
 
 ### Added

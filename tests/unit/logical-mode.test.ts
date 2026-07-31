@@ -124,7 +124,47 @@ describe("logical modes", () => {
     await settle();
 
     expect(engine.state.activeId).toBe("open");
-    expect(sheet.dataset.mode).not.toBe("start");
+    expect(sheet.dataset.mode).toBe("right");
+    engine.destroy();
+  });
+
+  it("writes the resolved mode to data-mode so the stylesheet can match it", async () => {
+    const ltr = mountSheet("ltr");
+    const a = new BottomSheetEngine({
+      element: ltr.sheet,
+      handle: ltr.handle,
+      mode: "start",
+      snapPoints: [{ id: "closed", size: 0 }],
+      initial: "closed",
+    } as never);
+    await settle();
+    expect(ltr.sheet.dataset.mode).toBe("left");
+    a.destroy();
+
+    const rtl = mountSheet("rtl");
+    const b = new BottomSheetEngine({
+      element: rtl.sheet,
+      handle: rtl.handle,
+      mode: "end",
+      snapPoints: [{ id: "closed", size: 0 }],
+      initial: "closed",
+    } as never);
+    await settle();
+    expect(rtl.sheet.dataset.mode).toBe("left");
+    b.destroy();
+  });
+
+  it("leaves a physical mode's data-mode exactly as given", async () => {
+    const { sheet, handle } = mountSheet("rtl");
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      mode: "left",
+      snapPoints: [{ id: "closed", size: 0 }],
+      initial: "closed",
+    } as never);
+    await settle();
+    expect(sheet.dataset.mode).toBe("left");
     engine.destroy();
   });
 });
