@@ -86,7 +86,11 @@ document.querySelector("#to-min")?.addEventListener("click", () => {
 });
 document.querySelector("#lose-context")?.addEventListener("click", () => {
   const canvas = document.querySelector("canvas");
-  const gl = canvas?.getContext("webgl");
+  // Ask for the type the renderer actually created: a canvas hands back null
+  // for any context kind other than the one already bound to it.
+  const gl =
+    canvas?.getContext("webgl2") ??
+    (canvas?.getContext("webgl") as WebGLRenderingContext | null);
   gl?.getExtension("WEBGL_lose_context")?.loseContext();
 });
 

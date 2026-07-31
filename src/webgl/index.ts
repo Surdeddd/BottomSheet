@@ -134,7 +134,7 @@ export const webglRenderer = (
       return;
     }
 
-    program = createSurfaceProgram(handle.gl);
+    program = createSurfaceProgram(handle.gl, handle.highp);
     if (!program) {
       handle.destroy();
       handle = null;

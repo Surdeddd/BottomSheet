@@ -7,8 +7,13 @@ void main() {
 }
 `;
 
-const FRAGMENT_SRC = `
-precision mediump float;
+// The SDF works in drawing-buffer pixels, which reach four thousand and more
+// on a dpr-3 display. mediump carries ten bits of mantissa in Chromium — about
+// ±4px of slop up there — so corners wobbled and edges crawled. highp is 23
+// bits and costs nothing on any GPU that reports it; mediump stays as the
+// fallback for the ones that do not.
+const FRAGMENT_SRC = (precision: "highp" | "mediump") => `
+precision ${precision} float;
 
 uniform vec2 u_resolution;
 uniform vec4 u_rect;
@@ -106,9 +111,19 @@ export type SurfaceProgram = {
 
 export const createSurfaceProgram = (
   gl: WebGLRenderingContext,
+  highp = true,
 ): SurfaceProgram | null => {
   const vs = compile(gl, gl.VERTEX_SHADER, VERTEX_SRC);
-  const fs = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SRC);
+  let fs = compile(
+    gl,
+    gl.FRAGMENT_SHADER,
+    FRAGMENT_SRC(highp ? "highp" : "mediump"),
+  );
+  // A driver can advertise highp and still refuse to compile it. Falling back
+  // beats losing the renderer over a precision qualifier.
+  if (!fs && highp) {
+    fs = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SRC("mediump"));
+  }
   if (!vs || !fs) return null;
 
   const program = gl.createProgram();

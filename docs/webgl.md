@@ -154,6 +154,21 @@ const sheet = useBottomSheet({
 Under SSR the feature never installs — it checks for `document` first — so
 hydration is unaffected.
 
+## Context and precision
+
+The renderer asks for **WebGL2** first and falls back to WebGL1 — the shaders
+are GLSL ES 1.00, which WebGL2 accepts unchanged, so this buys precision and
+relaxed texture rules without a second shader dialect.
+
+Precision matters more than it looks. The surface is drawn from a signed
+distance field evaluated in drawing-buffer pixels, and on a dpr-3 phone those
+run past four thousand. `mediump` carries ten bits of mantissa in Chromium —
+roughly ±4px of error up there, which shows as crawling edges and corners that
+do not quite match their radius. The fragment shader therefore compiles as
+`highp`, guaranteed under WebGL2 and checked with `getShaderPrecisionFormat`
+under WebGL1. A driver that advertises `highp` and then refuses to compile it
+falls back to `mediump` rather than losing the renderer.
+
 ## Browser support
 
 WebGL 1 is required: Chrome 9, Safari 5.1, Firefox 4. In practice the floor is

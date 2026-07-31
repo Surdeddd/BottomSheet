@@ -5,6 +5,13 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **WebGL surface wobbled at high pixel ratios** — the signed distance field is evaluated in drawing-buffer pixels, which pass four thousand on a dpr-3 display, and the fragment shader ran at `mediump`. That is ten bits of mantissa in Chromium — around ±4px of error at those magnitudes — so edges crawled and corners missed their radius. WebKit hides it by making `mediump` a synonym for `highp`, which is why it only looked broken in some browsers. The shader now compiles as `highp`, with a `mediump` fallback for drivers that advertise it and then refuse to compile it.
+- **The renderer now requests WebGL2 first**, falling back to WebGL1. The shaders are GLSL ES 1.00, which WebGL2 accepts as-is, so this is a context upgrade rather than a port: guaranteed fragment `highp` and no power-of-two texture restrictions. The capability probe checks both.
+
 ## [0.20.0]
 
 ### Added
