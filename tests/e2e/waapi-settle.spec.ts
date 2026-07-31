@@ -10,7 +10,7 @@ const sizeOf = (sel: string) => {
 test.describe("WAAPI settle (opt-in)", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/fixtures/waapi.html");
-    // The fixture mounts closed, and closed sheets rest at visibility:hidden.
+
     await page.waitForSelector(SHEET, { state: "attached" });
   });
 

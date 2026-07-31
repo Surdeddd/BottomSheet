@@ -219,9 +219,6 @@ const updateChipsForMode = (): void => {
     snapChips.append(make("open", false), make("close", false));
     return;
   }
-  // Same resolver the engine uses, rather than reading the custom list directly:
-  // that path skipped the `closed` stop, so editing snaps silently removed the
-  // only chip that could close the sheet.
   const ids = resolveSnapPoints(settings.mode).map(s => s.id);
   for (const id of ids) {
     snapChips.append(make(id, id === settings.initial));
@@ -371,8 +368,6 @@ initMotionFx();
 initFeatureViz();
 initDetails();
 
-// Read the real version rather than restating it — the footer had drifted to
-// v0.1 while the package was on 0.13.0.
 void (async () => {
   const slot = document.getElementById("footer-version");
   if (!slot) return;
@@ -380,7 +375,6 @@ void (async () => {
     const pkg = (await import("../package.json")) as { version?: string };
     if (pkg.version) slot.textContent = `v${pkg.version}`;
   } catch {
-    // leave the markup fallback in place
   }
 })();
 

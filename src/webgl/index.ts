@@ -203,11 +203,15 @@ export const webglRenderer = (
       paint();
       const held = ctx.isDragging();
       bend *= held ? BEND_DECAY_HELD : BEND_DECAY_FREE;
-      const settled =
-        !held && !ctx.isAnimating() && Math.abs(bend) < BEND_REST;
-      if (settled) {
+      const flat = Math.abs(bend) < BEND_REST;
+
+      if (!held && flat && capture) {
         bend = 0;
         releaseCapture();
+      }
+
+      if (!held && flat && !ctx.isAnimating()) {
+        bend = 0;
         paint();
         running = false;
         frameId = null;

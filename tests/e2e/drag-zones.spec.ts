@@ -11,7 +11,6 @@ const sizeOf = (page: Page, selector: string) =>
     return el ? parseFloat(el.style.getPropertyValue("--bs-size")) : NaN;
   }, selector);
 
-/** Real touch input — synthetic events would not exercise scroll arbitration. */
 const swipe = async (
   page: Page,
   selector: string,
@@ -46,7 +45,7 @@ test.describe("closed sheets and content drag", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto(FIXTURE);
-    // Closed sheets are visibility:hidden by design — wait for attachment, not visibility.
+
     await page.waitForSelector(mainSheet, { state: "attached" });
   });
 
@@ -172,7 +171,6 @@ test.describe("closed sheets and content drag", () => {
     await page.waitForTimeout(300);
     const before = await sizeOf(page, mainSheet);
 
-    // handle mode: a pull on the sheet body below the content does nothing
     const noDragBox = (await page.locator(".no-drag").boundingBox())!;
     await swipe(page, ".no-drag", noDragBox.y + 4, noDragBox.y + 200);
     await page.waitForTimeout(300);
@@ -181,12 +179,10 @@ test.describe("closed sheets and content drag", () => {
     await page.click("#from-sheet");
     expect(await page.getAttribute(mainSheet, "data-drag-from")).toBe("sheet");
 
-    // the same region still refuses — it is opted out via data-bs-no-drag
     await swipe(page, ".no-drag", noDragBox.y + 4, noDragBox.y + 200);
     await page.waitForTimeout(300);
     expect(await sizeOf(page, mainSheet)).toBe(before);
 
-    // ...while a plain row now drags, because the whole sheet is live
     const rowBox = (await page.locator(topRow).boundingBox())!;
     await swipe(page, topRow, rowBox.y + 4, rowBox.y + 220);
     await page.waitForTimeout(400);

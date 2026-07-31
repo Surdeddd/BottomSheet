@@ -364,7 +364,6 @@ describe("dragFrom zones", () => {
     });
     expect(engine.getDragFrom()).toBe("handle");
 
-    // handle mode: the sheet body does not drag
     pointer(plain, "pointerdown", 100);
     pointer(plain, "pointermove", 200);
     expect(engine.state.isDragging).toBe(false);
@@ -376,7 +375,6 @@ describe("dragFrom zones", () => {
     expect(engine.state.isDragging).toBe(true);
     pointer(plain, "pointerup", 200);
 
-    // and back off again
     engine.setDragFrom("handle");
     pointer(plain, "pointerdown", 100);
     pointer(plain, "pointermove", 200);

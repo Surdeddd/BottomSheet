@@ -69,9 +69,7 @@ describe("BottomSheetEngine — multi-sheet stacking", () => {
     const engineA = new BottomSheetEngine(opts(a));
     const engineB = new BottomSheetEngine(opts(b));
     await engineA.open("full");
-    // open B but DO NOT await: the z-promote must happen synchronously at the
-    // start of open/snapTo, before the first paint — not on the later `open`
-    // event — so B is never one frame behind A.
+
     const opening = engineB.open("full");
     const zA = parseInt(a.sheet.style.zIndex, 10);
     const zB = parseInt(b.sheet.style.zIndex, 10);
@@ -95,8 +93,7 @@ describe("BottomSheetEngine — multi-sheet stacking", () => {
       initial: "closed",
     });
     await engineA.open("full");
-    // "cnt" measures 0 here (no laid-out content), but it is an open intent —
-    // the promote must NOT be gated on the measured size, or B flashes behind A.
+
     const opening = engineB.snapTo("cnt");
     const zA = parseInt(a.sheet.style.zIndex, 10);
     const zB = parseInt(b.sheet.style.zIndex, 10);

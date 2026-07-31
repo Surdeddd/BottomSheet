@@ -106,9 +106,7 @@ describe("BottomSheetEngine — maxHeight clamp (no upward gap when a snap excee
     const { sheet, handle } = makeDom();
     const content = document.createElement("div");
     sheet.appendChild(content);
-    // poke can't grow the container (app CSS / framework inline style pins it):
-    // sheet.offsetHeight reflects only the clamped body, but scrollHeight still
-    // reports the full sticky-inclusive content.
+
     Object.defineProperty(sheet, "offsetHeight", { value: 184, configurable: true });
     Object.defineProperty(content, "clientHeight", { value: 164, configurable: true });
     Object.defineProperty(content, "scrollHeight", { value: 232, configurable: true });
@@ -125,7 +123,7 @@ describe("BottomSheetEngine — maxHeight clamp (no upward gap when a snap excee
       duration: 0,
       respectReducedMotion: false,
     });
-    // max(184, 184 - 164 + 232) = 252 — the footer's reserved space is recovered
+
     expect(engine.state.size).toBe(252);
     engine.destroy();
   });
@@ -153,7 +151,7 @@ describe("BottomSheetEngine — maxHeight clamp (no upward gap when a snap excee
       duration: 0,
       respectReducedMotion: false,
     });
-    // natural 900, window 1000, but the containing block is only 300 → cap at 300
+
     expect(engine.state.size).toBe(300);
     engine.destroy();
   });

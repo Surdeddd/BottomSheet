@@ -112,10 +112,6 @@ test.describe("WebGL renderer", () => {
       await page.mouse.move(cx, cy - i * 24);
     }
 
-    // A parallel run can exhaust the browser's per-process WebGL context
-    // budget, at which point the renderer correctly withdraws mid-session and
-    // there is no texture to lift into. That is the documented fallback, not a
-    // failure of this behaviour.
     const lifted = await page
       .waitForFunction(
         () => {
@@ -148,6 +144,67 @@ test.describe("WebGL renderer", () => {
     );
   });
 
+  test("hands the content back promptly, not when the spring finishes", async ({
+    page,
+  }) => {
+    const unsupported = await page.getAttribute("#status", "data-unsupported");
+    test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
+
+    const box = await page.locator(".bs-handle").boundingBox();
+    if (!box) throw new Error("no handle box");
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(cx, cy - i * 30);
+
+    const lifted = await page
+      .waitForFunction(
+        () => {
+          const b = document.querySelector(".sheet-body") as HTMLElement;
+          if (b.style.color === "transparent") return "lifted";
+          const gone = !document
+            .querySelector(".bs-sheet")
+            ?.hasAttribute("data-bs-webgl");
+          return gone ? "withdrawn" : false;
+        },
+        undefined,
+        { timeout: 5000 },
+      )
+      .then(h => h.jsonValue());
+
+    if (lifted === "withdrawn") {
+      await page.mouse.up();
+      test.skip(true, "renderer withdrew — no GL context available");
+      return;
+    }
+
+    const measuring = page.evaluate(async () => {
+      const body = document.querySelector(".sheet-body") as HTMLElement;
+      const sheet = document.querySelector(".bs-sheet") as HTMLElement;
+      const size = (): number =>
+        parseFloat(sheet.style.getPropertyValue("--bs-size")) || 0;
+
+      let frames = 0;
+      while (frames < 200 && body.style.color !== "") {
+        await new Promise(r => requestAnimationFrame(r));
+        frames++;
+      }
+      if (body.style.color !== "") return { frames: -1, stillMoving: false };
+
+      const at = size();
+      await new Promise(r => requestAnimationFrame(r));
+      await new Promise(r => requestAnimationFrame(r));
+      return { frames, stillMoving: Math.abs(size() - at) > 0.5 };
+    });
+    await page.mouse.up();
+    const { frames, stillMoving } = await measuring;
+
+    expect(frames).toBeGreaterThan(-1);
+    expect(frames).toBeLessThanOrEqual(15);
+    expect(stillMoving).toBe(true);
+  });
+
   test("lifts backgrounds, borders and images too, not just text", async ({
     page,
   }) => {
@@ -162,9 +219,6 @@ test.describe("WebGL renderer", () => {
     await page.mouse.down();
     for (let i = 1; i <= 6; i++) await page.mouse.move(cx, cy - i * 26);
 
-    // Read the computed value, never the inline string: WebKit serialises
-    // `background: transparent` back as `none`, which is how this assertion
-    // failed there while the behaviour was correct.
     const lifted = await page
       .waitForFunction(
         () => {

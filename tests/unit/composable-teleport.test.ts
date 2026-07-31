@@ -64,7 +64,7 @@ describe("React useBottomSheet — teleportTo", () => {
     const backdrop = document.querySelector(".bs-backdrop")!;
     expect(sheet.parentElement).toBe(document.body);
     expect(backdrop.parentElement).toBe(document.body);
-    // not left inside the (transform-prone) .bs-root in the consumer tree
+
     expect(sheet.closest(".bs-root")).toBeNull();
     await act(async () => {
       root.unmount();

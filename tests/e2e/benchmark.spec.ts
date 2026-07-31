@@ -81,10 +81,7 @@ test.describe("benchmark — bottom-sheet under 1000-item load", () => {
 
   test("settle latency: snapTo → DOM reflects target", async ({ page }) => {
     const samples: number[] = [];
-    // 'full' (3rd chip) settles well below a fixed 600px on framed mobile
-    // viewports (the device frame caps it ~520px), which made the old hardcoded
-    // threshold never resolve → empty samples → NaN. Derive the real target for
-    // this device and wait for the sheet to reach ~95% of it.
+
     await page.click('#snap-chips .chip:nth-child(3)');
     await page.waitForTimeout(700);
     const fullTarget = await page.evaluate(sel => {

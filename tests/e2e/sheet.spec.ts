@@ -111,7 +111,7 @@ test.describe("Theme + i18n toggles", () => {
     );
     await page.goto("/");
     await page.waitForFunction(() => document.documentElement.dataset.theme);
-    // ensure handlers are wired (demo main.ts)
+
     await page.waitForFunction(
       () => Boolean(document.getElementById("theme-toggle")),
     );
@@ -120,7 +120,7 @@ test.describe("Theme + i18n toggles", () => {
     );
     const toggle = page.locator("#theme-toggle");
     await toggle.scrollIntoViewIfNeeded();
-    // Prefer real click; force only as fallback path if covered.
+
     await toggle.click({ timeout: 5000 }).catch(async () => {
       await toggle.click({ force: true });
     });

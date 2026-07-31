@@ -48,9 +48,7 @@ describe("content gesture — independent axes (left / right)", () => {
   });
 
   it("still drags sideways when the content is scrolled away from its top", () => {
-    // The bug this covers: scrollTop belongs to the Y axis, and a left/right
-    // sheet drags along X. Reading it there froze the sheet as soon as the
-    // list had been scrolled at all.
+
     expect(
       decideContentGesture({
         ...base,

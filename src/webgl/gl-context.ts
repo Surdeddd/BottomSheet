@@ -30,8 +30,7 @@ export const hasWebGL = (): boolean => {
       probe.getContext("webgl", { alpha: true }) ??
       probe.getContext("experimental-webgl");
     if (!gl) return false;
-    // Hand the context back at once. Browsers cap how many may live at a time,
-    // and this one exists only to answer the question.
+
     const lose = (gl as WebGLRenderingContext).getExtension(
       "WEBGL_lose_context",
     );
@@ -60,9 +59,6 @@ export const createGLHandle = (onLost: () => void): GLHandle | null => {
     preserveDrawingBuffer: false,
   };
 
-  // WebGL2 first: it guarantees highp in fragment shaders and drops the
-  // power-of-two texture restrictions. The shaders stay GLSL ES 1.00, which
-  // WebGL2 accepts unchanged, so this is a context upgrade and nothing else.
   let gl: WebGLRenderingContext | null = null;
   let isWebGL2 = false;
   for (const id of ["webgl2", "webgl", "experimental-webgl"] as const) {

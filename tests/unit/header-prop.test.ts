@@ -87,7 +87,7 @@ describe("React: per-snap header function", () => {
     const content = sheet.querySelector(".bs-content")!;
     expect(footer?.textContent).toBe("Confirm");
     expect(footer?.closest(".bs-content")).toBeNull();
-    // footer comes after content in DOM order
+
     expect(
       content.compareDocumentPosition(footer!) &
         Node.DOCUMENT_POSITION_FOLLOWING,

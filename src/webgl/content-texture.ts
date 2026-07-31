@@ -218,10 +218,7 @@ export const captureContent = (
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   try {
-    // A cross-origin image without CORS headers taints the canvas, and the
-    // upload throws only here — drawImage itself succeeds. Losing the texture
-    // is the correct outcome: the sheet keeps its DOM content and simply does
-    // not deform it.
+
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,

@@ -37,11 +37,6 @@ const waitForSnap = async (
   await waitForSheetSettled(page);
 };
 
-// The hero stat counters animate from 0 on load, and the numbers they pass
-// through are not the numbers the page means. Waiting for them to stop moving
-// is not enough: when rAF stalls they hold a partial value and read as settled,
-// which is how "9 KB gzip" ended up baked into the linux baselines. The demo
-// marks each counter done once its final value is written — wait for that.
 const waitForCountersSettled = async (
   page: import("@playwright/test").Page,
 ) => {
@@ -60,19 +55,12 @@ const waitForCountersSettled = async (
 
 test.describe("Visual regression — demo layout", () => {
   test.beforeEach(async ({ page }) => {
-    // Emulate here, not just via the project's `use`: that setting does not
-    // reach matchMedia in this Playwright version (measured — the demo's
-    // motion gates saw no-preference and ran the WebGL hero mid-snapshot).
-    // Snapshots must be deterministic, so pin the media state per page.
+
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     await page.waitForSelector(REACT_SHEET);
     await page.waitForLoadState("networkidle");
-    // The demo loads Fraunces / Hanken Grotesk / JetBrains Mono with
-    // display=swap: text paints in a fallback face first and is re-rendered
-    // when the real one arrives. networkidle does not cover that swap, so a
-    // snapshot taken between the two shows different type — the wobble the 2%
-    // tolerance used to absorb.
+
     await page.evaluate(() => document.fonts.ready);
     await waitForSnap(page, "minimized");
     await waitForCountersSettled(page);
@@ -99,12 +87,6 @@ test.describe("Visual regression — demo layout", () => {
       };
     });
 
-    // Looser than the 0.2% the rest of the suite runs at. This frame reaches
-    // past the hero into the adapter row, where scroll-triggered reveals and
-    // the count-up land on slightly different frames depending on how loaded
-    // the machine is. The device-frame snapshots below carry the strict budget
-    // and are the ones that would catch a real layout regression; this one is
-    // a composition check.
     await expect(page).toHaveScreenshot("hero-and-adapters.png", {
       fullPage: false,
       clip,

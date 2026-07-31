@@ -2,10 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 const SHEET = ".bs-sheet";
 
-// Every assertion here polls rather than reading once. Under a full parallel
-// run the demo is still settling when networkidle fires, and a single read
-// catches pre-adapter values — measured as failures in both Chromium and
-// Firefox that vanish when the spec runs alone.
 const prop = (page: Page, selector: string, name: string, pseudo?: string) =>
   expect.poll(() =>
     page.$eval(
@@ -67,10 +63,7 @@ test.describe("computed styles — the geometry pixels miss", () => {
   test("a closed sheet drops its shadow and leaves hit-testing", async ({
     page,
   }) => {
-    // Measured on a detached probe rather than the live sheet: setting
-    // data-bs-rest by hand races the engine, which rewrites it on its next
-    // update. The question is whether the stylesheet honours the closed state,
-    // and a probe answers it without a live engine in the way.
+
     const closed = await page.evaluate(() => {
       const root = document.createElement("div");
       root.className = "bs-root";
