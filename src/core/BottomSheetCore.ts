@@ -1138,6 +1138,7 @@ export class BottomSheetCore {
     surface: HTMLElement,
     e: PointerEvent,
     delta: number,
+    crossDelta: number,
   ): boolean | null {
     if (this.destroyed) return false;
     if (e.pointerType === "mouse") return false;
@@ -1146,6 +1147,8 @@ export class BottomSheetCore {
     if (!isDragAllowedFrom(e.target, "sheet")) return false;
     const decision = decideContentGesture({
       delta,
+      crossDelta,
+      sharesScrollAxis: this.mode === "bottom" || this.mode === "top",
       scrollTop: surface.scrollTop,
       atMaxSnap: this.size >= this.getAllowedRange().max - 0.5,
     });
@@ -1162,7 +1165,8 @@ export class BottomSheetCore {
     const controller = new GestureController(
       this.buildGestureDeps(surface, {
         manageTouchAction: false,
-        deferStart: (e, delta) => this.decideContentDrag(surface, e, delta),
+        deferStart: (e, delta, crossDelta) =>
+          this.decideContentDrag(surface, e, delta, crossDelta),
       }),
     );
     this.contentGesture = controller;

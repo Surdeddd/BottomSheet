@@ -8,12 +8,27 @@ export type ContentGestureInput = {
   scrollTop: number;
   atMaxSnap: boolean;
   slop?: number;
+
+  crossDelta?: number;
+  sharesScrollAxis?: boolean;
 };
 
 export function decideContentGesture(
   input: ContentGestureInput,
 ): ContentGestureDecision {
   const slop = input.slop ?? CONTENT_DRAG_SLOP;
+  const cross = input.crossDelta ?? 0;
+  const sharesScrollAxis = input.sharesScrollAxis ?? true;
+
+  // A left/right sheet drags along X while its content scrolls along Y. The
+  // axes are independent there, so scrollTop says nothing about who owns the
+  // gesture — the direction the finger favours does.
+  if (!sharesScrollAxis) {
+    if (Math.abs(input.delta) < slop && Math.abs(cross) < slop) return "pending";
+    if (Math.abs(input.delta) <= Math.abs(cross)) return "scroll";
+    return "drag";
+  }
+
   if (Math.abs(input.delta) < slop) return "pending";
   if (input.scrollTop > 0) return "scroll";
   if (input.delta > 0 && input.atMaxSnap) return "scroll";

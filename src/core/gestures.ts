@@ -14,7 +14,11 @@ export type GestureOptions = {
 
   shouldStart?: (e: PointerEvent) => boolean;
 
-  deferStart?: (e: PointerEvent, delta: number) => boolean | null;
+  deferStart?: (
+    e: PointerEvent,
+    delta: number,
+    crossDelta: number,
+  ) => boolean | null;
 
   manageTouchAction?: boolean;
 };
@@ -79,6 +83,7 @@ export const installGestures = (
   let activePointerId: number | null = null;
   let activePointerType: PointerKind = "touch";
   let startCoord = 0;
+  let startCross = 0;
   let lastCoord = 0;
   let pendingStart = false;
   const VELOCITY_WINDOW_MS = (kind: PointerKind) =>
@@ -91,6 +96,9 @@ export const installGestures = (
 
   const coordOf = (e: PointerEvent): number =>
     axis === "Y" ? e.clientY : e.clientX;
+
+  const crossOf = (e: PointerEvent): number =>
+    axis === "Y" ? e.clientX : e.clientY;
 
   const capture = (pointerId: number): void => {
     try {
@@ -113,6 +121,7 @@ export const installGestures = (
     activePointerType =
       (e.pointerType as PointerKind) || "touch";
     startCoord = coordOf(e);
+    startCross = crossOf(e);
     lastCoord = startCoord;
     samples.reset();
     samples.push(e.timeStamp, startCoord);
@@ -130,7 +139,7 @@ export const installGestures = (
     const rawDelta = coord - startCoord;
     const delta = rawDelta * sign;
     if (pendingStart) {
-      const verdict = options.deferStart!(e, delta);
+      const verdict = options.deferStart!(e, delta, crossOf(e) - startCross);
       if (verdict === false) {
         releaseTracking();
         return;
