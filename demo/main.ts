@@ -31,7 +31,7 @@ import { startViewTransition } from "./lib/view-transition";
 import { wireScrimControls } from "./lib/scrim-controls";
 import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
 import { wireDragSurface } from "./lib/drag-surface";
-import { initHero3D } from "./lib/hero-3d";
+import { initHero3D, STAGE_MEDIA, type Hero3DHandle } from "./lib/hero-3d";
 import { initMotionFx } from "./lib/motion-fx";
 import { initFeatureViz } from "./lib/feature-viz";
 import { initDetails } from "./lib/details";
@@ -361,9 +361,38 @@ initCountUp();
 initHeroParallax();
 
 const heroStage = $<HTMLElement>("#hero-3d");
-void initHero3D(heroStage).then(handle => {
-  if (handle) heroStage.classList.add("is-live");
-});
+const stageQuery =
+  typeof matchMedia === "function" ? matchMedia(STAGE_MEDIA) : null;
+let stageHandle: Hero3DHandle | null = null;
+let stagePending = false;
+
+const dropHeroStage = (): void => {
+  stageHandle?.destroy();
+  stageHandle = null;
+  heroStage.classList.remove("is-live", "is-pinned");
+  heroStage.style.removeProperty("opacity");
+};
+
+const syncHeroStage = (): void => {
+  if (stageQuery && !stageQuery.matches) {
+    dropHeroStage();
+    return;
+  }
+  if (stageHandle || stagePending) return;
+  stagePending = true;
+  void initHero3D(heroStage).then(handle => {
+    stagePending = false;
+    if (stageQuery && !stageQuery.matches) {
+      handle?.destroy();
+      return;
+    }
+    stageHandle = handle;
+    if (handle) heroStage.classList.add("is-live");
+  });
+};
+
+syncHeroStage();
+stageQuery?.addEventListener("change", syncHeroStage);
 initMotionFx();
 initFeatureViz();
 initDetails();

@@ -1054,7 +1054,7 @@ kbd {
   margin:0 auto;
   padding:0 48px;
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(4,minmax(0,1fr));
   border-bottom:1px solid var(--hairline-strong)
 }
 .adapter {
@@ -2212,9 +2212,20 @@ kbd {
   }
 }
 @media (max-width: 720px) {
-  .hero,.adapter-row,.showcase,.controls,.features,.footer {
+  .hero,.adapter-row,.showcase,.controls,.advanced,.features,.footer {
     padding-left:24px;
     padding-right:24px
+  }
+  .advanced-grid {
+    grid-template-columns:minmax(0,1fr)
+  }
+  .advanced-card {
+    padding:24px 0;
+    border-right:none;
+    border-bottom:1px solid var(--hairline)
+  }
+  .advanced-card:last-child {
+    border-bottom:none
   }
   #split-pane {
     grid-template-columns:minmax(0,1fr)!important
@@ -2223,7 +2234,7 @@ kbd {
     padding-top:60px
   }
   .adapter-row {
-    grid-template-columns:1fr 1fr
+    grid-template-columns:repeat(2,minmax(0,1fr))
   }
   .adapter:nth-child(2) {
     border-right:none
@@ -2252,7 +2263,7 @@ kbd {
   }
 }
 @media (max-width: 480px) {
-  .hero,.adapter-row,.showcase,.controls,.features,.footer {
+  .hero,.adapter-row,.showcase,.controls,.advanced,.features,.footer {
     padding-left:16px;
     padding-right:16px
   }
@@ -2642,4 +2653,59 @@ kbd {
 }
 @keyframes vt-root-in {
   from { opacity: 0; transform: translateY(-8px); }
+}
+
+@media (pointer:coarse) {
+  .chip,
+  .topbar-btn,
+  .adapter,
+  .advanced-btn,
+  .toggle {
+    min-height:44px
+  }
+  .snap-editor-row .remove {
+    min-width:44px;
+    min-height:44px
+  }
+  .snap-editor-row input {
+    min-height:44px
+  }
+  .toggle input[type=checkbox] {
+    width:44px;
+    height:26px
+  }
+  .toggle input[type=checkbox]::before {
+    width:22px;
+    height:22px
+  }
+  .toggle input[type=checkbox]:checked::before {
+    transform:translateX(18px)
+  }
+  .slider input[type=range] {
+    height:44px
+  }
+  .slider input[type=range]::-webkit-slider-thumb {
+    width:26px;
+    height:26px
+  }
+  .slider input[type=range]::-moz-range-thumb {
+    width:26px;
+    height:26px
+  }
+}
+
+@media (max-height:520px) and (orientation:landscape) {
+  .topbar {
+    top:6px;
+    right:6px;
+    gap:4px
+  }
+  .topbar-btn {
+    min-height:34px;
+    padding:6px 10px;
+    font-size:10px
+  }
+  .hero {
+    padding-top:48px
+  }
 }

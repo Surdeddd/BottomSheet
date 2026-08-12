@@ -20,7 +20,9 @@ const PHONE_H = 5.1;
 const SCREEN_W = PHONE_W - 0.22;
 const SCREEN_H = PHONE_H - 0.3;
 
-const MIN_STAGE_WIDTH = 900;
+export const MIN_STAGE_WIDTH = 900;
+
+export const STAGE_MEDIA = `(min-width: ${MIN_STAGE_WIDTH}px)`;
 
 const prefersReducedMotion = (): boolean =>
   typeof matchMedia === "function" &&

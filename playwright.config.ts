@@ -13,6 +13,9 @@ const MOBILE_VISUAL_PROJECTS = [
   { name: "visual-iphone-13", device: devices["iPhone 13"] },
 ] as const;
 
+const PORT = Number(process.env.BS_DEMO_PORT ?? 5173);
+const ORIGIN = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,
@@ -24,14 +27,14 @@ export default defineConfig({
     : "list",
   webServer: {
     command: process.env.CI
-      ? "npx vite build && npx vite preview --port 5173 --strictPort"
-      : "npx vite --port 5173",
-    port: 5173,
+      ? `npx vite build && npx vite preview --port ${PORT} --strictPort`
+      : `npx vite --port ${PORT} --strictPort`,
+    port: PORT,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: ORIGIN,
     trace: "retain-on-failure",
   },
   expect: {
