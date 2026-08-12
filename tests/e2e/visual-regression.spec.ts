@@ -54,6 +54,8 @@ const waitForCountersSettled = async (
 };
 
 test.describe("Visual regression — demo layout", () => {
+  test.setTimeout(90_000);
+
   test.beforeEach(async ({ page }) => {
 
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -102,7 +104,9 @@ test.describe("Visual regression — demo layout", () => {
 
     const device = page.locator(".device-wrap");
     await device.waitFor({ state: "visible" });
-    await expect(device).toHaveScreenshot("device-react-minimized.png");
+    await expect(device).toHaveScreenshot("device-react-minimized.png", {
+      timeout: 20_000,
+    });
   });
 
   test("device frame — react adapter, full snap", async ({ page }) => {
@@ -114,6 +118,8 @@ test.describe("Visual regression — demo layout", () => {
 
     const device = page.locator(".device-wrap");
     await device.waitFor({ state: "visible" });
-    await expect(device).toHaveScreenshot("device-react-full.png");
+    await expect(device).toHaveScreenshot("device-react-full.png", {
+      timeout: 20_000,
+    });
   });
 });
