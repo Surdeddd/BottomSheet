@@ -21,10 +21,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node 20 + npm registry auth
+      - name: Set up Node 22 + npm registry auth
         uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           registry-url: "https://registry.npmjs.org"
           scope: "@surdeddd"
           cache: npm
