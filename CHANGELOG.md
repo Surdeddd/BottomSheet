@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.2]
+
+### Fixed
+
+- **A sheet buried under a second sheet stranded its backdrop** — the backdrop's opacity ramp was gated behind `isTopSheet()`, so the moment a second sheet opened and took top status, the first stopped writing its own backdrop at all. Closing it then never brought the scrim back down: it stayed frozen at full opacity with `pointer-events: auto`, a full-screen click trap that only `destroy()` could clear, and a second dim layer stacked over the sheet still on screen. Nothing about it was visible as a backdrop — the page simply stopped responding to taps, which is why it read as erratic behaviour rather than a stuck element. The ramp is now computed unconditionally and written when the sheet is on top **or** when it resolves to zero: only the top sheet still dims, but a closed sheet can no longer leave a live scrim behind. Regression tests cover closing a buried sheet, rapid repeated opens, open/close churn across two sheets, and a close that lands mid-animation. Reported in [#40](https://github.com/Surdeddd/BottomSheet/issues/40).
+- **The CSS subpaths shipped without type declarations** — `./styles`, `./styles.css` and the three themes mapped straight to a `.css` file with no `types` condition, so `import "@surdeddd/bottom-sheet/styles"` failed to resolve under `noUncheckedSideEffectImports`. Since `@vue/tsconfig` turns that flag on, every Vue consumer saw the error and no consumer `tsconfig` was at fault. Each CSS entry point now carries a `types` condition with the declaration emitted at build time, verified under `bundler`, `node16` and `nodenext`.
+- **The Vue component's exposed API was missing from its public type** — the component was declared with `DefineComponent`'s `RawBindings` slot as `Record<string, never>`, so nothing from `defineExpose` reached the public instance type and `InstanceType<typeof BottomSheet>["open"]` collapsed to `never`. Every documented imperative call through a template ref — `sheetRef.value?.open()` — failed to typecheck, while working perfectly at runtime, which made it look like a consumer mistake. The exposed surface is now described as the exported `BottomSheetInstance` type, so `open`, `close`, `snapTo`, `expand`, `collapse`, `state`, `isTop`, `getEngine` and the rest are typed and callable. Runtime behaviour is unchanged; this was only ever a declaration defect.
+
 ## [0.20.1]
 
 ### Fixed
