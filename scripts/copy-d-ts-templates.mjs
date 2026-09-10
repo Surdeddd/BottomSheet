@@ -40,3 +40,16 @@ writeFileSync(
   'export { default as BottomSheet } from "./BottomSheet.svelte";\nexport { createBottomSheet } from "../svelte-core.js";\n',
 );
 console.log("✓ dist/svelte-src (svelte export condition source)");
+
+const cssTypeTargets = [
+  "dist/styles.d.ts",
+  "dist/themes/ios.d.ts",
+  "dist/themes/material.d.ts",
+  "dist/themes/vercel.d.ts",
+];
+for (const target of cssTypeTargets) {
+  const dst = resolve(root, target);
+  mkdirSync(dirname(dst), { recursive: true });
+  writeFileSync(dst, "export {};\n");
+  console.log(`✓ ${target}`);
+}

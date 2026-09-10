@@ -200,14 +200,38 @@
       }
     },
     "./package.json": "./package.json",
-    "./styles": "./dist/styles.css",
-    "./styles.css": "./dist/styles.css",
-    "./themes/ios": "./dist/themes/ios.css",
-    "./themes/ios.css": "./dist/themes/ios.css",
-    "./themes/material": "./dist/themes/material.css",
-    "./themes/material.css": "./dist/themes/material.css",
-    "./themes/vercel": "./dist/themes/vercel.css",
-    "./themes/vercel.css": "./dist/themes/vercel.css"
+    "./styles": {
+      "types": "./dist/styles.d.ts",
+      "default": "./dist/styles.css"
+    },
+    "./styles.css": {
+      "types": "./dist/styles.d.ts",
+      "default": "./dist/styles.css"
+    },
+    "./themes/ios": {
+      "types": "./dist/themes/ios.d.ts",
+      "default": "./dist/themes/ios.css"
+    },
+    "./themes/ios.css": {
+      "types": "./dist/themes/ios.d.ts",
+      "default": "./dist/themes/ios.css"
+    },
+    "./themes/material": {
+      "types": "./dist/themes/material.d.ts",
+      "default": "./dist/themes/material.css"
+    },
+    "./themes/material.css": {
+      "types": "./dist/themes/material.d.ts",
+      "default": "./dist/themes/material.css"
+    },
+    "./themes/vercel": {
+      "types": "./dist/themes/vercel.d.ts",
+      "default": "./dist/themes/vercel.css"
+    },
+    "./themes/vercel.css": {
+      "types": "./dist/themes/vercel.d.ts",
+      "default": "./dist/themes/vercel.css"
+    }
   },
   "workspaces": [
     "examples/*"

@@ -74,6 +74,11 @@ export function useBottomSheet<TId extends string = string>(
   opts: UseBottomSheetVueOptions<TId>,
 ): UseBottomSheetVueReturn<TId>;
 
+export type BottomSheetInstance<TId extends string = string> = Omit<
+  UseBottomSheetVueReturn<TId>,
+  "sheetRef" | "handleRef" | "contentRef" | "backdropRef" | "screenRef"
+>;
+
 export type VueAnchor<TId extends string = string> = Omit<
   AnchorOptions,
   "element"
@@ -96,7 +101,7 @@ export type BottomSheetProps<TId extends string = string> =
 
 export const BottomSheet: DefineComponent<
   BottomSheetProps,
-  Record<string, never>,
+  BottomSheetInstance,
   Record<string, never>,
   Record<string, never>,
   Record<string, never>,
