@@ -3,6 +3,7 @@ import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
 import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
 import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
+import { POINTER_EVENTS_OPACITY_THRESHOLD } from "../../src/core/primitives/hot-path-thresholds";
 
 const makeSheet = () => {
   const sheet = document.createElement("section");
@@ -198,5 +199,110 @@ describe("BottomSheetEngine — multi-sheet stacking", () => {
       if (i > 0) expect(engines[i - 1]!.state.activeId).toBe("full");
     }
     engines.forEach(e => e.destroy());
+  });
+
+  it("closing a sheet that is not on top still hides its own backdrop", async () => {
+    const a = makeSheet();
+    const b = makeSheet();
+    const engineA = new BottomSheetEngine(opts(a));
+    const engineB = new BottomSheetEngine(opts(b));
+    await engineA.open("full");
+    await engineB.open("full");
+    expect(Number(a.backdrop.style.opacity)).toBeGreaterThan(0);
+
+    await engineA.close();
+
+    expect(Number(a.backdrop.style.opacity)).toBe(0);
+    expect(a.backdrop.style.pointerEvents).toBe("none");
+    engineA.destroy();
+    engineB.destroy();
+  });
+
+  it("a sheet that regains top after being buried repaints its backdrop", async () => {
+    const a = makeSheet();
+    const b = makeSheet();
+    const engineA = new BottomSheetEngine(opts(a));
+    const engineB = new BottomSheetEngine(opts(b));
+    await engineA.open("full");
+    await engineB.open("full");
+    await engineA.close();
+    await engineB.close();
+
+    await engineA.open("full");
+
+    expect(Number(a.backdrop.style.opacity)).toBeGreaterThan(0);
+    expect(a.backdrop.style.pointerEvents).toBe("auto");
+    engineA.destroy();
+    engineB.destroy();
+  });
+
+  it("rapid repeated opens of a second sheet leave one consistent top", async () => {
+    const a = makeSheet();
+    const b = makeSheet();
+    const engineA = new BottomSheetEngine(opts(a));
+    const engineB = new BottomSheetEngine(opts(b));
+    await engineA.open("full");
+
+    void engineB.open("full");
+    void engineB.open("full");
+    await engineB.open("full");
+
+    const zA = parseInt(a.sheet.style.zIndex, 10);
+    const zB = parseInt(b.sheet.style.zIndex, 10);
+    expect(zB).toBeGreaterThan(zA);
+    expect(Number(b.backdrop.style.opacity)).toBeGreaterThan(0);
+
+    await engineB.close();
+
+    expect(Number(b.backdrop.style.opacity)).toBe(0);
+    expect(b.backdrop.style.pointerEvents).toBe("none");
+    expect(Number(a.backdrop.style.opacity)).toBeGreaterThan(0);
+    engineA.destroy();
+    engineB.destroy();
+  });
+
+  it("rapid open/close churn on a buried sheet never strands a backdrop", async () => {
+    const a = makeSheet();
+    const b = makeSheet();
+    const engineA = new BottomSheetEngine(opts(a));
+    const engineB = new BottomSheetEngine(opts(b));
+
+    for (let i = 0; i < 5; i++) {
+      void engineA.open("full");
+      void engineB.open("full");
+      await engineA.close();
+      await engineB.close();
+    }
+
+    expect(Number(a.backdrop.style.opacity)).toBe(0);
+    expect(Number(b.backdrop.style.opacity)).toBe(0);
+    expect(a.backdrop.style.pointerEvents).toBe("none");
+    expect(b.backdrop.style.pointerEvents).toBe("none");
+    engineA.destroy();
+    engineB.destroy();
+  });
+
+  it("a buried sheet closed mid-animation releases its backdrop", async () => {
+    const a = makeSheet();
+    const b = makeSheet();
+    const animated = (n: ReturnType<typeof makeSheet>) => ({
+      ...opts(n),
+      duration: 80,
+    });
+    const engineA = new BottomSheetEngine(animated(a));
+    const engineB = new BottomSheetEngine(animated(b));
+
+    await engineA.open("full");
+    void engineB.open("full");
+    await new Promise(r => setTimeout(r, 20));
+    void engineA.close();
+    await new Promise(r => setTimeout(r, 250));
+
+    expect(Number(a.backdrop.style.opacity)).toBeLessThan(
+      POINTER_EVENTS_OPACITY_THRESHOLD,
+    );
+    expect(a.backdrop.style.pointerEvents).toBe("none");
+    engineA.destroy();
+    engineB.destroy();
   });
 });

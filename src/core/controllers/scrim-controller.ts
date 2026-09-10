@@ -138,26 +138,28 @@ export class ScrimController {
     ) {
       return;
     }
-    if (this.backdrop && this.isTopSheet()) {
+    if (this.backdrop) {
       const [s, e] = this.backdropRange;
       const range = Math.max(e - s, RANGE_DIVISION_EPSILON);
       const backdropOpacity = Math.min(
         Math.max((progress - s) / range, 0),
         1,
       );
-      if (
-        this.backdropOpacitySentinel.shouldWrite(
-          backdropOpacity,
-          OPACITY_WRITE_EPSILON,
-        )
-      ) {
-        this.backdrop.style.opacity = String(backdropOpacity);
-      }
-      const nextPointer: "auto" | "none" =
-        backdropOpacity > POINTER_EVENTS_OPACITY_THRESHOLD ? "auto" : "none";
-      if (nextPointer !== this.lastBackdropPointer) {
-        this.backdrop.style.pointerEvents = nextPointer;
-        this.lastBackdropPointer = nextPointer;
+      if (this.isTopSheet() || backdropOpacity === 0) {
+        if (
+          this.backdropOpacitySentinel.shouldWrite(
+            backdropOpacity,
+            OPACITY_WRITE_EPSILON,
+          )
+        ) {
+          this.backdrop.style.opacity = String(backdropOpacity);
+        }
+        const nextPointer: "auto" | "none" =
+          backdropOpacity > POINTER_EVENTS_OPACITY_THRESHOLD ? "auto" : "none";
+        if (nextPointer !== this.lastBackdropPointer) {
+          this.backdrop.style.pointerEvents = nextPointer;
+          this.lastBackdropPointer = nextPointer;
+        }
       }
     }
     if (this.screenComponent && this.scrimMode !== "off") {
