@@ -21,18 +21,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node 22 + npm registry auth
+      - name: Set up Node 22 + npm registry
         uses: actions/setup-node@v7
         with:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
           scope: "@surdeddd"
-          cache: npm
+          package-manager-cache: false
 
-      - name: Verify npm version (>= 9.5 for --provenance)
+      - name: Upgrade npm (trusted publishing needs >= 11.5.1)
         run: |
+          npm install -g npm@latest
+          node -p "'node ' + process.versions.node"
           npm --version
-          node -e "const v = process.versions; console.log('node', v.node, 'npm', require('child_process').execSync('npm --version').toString().trim());"
 
       - name: Install dependencies (npm ci)
         run: npm ci --legacy-peer-deps
@@ -79,10 +80,8 @@ jobs:
       - name: npm pack --dry-run (tarball contents preview)
         run: npm pack --dry-run
 
-      - name: Publish to npm (with provenance)
+      - name: Publish to npm (trusted publishing, provenance)
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release with auto-generated notes
         uses: softprops/action-gh-release@v3

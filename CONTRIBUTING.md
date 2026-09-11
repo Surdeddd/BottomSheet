@@ -96,23 +96,23 @@ Maintainers only. The publish flow is fully automated through
 
 ### One-time setup
 
-1. Generate an npm **Automation** token (or a **Granular access** token
-   with `read and write` permission scoped to `@surdeddd/bottom-sheet`):
-   - npm web → **Access Tokens** → **Generate New Token** → choose
-     **Automation** (recommended — bypasses 2FA in CI) or **Granular**
-     (more locked-down; set "Packages and scopes" → `@surdeddd/*`,
-     permission `Read and write`, expiration ≤ 1 year).
-   - Copy the `npm_…` value once — npm never shows it again.
-2. GitHub repo → **Settings** → **Secrets and variables** → **Actions**
-   → **New repository secret**:
-   - Name: `NPM_TOKEN`
-   - Value: the token from step 1.
-3. Confirm the repo has **Settings → Actions → General → Workflow
+Publishing uses npm **trusted publishing** (OIDC): the workflow proves to
+npm that it runs from this repository, and npm mints a short-lived
+publish token for that one job. There is no long-lived token to store,
+rotate, or leak.
+
+1. npm web → package `@surdeddd/bottom-sheet` → **Settings** →
+   **Trusted Publisher** → **GitHub Actions**:
+   - Organization or user: `Surdeddd`
+   - Repository: `BottomSheet`
+   - Workflow filename: `release.yml`
+   - Environment name: leave empty
+2. Confirm the repo has **Settings → Actions → General → Workflow
    permissions → Read and write** enabled, so the release job can
    create a GitHub Release.
 
-That's it — never commit the token, never paste it into chat, never
-share it with collaborators (issue them their own).
+The workflow no longer reads an `NPM_TOKEN` secret; if one is still
+present in the repository settings, delete it.
 
 ### Cutting a release
 
@@ -137,7 +137,7 @@ the `Release` workflow on GitHub.
 ### What the workflow does (in order)
 
 1. Checkout with full git history (needed for auto-generated notes).
-2. Set up Node 20 + npm registry auth via `NPM_TOKEN`.
+2. Set up Node 22 and upgrade npm to ≥ 11.5.1 (trusted publishing needs it).
 3. **Assert tag ↔ `package.json` version match** — aborts on drift.
 4. **Refuse duplicate publish** — `npm view` lookup; aborts if the
    version is already on the registry.
@@ -190,7 +190,7 @@ considered hostile. The correct fix is one of:
 | --- | --- | --- |
 | `tag 'vX.Y.Z' does not match package.json version` | Tag was created without `npm version` | Delete the tag (`git tag -d vX.Y.Z && git push --delete origin vX.Y.Z`), then `npm version` again |
 | `…@X.Y.Z already exists on npm` | Re-tag of an already-published version | Bump again with `npm version patch` |
-| `404 Not Found - PUT …` | `NPM_TOKEN` missing / wrong scope | Re-issue an Automation token, update the GitHub secret |
+| `404 Not Found - PUT …` | Trusted publisher not configured on npm, or its owner / repo / workflow fields don't match | npm web → package **Settings** → **Trusted Publisher**: `Surdeddd` / `BottomSheet` / `release.yml` |
 | `403 Forbidden - PUT …` (provenance) | Workflow lacks `id-token: write` | Already in `release.yml`; if you forked, restore the permissions block |
 | `npm ERR! 402 Payment Required` | Scoped package + missing `--access public` | Already in `release.yml` — don't remove the flag |
 
