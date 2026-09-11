@@ -81,7 +81,7 @@ jobs:
         run: npm pack --dry-run
 
       - name: Publish to npm (trusted publishing, provenance)
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --loglevel verbose
 
       - name: Create GitHub Release with auto-generated notes
         uses: softprops/action-gh-release@v3
