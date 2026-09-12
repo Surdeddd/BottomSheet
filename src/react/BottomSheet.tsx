@@ -218,6 +218,12 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       onChange?.(state);
     }, [state, onChange]);
 
+    const mode = engineOpts.mode;
+    useEffect(() => {
+      if (mode === undefined) return;
+      getEngine()?.setMode(mode);
+    }, [getEngine, mode]);
+
     const [anchorHosts, setAnchorHosts] = useState<HTMLElement[]>([]);
     const anchorsKey = anchors
       ? JSON.stringify(

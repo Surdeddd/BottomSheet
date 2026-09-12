@@ -227,7 +227,7 @@ type SnapPoint =
 | `snapPoints`         | required      | Ordered list of `{ id, size }`                                                                                             |
 | `allowed`            | all ids       | Subset the sheet may settle on right now                                                                                   |
 | `initial`            | first allowed | Snap id to start at                                                                                                        |
-| `mode`               | `"bottom"`    | `bottom`, `top`, `left`, `right`                                                                                           |
+| `mode`               | `"bottom"`    | `bottom`, `top`, `left`, `right`, or logical `start` / `end`; reactive in React and Vue adapters                           |
 | `animation`          | `"spring"`    | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy`                                                     |
 | `settleAnimation`    | off           | `"waapi"` — settle runs as a compositor-driven Web Animation (pre-sampled spring keyframes); falls back to rAF automatically |
 | `features`           | all defaults  | `EngineFeature[]` — override/extend the composable feature set (see Slim core below)                                       |

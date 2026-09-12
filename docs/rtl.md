@@ -69,6 +69,14 @@ engine.setMode("start"); // re-resolves against the direction in effect now
 engine.setMode("right"); // drawer, whatever the writing direction
 ```
 
+In the React and Vue adapters you do not need to reach for the engine: the
+`mode` prop is watched, so re-rendering with a new value calls `setMode` for
+you. Passing `start` again after a language switch is enough to re-resolve it.
+
+```tsx
+<BottomSheet mode={wide ? "start" : "bottom"} snapPoints={points} />
+```
+
 The active snap point is preserved across the change. Under the hood it
 re-seats everything the edge decides: the transform template, the drag gesture
 (its sign flips), the keyboard step direction, the snap resolver, the scrim
