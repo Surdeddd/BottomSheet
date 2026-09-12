@@ -113,18 +113,21 @@ export class AnimationRunner {
     );
   }
 
+  private cancelWaapi(): void {
+    if (!this.currentWaapi) return;
+    const entry = this.currentWaapi;
+    this.currentWaapi = null;
+    entry.stop();
+    try {
+      entry.anim.cancel();
+    } catch {
+    }
+  }
+
   cancel(): void {
     this.currentTween?.cancel();
     this.currentSpring?.cancel();
-    if (this.currentWaapi) {
-      const entry = this.currentWaapi;
-      this.currentWaapi = null;
-      entry.stop();
-      try {
-        entry.anim.cancel();
-      } catch {
-      }
-    }
+    this.cancelWaapi();
   }
 
   async animateTo(target: number, velocityPxPerMs: number): Promise<void> {
@@ -136,6 +139,7 @@ export class AnimationRunner {
     }
     this.currentTween?.cancel();
     this.currentSpring?.cancel();
+    this.cancelWaapi();
     this.getRootEl()?.setAttribute("data-animating", "true");
     this.element.style.willChange = "transform";
 

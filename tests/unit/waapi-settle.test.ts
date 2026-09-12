@@ -199,4 +199,84 @@ describe("waapi settle engine path", () => {
     expect(fakeAnim.cancel).toHaveBeenCalled();
     engine.destroy();
   });
+
+  it("a second settle cancels the native animation the first one left running", async () => {
+    const n = makeSheet();
+    const spawned: Array<{ playState: string; cancel: ReturnType<typeof vi.fn> }> = [];
+    (n.sheet as unknown as { animate: unknown }).animate = () => {
+      const anim = {
+        playState: "running",
+        finished: new Promise<void>(() => {}),
+        cancel: vi.fn(() => {
+          anim.playState = "idle";
+        }),
+      };
+      spawned.push(anim);
+      return anim;
+    };
+
+    const engine = new BottomSheetEngine({
+      element: n.sheet,
+      handle: n.handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 300 },
+        { id: "full", size: 600 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 200,
+      respectReducedMotion: false,
+      settleAnimation: "waapi",
+    });
+
+    void engine.snapTo("half");
+    await new Promise(r => setTimeout(r, 10));
+    void engine.snapTo("full");
+    await new Promise(r => setTimeout(r, 10));
+
+    expect(spawned.length).toBeGreaterThanOrEqual(2);
+    expect(spawned[0]!.cancel).toHaveBeenCalled();
+    const running = spawned.filter(a => a.playState === "running");
+    expect(running).toHaveLength(1);
+
+    engine.destroy();
+  });
+
+  it("leaves no native animation running once the engine is destroyed mid-settle", async () => {
+    const n = makeSheet();
+    const spawned: Array<{ playState: string; cancel: ReturnType<typeof vi.fn> }> = [];
+    (n.sheet as unknown as { animate: unknown }).animate = () => {
+      const anim = {
+        playState: "running",
+        finished: new Promise<void>(() => {}),
+        cancel: vi.fn(() => {
+          anim.playState = "idle";
+        }),
+      };
+      spawned.push(anim);
+      return anim;
+    };
+
+    const engine = new BottomSheetEngine({
+      element: n.sheet,
+      handle: n.handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 300 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 200,
+      respectReducedMotion: false,
+      settleAnimation: "waapi",
+    });
+
+    void engine.snapTo("half");
+    await new Promise(r => setTimeout(r, 10));
+    engine.destroy();
+    await settle();
+
+    expect(spawned.every(a => a.playState !== "running")).toBe(true);
+  });
 });
