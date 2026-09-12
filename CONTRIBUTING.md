@@ -103,7 +103,10 @@ publishing (below).
 
 1. npm web → **Access Tokens** → **Generate New Token** → **Granular
    Access Token**: packages and scopes `@surdeddd/bottom-sheet`,
-   permission **Read and write**, expiration 90 days.
+   permission **Read and write**, expiration 90 days, and tick
+   **bypass two-factor authentication**. Without that tick the token
+   authenticates but publish fails with `403 … bypass 2fa … is
+   required`, because the account itself has no 2FA.
 2. `gh secret set NPM_TOKEN --body '<token>'` (or GitHub repo →
    **Settings** → **Secrets and variables** → **Actions**).
 3. Confirm the repo has **Settings → Actions → General → Workflow
