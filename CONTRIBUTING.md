@@ -96,23 +96,31 @@ Maintainers only. The publish flow is fully automated through
 
 ### One-time setup
 
-Publishing uses npm **trusted publishing** (OIDC): the workflow proves to
-npm that it runs from this repository, and npm mints a short-lived
-publish token for that one job. There is no long-lived token to store,
-rotate, or leak.
+The workflow publishes with a granular npm access token stored as the
+`NPM_TOKEN` repository secret. npm caps these tokens at 90 days, so
+re-issuing it is a recurring chore until the account moves to trusted
+publishing (below).
 
-1. npm web → package `@surdeddd/bottom-sheet` → **Settings** →
-   **Trusted Publisher** → **GitHub Actions**:
-   - Organization or user: `Surdeddd`
-   - Repository: `BottomSheet`
-   - Workflow filename: `release.yml`
-   - Environment name: leave empty
-2. Confirm the repo has **Settings → Actions → General → Workflow
+1. npm web → **Access Tokens** → **Generate New Token** → **Granular
+   Access Token**: packages and scopes `@surdeddd/bottom-sheet`,
+   permission **Read and write**, expiration 90 days.
+2. `gh secret set NPM_TOKEN --body '<token>'` (or GitHub repo →
+   **Settings** → **Secrets and variables** → **Actions**).
+3. Confirm the repo has **Settings → Actions → General → Workflow
    permissions → Read and write** enabled, so the release job can
    create a GitHub Release.
 
-The workflow no longer reads an `NPM_TOKEN` secret; if one is still
-present in the repository settings, delete it.
+**Trusted publishing (no token, no expiry).** npm only allows it on
+accounts with 2FA enabled. Once 2FA is on, run
+
+```bash
+npx -y npm@latest trust github @surdeddd/bottom-sheet --repo Surdeddd/BottomSheet --file release.yml --allow-publish
+```
+
+and nothing else changes: the workflow already upgrades npm to a version
+that performs the OIDC exchange, and a successful exchange takes
+precedence over `NPM_TOKEN`. npm plans to strip direct publish from
+bypass-2FA tokens in January 2027, so the token route has a deadline.
 
 ### Cutting a release
 
@@ -137,7 +145,9 @@ the `Release` workflow on GitHub.
 ### What the workflow does (in order)
 
 1. Checkout with full git history (needed for auto-generated notes).
-2. Set up Node 22 and upgrade npm to ≥ 11.5.1 (trusted publishing needs it).
+2. Set up Node 22 + npm registry auth via `NPM_TOKEN`; upgrade npm to
+   ≥ 11.5.1 so the OIDC exchange can take over once trusted publishing
+   is configured.
 3. **Assert tag ↔ `package.json` version match** — aborts on drift.
 4. **Refuse duplicate publish** — `npm view` lookup; aborts if the
    version is already on the registry.
@@ -190,7 +200,7 @@ considered hostile. The correct fix is one of:
 | --- | --- | --- |
 | `tag 'vX.Y.Z' does not match package.json version` | Tag was created without `npm version` | Delete the tag (`git tag -d vX.Y.Z && git push --delete origin vX.Y.Z`), then `npm version` again |
 | `…@X.Y.Z already exists on npm` | Re-tag of an already-published version | Bump again with `npm version patch` |
-| `404 Not Found - PUT …` | Trusted publisher not configured on npm, or its owner / repo / workflow fields don't match | npm web → package **Settings** → **Trusted Publisher**: `Surdeddd` / `BottomSheet` / `release.yml` |
+| `404 Not Found - PUT …` | `NPM_TOKEN` expired (90-day cap) or wrong scope; with trusted publishing, the publisher config doesn't match or the account has no 2FA | Re-issue a granular token and `gh secret set NPM_TOKEN`; for OIDC, enable 2FA and re-run the `npm trust github` command above |
 | `403 Forbidden - PUT …` (provenance) | Workflow lacks `id-token: write` | Already in `release.yml`; if you forked, restore the permissions block |
 | `npm ERR! 402 Payment Required` | Scoped package + missing `--access public` | Already in `release.yml` — don't remove the flag |
 

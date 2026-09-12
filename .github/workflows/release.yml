@@ -29,7 +29,7 @@ jobs:
           scope: "@surdeddd"
           package-manager-cache: false
 
-      - name: Upgrade npm (trusted publishing needs >= 11.5.1)
+      - name: Upgrade npm (>= 11.5.1 so OIDC takes over once trusted publishing is configured)
         run: |
           npm install -g npm@latest
           node -p "'node ' + process.versions.node"
@@ -80,8 +80,10 @@ jobs:
       - name: npm pack --dry-run (tarball contents preview)
         run: npm pack --dry-run
 
-      - name: Publish to npm (trusted publishing, provenance)
-        run: npm publish --provenance --access public --loglevel verbose
+      - name: Publish to npm (with provenance)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release with auto-generated notes
         uses: softprops/action-gh-release@v3
