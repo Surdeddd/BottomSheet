@@ -55,6 +55,7 @@ export default defineConfig({
         waapi: resolve(__dirname, "demo/fixtures/waapi.html"),
         dragZones: resolve(__dirname, "demo/fixtures/drag-zones.html"),
         webgl: resolve(__dirname, "demo/fixtures/webgl.html"),
+        stacking: resolve(__dirname, "demo/fixtures/stacking.html"),
       },
     },
   },

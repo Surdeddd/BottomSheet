@@ -1074,11 +1074,19 @@ export class BottomSheetCore {
         for (const anchor of this.anchors) anchor.syncZ(z + 1);
       },
       setIsTop: isTop => {
+        if (this.isTopSheet === isTop) return;
         this.isTopSheet = isTop;
+        this.repaintScrim();
       },
       isOpen: () => this.size > 0 || this.opening,
       setDepth: depth => this.applyStackDepth(depth),
     }));
+  }
+
+  private repaintScrim(): void {
+    if (this.destroyed) return;
+    this.scrim.invalidateOpacityCache();
+    this.scrim.applyOpacity(this.computeProgress(this.size), true);
   }
 
   private applyStackDepth(depth: number): void {
