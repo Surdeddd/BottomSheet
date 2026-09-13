@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0]
+
 ### Fixed
 
 - **A buried sheet still stranded its backdrop — the 0.20.2 fix only worked in tests** — that release wrote the backdrop when the sheet was on top *or* when its opacity ramp resolved to exactly zero. Real close animations never reach exactly zero: `applyOpacity` skips a write once the progress delta falls under `OPACITY_WRITE_EPSILON`, so the final value settles around 0.002 and the exact-zero branch never fires. It fired in the unit tests only because they run at `duration: 0`, where the size lands on zero in a single step. In a browser a sheet that lost top status therefore never wrote its backdrop again, and closing it left the scrim frozen at full opacity with `pointer-events: auto` — the same full-screen click trap [#40](https://github.com/Surdeddd/BottomSheet/issues/40) reported, plus the doubled dimming from two live scrims. The backdrop target is now simply zero whenever the sheet is not on top, written unconditionally through the same sentinel, and a change of top status repaints the scrim immediately instead of leaving whatever the last frame wrote. Only the top sheet dims, a buried one holds nothing, and neither outcome depends on an animation landing on an exact value. Covered by eleven engine tests and a seven-case E2E fixture that mounts three real sheets; both fail against the previous code.
@@ -15,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **The `mode` prop is reactive in every adapter, and the Web Component no longer rebuilds for it** — Svelte, Solid, Qwik and the custom element had the same gap as React and Vue: the value reached `data-mode` and the engine kept its original axis. The element was worse than silent about it, since `mode` was not in its live-attribute set: changing the attribute tore the engine down and built a new one, so the sheet lost its open snap point and any imperative state along with it. All five now call `setMode`, which re-seats the axis in place and keeps the active snap point. An unknown value on the element still falls back to `bottom` rather than throwing.
-- **The `mode` prop is reactive in the React and Vue adapters** — every other engine-mutating prop had a watcher behind it; `mode` did not, so switching it moved `data-mode` in the markup while the engine kept its original axis, and gestures, transforms and snap sizes stayed on the old edge. Both adapters now forward the change to `setMode`, which keeps the active snap point and re-resolves a logical `start` / `end` against the direction in effect at the time. A drawer bound to a viewport query, or a page that flips language, no longer needs to reach for `getEngine()`.
 
 ## [0.20.2]
 
