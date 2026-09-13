@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The `mode` prop is reactive in every adapter, and the Web Component no longer rebuilds for it** — Svelte, Solid, Qwik and the custom element had the same gap as React and Vue: the value reached `data-mode` and the engine kept its original axis. The element was worse than silent about it, since `mode` was not in its live-attribute set: changing the attribute tore the engine down and built a new one, so the sheet lost its open snap point and any imperative state along with it. All five now call `setMode`, which re-seats the axis in place and keeps the active snap point. An unknown value on the element still falls back to `bottom` rather than throwing.
 - **The `mode` prop is reactive in the React and Vue adapters** — every other engine-mutating prop had a watcher behind it; `mode` did not, so switching it moved `data-mode` in the markup while the engine kept its original axis, and gestures, transforms and snap sizes stayed on the old edge. Both adapters now forward the change to `setMode`, which keeps the active snap point and re-resolves a logical `start` / `end` against the direction in effect at the time. A drawer bound to a viewport query, or a page that flips language, no longer needs to reach for `getEngine()`.
 
 ## [0.20.2]
