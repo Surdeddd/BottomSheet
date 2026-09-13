@@ -31,6 +31,7 @@ export const ATTR_SCRIM_COLOR = "scrim-color";
 export const ATTR_SNAP = "snap";
 
 export const LIVE_ATTRS: ReadonlySet<string> = new Set([
+  ATTR_MODE,
   ATTR_RADIUS,
   ATTR_MAX_HEIGHT,
   ATTR_BACKDROP_COLOR,

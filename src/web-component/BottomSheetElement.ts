@@ -150,6 +150,9 @@ export class BottomSheetElement extends BaseHTMLElement {
         if (mode) this.engine.setDragFrom(mode);
         break;
       }
+      case ATTR_MODE:
+        this.engine.setMode(parseMode(value));
+        break;
       case ATTR_SNAP:
         if (value && value !== this.engine.state.activeId) {
           void this.engine.snapTo(value);

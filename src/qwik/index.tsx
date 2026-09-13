@@ -263,6 +263,13 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     if (dragFrom !== undefined) engine.setDragFrom(dragFrom);
   });
 
+  useTask$(({ track }) => {
+    const nextMode = track(() => props.mode);
+    const engine = engineStore.engine;
+    if (!engine || nextMode === undefined) return;
+    engine.setMode(nextMode);
+  });
+
   const showBackdrop = props.backdrop !== false;
   const mode = props.mode ?? "bottom";
   const ariaLabel = props.ariaLabel ?? "Bottom sheet";

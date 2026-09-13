@@ -280,6 +280,17 @@ export const BottomSheet = <TId extends string = string>(
     ),
   );
 
+  createEffect(
+    on(
+      () => props.mode,
+      (value, prev) => {
+        if (!engine || prev === undefined || value === undefined) return;
+        engine.setMode(value);
+      },
+      { defer: true },
+    ),
+  );
+
   const showBackdrop = createMemo(() => props.backdrop !== false);
   const mode = createMemo<SheetMode>(() => props.mode ?? "bottom");
   const ariaLabel = createMemo(() => props.ariaLabel ?? "Bottom sheet");

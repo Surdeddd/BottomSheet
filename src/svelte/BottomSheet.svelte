@@ -287,6 +287,9 @@
     if (dragFrom !== undefined) engine?.setDragFrom(dragFrom);
   });
   $effect(() => {
+    if (mode !== undefined) engine?.setMode(mode);
+  });
+  $effect(() => {
     if (radius !== undefined) engine?.setRadius(radius);
   });
   $effect(() => {
