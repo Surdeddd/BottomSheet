@@ -131,6 +131,28 @@ test.describe("stacked sheets never strand a backdrop", () => {
     await expect(page.locator("#controls")).toHaveAttribute("data-clicks", "1");
   });
 
+  test("escape closes the top sheet and hands the scrim back down", async ({
+    page,
+  }) => {
+    await press(page, "open-A");
+    await press(page, "open-B");
+
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+
+    const a = await scrim(page, "A");
+    const b = await scrim(page, "B");
+    expect(b.pointerEvents).toBe("none");
+    expect(a.pointerEvents).toBe("auto");
+
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+
+    expect((await scrim(page, "A")).pointerEvents).toBe("none");
+    await press(page, "counter");
+    await expect(page.locator("#controls")).toHaveAttribute("data-clicks", "1");
+  });
+
   test("rapid repeated opens of the second sheet settle on one scrim", async ({
     page,
   }) => {
