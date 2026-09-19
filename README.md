@@ -499,6 +499,15 @@ element — drive any CSS animation from drag without touching JS:
 > `z-index` on bs-managed elements. See
 > [Architecture → z-index & the sheet stack](docs/ARCHITECTURE.md).
 
+**Every sheet owns its backdrop.** Open a list, then a detail sheet over it,
+and both backdrops stay live: the dimming deepens with each level, and the
+sheet underneath stays masked for the whole time the one above it closes, so
+taps never reach the page mid-animation. Each backdrop follows its own sheet's
+progress, so a buried sheet that closes clears its own scrim. The stack keeps
+the order sheets started opening in — a sheet opened while another is still
+animating stays on top. If you want a single dim level, pass `backdrop={false}`
+(`:backdrop="false"` in Vue) to the sheets you open on top.
+
 ### Scrim, blur & high contrast
 
 | Token                    | Default     | Region                                               |

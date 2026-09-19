@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A sheet opened while another was still opening ended up underneath it** — the report in [#40](https://github.com/Surdeddd/BottomSheet/issues/40) was a list sheet, then a detail sheet opened over it half a second later, and the list jumping back on top once its animation landed. Every open promoted the sheet twice: once when the animation started, and again from `handleOpen` when it settled. With a spring taking longer than the gap between the two opens, the first sheet's second promote ran after the second sheet's first one and reordered the stack. Opening now promotes once, at the start, and the settle no longer re-asserts it. The stack keeps the order sheets started opening in, which is what the user saw happen and what the reporter's video shows the other way round.
+- **The page flashed through while the top sheet closed over another** — 0.21.0 gave the backdrop to the top sheet only, so while the top sheet was closing its own scrim ramped down before the sheet below got its scrim back at the end. Anything under the pair was hoverable and clickable for the length of the close animation. That was a design mistake, and the reporter was right to call it out: every sheet owns its backdrop again, each one follows its own sheet's progress, and the sheet underneath stays masked for the whole close. The dimming stacks with depth, which is the behaviour every other sheet library exposes and the one people expect; pass `backdrop={false}` to the sheets you open on top for a single dim level. Both the 0.20.2 bug (a buried sheet's frozen scrim) and this one stay fixed because a buried sheet's backdrop now simply follows that sheet's own snap point rather than being gated on top status at all.
+- **An `open` retargeted by `snapTo` before it landed skipped the open sequence** — the first call flagged the sheet as opening and the second, reading `size > 0`, treated it as a snap between two open points: no `open` / `opened` events, no focus trap, no body scroll lock, and a duplicate stack promote. The second call now inherits the in-flight open, so the sequence runs exactly once when the sheet finally settles.
+
 ## [0.21.0]
 
 ### Fixed
