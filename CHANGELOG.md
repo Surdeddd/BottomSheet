@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **One sheet landing teleported every other sheet that was still animating** — this is the rest of the "glitchy behaviour" in [#40](https://github.com/Surdeddd/BottomSheet/issues/40), and the part a user actually sees. Every engine watches `<html>` with a `ResizeObserver` so it can re-seat itself when the viewport changes, and the handler cancelled the in-flight animation and jumped the sheet to its target on *every* callback, whether or not anything had changed for that sheet. Opening a sheet ends by locking body scroll, which takes `<body>` out of flow and collapses the root element's content box from the page height to zero. `window.innerHeight` does not move, but the observer fires in every engine on the page. So when a list sheet landed, a detail sheet that had started opening over it was cut off mid-flight and snapped to its final position in a single frame: measured at 206px → 364px in one step, with the second sheet's 160ms open finishing after 28ms. With a spring and the reporter's 500ms gap that jump is half the screen. The handler now compares the sheet's seat before and after re-resolving — the active snap's clamped size and the axis cap — and leaves the sheet alone when neither moved. A real change still takes the old path: a percent snap follows a shrinking viewport, a pixel snap that no longer fits is clamped, and an open interrupted that way still runs its open sequence. This also stops a stray root resize from overwriting `size` in the middle of a drag.
+
+  The teleport had been hiding two other things. It masked the double stack promote fixed in 0.21.1, because a second sheet that gets cut short lands in the same frame as the first and the wrong order never reaches the screen; with sheets animating to the end, the old promote shows up as 8–12 wrong samples per open. And it masked a race in `mount-open.spec.ts`, whose gate waited for a sheet to cross 250px and then asserted it sat at 300 — true only while a load-time resize was teleporting every sheet straight to its target. The gate now waits for the sheets to settle.
+
+### Changed
+
+- **The a11y and stacking E2E specs no longer depend on frame rate or on sampling mid-transition** — CI failed on WebKit for the 0.21.1 release commit with no library change involved. The dark-theme audit clicked the theme toggle and waited for `networkidle`, which returns at once on an idle page, so axe measured colours halfway through the theme's view transition and CSS colour transitions and reported a 2.19 contrast on a mid-tone that exists for a few frames. The audits now wait for the theme attribute and for every finite, clock-driven animation to finish; scroll-driven ones are excluded on purpose, since the hero title's `ViewTimeline` animation is "running" with one iteration and never finishes without a scroll. The stack-order test counted `requestAnimationFrame` samples and required more than four, and WebKit on the CI runner delivered exactly four; it now samples on a timer and keeps sampling after both sheets land, which is where the inversion lived.
+
 ## [0.21.1]
 
 ### Fixed
