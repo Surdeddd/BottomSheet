@@ -218,11 +218,15 @@ describe("BottomSheetEngine — resize mid-animation resync", () => {
     engine.on("open", p => events.push(`open:${p.id}`));
     void engine.open("full");
     await new Promise(r => setTimeout(r, 60));
+    Object.defineProperty(window, "innerHeight", {
+      value: 700,
+      configurable: true,
+    });
     window.dispatchEvent(new Event("orientationchange"));
     await new Promise(r => setTimeout(r, 60));
     expect(events).toContain("snap:full");
     expect(events).toContain("open:full");
-    expect(engine.state.size).toBe(800);
+    expect(engine.state.size).toBe(700);
     document.dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
     );
