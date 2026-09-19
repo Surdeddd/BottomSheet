@@ -207,8 +207,8 @@ describe("BottomSheetEngine — multi-sheet stacking", () => {
     const engineA = new BottomSheetEngine(opts(a));
     const engineB = new BottomSheetEngine(opts(b));
     await engineA.open("full");
-    expect(Number(a.backdrop.style.opacity)).toBeGreaterThan(0);
     await engineB.open("full");
+    expect(Number(a.backdrop.style.opacity)).toBeGreaterThan(0);
 
     await engineA.close();
 

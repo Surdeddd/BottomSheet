@@ -129,6 +129,7 @@ export class BottomSheetCore {
   private progressWriteSentinel = new WriteSentinel();
   private isTopSheet = true;
   private opening = false;
+  private promotedForOpen = false;
   private allowOvershoot = false;
   private progressPayload: { value: number; size: number } = {
     value: 0,
@@ -195,7 +196,6 @@ export class BottomSheetCore {
         screenComponent: this.screenComponent,
         backdrop: this.backdrop,
         isDestroyed: () => this.destroyed,
-        isTopSheet: () => this.isTopSheet,
         getAllowedIds: () => this.snaps.getAllowedIds().slice(),
         getResolvedSnaps: () => this.snaps.getResolvedSnaps().slice(),
         snapTo: (id: string) => {
@@ -508,13 +508,14 @@ export class BottomSheetCore {
     if (!_skipBeforeSnap && this.emitBeforeSnap(target, this.activeId)) {
       return;
     }
+    const resumingOpen = this.opening;
     const signal = this.newCycle();
     const onExternalAbort = (): void => {
       this.animation.cancel();
       this.newCycle();
     };
     externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
-    const wasClosed = this.size === 0;
+    const wasClosed = this.size === 0 || resumingOpen;
     const previousId = this.activeId;
     const previousSize = this.size;
     this.scrollCache.cache(previousId, previousSize, target.size);
@@ -523,7 +524,10 @@ export class BottomSheetCore {
     const opensToRest = id === "closed" || rawTargetSize === 0;
     if (wasClosed && !opensToRest) {
       this.opening = true;
-      sheetStack.promote(this.id);
+      if (!resumingOpen) {
+        this.promotedForOpen = true;
+        sheetStack.promote(this.id);
+      }
     }
     if (this.animation.viewTransitionsAvailable) {
       this.currentViewTransition?.skipTransition?.();
@@ -1074,19 +1078,11 @@ export class BottomSheetCore {
         for (const anchor of this.anchors) anchor.syncZ(z + 1);
       },
       setIsTop: isTop => {
-        if (this.isTopSheet === isTop) return;
         this.isTopSheet = isTop;
-        this.repaintScrim();
       },
       isOpen: () => this.size > 0 || this.opening,
       setDepth: depth => this.applyStackDepth(depth),
     }));
-  }
-
-  private repaintScrim(): void {
-    if (this.destroyed) return;
-    this.scrim.invalidateOpacityCache();
-    this.scrim.applyOpacity(this.computeProgress(this.size), true);
   }
 
   private applyStackDepth(depth: number): void {
@@ -1381,6 +1377,7 @@ export class BottomSheetCore {
     this.activeId = target.id;
     if (previousSnapSize === 0 && target.size > 0) {
       this.opening = true;
+      this.promotedForOpen = true;
       sheetStack.promote(this.id);
     }
     const settleCap = this.snaps.getMaxAxisSize();
@@ -1480,7 +1477,8 @@ export class BottomSheetCore {
   }
 
   private handleOpen(): void {
-    sheetStack.promote(this.id);
+    if (this.promotedForOpen) this.promotedForOpen = false;
+    else sheetStack.promote(this.id);
     try {
       this.lifecycle.install();
     } catch (err) {
@@ -1515,6 +1513,7 @@ export class BottomSheetCore {
 
   private handleClose(): void {
     this.opening = false;
+    this.promotedForOpen = false;
     this.lifecycle.release();
     sheetStack.update();
   }

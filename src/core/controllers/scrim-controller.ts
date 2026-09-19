@@ -25,7 +25,6 @@ export type ScrimControllerDeps = {
   screenComponent: HTMLElement | undefined;
   backdrop: HTMLElement | undefined;
   isDestroyed: () => boolean;
-  isTopSheet: () => boolean;
   getAllowedIds: () => string[];
   getResolvedSnaps: () => ResolvedSnap[];
   snapTo: (id: string) => void;
@@ -49,7 +48,6 @@ export class ScrimController {
   private mode: PhysicalSheetMode;
 
   private isDestroyed: () => boolean;
-  private isTopSheet: () => boolean;
   private getAllowedIds: () => string[];
   private getResolvedSnaps: () => ResolvedSnap[];
   private snapToFn: (id: string) => void;
@@ -86,7 +84,6 @@ export class ScrimController {
     this.backdrop = deps.backdrop;
     this.mode = deps.mode;
     this.isDestroyed = deps.isDestroyed;
-    this.isTopSheet = deps.isTopSheet;
     this.getAllowedIds = deps.getAllowedIds;
     this.getResolvedSnaps = deps.getResolvedSnaps;
     this.snapToFn = deps.snapTo;
@@ -141,8 +138,10 @@ export class ScrimController {
     if (this.backdrop) {
       const [s, e] = this.backdropRange;
       const range = Math.max(e - s, RANGE_DIVISION_EPSILON);
-      const ramp = Math.min(Math.max((progress - s) / range, 0), 1);
-      const backdropOpacity = this.isTopSheet() ? ramp : 0;
+      const backdropOpacity = Math.min(
+        Math.max((progress - s) / range, 0),
+        1,
+      );
       if (
         this.backdropOpacitySentinel.shouldWrite(
           backdropOpacity,
