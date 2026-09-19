@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1]
+
 ### Fixed
 
 - **A sheet opened while another was still opening ended up underneath it** — the report in [#40](https://github.com/Surdeddd/BottomSheet/issues/40) was a list sheet, then a detail sheet opened over it half a second later, and the list jumping back on top once its animation landed. Every open promoted the sheet twice: once when the animation started, and again from `handleOpen` when it settled. With a spring taking longer than the gap between the two opens, the first sheet's second promote ran after the second sheet's first one and reordered the stack. Opening now promotes once, at the start, and the settle no longer re-asserts it. The stack keeps the order sheets started opening in, which is what the user saw happen and what the reporter's video shows the other way round.
