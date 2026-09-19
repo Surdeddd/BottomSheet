@@ -33,16 +33,35 @@ test.describe("mount-open: initial-open and sync snapTo land at resolved sizes",
             ? parseFloat(el.style.getPropertyValue("--bs-size")) || 0
             : 0;
         };
+        const sizes = ["A", "B", "C", "D", "E"].map(s);
+        const opened =
+          sizes[0]! > 300 &&
+          sizes[1]! > 250 &&
+          sizes[2]! > 300 &&
+          sizes[3]! > 300 &&
+          sizes[4]! > 300;
+        const w = window as unknown as {
+          __moSizes?: number[];
+          __moStableSince?: number;
+        };
+        const still =
+          w.__moSizes !== undefined &&
+          sizes.every((v, i) => Math.abs(v - w.__moSizes![i]!) < 0.5);
+        if (!still) {
+          w.__moSizes = sizes;
+          w.__moStableSince = performance.now();
+          return false;
+        }
+        const animating =
+          document.querySelector('[data-animating="true"]') !== null;
         return (
-          s("A") > 300 &&
-          s("B") > 250 &&
-          s("C") > 300 &&
-          s("D") > 300 &&
-          s("E") > 300
+          opened &&
+          !animating &&
+          performance.now() - (w.__moStableSince ?? 0) > 250
         );
       },
       null,
-      { timeout: 12000 },
+      { timeout: 12000, polling: 50 },
     );
   });
 

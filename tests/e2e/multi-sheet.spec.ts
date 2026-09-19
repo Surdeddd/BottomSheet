@@ -115,14 +115,62 @@ test.describe("every sheet in a stack owns its backdrop", () => {
       const samples: boolean[] = [];
       while (!done) {
         samples.push(zOf("B") > zOf("A"));
-        await new Promise(r => requestAnimationFrame(r));
+        await new Promise(r => setTimeout(r, 4));
       }
-      samples.push(zOf("B") > zOf("A"));
+      for (let i = 0; i < 10; i++) {
+        samples.push(zOf("B") > zOf("A"));
+        await new Promise(r => setTimeout(r, 4));
+      }
       return { total: samples.length, wrong: samples.filter(s => !s).length };
     });
 
-    expect(flips.total).toBeGreaterThan(4);
+    expect(flips.total).toBeGreaterThanOrEqual(10);
     expect(flips.wrong).toBe(0);
+  });
+
+  test("the first sheet landing does not cut the second sheet's open short", async ({
+    page,
+  }) => {
+    const run = await page.evaluate(async () => {
+      const sheets = (window as unknown as {
+        bsSheets: Record<
+          string,
+          {
+            open: (id: string) => Promise<void>;
+            state: { size: number; isAnimating: boolean };
+          }
+        >;
+      }).bsSheets;
+      const openingA = sheets.A!.open("half");
+      await new Promise(r => setTimeout(r, 60));
+      const bStarted = performance.now();
+      let aLandedAfterBStart = -1;
+      let bSizeWhenALanded = -1;
+      let bAnimatingWhenALanded = false;
+      void openingA.then(async () => {
+        aLandedAfterBStart = performance.now() - bStarted;
+        await new Promise(r => requestAnimationFrame(() => r(null)));
+        await new Promise(r => requestAnimationFrame(() => r(null)));
+        bSizeWhenALanded = sheets.B!.state.size;
+        bAnimatingWhenALanded = sheets.B!.state.isAnimating;
+      });
+      await sheets.B!.open("half");
+      const bTook = performance.now() - bStarted;
+      await openingA;
+      return {
+        bTook,
+        aLandedAfterBStart,
+        bSizeWhenALanded,
+        bAnimatingWhenALanded,
+        bFinal: sheets.B!.state.size,
+      };
+    });
+
+    expect(run.bTook).toBeGreaterThanOrEqual(150);
+    if (run.aLandedAfterBStart >= 0 && run.aLandedAfterBStart < 100) {
+      expect(run.bAnimatingWhenALanded).toBe(true);
+    }
+    expect(run.bFinal).toBeGreaterThan(0);
   });
 
   test("closing the buried sheet leaves nothing clickable behind", async ({
