@@ -56,6 +56,7 @@ export default defineConfig({
         dragZones: resolve(__dirname, "demo/fixtures/drag-zones.html"),
         webgl: resolve(__dirname, "demo/fixtures/webgl.html"),
         stacking: resolve(__dirname, "demo/fixtures/stacking.html"),
+        contentFit: resolve(__dirname, "demo/fixtures/content-fit.html"),
       },
     },
   },
