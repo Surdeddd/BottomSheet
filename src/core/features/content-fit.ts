@@ -1,6 +1,9 @@
 import type { EngineFeature } from "../types";
 
 const INSET_VAR = "--bs-content-inset";
+const SIZE_VAR = "--bs-size";
+const CAP_VAR = "--bs-max-size";
+const LIFT_VAR = "--bs-footer-lift-max";
 const FIT_ATTR = "data-bs-fit-content";
 
 export function contentFitFeature(): EngineFeature {
@@ -19,6 +22,9 @@ export function contentFitFeature(): EngineFeature {
       let inset = 0;
       let unpaddedMax = -1;
       let top = 0;
+
+      const put = (name: string, px: number): void =>
+        sheet.style.setProperty(name, `${px}px`);
 
       const hiddenAt = (size: number): number =>
         sheet.dataset.mode === "bottom"
@@ -43,7 +49,10 @@ export function contentFitFeature(): EngineFeature {
         unpaddedMax = -1;
         follow(size);
         inset = hiddenAt(size);
-        sheet.style.setProperty(INSET_VAR, `${inset}px`);
+        put(LIFT_VAR, scroller.offsetHeight);
+        put(INSET_VAR, inset);
+        put(SIZE_VAR, size);
+        put(CAP_VAR, ctx.getMaxAxisSize());
         unpaddedMax = -1;
       };
 
@@ -72,7 +81,9 @@ export function contentFitFeature(): EngineFeature {
         observer?.disconnect();
         window.removeEventListener("orientationchange", whenIdle);
         sheet.removeAttribute(FIT_ATTR);
-        sheet.style.removeProperty(INSET_VAR);
+        for (const name of [INSET_VAR, CAP_VAR, LIFT_VAR]) {
+          sheet.style.removeProperty(name);
+        }
       };
     },
   };

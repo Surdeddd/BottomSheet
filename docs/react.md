@@ -55,7 +55,7 @@ Every `EngineOption` is forwarded plus:
 | `backdrop` | `true` | Render the dimmed overlay element |
 | `closeOnBackdrop` | `true` | Tap-out closes (only when `canDismiss()`) |
 | `header` | — | Header content — `ReactNode` or `(state) => ReactNode` |
-| `footer` | — | Footer content, pinned below the scroll area — same signature as `header` |
+| `footer` | — | Footer content, pinned below the scroll area — same signature as `header`. Below the largest snap it sits under the screen edge unless `fitContentToSnap` is on |
 | `leftButton` / `rightButton` | — | Slots above the sheet |
 | `screen` | — | Background fading by progress |
 | `teleportTo` | — | Relocate the sheet DOM (`HTMLElement`, selector, or `"body"`) to escape a transformed/clipping ancestor |

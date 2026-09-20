@@ -25,6 +25,7 @@ const makeSheet = () => {
   let top = 0;
   const maxScroll = (): number => Math.max(0, CONTENT + insetOf(sheet) - BOX);
   Object.defineProperty(content, "clientHeight", { get: () => BOX });
+  Object.defineProperty(content, "offsetHeight", { get: () => BOX });
   Object.defineProperty(content, "scrollHeight", {
     get: () => CONTENT + insetOf(sheet),
   });
@@ -243,6 +244,54 @@ describe("fitContentToSnap", () => {
     engine.destroy();
   });
 
+  it("publishes the axis cap so a footer can follow the visible edge", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true });
+    await engine.open("half");
+
+    expect(n.sheet.style.getPropertyValue("--bs-max-size")).toBe("800px");
+    engine.destroy();
+  });
+
+  it("publishes how far a footer may rise before it would cover the header", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true });
+    await engine.open("half");
+
+    expect(n.sheet.style.getPropertyValue("--bs-footer-lift-max")).toBe(
+      `${BOX}px`,
+    );
+    engine.destroy();
+  });
+
+  it("keeps the published cap in step when the snap points change", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true });
+    await engine.open("half");
+
+    engine.setSnapPoints([
+      { id: "closed", size: 0 },
+      { id: "half", size: 400 },
+      { id: "full", size: 900 },
+    ]);
+
+    expect(n.sheet.style.getPropertyValue("--bs-max-size")).toBe("900px");
+    engine.destroy();
+  });
+
+  it("replaces a rounded-off resting size with the exact one", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true });
+    await engine.open("half");
+    n.sheet.style.setProperty("--bs-size", "399.6px");
+
+    window.dispatchEvent(new Event("orientationchange"));
+    await sleep(20);
+
+    expect(n.sheet.style.getPropertyValue("--bs-size")).toBe("400px");
+    engine.destroy();
+  });
+
   it("does nothing for a sheet that is not on the bottom edge", async () => {
     const n = makeSheet();
     const engine = build(n, { fitContentToSnap: true, mode: "top" });
@@ -293,6 +342,8 @@ describe("fitContentToSnap", () => {
 
     expect(n.sheet.hasAttribute("data-bs-fit-content")).toBe(false);
     expect(n.sheet.style.getPropertyValue("--bs-content-inset")).toBe("");
+    expect(n.sheet.style.getPropertyValue("--bs-max-size")).toBe("");
+    expect(n.sheet.style.getPropertyValue("--bs-footer-lift-max")).toBe("");
   });
 
   it("warns when the option is set on a core built without the feature", () => {

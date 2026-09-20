@@ -61,7 +61,7 @@ const { sheetRef, handleRef, contentRef, state, snapTo, close } =
 | --- | --- |
 | `header` | Header content (receives `{ state }`) |
 | (default) | Scrollable content |
-| `footer` | Footer content, pinned below the scroll area |
+| `footer` | Footer content, pinned below the scroll area. Below the largest snap it sits under the screen edge unless `fitContentToSnap` is on |
 | `button-left` / `button-right` | Buttons docked above the sheet |
 | `screen` | Background that fades in by progress |
 | `anchor-<id>` | Content for the anchor with matching `id` in the `anchors` prop |

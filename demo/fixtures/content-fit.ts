@@ -3,11 +3,13 @@ import "@surdeddd/bottom-sheet/styles";
 
 const ROWS = 100;
 
-const buildSheet = (caseName: string): {
+type Nodes = {
   sheet: HTMLElement;
   handle: HTMLElement;
   content: HTMLElement;
-} => {
+};
+
+const buildSheet = (caseName: string, withFooter: boolean): Nodes => {
   const host = document.createElement("div");
   host.style.cssText = "position:fixed;inset:0;pointer-events:none;";
   const root = document.createElement("div");
@@ -27,28 +29,50 @@ const buildSheet = (caseName: string): {
     (_, i) => `<div class="row" data-row="${i + 1}">row ${i + 1}</div>`,
   ).join("");
   sheet.append(handle, content);
+  if (withFooter) {
+    const footer = document.createElement("div");
+    footer.className = "bs-footer";
+    footer.dataset.case = caseName;
+    footer.innerHTML = `<button type="button" data-action="${caseName}">action</button>`;
+    sheet.append(footer);
+  }
   root.append(sheet);
   host.append(root);
   document.body.append(host);
   return { sheet, handle, content };
 };
 
-const build = (caseName: string, fitContentToSnap: boolean): BottomSheetEngine => {
-  const n = buildSheet(caseName);
+const build = (
+  caseName: string,
+  fitContentToSnap: boolean,
+  withFooter = false,
+  dragFromContent = true,
+  settleAnimation?: "waapi",
+): BottomSheetEngine => {
+  const n = buildSheet(caseName, withFooter);
   return new BottomSheetEngine({
     element: n.sheet,
     handle: n.handle,
     scrollContainer: n.content,
-    snapPoints: [
-      { id: "closed", size: 0 },
-      { id: "half", size: "50%" },
-      { id: "full", size: "85%" },
-    ],
+    snapPoints: withFooter
+      ? [
+          { id: "closed", size: 0 },
+          { id: "peek", size: 128 },
+          { id: "half", size: "50%" },
+          { id: "full", size: "85%" },
+        ]
+      : [
+          { id: "closed", size: 0 },
+          { id: "half", size: "50%" },
+          { id: "full", size: "85%" },
+        ],
     initial: "closed",
     animation: "tween",
     duration: 220,
     lockBodyScroll: false,
     fitContentToSnap,
+    dragFromContent,
+    settleAnimation,
   });
 };
 
@@ -56,5 +80,9 @@ Object.assign(window as unknown as Record<string, unknown>, {
   bsSheets: {
     fit: build("fit", true),
     plain: build("plain", false),
+    fitFooter: build("fitFooter", true, true),
+    plainFooter: build("plainFooter", false, true),
+    fitScroll: build("fitScroll", true, true, false),
+    fitWaapi: build("fitWaapi", true, true, true, "waapi"),
   },
 });

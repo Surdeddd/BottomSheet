@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`fitContentToSnap` now keeps the footer on screen as well** — a follow-up to [#41](https://github.com/Surdeddd/BottomSheet/issues/41). The footer is the last thing in a sheet that is always as tall as its largest snap, so below that snap it sat under the screen edge exactly like the end of the list did: at a half snap a "Confirm" button in the footer slot was simply not there. With the option on, the stylesheet lifts `.bs-footer` by `--bs-size − --bs-max-size`, which pins it to the bottom of the visible part of the sheet at every snap and on every frame of a drag or an animation. `--bs-size` is the variable the engine already writes per frame, the cap is written once per settle, so the footer costs no JavaScript per frame and no layout; the list's spacer already equals the hidden amount, so the last row ends above the footer instead of under it. The lift is clamped at the bottom of the header: on a snap too short for both, the footer slides under the screen edge rather than covering the handle. Measured in the browser tests on all three engines: footer bottom within 2px of the viewport bottom on every painted frame of an expand, a collapse and a handle drag, and within 0.1px at rest. The WebGL renderer is left out on purpose — its DOM footer has no background to cover the rows with.
+
+  The feature also writes the exact resting size to `--bs-size` when the sheet settles. The engine skips per-frame writes smaller than half a pixel, which left the variable up to 0.5px behind the real size at rest: invisible for a backdrop, a hairline of scrolling rows under a pinned footer on a 3x screen.
+
+### Fixed
+
+- **`settleAnimation: "waapi"` reported a size the sheet was not showing** — while the compositor ran the transform, `--bs-size`, `--bs-progress` and the `progress` event were driven by a separate clock: wall time since the call, floored to the nearest sample. The animation itself starts a frame or two later, so everything keyed to those values ran ahead of the sheet or behind it — measured at up to 76px on a 250ms settle. Backdrop opacity hid that; a footer pinned through `--bs-size` did not. The tick now reads `animation.currentTime` and interpolates between samples, the same linear interpolation the keyframes get, so the reported size is the size on screen: 0px of drift in Chromium and Firefox, a few px for a frame in WebKit where the compositor samples slightly later.
+- **A programmatic snap to the largest point overshot it under `settleAnimation: "waapi"`** — with an easing that overshoots, the rAF path clamps the size at the axis cap, but the WAAPI keyframes were built from the raw samples, so the whole sheet lifted off the bottom of the screen (17px in the fixture) and came back. Keyframes are now clamped the same way `applySize` clamps; a flick released with velocity is still allowed to overshoot, as before.
+
+### Docs
+
+- **Scrolling a list at every snap on touch needs `dragFromContent: false`, and the README now says so** — `fitContentToSnap` makes the end of the list reachable, but by default a finger on the content drags the sheet until it reaches its largest snap and only then scrolls, so on a phone the list still could not be scrolled at a half snap (a wheel or trackpad always could). The new "Scrolling the list at every snap on touch" section gives the recipe — `fitContentToSnap` plus `dragFromContent: false`, globally or per snap point — and the browser tests pin both halves of it with injected touch input: the default moves the sheet, the recipe scrolls the list, the handle still moves the sheet.
+
+Budgets moved by the measured growth against 0.22.1: 114 B gzip on the core entry, 102–143 B on the framework adapters, 184–195 B on the custom element (it inlines the stylesheet), 40 B on the slim core and 72 B on `/features`.
+
 ## [0.22.1]
 
 ### Fixed

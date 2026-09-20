@@ -298,6 +298,16 @@
   background: var(--bs-surface, var(--bs-surface-d));
 }
 
+.bs-sheet[data-bs-fit-content][data-mode="bottom"]:not([data-bs-webgl="on"]) .bs-footer {
+  transform: translateY(
+    clamp(
+      calc(-1 * var(--bs-footer-lift-max, 0px)),
+      calc(var(--bs-size, 0px) - var(--bs-max-size, 0px)),
+      0px
+    )
+  );
+}
+
 .bs-sheet[data-mode="bottom"]:has(.bs-footer:not([hidden]):has(*)) {
   padding-bottom: 0;
 }

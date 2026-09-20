@@ -250,7 +250,7 @@ type SnapPoint =
 | `disableDrag`        | `false`       | Suppress the drag gesture (imperative snaps still work)                                                                    |
 | `dragFrom`           | `"handle"`    | Which regions start a drag: `"handle"`, `"sheet"` (whole sheet), or `"zones"` (only `[data-bs-drag]` subtrees). Defaults to `"sheet"` when no handle is given. `[data-bs-no-drag]` opts a subtree out in every mode. Also `setDragFrom()` / `getDragFrom()` — switching remounts the gesture, no component remount |
 | `dragFromContent`    | `true`        | Whether a touch gesture on the scroll container drags the sheet; override per snap point with `{ id, size, dragFromContent: false }`. Also `setDragFromContent()` |
-| `fitContentToSnap`   | `false`       | Keeps the whole scroll container reachable at every snap point, not only the largest. Off by default; see [Content reachable at every snap](#content-reachable-at-every-snap) |
+| `fitContentToSnap`   | `false`       | Keeps the whole scroll container reachable and the footer on screen at every snap point, not only the largest. Off by default; see [Content reachable at every snap](#content-reachable-at-every-snap) |
 | `radius`             | token default | Corner radius (`string` CSS length or `number` px); also `setRadius()`                                                     |
 | `maxHeight`          | none          | Cap the sheet height. `number` (px) or a string (`"92dvh"`, `"50%"`) re-resolved on viewport / orientation changes         |
 | `returnFocusTo`      | opener        | Focus target on dismiss — an `HTMLElement`, a selector `string`, or a `() => HTMLElement` factory                          |
@@ -533,12 +533,48 @@ settle and none per frame, so the motion stays transform-only. While the sheet
 moves, a list that was scrolled to its very end is held in place on screen
 instead of riding up with the sheet and dropping back at the end.
 
+The footer has the same problem and gets the same cure. It is the last thing in
+the sheet, so below the largest snap it sits under the screen edge along with
+the end of the list. With `fitContentToSnap` on, the stylesheet lifts
+`.bs-footer` by `--bs-size − --bs-max-size`, which pins it to the bottom of the
+visible part of the sheet at every snap and on every frame of a drag or an
+animation, still without a layout. The list ends above it, not under it. The
+lift stops at the bottom of the header, so on a snap too short to hold both the
+footer slides under the screen edge instead of covering the handle. The WebGL
+renderer keeps the footer where it was: its surface is drawn on the GPU and the
+DOM footer has no background to cover the rows with.
+
+#### Scrolling the list at every snap on touch
+
+Making the end of the list *reachable* and letting a finger *scroll* to it are
+two separate things. By default a swipe that starts on the content drags the
+sheet until it reaches its largest snap, and only then scrolls the list — the
+native sheet behaviour. On a mouse or trackpad the wheel scrolls at any snap
+regardless; on touch it does not. To scroll at a half snap with a finger, hand
+content swipes to the list and keep the handle (and header) for moving the
+sheet:
+
+```tsx
+<BottomSheet snapPoints={points} fitContentToSnap dragFromContent={false}>
+  <LongList />
+</BottomSheet>
+```
+
+`dragFromContent` can also be set per snap point, which keeps the native
+pull-to-expand feel at a small peek and frees the list from half upwards:
+
+```ts
+const points = [
+  { id: "peek", size: 120 },
+  { id: "half", size: "50%", dragFromContent: false },
+  { id: "full", size: "90%", dragFromContent: false },
+];
+```
+
 It applies to `bottom` sheets. For a scroll container that is not `.bs-content`,
 or one laid out as a flex row, consume the variable yourself:
 `padding-bottom: var(--bs-content-inset, 0px)`. On the slim core add
-`contentFitFeature()` from `@surdeddd/bottom-sheet/features`. This is unrelated
-to `dragFromContent`, which only decides whether a swipe on the content drags
-the sheet or scrolls the list.
+`contentFitFeature()` from `@surdeddd/bottom-sheet/features`.
 
 ### Scrim, blur & high contrast
 
