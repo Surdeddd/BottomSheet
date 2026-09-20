@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0]
+
 ### Added
 
 - **`fitContentToSnap` now keeps the footer on screen as well** — a follow-up to [#41](https://github.com/Surdeddd/BottomSheet/issues/41). The footer is the last thing in a sheet that is always as tall as its largest snap, so below that snap it sat under the screen edge exactly like the end of the list did: at a half snap a "Confirm" button in the footer slot was simply not there. With the option on, the stylesheet lifts `.bs-footer` by `--bs-size − --bs-max-size`, which pins it to the bottom of the visible part of the sheet at every snap and on every frame of a drag or an animation. `--bs-size` is the variable the engine already writes per frame, the cap is written once per settle, so the footer costs no JavaScript per frame and no layout; the list's spacer already equals the hidden amount, so the last row ends above the footer instead of under it. The lift is clamped at the bottom of the header: on a snap too short for both, the footer slides under the screen edge rather than covering the handle. Measured in the browser tests on all three engines: footer bottom within 2px of the viewport bottom on every painted frame of an expand, a collapse and a handle drag, and within 0.1px at rest. The WebGL renderer is left out on purpose — its DOM footer has no background to cover the rows with.
