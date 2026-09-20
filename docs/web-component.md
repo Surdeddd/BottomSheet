@@ -75,7 +75,7 @@ it instead of the `initial` attribute.
 | --- | --- |
 | `header` | Header content |
 | (default) | Scrollable content |
-| `footer` | Footer content, pinned below the scroll area |
+| `footer` | Footer content, pinned below the scroll area. Below the largest snap it sits under the screen edge unless `fit-content-to-snap` is set |
 | `leftButton` / `rightButton` | Docked above the sheet |
 | `screen` | Background fading by progress |
 | `anchor` | Anchored elements riding the sheet (see below) |
