@@ -101,6 +101,7 @@ export class BottomSheetCore {
   private lifecycle!: LifecycleController;
   private closeOnBack: boolean;
   private routedTo: string | undefined;
+  private fitContentToSnap: boolean;
   private persistent: boolean;
   private disableCloseFlag: boolean;
   private disableDragFlag: boolean;
@@ -230,6 +231,7 @@ export class BottomSheetCore {
     );
     this.closeOnBack = resolved.closeOnBack;
     this.routedTo = opts.routedTo;
+    this.fitContentToSnap = opts.fitContentToSnap === true;
     this.persistent = resolved.persistent;
     this.disableCloseFlag = resolved.disableClose;
     this.disableDragFlag = resolved.disableDrag;
@@ -352,6 +354,7 @@ export class BottomSheetCore {
         closeOnRouteChange: this.closeOnRouteChange,
         persistKey: this.persistKey,
         autoCollapseAfter,
+        fitContentToSnap: this.fitContentToSnap,
       },
       isDestroyed: () => this.destroyed,
       isDragging: () => this.isDraggingAny(),
@@ -407,6 +410,11 @@ export class BottomSheetCore {
     ) {
       devWarn(
         "[BottomSheet] closeOnBack/routedTo/closeOnRouteChange need routeFeature() — option ignored",
+      );
+    }
+    if (this.fitContentToSnap && !names.has("content-fit")) {
+      devWarn(
+        "[BottomSheet] fitContentToSnap needs contentFitFeature() — option ignored",
       );
     }
     if (this.persistKey && !names.has("persist")) {

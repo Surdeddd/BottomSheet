@@ -150,6 +150,7 @@ export type EngineOptions = {
   dragFrom?: DragFrom;
 
   dragFromContent?: boolean;
+  fitContentToSnap?: boolean;
   rubberBand?: boolean;
   backdropRange?: [number, number];
   screenRange?: [number, number];
@@ -209,6 +210,7 @@ export type EngineFeatureOptions = {
   closeOnRouteChange: boolean;
   persistKey?: string;
   autoCollapseAfter?: number;
+  fitContentToSnap: boolean;
 };
 
 export type EngineFeatureContext = {

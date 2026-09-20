@@ -6,6 +6,7 @@ import {
   autoCollapseFeature,
   routeFeature,
 } from "./features/engine-features";
+import { contentFitFeature } from "./features/content-fit";
 
 export function defaultEngineFeatures(): EngineFeature[] {
   return [
@@ -14,5 +15,6 @@ export function defaultEngineFeatures(): EngineFeature[] {
     persistFeature(),
     autoCollapseFeature(),
     routeFeature(),
+    contentFitFeature(),
   ];
 }

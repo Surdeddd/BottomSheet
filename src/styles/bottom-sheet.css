@@ -280,6 +280,17 @@
   padding: var(--bs-content-padding, 0 16px 16px);
 }
 
+.bs-sheet[data-bs-fit-content] .bs-content {
+  scroll-padding-bottom: var(--bs-content-inset, 0px);
+}
+
+.bs-sheet[data-bs-fit-content] .bs-content::after {
+  content: "";
+  display: block;
+  flex: none;
+  height: var(--bs-content-inset, 0px);
+}
+
 .bs-footer {
   flex: 0 0 auto;
   padding: var(--bs-footer-padding, 12px 16px calc(12px + env(safe-area-inset-bottom)));
