@@ -8,8 +8,16 @@ import { resolve } from "node:path";
 export default defineConfig({
   root: resolve(__dirname, "demo"),
   plugins: [
-    solid({ include: ["**/solid-demo.tsx", "**/src/solid/**/*.tsx"] }),
-    react({ exclude: [/solid-demo\.tsx$/, /src\/solid\/.*\.tsx$/] }),
+    solid({
+      include: [
+        "**/solid-demo.tsx",
+        "**/*.solid.tsx",
+        "**/src/solid/**/*.tsx",
+      ],
+    }),
+    react({
+      exclude: [/solid-demo\.tsx$/, /\.solid\.tsx$/, /src\/solid\/.*\.tsx$/],
+    }),
     vue(),
     svelte(),
   ],
@@ -57,6 +65,7 @@ export default defineConfig({
         webgl: resolve(__dirname, "demo/fixtures/webgl.html"),
         stacking: resolve(__dirname, "demo/fixtures/stacking.html"),
         contentFit: resolve(__dirname, "demo/fixtures/content-fit.html"),
+        adaptersFit: resolve(__dirname, "demo/fixtures/adapters-fit.html"),
       },
     },
   },
