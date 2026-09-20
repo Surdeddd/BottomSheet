@@ -51,6 +51,7 @@ npm i @surdeddd/bottom-sheet
 | `disable-drag` | bool | `false` | suppress the drag gesture |
 | `drag-from` | `handle` \| `sheet` \| `zones` | `handle` | which regions start a drag; `zones` limits it to `[data-bs-drag]` subtrees |
 | `drag-from-content` | bool | `true` | whether a touch gesture on the scroll container drags the sheet |
+| `fit-content-to-snap` | bool | `false` | keep the whole scroll container reachable at every snap point; read when the engine is built |
 | `radius` | length / px | — | corner radius |
 | `max-height` | length / px | — | height cap; a string is re-resolved on viewport changes |
 | `snap` | string | — | active snap id — set it to snap imperatively |

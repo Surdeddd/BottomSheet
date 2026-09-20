@@ -250,6 +250,7 @@ type SnapPoint =
 | `disableDrag`        | `false`       | Suppress the drag gesture (imperative snaps still work)                                                                    |
 | `dragFrom`           | `"handle"`    | Which regions start a drag: `"handle"`, `"sheet"` (whole sheet), or `"zones"` (only `[data-bs-drag]` subtrees). Defaults to `"sheet"` when no handle is given. `[data-bs-no-drag]` opts a subtree out in every mode. Also `setDragFrom()` / `getDragFrom()` — switching remounts the gesture, no component remount |
 | `dragFromContent`    | `true`        | Whether a touch gesture on the scroll container drags the sheet; override per snap point with `{ id, size, dragFromContent: false }`. Also `setDragFromContent()` |
+| `fitContentToSnap`   | `false`       | Keeps the whole scroll container reachable at every snap point, not only the largest. Off by default; see [Content reachable at every snap](#content-reachable-at-every-snap) |
 | `radius`             | token default | Corner radius (`string` CSS length or `number` px); also `setRadius()`                                                     |
 | `maxHeight`          | none          | Cap the sheet height. `number` (px) or a string (`"92dvh"`, `"50%"`) re-resolved on viewport / orientation changes         |
 | `returnFocusTo`      | opener        | Focus target on dismiss — an `HTMLElement`, a selector `string`, or a `() => HTMLElement` factory                          |
@@ -507,6 +508,37 @@ progress, so a buried sheet that closes clears its own scrim. The stack keeps
 the order sheets started opening in — a sheet opened while another is still
 animating stays on top. If you want a single dim level, pass `backdrop={false}`
 (`:backdrop="false"` in Vue) to the sheets you open on top.
+
+### Content reachable at every snap
+
+The sheet is always as tall as its largest snap point and is moved with a
+transform; that is what keeps a drag on the compositor. The cost is that below
+the largest snap the bottom of the scroll container sits under the screen edge,
+by exactly `largest snap − current size`. At a half snap you can scroll, but the
+last rows never come into view until the sheet is pulled up.
+
+`fitContentToSnap` closes that gap:
+
+```tsx
+<BottomSheet snapPoints={points} fitContentToSnap>
+  <LongList />
+</BottomSheet>
+```
+
+When the sheet settles, the engine writes the hidden amount to
+`--bs-content-inset` and the stylesheet turns it into a spacer at the end of
+`.bs-content`, plus a matching `scroll-padding-bottom` so a focused field
+scrolls into the visible band rather than under the edge. That is one layout per
+settle and none per frame, so the motion stays transform-only. While the sheet
+moves, a list that was scrolled to its very end is held in place on screen
+instead of riding up with the sheet and dropping back at the end.
+
+It applies to `bottom` sheets. For a scroll container that is not `.bs-content`,
+or one laid out as a flex row, consume the variable yourself:
+`padding-bottom: var(--bs-content-inset, 0px)`. On the slim core add
+`contentFitFeature()` from `@surdeddd/bottom-sheet/features`. This is unrelated
+to `dragFromContent`, which only decides whether a swipe on the content drags
+the sheet or scrolls the list.
 
 ### Scrim, blur & high contrast
 

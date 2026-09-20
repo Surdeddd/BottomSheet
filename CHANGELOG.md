@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`fitContentToSnap` — the whole scroll container is reachable at every snap point** — requested in [#41](https://github.com/Surdeddd/BottomSheet/issues/41). The sheet is always as tall as its largest snap and is moved with a transform, which keeps a drag on the compositor. The price was that below the largest snap the bottom of the scroll container sat under the screen edge by exactly `largest snap − current size`: measured on a 100-row list at a half snap, 254px of the container off screen and the last 7 rows impossible to bring into view without pulling the sheet up. `dragFromContent` never addressed this; it decides who gets a swipe, not how tall the visible band is.
+
+  With the option on, the engine writes the hidden amount to `--bs-content-inset` when the sheet settles, and the stylesheet turns it into a spacer at the end of `.bs-content` plus a matching `scroll-padding-bottom`, so a focused field scrolls into the visible band rather than under the edge. That is one layout per settle and none per frame; the motion stays transform-only. The naive version of this has a visible flaw: a list scrolled to its very end rides up with an expanding sheet and then drops back by the full inset when the spacer collapses, 270px in the browser test. So while the sheet moves, the feature holds that list in place by clamping `scrollTop` to what the current size allows — a write with no read and no layout, which is how a native sheet animates its content inset. A list scrolled anywhere else is left alone.
+
+  Off by default, so nobody pays for it unasked: 240–370 B gzip depending on the entry, and the budgets moved by exactly that. It applies to `bottom` sheets; other edges are a no-op for now. Every adapter takes it (`fit-content-to-snap` on the custom element), and on the slim core it is `contentFitFeature()` from `/features`, with the usual warning if the option is set without it. A scroll container that is not `.bs-content`, or one laid out as a flex row, can consume `--bs-content-inset` directly.
+
 ## [0.21.2]
 
 ### Fixed
