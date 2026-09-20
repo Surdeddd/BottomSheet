@@ -19,6 +19,7 @@ import {
   ATTR_DISABLE_DRAG,
   ATTR_DRAG_FROM,
   ATTR_DRAG_FROM_CONTENT,
+  ATTR_FIT_CONTENT_TO_SNAP,
   parseDragFrom,
   ATTR_FOCUS_TRAP,
   ATTR_INITIAL,
@@ -241,6 +242,9 @@ export class BottomSheetElement extends BaseHTMLElement {
         this.getAttribute(ATTR_DRAG_FROM_CONTENT) === null
           ? undefined
           : this.getAttribute(ATTR_DRAG_FROM_CONTENT) !== "false",
+      fitContentToSnap:
+        this.hasAttribute(ATTR_FIT_CONTENT_TO_SNAP) &&
+        this.getAttribute(ATTR_FIT_CONTENT_TO_SNAP) !== "false",
       closeOnRouteChange:
         this.getAttribute(ATTR_CLOSE_ON_ROUTE_CHANGE) === "true",
       radius: parseDimension(this.getAttribute(ATTR_RADIUS)),

@@ -45,6 +45,7 @@ export type BottomSheetProps<TId extends string = string> = {
   disableDrag?: boolean;
   dragFrom?: EngineOptions["dragFrom"];
   dragFromContent?: boolean;
+  fitContentToSnap?: boolean;
   closeOnRouteChange?: boolean;
   stackEffect?: boolean;
   teleport?: boolean;
@@ -124,6 +125,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       disableDrag: props.disableDrag,
       dragFrom: props.dragFrom,
       dragFromContent: props.dragFromContent,
+      fitContentToSnap: props.fitContentToSnap,
       closeOnRouteChange: props.closeOnRouteChange,
       stackEffect: props.stackEffect,
       returnFocusTo: props.returnFocusTo,

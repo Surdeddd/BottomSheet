@@ -36,6 +36,7 @@
     disableDrag?: boolean;
     dragFrom?: EngineOptions["dragFrom"];
     dragFromContent?: boolean;
+    fitContentToSnap?: boolean;
     closeOnRouteChange?: boolean;
     stackEffect?: boolean;
     teleport?: boolean;
@@ -88,6 +89,7 @@
     disableDrag = false,
     dragFrom,
     dragFromContent,
+    fitContentToSnap,
     closeOnRouteChange = false,
     stackEffect = false,
     teleport = false,
@@ -164,6 +166,7 @@
       disableDrag,
       dragFrom,
       dragFromContent,
+      fitContentToSnap,
       closeOnRouteChange,
       stackEffect,
       radius,

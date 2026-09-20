@@ -22,6 +22,7 @@ export const ATTR_DISABLE_CLOSE = "disable-close";
 export const ATTR_DISABLE_DRAG = "disable-drag";
 export const ATTR_DRAG_FROM = "drag-from";
 export const ATTR_DRAG_FROM_CONTENT = "drag-from-content";
+export const ATTR_FIT_CONTENT_TO_SNAP = "fit-content-to-snap";
 export const ATTR_CLOSE_ON_ROUTE_CHANGE = "close-on-route-change";
 export const ATTR_RADIUS = "radius";
 export const ATTR_MAX_HEIGHT = "max-height";
@@ -61,6 +62,7 @@ export const OBSERVED_ATTRS: ReadonlyArray<string> = [
   ATTR_DISABLE_DRAG,
   ATTR_DRAG_FROM,
   ATTR_DRAG_FROM_CONTENT,
+  ATTR_FIT_CONTENT_TO_SNAP,
   ATTR_CLOSE_ON_ROUTE_CHANGE,
   ATTR_RADIUS,
   ATTR_MAX_HEIGHT,

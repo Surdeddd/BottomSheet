@@ -90,6 +90,7 @@ export type BottomSheetProps<TId extends string = string> = {
   disableDrag?: boolean;
   dragFrom?: "handle" | "sheet" | "zones";
   dragFromContent?: boolean;
+  fitContentToSnap?: boolean;
   closeOnRouteChange?: boolean;
   stackEffect?: boolean;
   teleport?: boolean;
