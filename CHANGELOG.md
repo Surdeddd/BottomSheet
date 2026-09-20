@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1]
+
+### Fixed
+
+- **The README sent people to a demo that stopped updating in July** — the "Live demo" link pointed at `bottom-sheet-demo.vercel.app`, which belongs to an earlier Vercel project that no longer receives deployments: no 3D hero, no anatomy section, nothing from 0.20 onwards. The project this repository actually deploys from `main` lives at `bottom-sheet-demo-ashy.vercel.app`, which is what the repository's About link already used, so the two links showed two different sites. The README, `CONTRIBUTING.md` and the GIF-recording scripts now all point at the live one; the scripts mattered most, since by default they were recording the frozen build. No code change.
+
 ## [0.22.0]
 
 ### Added

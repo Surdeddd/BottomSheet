@@ -12,7 +12,7 @@ A framework-agnostic bottom-sheet primitive. Spring physics, Pointer Events,
 GPU-only motion, full keyboard a11y, hardware-back interception, multi-sheet
 stacking — and the exact same engine behind every adapter.
 
-## 🚀 [Live demo → bottom-sheet-demo.vercel.app](https://bottom-sheet-demo.vercel.app)
+## 🚀 [Live demo → bottom-sheet-demo-ashy.vercel.app](https://bottom-sheet-demo-ashy.vercel.app)
 
 📚 [API reference (typedoc) → surdeddd.github.io/BottomSheet](https://surdeddd.github.io/BottomSheet/)
 

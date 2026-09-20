@@ -40,7 +40,7 @@ tests/
 ├── unit/              # vitest + happy-dom
 └── e2e/               # Playwright (mobile-chrome / mobile-safari / firefox)
 
-demo/                  # vite-served playground (live on bottom-sheet-demo.vercel.app)
+demo/                  # vite-served playground (live on bottom-sheet-demo-ashy.vercel.app)
 docs/                  # per-framework guides + 10 recipes + MIGRATION.md
 examples/              # minimal Vite apps for each adapter (StackBlitz-ready)
 ```

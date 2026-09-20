@@ -10,7 +10,7 @@ const ROOT = join(__dirname, "..", "..");
 const RAW_DIR = join(__dirname, ".raw");
 const OUT_DIR = join(ROOT, "docs", "gifs");
 
-const URL = process.env.DEMO_URL || "https://bottom-sheet-demo.vercel.app";
+const URL = process.env.DEMO_URL || "https://bottom-sheet-demo-ashy.vercel.app";
 const VIEWPORT = { width: 1280, height: 860 };
 const FPS = 16;
 const GIF_WIDTH = 380;

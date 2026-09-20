@@ -6,7 +6,7 @@ const ctx = await browser.newContext({
   deviceScaleFactor: 2,
 });
 const page = await ctx.newPage();
-await page.goto(process.env.DEMO_URL || "https://bottom-sheet-demo.vercel.app", {
+await page.goto(process.env.DEMO_URL || "https://bottom-sheet-demo-ashy.vercel.app", {
   waitUntil: "networkidle",
 });
 await page.waitForSelector(".bs-handle", { timeout: 8000 });
