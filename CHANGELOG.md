@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0]
+
 ### Added
 
 - **`fitContentToSnap` — the whole scroll container is reachable at every snap point** — requested in [#41](https://github.com/Surdeddd/BottomSheet/issues/41). The sheet is always as tall as its largest snap and is moved with a transform, which keeps a drag on the compositor. The price was that below the largest snap the bottom of the scroll container sat under the screen edge by exactly `largest snap − current size`: measured on a 100-row list at a half snap, 254px of the container off screen and the last 7 rows impossible to bring into view without pulling the sheet up. `dragFromContent` never addressed this; it decides who gets a swipe, not how tall the visible band is.
