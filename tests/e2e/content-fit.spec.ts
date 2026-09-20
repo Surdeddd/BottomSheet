@@ -137,6 +137,68 @@ test.describe("fitContentToSnap keeps the whole list reachable", () => {
     expect(moved.after).toBe(moved.before);
   });
 
+  test("dragging the handle up keeps a pinned list on screen the whole way", async ({
+    page,
+  }) => {
+    await openAt(page, "fit", "half");
+    await endOfList(page, "fit");
+
+    const handle = page.locator('.bs-sheet[data-case="fit"] .bs-handle');
+    const box = (await handle.boundingBox())!;
+    const x = box.x + box.width / 2;
+    const startY = box.y + box.height / 2;
+
+    const gapNow = (): Promise<number> =>
+      page.evaluate(() => {
+        const last = document.querySelector(
+          '.bs-content[data-case="fit"] [data-row="100"]',
+        ) as HTMLElement;
+        return window.innerHeight - last.getBoundingClientRect().bottom;
+      });
+
+    await page.mouse.move(x, startY);
+    await page.mouse.down();
+    const gaps: number[] = [];
+    for (let step = 1; step <= 10; step++) {
+      await page.mouse.move(x, startY - step * 18);
+      await page.waitForTimeout(24);
+      gaps.push(await gapNow());
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    gaps.push(await gapNow());
+
+    const size = await page.evaluate(
+      () =>
+        (window as unknown as { bsSheets: Sheets }).bsSheets.fit!.state.size,
+    );
+    expect(size).toBeGreaterThan(0);
+    expect(Math.max(...gaps.map(Math.abs))).toBeLessThan(48);
+  });
+
+  test("a sheet without the option is left exactly as it was", async ({
+    page,
+  }) => {
+    await openAt(page, "plain", "half");
+    const plain = await page.evaluate(() => {
+      const sheet = document.querySelector(
+        '.bs-sheet[data-case="plain"]',
+      ) as HTMLElement;
+      const content = sheet.querySelector(".bs-content") as HTMLElement;
+      return {
+        marked: sheet.hasAttribute("data-bs-fit-content"),
+        insetVar: sheet.style.getPropertyValue("--bs-content-inset"),
+        spacer: getComputedStyle(content, "::after").content,
+        scrollPadding: getComputedStyle(content).scrollPaddingBottom,
+      };
+    });
+
+    expect(plain.marked).toBe(false);
+    expect(plain.insetVar).toBe("");
+    expect(plain.spacer).toBe("none");
+    expect(["auto", "0px"]).toContain(plain.scrollPadding);
+  });
+
   test("collapsing back to half makes the end reachable again", async ({
     page,
   }) => {

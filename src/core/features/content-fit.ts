@@ -32,27 +32,32 @@ export function contentFitFeature(): EngineFeature {
         }
         const limit = Math.max(0, unpaddedMax + hiddenAt(size));
         if (top > limit) {
+          if (scroller.scrollTop > limit) scroller.scrollTop = limit;
           top = limit;
-          scroller.scrollTop = limit;
         }
       };
 
       const settle = (): void => {
         if (ctx.isDestroyed()) return;
         const size = ctx.getSize();
+        unpaddedMax = -1;
         follow(size);
         inset = hiddenAt(size);
         sheet.style.setProperty(INSET_VAR, `${inset}px`);
         unpaddedMax = -1;
       };
 
+      const moving = (): boolean => ctx.isAnimating() || ctx.isDragging();
+
       const whenIdle = (): void => {
-        if (!ctx.isAnimating() && !ctx.isDragging()) settle();
+        if (!moving()) settle();
       };
 
       sheet.setAttribute(FIT_ATTR, "");
       settle();
-      const offProgress = ctx.on("progress", p => follow(p.size));
+      const offProgress = ctx.on("progress", p =>
+        moving() ? follow(p.size) : settle(),
+      );
       const offSnap = ctx.on("snap", settle);
       const observer =
         typeof ResizeObserver === "undefined"

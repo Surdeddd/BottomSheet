@@ -183,6 +183,66 @@ describe("fitContentToSnap", () => {
     engine.destroy();
   });
 
+  it("yields to a user who scrolls back up while the sheet is still expanding", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true }, 200);
+    await engine.open("half");
+    n.content.scrollTop = 1e9;
+
+    const expanding = engine.snapTo("full");
+    await sleep(60);
+    n.content.scrollTop = 100;
+    await expanding;
+
+    expect(n.content.scrollTop).toBe(100);
+    engine.destroy();
+  });
+
+  it("still holds the end in place if the user scrolls back down mid-flight", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true }, 200);
+    await engine.open("half");
+    n.content.scrollTop = 1e9;
+
+    const expanding = engine.snapTo("full");
+    await sleep(40);
+    n.content.scrollTop = 100;
+    await sleep(40);
+    n.content.scrollTop = 1e9;
+    await expanding;
+
+    expect(n.content.scrollTop).toBe(CONTENT - BOX);
+    engine.destroy();
+  });
+
+  it("re-seats the inset when snap points change under an idle sheet", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true });
+    await engine.open("half");
+    expect(insetOf(n.sheet)).toBe(400);
+
+    engine.setSnapPoints([
+      { id: "closed", size: 0 },
+      { id: "half", size: 400 },
+      { id: "full", size: 900 },
+    ]);
+
+    expect(insetOf(n.sheet)).toBe(500);
+    engine.destroy();
+  });
+
+  it("opens from closed with a restored scroll position left intact", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true }, 120);
+    n.content.scrollTop = 700;
+
+    await engine.open("full");
+
+    expect(n.content.scrollTop).toBe(700);
+    expect(insetOf(n.sheet)).toBe(0);
+    engine.destroy();
+  });
+
   it("does nothing for a sheet that is not on the bottom edge", async () => {
     const n = makeSheet();
     const engine = build(n, { fitContentToSnap: true, mode: "top" });
