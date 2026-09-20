@@ -226,13 +226,17 @@ export class AnimationRunner {
 
     let stopped = false;
     let auxRaf = 0;
-    const start = performance.now();
     const lastIdx = samples.values.length - 1;
     const auxTick = (): void => {
       if (stopped) return;
-      const elapsed = performance.now() - start;
-      const idx = Math.min(Math.floor(elapsed / samples.stepMs), lastIdx);
-      applyAux(samples.values[idx]!);
+      const at = Math.min(
+        (Number(anim.currentTime) || 0) / samples.stepMs,
+        lastIdx,
+      );
+      const idx = Math.floor(at);
+      const from = samples.values[idx]!;
+      const to = samples.values[Math.min(idx + 1, lastIdx)]!;
+      applyAux(from + (to - from) * (at - idx));
       auxRaf = requestAnimationFrame(auxTick);
     };
     auxRaf = requestAnimationFrame(auxTick);

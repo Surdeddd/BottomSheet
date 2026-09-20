@@ -217,8 +217,12 @@ export class BottomSheetCore {
         getSize: () => this.size,
         isDragging: () => this.isDraggingAny(),
         applyAux: (size: number) => this.applySize(size, true),
-        getTransformFor: (size: number) =>
-          this.transformTemplate(this.snaps.getMaxAxisSize() - size),
+        getTransformFor: (size: number) => {
+          const cap = this.snaps.getMaxAxisSize();
+          const shown =
+            cap > 0 && !this.allowOvershoot ? Math.min(size, cap) : size;
+          return this.transformTemplate(cap - shown);
+        },
       },
       resolved.animation,
     );

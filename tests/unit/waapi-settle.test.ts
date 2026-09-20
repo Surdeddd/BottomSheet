@@ -90,6 +90,89 @@ describe("waapi settle engine path", () => {
     engine.destroy();
   });
 
+  it("reports the size the animation is showing, not the size wall time suggests", async () => {
+    const n = makeSheet();
+    const fakeAnim = {
+      playState: "running",
+      currentTime: null as number | null,
+      finished: new Promise<void>(() => {}),
+      cancel: vi.fn(),
+    };
+    (n.sheet as unknown as { animate: unknown }).animate = () => fakeAnim;
+
+    const engine = new BottomSheetEngine({
+      element: n.sheet,
+      handle: n.handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 300 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 120,
+      easing: t => t,
+      respectReducedMotion: false,
+      settleAnimation: "waapi",
+    });
+    const seen: number[] = [];
+    engine.on("progress", p => seen.push(p.size));
+
+    void engine.snapTo("half");
+    await new Promise(r => setTimeout(r, 60));
+    expect(Math.max(0, ...seen)).toBe(0);
+
+    fakeAnim.currentTime = 50;
+    await new Promise(r => setTimeout(r, 60));
+    expect(seen.at(-1)).toBeCloseTo(125, 5);
+
+    fakeAnim.currentTime = 1e6;
+    await new Promise(r => setTimeout(r, 60));
+    expect(seen.at(-1)).toBe(300);
+    engine.destroy();
+  });
+
+  it("keeps an overshooting easing from lifting the sheet past its largest snap", async () => {
+    const n = makeSheet();
+    let frames: Array<Record<string, string>> = [];
+    const fakeAnim = {
+      playState: "running",
+      currentTime: null as number | null,
+      finished: new Promise<void>(() => {}),
+      cancel: vi.fn(),
+    };
+    (n.sheet as unknown as { animate: unknown }).animate = (
+      keyframes: Array<Record<string, string>>,
+    ) => {
+      frames = keyframes;
+      return fakeAnim;
+    };
+
+    const engine = new BottomSheetEngine({
+      element: n.sheet,
+      handle: n.handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 300 },
+      ],
+      initial: "closed",
+      animation: "tween",
+      duration: 160,
+      easing: t => (t === 1 ? 1 : t * 1.4),
+      respectReducedMotion: false,
+      settleAnimation: "waapi",
+    });
+
+    void engine.snapTo("full");
+    await new Promise(r => setTimeout(r, 10));
+
+    const offsets = frames.map(f =>
+      parseFloat(f.transform!.split(",")[1]!),
+    );
+    expect(offsets.length).toBeGreaterThan(4);
+    expect(Math.min(...offsets)).toBe(0);
+    engine.destroy();
+  });
+
   it("drives WAAPI with sampled transform keyframes and finalizes inline styles", async () => {
     const n = makeSheet();
     let captured: {
