@@ -257,6 +257,133 @@ test.describe("WebGL renderer", () => {
     );
   });
 
+  test("the surface is drawn where the sheet is on every frame of a snap", async ({
+    page,
+  }) => {
+    const unsupported = await page.getAttribute("#status", "data-unsupported");
+    test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
+
+    const runs = await page.evaluate(async () => {
+      const sheet = document.querySelector(".bs-sheet") as HTMLElement;
+      const draws: { t: number; top: number }[] = [];
+      const protos = [
+        WebGLRenderingContext.prototype,
+        typeof WebGL2RenderingContext !== "undefined"
+          ? WebGL2RenderingContext.prototype
+          : null,
+      ].filter(Boolean) as WebGLRenderingContext[];
+      const originals = protos.map(p => p.drawArrays);
+      protos.forEach((proto, i) => {
+        const original = originals[i]!;
+        proto.drawArrays = function (
+          this: WebGLRenderingContext,
+          ...args: Parameters<WebGLRenderingContext["drawArrays"]>
+        ) {
+          draws.push({
+            t: Number(document.timeline.currentTime),
+            top: sheet.getBoundingClientRect().top,
+          });
+          return original.apply(this, args);
+        };
+      });
+      const shown = new Map<number, number>();
+      let watching = true;
+      const watch = (): void => {
+        if (!watching) return;
+        requestAnimationFrame(() => {
+          const t = Number(document.timeline.currentTime);
+          const channel = new MessageChannel();
+          channel.port1.onmessage = () => {
+            if (Number(document.timeline.currentTime) === t) {
+              shown.set(t, sheet.getBoundingClientRect().top);
+            }
+          };
+          channel.port2.postMessage(0);
+          watch();
+        });
+      };
+      const out: { frames: number; stale: number }[] = [];
+      for (const id of ["#to-full", "#to-min"]) {
+        draws.length = 0;
+        shown.clear();
+        watching = true;
+        watch();
+        (document.querySelector(id) as HTMLElement).click();
+        await new Promise(r => setTimeout(r, 900));
+        watching = false;
+        const last = new Map<number, number>();
+        for (const d of draws) last.set(d.t, d.top);
+        let frames = 0;
+        let stale = 0;
+        for (const [t, top] of shown) {
+          const drawn = last.get(t);
+          if (drawn === undefined) continue;
+          frames++;
+          if (Math.abs(drawn - top) > 0.5) stale++;
+        }
+        out.push({ frames, stale });
+      }
+      protos.forEach((proto, i) => {
+        proto.drawArrays = originals[i]!;
+      });
+      return out;
+    });
+
+    for (const run of runs) {
+      expect(run.frames).toBeGreaterThanOrEqual(2);
+      expect(run.stale).toBe(0);
+    }
+  });
+
+  test("an idle size change too small to report progress still moves the surface", async ({
+    page,
+  }) => {
+    const unsupported = await page.getAttribute("#status", "data-unsupported");
+    test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
+    await page.waitForTimeout(300);
+
+    const r = await page.evaluate(async () => {
+      const sheet = document.querySelector(".bs-sheet") as HTMLElement;
+      const engine = (
+        window as unknown as {
+          __webglEngine?: { setSnapPoints: (p: unknown[]) => void };
+        }
+      ).__webglEngine;
+      if (!engine) return null;
+      let drawnTop = NaN;
+      const protos = [
+        WebGLRenderingContext.prototype,
+        typeof WebGL2RenderingContext !== "undefined"
+          ? WebGL2RenderingContext.prototype
+          : null,
+      ].filter(Boolean) as WebGLRenderingContext[];
+      const originals = protos.map(p => p.drawArrays);
+      protos.forEach((proto, i) => {
+        const original = originals[i]!;
+        proto.drawArrays = function (
+          this: WebGLRenderingContext,
+          ...args: Parameters<WebGLRenderingContext["drawArrays"]>
+        ) {
+          drawnTop = sheet.getBoundingClientRect().top;
+          return original.apply(this, args);
+        };
+      });
+      engine.setSnapPoints([
+        { id: "closed", size: 0 },
+        { id: "minimized", size: 142 },
+        { id: "full", size: "80%" },
+      ]);
+      await new Promise(res => setTimeout(res, 200));
+      protos.forEach((proto, i) => {
+        proto.drawArrays = originals[i]!;
+      });
+      return { drawnTop, top: sheet.getBoundingClientRect().top };
+    });
+
+    expect(r).not.toBeNull();
+    expect(Math.abs(r!.drawnTop - r!.top)).toBeLessThan(0.5);
+  });
+
   test("the sheet keeps its accessibility contract under the renderer", async ({
     page,
   }) => {

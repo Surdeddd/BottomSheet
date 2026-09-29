@@ -66,6 +66,7 @@ export default defineConfig({
         stacking: resolve(__dirname, "demo/fixtures/stacking.html"),
         contentFit: resolve(__dirname, "demo/fixtures/content-fit.html"),
         adaptersFit: resolve(__dirname, "demo/fixtures/adapters-fit.html"),
+        webglFit: resolve(__dirname, "demo/fixtures/webgl-fit.html"),
       },
     },
   },

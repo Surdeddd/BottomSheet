@@ -10,7 +10,11 @@ import {
   resizeDrawingBuffer,
   type GLHandle,
 } from "./gl-context";
-import { createSurfaceProgram, type SurfaceProgram } from "./surface-program";
+import {
+  createSurfaceProgram,
+  type ScrollLayer,
+  type SurfaceProgram,
+} from "./surface-program";
 import {
   captureContent,
   hideCapturedText,
@@ -170,16 +174,50 @@ export const webglRenderer = (
     const releaseCapture = (): void => {
       releaseText?.();
       releaseText = null;
-      if (capture && handle) handle.gl.deleteTexture(capture.texture);
+      if (capture && handle) {
+        if (capture.texture) handle.gl.deleteTexture(capture.texture);
+        if (capture.scroll) handle.gl.deleteTexture(capture.scroll.texture);
+      }
       capture = null;
     };
 
+    const fitted = (): boolean =>
+      element.hasAttribute("data-bs-fit-content") &&
+      element.dataset.mode === "bottom";
+
     const takeCapture = (): void => {
       if (!liftContent || disposed || !handle || capture) return;
-      const next = captureContent(handle.gl, element, dprOf());
+      const pinned = fitted();
+      const next = captureContent(handle.gl, element, dprOf(), {
+        scroller: ctx.scrollContainer ?? null,
+        above: pinned ? Math.max(0, ctx.getMaxAxisSize() - ctx.getSize()) : 0,
+        skip: pinned ? el => el.classList.contains("bs-footer") : undefined,
+      });
       if (!next) return;
       capture = next;
       releaseText = hideCapturedText(next.hiddenNodes);
+    };
+
+    const scrollLayer = (frame: SurfaceFrame): ScrollLayer | null => {
+      const scroll = capture?.scroll;
+      const scroller = ctx.scrollContainer;
+      if (!scroll || !scroller) return null;
+      const box = scroller.getBoundingClientRect();
+      const left = box.left + scroller.clientLeft - frame.x;
+      const top = box.top + scroller.clientTop - frame.y;
+      return {
+        texture: scroll.texture,
+        rect: [
+          left / frame.width,
+          top / frame.height,
+          (left + scroller.clientWidth) / frame.width,
+          (top + scroller.clientHeight) / frame.height,
+        ],
+        map: [
+          frame.height / scroll.height,
+          (scroll.above + scroller.scrollTop - scroll.top) / scroll.height,
+        ],
+      };
     };
 
     const paint = (): void => {
@@ -195,19 +233,21 @@ export const webglRenderer = (
         sheen: sheenStrength,
         glass: glassStrength * motion,
         content: capture?.texture ?? null,
+        scroll: scrollLayer(frame),
       });
     };
 
     const tick = (): void => {
       if (disposed) return;
-      paint();
       const held = ctx.isDragging();
+      if (held || !ctx.isAnimating()) paint();
       bend *= held ? BEND_DECAY_HELD : BEND_DECAY_FREE;
       const flat = Math.abs(bend) < BEND_REST;
 
       if (!held && flat && capture) {
         bend = 0;
         releaseCapture();
+        paint();
       }
 
       if (!held && flat && !ctx.isAnimating()) {
@@ -238,7 +278,7 @@ export const webglRenderer = (
     );
     ctx.addTeardown(
       ctx.on("dragstart", () => {
-        takeCapture();
+        queueMicrotask(takeCapture);
         wake();
       }),
     );
@@ -255,6 +295,15 @@ export const webglRenderer = (
       childList: true,
       subtree: true,
       characterData: true,
+    });
+
+    const geometryObserver = new MutationObserver(() => {
+      if (!ctx.isDragging()) paint();
+      wake();
+    });
+    geometryObserver.observe(element, {
+      attributes: true,
+      attributeFilter: ["style"],
     });
 
     const refreshSurfaceStyle = (): void => {
@@ -278,6 +327,7 @@ export const webglRenderer = (
 
     return () => {
       contentObserver.disconnect();
+      geometryObserver.disconnect();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onResize);
       teardown();

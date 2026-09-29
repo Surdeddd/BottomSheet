@@ -273,6 +273,29 @@ describe("fitContentToSnap", () => {
     engine.destroy();
   });
 
+  it("switches to moving as soon as a drag starts, before the sheet has moved", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true });
+    await engine.open("half");
+    let atStart: string | null = null;
+    engine.on("dragstart", () => {
+      atStart = n.sheet.getAttribute("data-bs-fit-content");
+    });
+
+    n.handle.dispatchEvent(
+      new PointerEvent("pointerdown", { clientY: 600, pointerId: 1, button: 0 }),
+    );
+    n.handle.dispatchEvent(
+      new PointerEvent("pointermove", { clientY: 560, pointerId: 1 }),
+    );
+    n.handle.dispatchEvent(
+      new PointerEvent("pointerup", { clientY: 560, pointerId: 1 }),
+    );
+
+    expect(atStart).toBe("moving");
+    engine.destroy();
+  });
+
   it("switches to moving for the length of a motion and back to resting on the snap", async () => {
     const n = makeSheet();
     const engine = build(n, { fitContentToSnap: true }, 160);

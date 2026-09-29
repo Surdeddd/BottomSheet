@@ -21,7 +21,7 @@ new BottomSheetEngine({
 ```
 
 The subpath is only pulled into your bundle if you import it: the main entry
-does not reference it. Measured cost when you do: **4.2 KB gzip**.
+does not reference it. Measured cost when you do: **5.8 KB gzip**.
 
 ## What it draws, and what it does not
 
@@ -54,6 +54,14 @@ costs nothing and keeps the accessibility contract intact.
 wrapped to the element's width; element backgrounds and borders, including
 corner radii; and `<img>` content drawn at its laid-out size.
 
+The scroll container gets a texture of its own. It is clipped to the container,
+so rows scrolled out of view never paint over the handle or the header, and it
+follows the container's scroll position for as long as the content is lifted.
+That matters when something scrolls the list during the drag: with
+`fitContentToSnap`, a list scrolled to its very end is held in place while the
+sheet expands, and the lifted rows stay exactly where the DOM rows are, so
+nothing jumps when the content is handed back.
+
 It deliberately skips inputs, buttons, select, SVG, canvas, video and iframes.
 Those keep painting as DOM on top of the surface, so during a drag they slide
 with the sheet without bending with it. If your sheet is mostly form controls,
@@ -69,6 +77,13 @@ stylesheet drops the background and shadow of `.bs-sheet`, `.bs-handle`,
 `.bs-header` and `.bs-footer` whenever `data-bs-webgl="on"` is present. If you
 override those backgrounds in your own CSS with higher specificity, your paint
 will sit on top of the GPU surface and you will see both.
+
+**With `fitContentToSnap`.** The layout is the same as with the DOM renderer:
+at rest the scroll container ends at the visible edge, so a scrollbar stays on
+screen, and the footer is pinned to that edge. The pinned footer is not lifted
+into the texture; it stays in the DOM and flat while the surface bends. While
+the sheet moves it paints the sheet's surface colour, because rows pass behind
+it during motion and a transparent footer would show them.
 
 ## Options
 
@@ -120,10 +135,13 @@ webglRenderer({
 
 ## Frame budget
 
-The renderer draws only while something moves. It wakes on `dragstart`,
-`drag`, `dragend`, `progress` and `snap`, and stops its loop once the sheet has
-settled and the deformation has decayed. **A resting sheet costs zero frames**,
-matching the DOM renderer.
+The renderer draws only while something moves. It repaints the moment the
+engine moves the sheet, by watching the sheet's inline style, so the surface is
+drawn in the same frame as the DOM it sits under rather than a frame behind it;
+during a drag it draws once per frame from its own loop, which also carries the
+deformation as it decays. The loop stops once the sheet has settled and the
+deformation is flat. **A resting sheet costs zero frames**, matching the DOM
+renderer.
 
 ## Adapters
 

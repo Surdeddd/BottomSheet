@@ -474,7 +474,9 @@ test.describe("fitContentToSnap keeps the footer on the visible edge", () => {
     expect(Math.abs(down.edge.at(-1)!)).toBeLessThan(0.1);
   });
 
-  test("the GPU renderer keeps the footer where it was", async ({ page }) => {
+  test("under the GPU renderer the resting layout is the same, with a transparent footer", async ({
+    page,
+  }) => {
     await openAt(page, "fitFooter", "half");
     await page.evaluate(() => {
       document
@@ -483,10 +485,17 @@ test.describe("fitContentToSnap keeps the footer on the visible edge", () => {
     });
     const f = await footerAt(page, "fitFooter");
     const end = await endOfList(page, "fitFooter");
+    const paint = await page.evaluate(
+      () =>
+        getComputedStyle(
+          document.querySelector('.bs-footer[data-case="fitFooter"]')!,
+        ).backgroundColor,
+    );
 
-    expect(f.transform).toBe("none");
-    expect(f.top).toBeGreaterThanOrEqual(f.viewport - 1);
-    expect(end.lastRowBottom).toBeLessThanOrEqual(end.viewport + 1);
+    expect(Math.abs(f.bottom - f.viewport)).toBeLessThan(1.5);
+    expect(Math.abs(end.boxBottom - f.top)).toBeLessThan(1.5);
+    expect(end.lastRowBottom).toBeLessThanOrEqual(f.top + 1);
+    expect(paint).toBe("rgba(0, 0, 0, 0)");
   });
 
   test("the footer button stays clickable at half", async ({ page }) => {

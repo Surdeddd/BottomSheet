@@ -20,6 +20,10 @@ uniform float u_sheen;
 uniform float u_glass;
 uniform float u_hasContent;
 uniform sampler2D u_content;
+uniform float u_hasScroll;
+uniform sampler2D u_scroll;
+uniform vec4 u_scrollRect;
+uniform vec2 u_scrollMap;
 
 float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
   vec2 q = abs(p) - halfSize + r;
@@ -55,6 +59,19 @@ void main() {
     content = texture2D(u_content, glassUv);
   }
 
+  vec4 scroll = vec4(0.0);
+  if (u_hasScroll > 0.5 &&
+      glassUv.x >= u_scrollRect.x && glassUv.x <= u_scrollRect.z &&
+      glassUv.y >= u_scrollRect.y && glassUv.y <= u_scrollRect.w) {
+    vec2 st = vec2(
+      (glassUv.x - u_scrollRect.x) / max(u_scrollRect.z - u_scrollRect.x, 0.000001),
+      (glassUv.y - u_scrollRect.y) * u_scrollMap.x + u_scrollMap.y
+    );
+    if (st.y >= 0.0 && st.y <= 1.0) {
+      scroll = texture2D(u_scroll, st);
+    }
+  }
+
   float edge = 1.0 - smoothstep(0.0, 2.5, abs(d));
   float topLight = pow(1.0 - down, 3.0);
   float sheen = (edge * 0.55 + topLight * 0.25) * u_sheen;
@@ -62,8 +79,10 @@ void main() {
   vec3 panelRgb = (u_color.rgb + vec3(sheen)) * u_color.a;
   float panelA = u_color.a;
 
-  vec3 rgb = content.rgb + panelRgb * (1.0 - content.a);
-  float alpha = content.a + panelA * (1.0 - content.a);
+  vec3 baseRgb = content.rgb + panelRgb * (1.0 - content.a);
+  float baseA = content.a + panelA * (1.0 - content.a);
+  vec3 rgb = scroll.rgb + baseRgb * (1.0 - scroll.a);
+  float alpha = scroll.a + baseA * (1.0 - scroll.a);
 
   rgb *= surface;
   alpha *= surface;
@@ -91,12 +110,19 @@ const compile = (
   return shader;
 };
 
+export type ScrollLayer = {
+  texture: WebGLTexture;
+  rect: [number, number, number, number];
+  map: [number, number];
+};
+
 export type DrawState = {
   bend: number;
   dpr: number;
   sheen: number;
   glass: number;
   content: WebGLTexture | null;
+  scroll: ScrollLayer | null;
 };
 
 export type SurfaceProgram = {
@@ -149,6 +175,10 @@ export const createSurfaceProgram = (
   const uGlass = gl.getUniformLocation(program, "u_glass");
   const uHasContent = gl.getUniformLocation(program, "u_hasContent");
   const uContent = gl.getUniformLocation(program, "u_content");
+  const uHasScroll = gl.getUniformLocation(program, "u_hasScroll");
+  const uScroll = gl.getUniformLocation(program, "u_scroll");
+  const uScrollRect = gl.getUniformLocation(program, "u_scrollRect");
+  const uScrollMap = gl.getUniformLocation(program, "u_scrollMap");
 
   return {
     draw: (frame, state) => {
@@ -180,13 +210,24 @@ export const createSurfaceProgram = (
       gl.uniform1f(uSheen, state.sheen);
       gl.uniform1f(uGlass, state.glass);
 
+      gl.uniform1i(uContent, 0);
+      gl.uniform1i(uScroll, 1);
       if (state.content) {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, state.content);
-        gl.uniform1i(uContent, 0);
         gl.uniform1f(uHasContent, 1);
       } else {
         gl.uniform1f(uHasContent, 0);
+      }
+      if (state.scroll) {
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, state.scroll.texture);
+        gl.uniform4f(uScrollRect, ...state.scroll.rect);
+        gl.uniform2f(uScrollMap, ...state.scroll.map);
+        gl.uniform1f(uHasScroll, 1);
+        gl.activeTexture(gl.TEXTURE0);
+      } else {
+        gl.uniform1f(uHasScroll, 0);
       }
 
       gl.drawArrays(gl.TRIANGLES, 0, 3);

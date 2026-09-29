@@ -546,9 +546,9 @@ sheet moves the stylesheet lifts `.bs-footer` by `--bs-size − --bs-max-size`, 
 it rides that edge on every frame of a drag or an animation, still without a
 layout. The list ends above it, not under it. On a snap too short to hold both,
 the footer slides under the screen edge instead of covering the handle. The
-WebGL renderer keeps the full-height container and the footer where it was: its
-surface is drawn on the GPU, the DOM footer has no background to cover the rows
-with, and it captures the content at the start of a gesture.
+WebGL renderer gets the same layout; while the sheet moves its footer paints
+the surface colour, and a drag lifts the list into a texture that follows the
+list's scroll position, so a list held at its end stays put there as well.
 
 #### Scrolling the list at every snap on touch
 

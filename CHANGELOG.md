@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The WebGL surface trailed the sheet by a frame during every programmatic snap** — the renderer's loop was woken from a `progress` handler, which runs inside the tween's own frame callback, so from then on the loop's callback was queued ahead of the tween's: every frame drew the panel where the sheet had been, and the tween moved the DOM after the draw. Measured with a hook on `drawArrays`: the drawn position was stale on 35–90% of the frames of a snap, by up to 128px in Chromium, 126px in WebKit and 38px in Firefox, so the white panel visibly lagged behind the handle and the text riding on it. The renderer now repaints the moment the engine writes the sheet's inline style, which puts the draw after the move in the same frame; the test asserts zero stale frames. The same observer fixes a quieter case: an idle size change too small to emit `progress` (a `setSnapPoints` that shifts the active snap by 2px) used to leave the surface where it was until the next gesture. There is still one draw per frame: during a snap the observer draws and the loop does not, during a drag the loop draws.
+- **A WebGL drag painted rows scrolled out of the list over the handle and the header** — the content capture drew every element in the sheet at its position, ignoring the scroll container's clip, so with the list scrolled the rows above its top edge showed up across the handle for the length of the drag. The scroll container now gets a texture of its own, clipped to the container in the shader.
+- **`fitContentToSnap` now works with the WebGL renderer too** — 0.23.1 left it on the old layout, so the scrollbar still ran under the screen edge and the footer was not pinned. With the renderer on, the layout is now the same as without it. Two things were in the way. The pinned footer used to be lifted into the texture, which moves with the sheet, so it stays in the DOM and flat now, and while the sheet moves it paints the surface colour, because the GPU surface has no way to hide the rows passing behind it. And a list held at its end during an expanding drag rode up with the texture by the length of the drag, while the DOM rows it stood for stayed put, and dropped back when the text was handed to the DOM. The list texture now follows the container's scroll position; it is captured with enough rows above the view to cover the scroll the engine may take back, and it lines up with the DOM rows to within 2px. The feature also switches to its moving layout on `dragstart` rather than on the first `progress`, so the capture sees the full-height container regardless of the order features are installed in.
+
+The `/webgl` entry grew by 965 B gzip, to 5.8 KB, and `/features` by 18 B; both budgets moved by that much.
+
 ## [0.23.1]
 
 ### Fixed

@@ -315,13 +315,13 @@
     {
       "name": "features (subpath)",
       "path": "dist/features.js",
-      "limit": "2.72 KB",
+      "limit": "2.74 KB",
       "gzip": true
     },
     {
       "name": "webgl renderer (subpath)",
       "path": "dist/webgl.js",
-      "limit": "5 KB",
+      "limit": "5.97 KB",
       "gzip": true
     }
   ],

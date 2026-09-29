@@ -82,6 +82,7 @@ export function contentFitFeature(): EngineFeature {
         moving() ? move(p.size) : settle(),
       );
       const offSnap = ctx.on("snap", settle);
+      const offDragStart = ctx.on("dragstart", () => move(ctx.getSize()));
       const observer =
         typeof ResizeObserver === "undefined"
           ? null
@@ -92,6 +93,7 @@ export function contentFitFeature(): EngineFeature {
       return () => {
         offProgress();
         offSnap();
+        offDragStart();
         observer?.disconnect();
         window.removeEventListener("orientationchange", whenIdle);
         sheet.removeAttribute(FIT_ATTR);
