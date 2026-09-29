@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.2]
+
 ### Fixed
 
 - **The WebGL surface trailed the sheet by a frame during every programmatic snap** — the renderer's loop was woken from a `progress` handler, which runs inside the tween's own frame callback, so from then on the loop's callback was queued ahead of the tween's: every frame drew the panel where the sheet had been, and the tween moved the DOM after the draw. Measured with a hook on `drawArrays`: the drawn position was stale on 35–90% of the frames of a snap, by up to 128px in Chromium, 126px in WebKit and 38px in Firefox, so the white panel visibly lagged behind the handle and the text riding on it. The renderer now repaints the moment the engine writes the sheet's inline style, which puts the draw after the move in the same frame; the test asserts zero stale frames. The same observer fixes a quieter case: an idle size change too small to emit `progress` (a `setSnapPoints` that shifts the active snap by 2px) used to leave the surface where it was until the next gesture. There is still one draw per frame: during a snap the observer draws and the loop does not, during a drag the loop draws.
