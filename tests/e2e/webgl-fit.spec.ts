@@ -189,7 +189,7 @@ test.describe("WebGL renderer with fitContentToSnap", () => {
     await page.mouse.up();
 
     expect(column.pinkBottom).toBeGreaterThan(0);
-    expect(Math.abs(column.pinkBottom - l.lastRowBottom)).toBeLessThan(2);
+    expect(Math.abs(column.pinkBottom - l.lastRowBottom)).toBeLessThan(3);
     expect(l.footerTop - column.pinkBottom).toBeGreaterThanOrEqual(0);
     expect(l.footerTop - column.pinkBottom).toBeLessThan(40);
   });

@@ -265,7 +265,7 @@ test.describe("WebGL renderer", () => {
 
     const runs = await page.evaluate(async () => {
       const sheet = document.querySelector(".bs-sheet") as HTMLElement;
-      const draws: { t: number; top: number }[] = [];
+      let drawnTop: number | null = null;
       const protos = [
         WebGLRenderingContext.prototype,
         typeof WebGL2RenderingContext !== "undefined"
@@ -279,48 +279,30 @@ test.describe("WebGL renderer", () => {
           this: WebGLRenderingContext,
           ...args: Parameters<WebGLRenderingContext["drawArrays"]>
         ) {
-          draws.push({
-            t: Number(document.timeline.currentTime),
-            top: sheet.getBoundingClientRect().top,
-          });
+          drawnTop = sheet.getBoundingClientRect().top;
           return original.apply(this, args);
         };
       });
-      const shown = new Map<number, number>();
-      let watching = true;
-      const watch = (): void => {
-        if (!watching) return;
-        requestAnimationFrame(() => {
-          const t = Number(document.timeline.currentTime);
-          const channel = new MessageChannel();
-          channel.port1.onmessage = () => {
-            if (Number(document.timeline.currentTime) === t) {
-              shown.set(t, sheet.getBoundingClientRect().top);
-            }
-          };
-          channel.port2.postMessage(0);
-          watch();
-        });
-      };
       const out: { frames: number; stale: number }[] = [];
       for (const id of ["#to-full", "#to-min"]) {
-        draws.length = 0;
-        shown.clear();
-        watching = true;
-        watch();
+        let frames = 0;
+        let stale = 0;
+        let watching = true;
+        const frameStart = (): void => {
+          if (!watching) return;
+          requestAnimationFrame(frameStart);
+          if (drawnTop === null) return;
+          frames++;
+          if (Math.abs(drawnTop - sheet.getBoundingClientRect().top) > 0.5) {
+            stale++;
+          }
+          drawnTop = null;
+        };
+        drawnTop = null;
+        requestAnimationFrame(frameStart);
         (document.querySelector(id) as HTMLElement).click();
         await new Promise(r => setTimeout(r, 900));
         watching = false;
-        const last = new Map<number, number>();
-        for (const d of draws) last.set(d.t, d.top);
-        let frames = 0;
-        let stale = 0;
-        for (const [t, top] of shown) {
-          const drawn = last.get(t);
-          if (drawn === undefined) continue;
-          frames++;
-          if (Math.abs(drawn - top) > 0.5) stale++;
-        }
         out.push({ frames, stale });
       }
       protos.forEach((proto, i) => {
