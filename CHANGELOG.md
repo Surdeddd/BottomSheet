@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.1]
+
 ### Fixed
 
 - **With `fitContentToSnap`, a visible scrollbar ran off the bottom of the screen below the largest snap** — reported in [#41](https://github.com/Surdeddd/BottomSheet/issues/41) with a recording from a desktop browser. 0.22 made the end of the list reachable by putting a spacer inside the scroll container, but the container itself stayed as tall as the largest snap point, so the lower part of its scrollbar track sat under the screen edge: 301px at a half snap in the browser test, 255px with a footer. Scrolled to the end, the thumb was entirely in that part, and a Windows-style scrollbar never showed its down arrow. Overlay scrollbars on phones hide all of it, which is how it got through.
