@@ -54,6 +54,12 @@ const holdDrag = async (page: Page, dy: number): Promise<void> => {
 };
 
 const scan = async (page: Page, clip: Clip) => {
+  await page.evaluate(
+    () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   const png = await page.screenshot({ clip });
   return page.evaluate(
     async ([b64, w, h]) => {
