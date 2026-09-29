@@ -34,9 +34,7 @@ const endOfList = (page: Page, name: string) =>
       lastRowTop: rect.top,
       lastRowBottom: rect.bottom,
       boxBelowViewport: Math.max(0, box.bottom - window.innerHeight),
-      inset: parseFloat(
-        getComputedStyle(content, "::after").height.replace("px", ""),
-      ),
+      boxBottom: box.bottom,
     };
   }, name);
 
@@ -136,12 +134,13 @@ test.describe("fitContentToSnap keeps the whole list reachable", () => {
     expect(r.lastRowTop).toBeGreaterThan(r.viewport * 0.5);
   });
 
-  test("the spacer is exactly the part of the sheet that is off screen", async ({
+  test("at rest the scroll container ends exactly at the screen edge, at every snap", async ({
     page,
   }) => {
     await openAt(page, "fit", "half");
     const half = await endOfList(page, "fit");
-    expect(Math.abs(half.inset - half.boxBelowViewport)).toBeLessThan(2);
+    expect(Math.abs(half.boxBottom - half.viewport)).toBeLessThan(1.5);
+    expect(half.lastRowBottom).toBeLessThanOrEqual(half.viewport + 1);
 
     await page.evaluate(async () => {
       const sheets = (window as unknown as { bsSheets: Sheets }).bsSheets;
@@ -149,7 +148,7 @@ test.describe("fitContentToSnap keeps the whole list reachable", () => {
       await new Promise(r => setTimeout(r, 60));
     });
     const full = await endOfList(page, "fit");
-    expect(full.inset).toBeLessThan(1);
+    expect(Math.abs(full.boxBottom - full.viewport)).toBeLessThan(1.5);
     expect(full.lastRowBottom).toBeLessThanOrEqual(full.viewport + 1);
   });
 
@@ -483,9 +482,11 @@ test.describe("fitContentToSnap keeps the footer on the visible edge", () => {
         .setAttribute("data-bs-webgl", "on");
     });
     const f = await footerAt(page, "fitFooter");
+    const end = await endOfList(page, "fitFooter");
 
     expect(f.transform).toBe("none");
     expect(f.top).toBeGreaterThanOrEqual(f.viewport - 1);
+    expect(end.lastRowBottom).toBeLessThanOrEqual(end.viewport + 1);
   });
 
   test("the footer button stays clickable at half", async ({ page }) => {
@@ -504,6 +505,224 @@ test.describe("fitContentToSnap keeps the footer on the visible edge", () => {
     expect(
       await page.getAttribute('[data-action="fitFooter"]', "data-clicked"),
     ).toBe("yes");
+  });
+});
+
+const boxAt = (page: Page, name: string) =>
+  page.evaluate(n => {
+    const sheet = document.querySelector(
+      `.bs-sheet[data-case="${n}"]`,
+    ) as HTMLElement;
+    const content = sheet.querySelector(".bs-content") as HTMLElement;
+    const footer = sheet.querySelector(".bs-footer") as HTMLElement | null;
+    const handle = sheet.querySelector(".bs-handle") as HTMLElement;
+    const box = content.getBoundingClientRect();
+    return {
+      viewport: window.innerHeight,
+      boxTop: box.top,
+      boxBottom: box.bottom,
+      footerTop: footer ? footer.getBoundingClientRect().top : null,
+      footerBottom: footer ? footer.getBoundingClientRect().bottom : null,
+      handleBottom: handle.getBoundingClientRect().bottom,
+    };
+  }, name);
+
+const trackRows = (
+  page: Page,
+  name: string,
+  target: string,
+  scrollTop: number,
+) =>
+  page.evaluate(
+    async ([n, t, st]) => {
+      const sheets = (window as unknown as { bsSheets: Sheets }).bsSheets;
+      const sheet = document.querySelector(
+        `.bs-sheet[data-case="${n}"]`,
+      ) as HTMLElement;
+      const content = sheet.querySelector(".bs-content") as HTMLElement;
+      const footer = sheet.querySelector(".bs-footer") as HTMLElement | null;
+      content.scrollTop = st as number;
+      await new Promise(r => setTimeout(r, 50));
+      const row = content.querySelector('[data-row="30"]') as HTMLElement;
+      const offset = (): number =>
+        row.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
+      const before = offset();
+      const drift: number[] = [];
+      const gap: number[] = [];
+      const painted = (): Promise<void> =>
+        new Promise(resolve =>
+          requestAnimationFrame(() => {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = () => resolve();
+            channel.port2.postMessage(0);
+          }),
+        );
+      const sample = (): void => {
+        const edge = Math.min(
+          window.innerHeight,
+          footer ? footer.getBoundingClientRect().top : Infinity,
+        );
+        drift.push(offset() - before);
+        gap.push(edge - content.getBoundingClientRect().bottom);
+      };
+      let done = false;
+      void sheets[n as string]!.snapTo(t as string).then(() => {
+        done = true;
+      });
+      while (!done) {
+        await painted();
+        sample();
+      }
+      for (let i = 0; i < 4; i++) {
+        await painted();
+        sample();
+      }
+      return {
+        frames: drift.length,
+        worstDrift: Math.max(...drift.map(Math.abs)),
+        worstGap: Math.max(...gap),
+        scrollTop: content.scrollTop,
+      };
+    },
+    [name, target, scrollTop],
+  );
+
+test.describe("fitContentToSnap sizes the scroll container to what is on screen", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/fixtures/content-fit.html");
+    await page.waitForSelector('.bs-sheet[data-case="fitFooter"]', {
+      state: "attached",
+    });
+    await page.waitForTimeout(150);
+  });
+
+  test("with a footer the scroll container ends where the footer starts", async ({
+    page,
+  }) => {
+    await openAt(page, "fitFooter", "half");
+    const b = await boxAt(page, "fitFooter");
+
+    expect(Math.abs(b.boxBottom - b.footerTop!)).toBeLessThan(1.5);
+    expect(Math.abs(b.footerBottom! - b.viewport)).toBeLessThan(1.5);
+  });
+
+  for (const name of ["fit", "fitFooter"]) {
+    test(`${name}: at rest the layout follows a size change too small to report progress`, async ({
+      page,
+    }) => {
+      await openAt(page, name, "half");
+      const r = await page.evaluate(async n => {
+        const sheet = (
+          window as unknown as {
+            bsSheets: Record<
+              string,
+              {
+                state: { size: number };
+                setSnapPoints: (points: unknown[]) => void;
+              }
+            >;
+          }
+        ).bsSheets[n]!;
+        const el = document.querySelector(
+          `.bs-sheet[data-case="${n}"]`,
+        ) as HTMLElement;
+        const content = el.querySelector(".bs-content") as HTMLElement;
+        const footer = el.querySelector(".bs-footer") as HTMLElement | null;
+        const before = sheet.state.size;
+        sheet.setSnapPoints([
+          { id: "closed", size: 0 },
+          { id: "half", size: before + 2 },
+          { id: "full", size: "85%" },
+        ]);
+        await new Promise(res => setTimeout(res, 120));
+        const edge = footer
+          ? footer.getBoundingClientRect().bottom
+          : content.getBoundingClientRect().bottom;
+        return {
+          moved: sheet.state.size - before,
+          viewport: window.innerHeight,
+          edge,
+        };
+      }, name);
+
+      expect(r.moved).toBeCloseTo(2, 5);
+      expect(Math.abs(r.edge - r.viewport)).toBeLessThan(1);
+    });
+  }
+
+  test("after a collapse the scroll container shrinks back to the screen edge", async ({
+    page,
+  }) => {
+    await openAt(page, "fit", "full");
+    await trackRows(page, "fit", "half", 600);
+    const b = await boxAt(page, "fit");
+
+    expect(Math.abs(b.boxBottom - b.viewport)).toBeLessThan(1.5);
+  });
+
+  for (const name of ["fit", "fitFooter"]) {
+    test(`${name}: rows never move against the sheet and no gap opens while it expands`, async ({
+      page,
+    }) => {
+      await openAt(page, name, "half");
+      const r = await trackRows(page, name, "full", 600);
+
+      expect(r.frames).toBeGreaterThan(4);
+      expect(r.worstDrift).toBeLessThan(0.6);
+      expect(r.worstGap).toBeLessThan(1);
+      expect(r.scrollTop).toBe(600);
+    });
+
+    test(`${name}: rows never move against the sheet while it collapses`, async ({
+      page,
+    }) => {
+      await openAt(page, name, "full");
+      const r = await trackRows(page, name, "half", 600);
+
+      expect(r.frames).toBeGreaterThan(4);
+      expect(r.worstDrift).toBeLessThan(0.6);
+      expect(r.scrollTop).toBe(600);
+    });
+  }
+
+  test("a handle drag from rest opens no gap under the list", async ({
+    page,
+  }) => {
+    await openAt(page, "fit", "half");
+    const handle = page.locator('.bs-sheet[data-case="fit"] .bs-handle');
+    const box = (await handle.boundingBox())!;
+    const x = box.x + box.width / 2;
+    const startY = box.y + box.height / 2;
+    const gapNow = async (): Promise<number> => {
+      const b = await boxAt(page, "fit");
+      return b.viewport - b.boxBottom;
+    };
+
+    await page.mouse.move(x, startY);
+    await page.mouse.down();
+    const gaps: number[] = [];
+    for (let step = 1; step <= 8; step++) {
+      await page.mouse.move(x, startY - step * 20);
+      await page.waitForTimeout(24);
+      gaps.push(await gapNow());
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    const rest = await boxAt(page, "fit");
+
+    expect(Math.max(...gaps)).toBeLessThan(1);
+    expect(Math.abs(rest.boxBottom - rest.viewport)).toBeLessThan(1.5);
+  });
+
+  test("at a snap too short for the footer it tucks under the edge, not over the handle", async ({
+    page,
+  }) => {
+    await openAt(page, "fitFooter", "tiny");
+    const b = await boxAt(page, "fitFooter");
+
+    expect(b.footerBottom!).toBeGreaterThan(b.viewport + 1);
+    expect(b.footerTop!).toBeGreaterThanOrEqual(b.handleBottom - 1);
+    expect(b.boxBottom).toBeGreaterThanOrEqual(b.boxTop - 0.5);
   });
 });
 

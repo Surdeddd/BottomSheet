@@ -526,23 +526,29 @@ last rows never come into view until the sheet is pulled up.
 ```
 
 When the sheet settles, the engine writes the hidden amount to
-`--bs-content-inset` and the stylesheet turns it into a spacer at the end of
-`.bs-content`, plus a matching `scroll-padding-bottom` so a focused field
-scrolls into the visible band rather than under the edge. That is one layout per
-settle and none per frame, so the motion stays transform-only. While the sheet
-moves, a list that was scrolled to its very end is held in place on screen
-instead of riding up with the sheet and dropping back at the end.
+`--bs-content-inset` and the stylesheet shrinks `.bs-content` by exactly that
+much, so the scroll container ends at the edge of the screen: the last row, a
+focused field and the scrollbar all stay in the visible part, and the thumb is
+sized for what you can actually see. The moment the sheet starts to move, it
+switches to the full-height container with a spacer of the same size at the end
+of the list, so the rows below the edge are already laid out when a drag or an
+animation reveals them. The switch changes the box and the scroll range by the
+same amount, so nothing on screen moves. That is one layout when motion starts
+and one when it settles, none per frame, so the motion stays transform-only.
+While the sheet moves, a list that was scrolled to its very end is held in place
+on screen instead of riding up with the sheet and dropping back at the end.
 
 The footer has the same problem and gets the same cure. It is the last thing in
 the sheet, so below the largest snap it sits under the screen edge along with
-the end of the list. With `fitContentToSnap` on, the stylesheet lifts
-`.bs-footer` by `--bs-size − --bs-max-size`, which pins it to the bottom of the
-visible part of the sheet at every snap and on every frame of a drag or an
-animation, still without a layout. The list ends above it, not under it. The
-lift stops at the bottom of the header, so on a snap too short to hold both the
-footer slides under the screen edge instead of covering the handle. The WebGL
-renderer keeps the footer where it was: its surface is drawn on the GPU and the
-DOM footer has no background to cover the rows with.
+the end of the list. With `fitContentToSnap` on, the shrunken container puts the
+footer at the bottom of the visible part of the sheet at rest, and while the
+sheet moves the stylesheet lifts `.bs-footer` by `--bs-size − --bs-max-size`, so
+it rides that edge on every frame of a drag or an animation, still without a
+layout. The list ends above it, not under it. On a snap too short to hold both,
+the footer slides under the screen edge instead of covering the handle. The
+WebGL renderer keeps the full-height container and the footer where it was: its
+surface is drawn on the GPU, the DOM footer has no background to cover the rows
+with, and it captures the content at the start of a gesture.
 
 #### Scrolling the list at every snap on touch
 
@@ -571,9 +577,11 @@ const points = [
 ];
 ```
 
-It applies to `bottom` sheets. For a scroll container that is not `.bs-content`,
-or one laid out as a flex row, consume the variable yourself:
-`padding-bottom: var(--bs-content-inset, 0px)`. On the slim core add
+It applies to `bottom` sheets and expects the scroll container to be the growing
+child of the sheet's flex column, the way `.bs-content` is. For any other
+container, `data-bs-fit-content` on the sheet reads `rest` or `moving` and
+`--bs-content-inset` holds the hidden amount: shrink the container by it at
+rest, or pad the end of its content by it while moving. On the slim core add
 `contentFitFeature()` from `@surdeddd/bottom-sheet/features`.
 
 ### Scrim, blur & high contrast

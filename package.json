@@ -315,7 +315,7 @@
     {
       "name": "features (subpath)",
       "path": "dist/features.js",
-      "limit": "2.68 KB",
+      "limit": "2.72 KB",
       "gzip": true
     },
     {

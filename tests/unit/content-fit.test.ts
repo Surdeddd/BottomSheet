@@ -253,14 +253,41 @@ describe("fitContentToSnap", () => {
     engine.destroy();
   });
 
-  it("publishes how far a footer may rise before it would cover the header", async () => {
+  it("publishes how far a footer may rise once the sheet starts to move", async () => {
     const n = makeSheet();
-    const engine = build(n, { fitContentToSnap: true });
+    const engine = build(n, { fitContentToSnap: true }, 120);
     await engine.open("half");
 
     expect(n.sheet.style.getPropertyValue("--bs-footer-lift-max")).toBe(
       `${BOX}px`,
     );
+    engine.destroy();
+  });
+
+  it("marks the sheet as resting once it settles", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true });
+    await engine.open("half");
+
+    expect(n.sheet.getAttribute("data-bs-fit-content")).toBe("rest");
+    engine.destroy();
+  });
+
+  it("switches to moving for the length of a motion and back to resting on the snap", async () => {
+    const n = makeSheet();
+    const engine = build(n, { fitContentToSnap: true }, 160);
+    await engine.open("half");
+    expect(n.sheet.getAttribute("data-bs-fit-content")).toBe("rest");
+
+    const during: (string | null)[] = [];
+    engine.on("progress", () =>
+      during.push(n.sheet.getAttribute("data-bs-fit-content")),
+    );
+    await engine.snapTo("full");
+
+    expect(during.length).toBeGreaterThan(2);
+    expect(during.slice(0, -1).every(v => v === "moving")).toBe(true);
+    expect(n.sheet.getAttribute("data-bs-fit-content")).toBe("rest");
     engine.destroy();
   });
 

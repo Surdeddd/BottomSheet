@@ -22,6 +22,7 @@ export function contentFitFeature(): EngineFeature {
       let inset = 0;
       let unpaddedMax = -1;
       let top = 0;
+      let resting = false;
 
       const put = (name: string, px: number): void =>
         sheet.style.setProperty(name, `${px}px`);
@@ -46,14 +47,28 @@ export function contentFitFeature(): EngineFeature {
       const settle = (): void => {
         if (ctx.isDestroyed()) return;
         const size = ctx.getSize();
-        unpaddedMax = -1;
-        follow(size);
+        if (!resting) {
+          unpaddedMax = -1;
+          follow(size);
+        }
         inset = hiddenAt(size);
-        put(LIFT_VAR, scroller.offsetHeight);
         put(INSET_VAR, inset);
         put(SIZE_VAR, size);
         put(CAP_VAR, ctx.getMaxAxisSize());
+        if (!resting) {
+          resting = true;
+          sheet.setAttribute(FIT_ATTR, "rest");
+        }
         unpaddedMax = -1;
+      };
+
+      const move = (size: number): void => {
+        if (resting) {
+          resting = false;
+          sheet.setAttribute(FIT_ATTR, "moving");
+          put(LIFT_VAR, scroller.offsetHeight);
+        }
+        follow(size);
       };
 
       const moving = (): boolean => ctx.isAnimating() || ctx.isDragging();
@@ -62,10 +77,9 @@ export function contentFitFeature(): EngineFeature {
         if (!moving()) settle();
       };
 
-      sheet.setAttribute(FIT_ATTR, "");
       settle();
       const offProgress = ctx.on("progress", p =>
-        moving() ? follow(p.size) : settle(),
+        moving() ? move(p.size) : settle(),
       );
       const offSnap = ctx.on("snap", settle);
       const observer =

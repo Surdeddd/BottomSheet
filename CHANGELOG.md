@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **With `fitContentToSnap`, a visible scrollbar ran off the bottom of the screen below the largest snap** — reported in [#41](https://github.com/Surdeddd/BottomSheet/issues/41) with a recording from a desktop browser. 0.22 made the end of the list reachable by putting a spacer inside the scroll container, but the container itself stayed as tall as the largest snap point, so the lower part of its scrollbar track sat under the screen edge: 301px at a half snap in the browser test, 255px with a footer. Scrolled to the end, the thumb was entirely in that part, and a Windows-style scrollbar never showed its down arrow. Overlay scrollbars on phones hide all of it, which is how it got through.
+
+  At rest the stylesheet now shrinks the container itself by the part of the sheet that is off screen, with a flex spacer after the last child of the sheet, so the track ends at the screen edge or at the top of the footer and the thumb is sized for what is on screen. The spacer is computed from the live `--bs-size`, not from the size at the last settle, because the engine reports `progress` only once the sheet has moved by about 3px: keyed to the settle, the first frames of a motion put the footer up to 2.6px off the edge under CPU load in testing, and an idle size change below that threshold went unnoticed. The moment the sheet starts to move, it switches back to the full-height container with the spacer inside it, so the rows below the edge are already laid out when a drag or an animation reveals them and the motion stays transform-only. The switch changes the box and the scroll range by the same amount, so the list does not move: zero drift of a row against the sheet on every painted frame of an expand and a collapse, and no gap under the list through those and a handle drag, in Chromium, WebKit and Firefox. Ionic solves the same problem for `expandToScroll: false` by animating the content's `max-height`, which costs a layout on every frame; this costs one layout when motion starts and one when it settles.
+
+  At rest the footer is now placed by layout, and the per-frame lift applies only while the sheet moves. `data-bs-fit-content` on the sheet reads `rest` or `moving`, for anyone sizing a custom scroll container; `--bs-content-inset` keeps its meaning. The WebGL renderer keeps the 0.23.0 layout, because it captures the content at the start of a gesture. The `/features` budget moved by its measured growth, 37 B gzip; every other entry stayed inside its budget.
+
 ## [0.23.0]
 
 ### Added

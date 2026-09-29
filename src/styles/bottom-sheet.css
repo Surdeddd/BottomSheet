@@ -280,15 +280,22 @@
   padding: var(--bs-content-padding, 0 16px 16px);
 }
 
-.bs-sheet[data-bs-fit-content] .bs-content {
+.bs-sheet[data-bs-fit-content="moving"] .bs-content,
+.bs-sheet[data-bs-fit-content][data-bs-webgl="on"] .bs-content {
   scroll-padding-bottom: var(--bs-content-inset, 0px);
 }
 
-.bs-sheet[data-bs-fit-content] .bs-content::after {
+.bs-sheet[data-bs-fit-content="moving"] .bs-content::after,
+.bs-sheet[data-bs-fit-content][data-bs-webgl="on"] .bs-content::after {
   content: "";
   display: block;
   flex: none;
   height: var(--bs-content-inset, 0px);
+}
+
+.bs-sheet[data-bs-fit-content="rest"][data-mode="bottom"]:not([data-bs-webgl="on"])::after {
+  content: "";
+  flex: 0 1 max(0px, var(--bs-max-size, 0px) - var(--bs-size, 0px));
 }
 
 .bs-footer {
@@ -298,7 +305,7 @@
   background: var(--bs-surface, var(--bs-surface-d));
 }
 
-.bs-sheet[data-bs-fit-content][data-mode="bottom"]:not([data-bs-webgl="on"]) .bs-footer {
+.bs-sheet[data-bs-fit-content="moving"][data-mode="bottom"]:not([data-bs-webgl="on"]) .bs-footer {
   transform: translateY(
     clamp(
       calc(-1 * var(--bs-footer-lift-max, 0px)),

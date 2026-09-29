@@ -29,6 +29,7 @@ const measure = (page: Page, adapter: Adapter) =>
       slotted!.assignedSlot!.closest(".bs-footer")) as HTMLElement;
     const sheet = footer.closest(".bs-sheet") as HTMLElement;
     const content = sheet.querySelector(".bs-content") as HTMLElement;
+    const contentBottom = content.getBoundingClientRect().bottom;
     content.scrollTop = content.scrollHeight;
     const last = document.querySelector(
       `[data-owner="${name}"][data-row="100"]`,
@@ -40,6 +41,7 @@ const measure = (page: Page, adapter: Adapter) =>
       footerTop: rect.top,
       footerBottom: rect.bottom,
       footerHeight: rect.height,
+      contentBottom,
       lastRowBottom: last.getBoundingClientRect().bottom,
       scrolled: content.scrollTop,
     };
@@ -71,6 +73,15 @@ test.describe("fitContentToSnap through every adapter", () => {
       expect(m.scrolled).toBeGreaterThan(0);
       expect(m.lastRowBottom).toBeLessThanOrEqual(m.footerTop + 1);
       expect(m.footerTop - m.lastRowBottom).toBeLessThan(40);
+    });
+
+    test(`${adapter}: the scroll container ends where the footer starts at half`, async ({
+      page,
+    }) => {
+      await openAt(page, adapter, "half");
+      const m = await measure(page, adapter);
+
+      expect(Math.abs(m.contentBottom - m.footerTop)).toBeLessThan(1.5);
     });
 
     test(`${adapter}: the footer button takes a click at half`, async ({

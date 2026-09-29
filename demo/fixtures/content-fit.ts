@@ -57,6 +57,7 @@ const build = (
     snapPoints: withFooter
       ? [
           { id: "closed", size: 0 },
+          { id: "tiny", size: 72 },
           { id: "peek", size: 128 },
           { id: "half", size: "50%" },
           { id: "full", size: "85%" },
