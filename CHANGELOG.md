@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.3]
+
 ### Fixed
 
 - **Closing a sheet with a tap first lifted it up** — the tween took its start time from `performance.now()` when it was created, and each frame measured elapsed time against the frame's `requestAnimationFrame` timestamp. A tap is handled inside a frame, before that frame's callbacks run, so the first frame's timestamp is earlier than the start time, elapsed time comes out negative, and the default `easeOutBack` curve runs backwards: the sheet moved away from its target before heading for it. Measured through a real tap on the close button: the sheet rose from 364px to 425px in Chromium and by 13px in Firefox before closing, and an open dipped hundreds of pixels below the closed position (offscreen, so unseen). WebKit orders input and frames differently and was not affected. Elapsed time is now clamped at zero. The spring had the same clock and took a negative first step, which gave its first frame a velocity pointing away from the target; its clock is clamped the same way. This was also behind a CI flake that had been showing up since 0.23.1: on a slow runner the lifted handle of a closing sheet landed on the point the stack test probes.
