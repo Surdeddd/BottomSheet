@@ -2,6 +2,7 @@ import { sheetStack } from "./lifecycle/sheet-stack";
 import {
   buildTransformTemplate,
   layoutAxis,
+  offsetFromMatrix,
   type TransformAxis,
 } from "./primitives/transform";
 import { nextInstanceId } from "./primitives/instance-id";
@@ -222,6 +223,14 @@ export class BottomSheetCore {
           const shown =
             cap > 0 && !this.allowOvershoot ? Math.min(size, cap) : size;
           return this.transformTemplate(cap - shown);
+        },
+        readShownSize: () => {
+          const shown = getComputedStyle(this.element).transform;
+          if (!shown || shown === "none") return undefined;
+          return (
+            this.snaps.getMaxAxisSize() -
+            offsetFromMatrix(this.mode as TransformAxis, new DOMMatrix(shown))
+          );
         },
       },
       resolved.animation,

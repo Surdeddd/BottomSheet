@@ -19,6 +19,7 @@ export type AnimationRunnerDeps = {
   isDragging: () => boolean;
   applyAux?: (size: number) => void;
   getTransformFor?: (size: number) => string;
+  readShownSize?: () => number | undefined;
 };
 
 export type AnimationRunnerOptions = {
@@ -34,6 +35,7 @@ export type AnimationRunnerOptions = {
 type WaapiEntry = {
   anim: Animation;
   stop: () => void;
+  sizeNow: () => number;
 };
 
 export class AnimationRunner {
@@ -44,6 +46,7 @@ export class AnimationRunner {
   private isDragging: () => boolean;
   private applyAux?: (size: number) => void;
   private getTransformFor?: (size: number) => string;
+  private readShownSize?: () => number | undefined;
   private settleWaapi: boolean;
   private currentWaapi: WaapiEntry | null = null;
 
@@ -67,6 +70,7 @@ export class AnimationRunner {
     this.isDragging = deps.isDragging;
     this.applyAux = deps.applyAux;
     this.getTransformFor = deps.getTransformFor;
+    this.readShownSize = deps.readShownSize;
     this.settleWaapi = opts.settleAnimation === "waapi";
 
     const preset = resolveAnimationPreset(opts.animation);
@@ -118,10 +122,12 @@ export class AnimationRunner {
     const entry = this.currentWaapi;
     this.currentWaapi = null;
     entry.stop();
+    const size = this.readShownSize?.() ?? entry.sizeNow();
     try {
       entry.anim.cancel();
     } catch {
     }
+    this.applySizeFn(size);
   }
 
   cancel(): void {
@@ -227,8 +233,7 @@ export class AnimationRunner {
     let stopped = false;
     let auxRaf = 0;
     const lastIdx = samples.values.length - 1;
-    const auxTick = (): void => {
-      if (stopped) return;
+    const sizeNow = (): number => {
       const at = Math.min(
         (Number(anim.currentTime) || 0) / samples.stepMs,
         lastIdx,
@@ -236,7 +241,11 @@ export class AnimationRunner {
       const idx = Math.floor(at);
       const from = samples.values[idx]!;
       const to = samples.values[Math.min(idx + 1, lastIdx)]!;
-      applyAux(from + (to - from) * (at - idx));
+      return from + (to - from) * (at - idx);
+    };
+    const auxTick = (): void => {
+      if (stopped) return;
+      applyAux(sizeNow());
       auxRaf = requestAnimationFrame(auxTick);
     };
     auxRaf = requestAnimationFrame(auxTick);
@@ -247,6 +256,7 @@ export class AnimationRunner {
         stopped = true;
         cancelAnimationFrame(auxRaf);
       },
+      sizeNow,
     };
     this.currentWaapi = entry;
 

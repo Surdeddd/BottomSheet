@@ -3,6 +3,7 @@ import {
   sampleSpringSettle,
   sampleTweenSettle,
 } from "../../src/core/animation/waapi-settle";
+import { easeOutCubic } from "../../src/core/animation/animation";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
 import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
@@ -281,6 +282,85 @@ describe("waapi settle engine path", () => {
     await settle();
     expect(fakeAnim.cancel).toHaveBeenCalled();
     engine.destroy();
+  });
+
+  const pressMidSettle = async (shown: (frames: Keyframe[]) => string) => {
+    const n = makeSheet();
+    let frames: Keyframe[] = [];
+    const fakeAnim = {
+      id: "",
+      currentTime: null as number | null,
+      playState: "running",
+      finished: new Promise<void>(() => {}),
+      cancel: vi.fn(() => {
+        fakeAnim.playState = "idle";
+      }),
+    };
+    (n.sheet as unknown as { animate: unknown }).animate = (
+      next: Keyframe[],
+    ) => {
+      frames = next;
+      return fakeAnim;
+    };
+    const engine = new BottomSheetEngine({
+      element: n.sheet,
+      handle: n.handle,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 300 },
+        { id: "full", size: 600 },
+      ],
+      initial: "half",
+      animation: "tween",
+      duration: 200,
+      easing: easeOutCubic,
+      respectReducedMotion: false,
+      settleAnimation: "waapi",
+    });
+
+    void engine.snapTo("full");
+    await new Promise(r => setTimeout(r, 10));
+    const samples = sampleTweenSettle(300, 600, 200, easeOutCubic);
+    fakeAnim.currentTime = 1 * samples.stepMs;
+    const computed = window.getComputedStyle.bind(window);
+    const spy = vi
+      .spyOn(window, "getComputedStyle")
+      .mockImplementation((el, pseudo) =>
+        el === n.sheet
+          ? ({ transform: shown(frames) } as CSSStyleDeclaration)
+          : computed(el, pseudo),
+      );
+    n.handle.dispatchEvent(
+      new PointerEvent("pointerdown", { clientY: 500, pointerId: 1, button: 0 }),
+    );
+    spy.mockRestore();
+    const result = {
+      cancelled: fakeAnim.cancel.mock.calls.length > 0,
+      size: engine.state.size,
+      transform: n.sheet.style.transform,
+      frames,
+      samples,
+    };
+    n.handle.dispatchEvent(
+      new PointerEvent("pointerup", { clientY: 500, pointerId: 1 }),
+    );
+    engine.destroy();
+    return result;
+  };
+
+  it("a press mid-settle leaves the sheet where the engine was showing it", async () => {
+    const r = await pressMidSettle(frames => String(frames[2]!.transform));
+
+    expect(r.cancelled).toBe(true);
+    expect(r.size).toBeCloseTo(r.samples.values[2]!, 6);
+    expect(r.transform).toBe(String(r.frames[2]!.transform));
+  });
+
+  it("a press mid-settle falls back to the animation clock without a rendered transform", async () => {
+    const r = await pressMidSettle(() => "none");
+
+    expect(r.cancelled).toBe(true);
+    expect(r.size).toBeCloseTo(r.samples.values[1]!, 6);
   });
 
   it("a second settle cancels the native animation the first one left running", async () => {

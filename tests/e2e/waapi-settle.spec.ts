@@ -53,6 +53,61 @@ test.describe("WAAPI settle (opt-in)", () => {
     expect(parseFloat(state.progress)).toBeGreaterThan(0);
   });
 
+  test("a press on the handle mid-settle holds the sheet where it is", async ({
+    page,
+  }) => {
+    await page.click("#snap-half");
+    await page.waitForFunction(
+      sel => {
+        const el = document.querySelector(sel) as HTMLElement | null;
+        return el?.dataset.openedAt === "half" && el.getAnimations().length === 0;
+      },
+      SHEET,
+      { timeout: 8000 },
+    );
+
+    const r = await page.evaluate(async sel => {
+      const sheet = document.querySelector(sel) as HTMLElement;
+      const handle = sheet.querySelector(".bs-handle") as HTMLElement;
+      const start = sheet.getBoundingClientRect().top;
+      (document.querySelector("#snap-full") as HTMLElement).click();
+      await new Promise(res => setTimeout(res, 90));
+      let before = NaN;
+      document.addEventListener(
+        "pointerdown",
+        () => {
+          before = sheet.getBoundingClientRect().top;
+        },
+        { capture: true, once: true },
+      );
+      const box = handle.getBoundingClientRect();
+      const init = {
+        clientX: box.left + box.width / 2,
+        clientY: box.top + box.height / 2,
+        pointerId: 7,
+        button: 0,
+        pointerType: "mouse",
+        bubbles: true,
+      };
+      handle.dispatchEvent(new PointerEvent("pointerdown", init));
+      const after: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        await new Promise(res =>
+          requestAnimationFrame(() => setTimeout(res, 0)),
+        );
+        after.push(sheet.getBoundingClientRect().top);
+      }
+      handle.dispatchEvent(new PointerEvent("pointerup", init));
+      return { start, before, after };
+    }, SHEET);
+
+    expect(r.start - r.before).toBeGreaterThan(20);
+    for (const top of r.after) {
+      expect(top - r.before).toBeLessThan(1.5);
+      expect(Math.abs(top - r.after[0]!)).toBeLessThan(0.5);
+    }
+  });
+
   test("retarget mid-flight and close land correctly", async ({ page }) => {
     await page.click("#snap-half");
     await page.click("#snap-full");

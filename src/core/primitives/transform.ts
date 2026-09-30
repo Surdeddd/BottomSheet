@@ -15,6 +15,18 @@ export function buildTransformTemplate(
   }
 }
 
+export const offsetFromMatrix = (
+  axis: TransformAxis,
+  m: { m41: number; m42: number },
+): number =>
+  axis === "bottom"
+    ? m.m42
+    : axis === "top"
+      ? -m.m42
+      : axis === "left"
+        ? -m.m41
+        : m.m41;
+
 export const CLOSED_TRANSFORM: Record<TransformAxis, string> = {
   bottom: "translate3d(0, 100%, 0)",
   top: "translate3d(0, -100%, 0)",
