@@ -71,12 +71,20 @@ test.describe("WAAPI settle (opt-in)", () => {
       const handle = sheet.querySelector(".bs-handle") as HTMLElement;
       const start = sheet.getBoundingClientRect().top;
       (document.querySelector("#snap-full") as HTMLElement).click();
-      await new Promise(res => setTimeout(res, 90));
+      const deadline = performance.now() + 4000;
+      while (
+        start - sheet.getBoundingClientRect().top < 20 &&
+        performance.now() < deadline
+      ) {
+        await new Promise(res => requestAnimationFrame(res));
+      }
       let before = NaN;
+      let running = false;
       document.addEventListener(
         "pointerdown",
         () => {
           before = sheet.getBoundingClientRect().top;
+          running = sheet.getAnimations().length > 0;
         },
         { capture: true, once: true },
       );
@@ -98,10 +106,11 @@ test.describe("WAAPI settle (opt-in)", () => {
         after.push(sheet.getBoundingClientRect().top);
       }
       handle.dispatchEvent(new PointerEvent("pointerup", init));
-      return { start, before, after };
+      return { start, before, running, after };
     }, SHEET);
 
     expect(r.start - r.before).toBeGreaterThan(20);
+    expect(r.running).toBe(true);
     for (const top of r.after) {
       expect(top - r.before).toBeLessThan(1.5);
       expect(Math.abs(top - r.after[0]!)).toBeLessThan(0.5);
