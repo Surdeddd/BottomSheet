@@ -430,7 +430,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "rolldown": "^1.2.8",
-    "size-limit": "^13.0.3",
+    "size-limit": "^14.0.0",
     "solid-js": "^1.9.14",
     "svelte": "^5.56.8",
     "three": "^0.185.1",
