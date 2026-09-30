@@ -44,7 +44,7 @@ export const tween = ({
     }
     const step = (now: number) => {
       if (cancelled) return;
-      const elapsed = now - start;
+      const elapsed = Math.max(0, now - start);
       const t = Math.min(elapsed / duration, 1);
       const value = from + (to - from) * easing(t);
       onUpdate(value);

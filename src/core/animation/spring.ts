@@ -49,8 +49,8 @@ export const runSpring = ({
     resolveFn = resolve;
     const step = (now: number) => {
       if (cancelled) return;
-      const dt = Math.min((now - lastTime) / 1000, MAX_DT);
-      lastTime = now;
+      const dt = Math.min(Math.max(0, now - lastTime) / 1000, MAX_DT);
+      lastTime = Math.max(lastTime, now);
 
       const steps = Math.max(1, Math.ceil(dt * 240));
       const subDt = dt / steps;
