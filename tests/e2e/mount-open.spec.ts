@@ -85,7 +85,7 @@ test.describe("mount-open: initial-open and sync snapTo land at resolved sizes",
   test("D: initial-open fit snap heals to natural size and observes the open event", async ({ page }) => {
     const r = await readAll(page);
     expect(r.D).toBeGreaterThan(300);
-    expect(Math.abs(r.D - r.A)).toBeLessThan(6);
+    expect(Math.abs(r.D - r.A)).toBeLessThan(0.5);
     expect(await openCount(page, "D")).toBe("1");
   });
 

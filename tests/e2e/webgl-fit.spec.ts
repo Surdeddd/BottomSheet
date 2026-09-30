@@ -33,6 +33,7 @@ const layout = (page: Page) =>
       lastRowBottom: (
         content.querySelector('[data-row="100"]') as HTMLElement
       ).getBoundingClientRect().bottom,
+      padding: parseFloat(getComputedStyle(content).paddingBottom),
     };
   });
 
@@ -197,7 +198,7 @@ test.describe("WebGL renderer with fitContentToSnap", () => {
     expect(column.pinkBottom).toBeGreaterThan(0);
     expect(Math.abs(column.pinkBottom - l.lastRowBottom)).toBeLessThan(3);
     expect(l.footerTop - column.pinkBottom).toBeGreaterThanOrEqual(0);
-    expect(l.footerTop - column.pinkBottom).toBeLessThan(40);
+    expect(Math.abs(l.footerTop - l.lastRowBottom - l.padding)).toBeLessThan(1);
   });
 
   test("an upward drag reveals the rows that were below the resting edge", async ({

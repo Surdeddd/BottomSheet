@@ -211,6 +211,7 @@ export type EngineFeatureOptions = {
   persistKey?: string;
   autoCollapseAfter?: number;
   fitContentToSnap: boolean;
+  settleAnimation?: "waapi";
 };
 
 export type EngineFeatureContext = {

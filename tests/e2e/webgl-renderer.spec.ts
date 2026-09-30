@@ -317,7 +317,7 @@ test.describe("WebGL renderer", () => {
     }
   });
 
-  test("an idle size change too small to report progress still moves the surface", async ({
+  test("an idle 2px size change still moves the surface", async ({
     page,
   }) => {
     const unsupported = await page.getAttribute("#status", "data-unsupported");

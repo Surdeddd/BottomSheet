@@ -103,6 +103,7 @@ export class BottomSheetCore {
   private closeOnBack: boolean;
   private routedTo: string | undefined;
   private fitContentToSnap: boolean;
+  private settleAnimation: "waapi" | undefined;
   private persistent: boolean;
   private disableCloseFlag: boolean;
   private disableDragFlag: boolean;
@@ -245,6 +246,7 @@ export class BottomSheetCore {
     this.closeOnBack = resolved.closeOnBack;
     this.routedTo = opts.routedTo;
     this.fitContentToSnap = opts.fitContentToSnap === true;
+    this.settleAnimation = opts.settleAnimation;
     this.persistent = resolved.persistent;
     this.disableCloseFlag = resolved.disableClose;
     this.disableDragFlag = resolved.disableDrag;
@@ -368,6 +370,7 @@ export class BottomSheetCore {
         persistKey: this.persistKey,
         autoCollapseAfter,
         fitContentToSnap: this.fitContentToSnap,
+        settleAnimation: this.settleAnimation,
       },
       isDestroyed: () => this.destroyed,
       isDragging: () => this.isDraggingAny(),
@@ -1451,7 +1454,13 @@ export class BottomSheetCore {
     const offset = cap - clamped;
     const style = this.element.style;
     if (!skipTransform) style.transform = this.transformTemplate(offset);
-    if (this.sizeWriteSentinel.shouldWrite(clamped, SIZE_WRITE_EPSILON)) {
+    const sizeChanged = this.sizeWriteSentinel.shouldWrite(
+      clamped,
+      this.animation.isAnimating || this.isDraggingAny()
+        ? SIZE_WRITE_EPSILON
+        : 0,
+    );
+    if (sizeChanged) {
       style.setProperty("--bs-size", `${clamped}px`);
       if (this.scrimParent) {
         this.scrimParent.style.setProperty("--bs-size", `${clamped}px`);
@@ -1483,7 +1492,10 @@ export class BottomSheetCore {
     }
 
     this.scrim.applyOpacity(progress, progressChanged);
-    if (progressChanged && this.bus.listenerCount("progress") > 0) {
+    if (
+      (progressChanged || sizeChanged) &&
+      this.bus.listenerCount("progress") > 0
+    ) {
       this.progressPayload.value = progress;
       this.progressPayload.size = clamped;
       this.emit("progress", this.progressPayload);

@@ -44,6 +44,7 @@ const measure = (page: Page, adapter: Adapter) =>
       contentBottom,
       lastRowBottom: last.getBoundingClientRect().bottom,
       scrolled: content.scrollTop,
+      padding: parseFloat(getComputedStyle(content).paddingBottom),
     };
   }, adapter);
 
@@ -72,7 +73,7 @@ test.describe("fitContentToSnap through every adapter", () => {
       expect(Math.abs(m.footerBottom - m.viewport)).toBeLessThan(1.5);
       expect(m.scrolled).toBeGreaterThan(0);
       expect(m.lastRowBottom).toBeLessThanOrEqual(m.footerTop + 1);
-      expect(m.footerTop - m.lastRowBottom).toBeLessThan(40);
+      expect(Math.abs(m.footerTop - m.lastRowBottom - m.padding)).toBeLessThan(1);
     });
 
     test(`${adapter}: the scroll container ends where the footer starts at half`, async ({

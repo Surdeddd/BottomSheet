@@ -6,6 +6,8 @@ export type SettleSamples = {
   durationMs: number;
 };
 
+export const SETTLE_ANIMATION_ID = "bs-settle";
+
 const SIM_HZ = 240;
 const SAMPLE_STRIDE = 4;
 const MAX_SIM_MS = 3000;

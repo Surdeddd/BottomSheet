@@ -329,19 +329,6 @@ describe("fitContentToSnap", () => {
     engine.destroy();
   });
 
-  it("replaces a rounded-off resting size with the exact one", async () => {
-    const n = makeSheet();
-    const engine = build(n, { fitContentToSnap: true });
-    await engine.open("half");
-    n.sheet.style.setProperty("--bs-size", "399.6px");
-
-    window.dispatchEvent(new Event("orientationchange"));
-    await sleep(20);
-
-    expect(n.sheet.style.getPropertyValue("--bs-size")).toBe("400px");
-    engine.destroy();
-  });
-
   it("does nothing for a sheet that is not on the bottom edge", async () => {
     const n = makeSheet();
     const engine = build(n, { fitContentToSnap: true, mode: "top" });
@@ -417,5 +404,154 @@ describe("fitContentToSnap", () => {
     expect(n.sheet.hasAttribute("data-bs-fit-content")).toBe(false);
     core.destroy();
     warn.mockRestore();
+  });
+});
+
+describe("fitContentToSnap with a compositor-driven settle", () => {
+  beforeEach(() => {
+    __resetSheetStackForTests();
+    __resetScrollLockForTests();
+    __resetCssLengthProbeForTests();
+    document.body.innerHTML = "";
+    Object.defineProperty(window, "innerHeight", {
+      value: 1000,
+      configurable: true,
+    });
+  });
+
+  const withFakeSettle = (n: Nodes) => {
+    const footer = document.createElement("div");
+    footer.className = "bs-footer";
+    n.sheet.append(footer);
+    let frames: Keyframe[] = [];
+    let duration = 0;
+    let finish: () => void = () => {};
+    const settle = {
+      id: "",
+      currentTime: 40 as number | null,
+      startTime: 1000 as number | null,
+      ready: Promise.resolve(),
+      playState: "running",
+      finished: new Promise<void>(resolve => {
+        finish = () => {
+          settle.playState = "finished";
+          resolve();
+        };
+      }),
+      cancel: vi.fn(),
+      effect: {
+        getKeyframes: () =>
+          frames.map((f, i) => ({
+            ...f,
+            offset: null,
+            computedOffset: i / Math.max(1, frames.length - 1),
+          })),
+        getTiming: () => ({ duration }),
+      },
+    };
+    Object.assign(n.sheet, {
+      animate: (next: Keyframe[], opts: KeyframeAnimationOptions) => {
+        frames = next;
+        duration = Number(opts.duration);
+        return settle;
+      },
+      getAnimations: () => [settle],
+    });
+    const follower = {
+      currentTime: null as number | null,
+      startTime: null as number | null,
+      cancel: vi.fn(),
+    };
+    const calls: { frames: Keyframe[]; opts: KeyframeAnimationOptions }[] = [];
+    Object.assign(footer, {
+      animate: (next: Keyframe[], opts: KeyframeAnimationOptions) => {
+        calls.push({ frames: next, opts });
+        return follower;
+      },
+    });
+    return {
+      settle,
+      follower,
+      calls,
+      sheetFrames: () => frames,
+      duration: () => duration,
+      finish: () => finish(),
+    };
+  };
+
+  it("moves the footer on the same timeline as the sheet", async () => {
+    const n = makeSheet();
+    const fake = withFakeSettle(n);
+    const engine = new BottomSheetEngine({
+      element: n.sheet,
+      handle: n.handle,
+      scrollContainer: n.content,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 400 },
+        { id: "full", size: 800 },
+      ],
+      initial: "half",
+      animation: "tween",
+      duration: 160,
+      respectReducedMotion: false,
+      settleAnimation: "waapi",
+      fitContentToSnap: true,
+    });
+
+    void engine.snapTo("full");
+    await sleep(60);
+
+    expect(fake.settle.id).toBe("bs-settle");
+    expect(fake.calls).toHaveLength(1);
+    const { frames, opts } = fake.calls[0]!;
+    const sheetFrames = fake.sheetFrames();
+    expect(frames).toHaveLength(sheetFrames.length);
+    frames.forEach((frame, i) => {
+      const offset = parseFloat(
+        /translate3d\(0, (-?[\d.]+)px/.exec(String(sheetFrames[i]!.transform))![1]!,
+      );
+      expect(frame.transform).toBe(
+        `translateY(${-Math.min(Math.max(offset, 0), BOX)}px)`,
+      );
+    });
+    expect(opts.duration).toBe(fake.duration());
+    expect(opts.easing).toBe("linear");
+    expect(opts.fill).toBe("forwards");
+    expect(fake.follower.startTime).toBe(1000);
+
+    fake.finish();
+    await sleep(20);
+    expect(fake.follower.cancel).toHaveBeenCalled();
+    engine.destroy();
+  });
+
+  it("never asks for the sheet's animations when the settle runs on the main thread", async () => {
+    const n = makeSheet();
+    const getAnimations = vi.fn(() => []);
+    Object.assign(n.sheet, { getAnimations });
+    const engine = new BottomSheetEngine({
+      element: n.sheet,
+      handle: n.handle,
+      scrollContainer: n.content,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 400 },
+        { id: "full", size: 800 },
+      ],
+      initial: "half",
+      animation: "tween",
+      duration: 160,
+      respectReducedMotion: false,
+      fitContentToSnap: true,
+    });
+
+    void engine.snapTo("full");
+    await sleep(60);
+    expect(engine.state.isAnimating).toBe(true);
+    await sleep(160);
+
+    expect(getAnimations).not.toHaveBeenCalled();
+    engine.destroy();
   });
 });

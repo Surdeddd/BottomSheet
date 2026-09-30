@@ -2,6 +2,7 @@ import { tween, type Tween, easeOutBack } from "../animation/animation";
 import { runSpring, type SpringHandle } from "../animation/spring";
 import { resolveAnimationPreset } from "../animation/animation-presets";
 import {
+  SETTLE_ANIMATION_ID,
   sampleSpringSettle,
   sampleTweenSettle,
   type SettleSamples,
@@ -139,6 +140,7 @@ export class AnimationRunner {
   async animateTo(target: number, velocityPxPerMs: number): Promise<void> {
     if (target === this.getSize()) {
       if (!this.isAnimating && !this.isDragging()) {
+        this.applySizeFn(target);
         this.element.style.willChange = "";
       }
       return;
@@ -186,6 +188,7 @@ export class AnimationRunner {
       }
     }
 
+    let current = false;
     if (this.animationKind === "spring") {
       const spring = runSpring({
         from: this.getSize(),
@@ -196,7 +199,8 @@ export class AnimationRunner {
       });
       this.currentSpring = spring;
       await spring.promise;
-      if (this.currentSpring === spring) this.currentSpring = null;
+      current = this.currentSpring === spring;
+      if (current) this.currentSpring = null;
     } else {
       const tw = tween({
         from: this.getSize(),
@@ -207,11 +211,15 @@ export class AnimationRunner {
       });
       this.currentTween = tw;
       await tw.promise;
-      if (this.currentTween === tw) this.currentTween = null;
+      current = this.currentTween === tw;
+      if (current) this.currentTween = null;
     }
     if (!this.isAnimating) {
       this.getRootEl()?.removeAttribute("data-animating");
-      if (!this.isDragging()) this.element.style.willChange = "";
+      if (!this.isDragging()) {
+        if (current) this.applySizeFn(this.getSize());
+        this.element.style.willChange = "";
+      }
     }
   }
 
@@ -229,6 +237,7 @@ export class AnimationRunner {
       easing: "linear",
       fill: "forwards",
     });
+    anim.id = SETTLE_ANIMATION_ID;
 
     let stopped = false;
     let auxRaf = 0;

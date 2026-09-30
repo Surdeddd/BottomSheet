@@ -163,25 +163,35 @@ test.describe("fitContentToSnap keeps the whole list reachable", () => {
       const last = document.querySelector(
         '.bs-content[data-case="fit"] [data-row="100"]',
       ) as HTMLElement;
-      const vh = window.innerHeight;
-      const gaps: number[] = [];
+      const gap = (): number =>
+        window.innerHeight - last.getBoundingClientRect().bottom;
+      const painted = (): Promise<void> =>
+        new Promise(resolve =>
+          requestAnimationFrame(() => {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = () => resolve();
+            channel.port2.postMessage(0);
+          }),
+        );
+      const start = gap();
+      const drift: number[] = [];
       let done = false;
       void sheets.fit!.snapTo("full").then(() => {
         done = true;
       });
       while (!done) {
-        gaps.push(vh - last.getBoundingClientRect().bottom);
-        await new Promise(r => requestAnimationFrame(r));
+        await painted();
+        drift.push(Math.abs(gap() - start));
       }
-      for (let i = 0; i < 6; i++) {
-        gaps.push(vh - last.getBoundingClientRect().bottom);
-        await new Promise(r => requestAnimationFrame(r));
+      for (let i = 0; i < 4; i++) {
+        await painted();
+        drift.push(Math.abs(gap() - start));
       }
-      return { gaps, worst: Math.max(...gaps.map(Math.abs)) };
+      return { frames: drift.length, worst: Math.max(...drift) };
     });
 
-    expect(track.gaps.length).toBeGreaterThan(4);
-    expect(track.worst).toBeLessThan(48);
+    expect(track.frames).toBeGreaterThan(4);
+    expect(track.worst).toBeLessThan(2);
   });
 
   test("a list scrolled to the middle keeps its scroll position across an expand", async ({
@@ -215,31 +225,41 @@ test.describe("fitContentToSnap keeps the whole list reachable", () => {
     const startY = box.y + box.height / 2;
 
     const gapNow = (): Promise<number> =>
-      page.evaluate(() => {
-        const last = document.querySelector(
-          '.bs-content[data-case="fit"] [data-row="100"]',
-        ) as HTMLElement;
-        return window.innerHeight - last.getBoundingClientRect().bottom;
-      });
+      page.evaluate(
+        () =>
+          new Promise<number>(resolve =>
+            requestAnimationFrame(() => {
+              const channel = new MessageChannel();
+              channel.port1.onmessage = () => {
+                const last = document.querySelector(
+                  '.bs-content[data-case="fit"] [data-row="100"]',
+                ) as HTMLElement;
+                resolve(window.innerHeight - last.getBoundingClientRect().bottom);
+              };
+              channel.port2.postMessage(0);
+            }),
+          ),
+      );
 
+    const start = await gapNow();
     await page.mouse.move(x, startY);
     await page.mouse.down();
-    const gaps: number[] = [];
+    const drift: number[] = [];
     for (let step = 1; step <= 10; step++) {
       await page.mouse.move(x, startY - step * 18);
       await page.waitForTimeout(24);
-      gaps.push(await gapNow());
+      drift.push(Math.abs((await gapNow()) - start));
     }
     await page.mouse.up();
     await page.waitForTimeout(500);
-    gaps.push(await gapNow());
+    drift.push(Math.abs((await gapNow()) - start));
 
     const size = await page.evaluate(
       () =>
         (window as unknown as { bsSheets: Sheets }).bsSheets.fit!.state.size,
     );
     expect(size).toBeGreaterThan(0);
-    expect(Math.max(...gaps.map(Math.abs))).toBeLessThan(48);
+    expect(Math.max(...drift)).toBeLessThan(2);
   });
 
   test("a sheet without the option is left exactly as it was", async ({
@@ -342,11 +362,12 @@ test.describe("fitContentToSnap keeps the footer on the visible edge", () => {
       return {
         lastBottom: last.getBoundingClientRect().bottom,
         footerTop: footer.getBoundingClientRect().top,
+        padding: parseFloat(getComputedStyle(content).paddingBottom),
       };
     });
 
     expect(r.lastBottom).toBeLessThanOrEqual(r.footerTop + 1);
-    expect(r.footerTop - r.lastBottom).toBeLessThan(40);
+    expect(Math.abs(r.footerTop - r.lastBottom - r.padding)).toBeLessThan(1);
   });
 
   test("the footer rides the visible edge on every frame of an expand", async ({
@@ -462,7 +483,6 @@ test.describe("fitContentToSnap keeps the footer on the visible edge", () => {
 
   test("a compositor-driven settle carries the footer along with it", async ({
     page,
-    browserName,
   }) => {
     await openAt(page, "fitWaapi", "half");
     const up = await trackFooter(page, "fitWaapi", "snapTo", "full");
@@ -470,7 +490,7 @@ test.describe("fitContentToSnap keeps the footer on the visible edge", () => {
     const worst = Math.max(...[...up.edge, ...down.edge].map(Math.abs));
 
     expect(up.edge.length).toBeGreaterThan(4);
-    expect(worst).toBeLessThan(browserName === "webkit" ? 24 : 6);
+    expect(worst).toBeLessThan(3);
     expect(Math.abs(down.edge.at(-1)!)).toBeLessThan(0.1);
   });
 
@@ -616,7 +636,7 @@ test.describe("fitContentToSnap sizes the scroll container to what is on screen"
   });
 
   for (const name of ["fit", "fitFooter"]) {
-    test(`${name}: at rest the layout follows a size change too small to report progress`, async ({
+    test(`${name}: at rest the layout follows a 2px change of the snap`, async ({
       page,
     }) => {
       await openAt(page, name, "half");

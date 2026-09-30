@@ -9,6 +9,8 @@ import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack"
 import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
 import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import { makeDom } from "./_helpers/makeDom";
+import { easeOutCubic } from "../../src/core/animation/animation";
+import { AnimationRunner } from "../../src/core/controllers/animation-runner";
 
 describe("Hot-path threshold regressions", () => {
   beforeEach(() => {
@@ -22,7 +24,45 @@ describe("Hot-path threshold regressions", () => {
   });
 
   describe("--bs-size write dedup (SIZE_WRITE_EPSILON)", () => {
-    it(`skips --bs-size CSSOM write when delta is below ${SIZE_WRITE_EPSILON}px`, async () => {
+    const sizeWrites = (spy: { mock: { calls: unknown[][] } }): number =>
+      spy.mock.calls.filter(c => c[0] === "--bs-size").length;
+
+    it(`skips a --bs-size write for a drag step below ${SIZE_WRITE_EPSILON}px`, () => {
+      const { sheet, handle } = makeDom();
+      const engine = new BottomSheetEngine({
+        element: sheet,
+        handle,
+        snapPoints: [
+          { id: "a", size: 100 },
+          { id: "b", size: 800 },
+        ],
+        initial: "a",
+        animation: "tween",
+        duration: 0,
+        respectReducedMotion: false,
+      });
+      const move = (type: string, clientY: number): void => {
+        handle.dispatchEvent(
+          new PointerEvent(type, { clientY, pointerId: 1, button: 0 }),
+        );
+      };
+
+      move("pointerdown", 600);
+      move("pointermove", 500);
+      const setProperty = vi.spyOn(sheet.style, "setProperty");
+
+      move("pointermove", 499.7);
+      expect(sizeWrites(setProperty)).toBe(0);
+
+      move("pointermove", 498);
+      expect(sizeWrites(setProperty)).toBeGreaterThan(0);
+
+      move("pointerup", 498);
+      setProperty.mockRestore();
+      engine.destroy();
+    });
+
+    it("writes a sub-pixel size change made while the sheet is at rest", async () => {
       const { sheet, handle } = makeDom();
       const engine = new BottomSheetEngine({
         element: sheet,
@@ -38,22 +78,67 @@ describe("Hot-path threshold regressions", () => {
       });
 
       await engine.dragTo(500);
-      const setProperty = vi.spyOn(sheet.style, "setProperty");
-
       await engine.dragTo(500.3);
-      const sizeWritesAfterTinyDelta = setProperty.mock.calls.filter(
-        c => c[0] === "--bs-size",
-      ).length;
-      expect(sizeWritesAfterTinyDelta).toBe(0);
 
-      await engine.dragTo(502);
-      const sizeWritesAfterRealDelta = setProperty.mock.calls.filter(
-        c => c[0] === "--bs-size",
-      ).length;
-      expect(sizeWritesAfterRealDelta).toBeGreaterThan(0);
-
-      setProperty.mockRestore();
+      expect(sheet.style.getPropertyValue("--bs-size")).toBe("500.3px");
       engine.destroy();
+    });
+
+    it("leaves the exact size in --bs-size once an animation ends in sub-pixel steps", async () => {
+      const { sheet, handle } = makeDom();
+      const engine = new BottomSheetEngine({
+        element: sheet,
+        handle,
+        snapPoints: [
+          { id: "a", size: 400 },
+          { id: "b", size: 800 },
+        ],
+        initial: "a",
+        animation: "tween",
+        duration: 160,
+        easing: easeOutCubic,
+        respectReducedMotion: false,
+      });
+      let queue: FrameRequestCallback[] = [];
+      vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+        queue.push(cb);
+        return queue.length;
+      });
+      vi.stubGlobal("cancelAnimationFrame", () => {});
+
+      const done = engine.snapTo("b");
+      let now = performance.now();
+      for (let i = 0; i < 16; i++) {
+        now += 16;
+        const batch = queue;
+        queue = [];
+        for (const cb of batch) cb(now);
+      }
+      await done;
+      vi.unstubAllGlobals();
+
+      expect(engine.state.size).toBe(800);
+      expect(sheet.style.getPropertyValue("--bs-size")).toBe("800px");
+      engine.destroy();
+    });
+
+    it("an animation to the size the sheet already has still commits that size", async () => {
+      const applySize = vi.fn();
+      const runner = new AnimationRunner(
+        {
+          element: document.createElement("div"),
+          getRootEl: () => null,
+          applySize,
+          getSize: () => 440,
+          isDragging: () => false,
+        },
+        { animation: "tween", duration: 160, respectReducedMotion: false },
+      );
+
+      await runner.animateTo(440, 0);
+
+      expect(applySize).toHaveBeenCalledWith(440);
+      runner.destroy();
     });
   });
 
