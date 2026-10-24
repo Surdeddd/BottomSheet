@@ -340,17 +340,17 @@ and emits its open sequence once on reveal. See
 The scrim is the dim layer behind/around the sheet (`screenComponent`). All
 scrim properties can be mutated at runtime — no remount needed.
 
-| Method                                                 | Purpose                                                                                                                                          |         |                                                                        |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ---------------------------------------------------------------------- |
-| `setScrimMode('full' \                                 | 'above-sheet' \                                                                                                                                  | 'off')` | Switch positioning at runtime. `'off'` fully disables the scrim layer. |
-| `setScrimEnabled(boolean)`                             | Convenience switch — stashes/restores opacity ranges.                                                                                            |         |                                                                        |
-| `setScrimTapToClose(boolean)`                          | Install/teardown click-to-close on the scrim.                                                                                                    |         |                                                                        |
-| `setScrimColor(color \                                 | null)` / `setScrimBlur(blur \                                                                                                                    | null)`  | Live color & backdrop-filter blur. `null` clears.                      |
-| `setScrimInteractive(boolean)`                         | Toggle `pointer-events` on the scrim layer.                                                                                                      |         |                                                                        |
-| `setBackdropRange([s, e])` / `setScreenRange([s, e])`  | Opacity-range mapping (progress 0..1 → opacity 0..1).                                                                                            |         |                                                                        |
-| `setScrim({ ... })`                                    | Batch — applies preset + individual fields in one pass with a single `applySize`.                                                                |         |                                                                        |
-| `setScrimOverlay({ children, position, interactive })` | Inject a positioned floating element into the scrim area. Returns a teardown. Useful for monitoring-style "dim everything except this badge" UX. |         |                                                                        |
-| `getScrimState()`                                      | Read-only `{ mode, enabled }` snapshot. Stable public API for introspection without coupling to internals.                                       |         |                                                                        |
+| Method | Purpose |
+| --- | --- |
+| `setScrimMode('full' \| 'above-sheet' \| 'off')` | Switch positioning at runtime. `'off'` fully disables the scrim layer. |
+| `setScrimEnabled(boolean)` | Convenience switch — stashes/restores opacity ranges. |
+| `setScrimTapToClose(boolean)` | Install/teardown click-to-close on the scrim. |
+| `setScrimColor(color \| null)` / `setScrimBlur(blur \| null)` | Live color & backdrop-filter blur. `null` clears. |
+| `setScrimInteractive(boolean)` | Toggle `pointer-events` on the scrim layer. |
+| `setBackdropRange([s, e])` / `setScreenRange([s, e])` | Opacity-range mapping (progress 0..1 → opacity 0..1). |
+| `setScrim({ ... })` | Batch — applies preset + individual fields in one pass with a single `applySize`. |
+| `setScrimOverlay({ children, position, interactive })` | Inject a positioned floating element into the scrim area. Returns a teardown. Useful for monitoring-style "dim everything except this badge" UX. |
+| `getScrimState()` | Read-only `{ mode, enabled }` snapshot. Stable public API for introspection without coupling to internals. |
 
 **Presets**: `'subtle' | 'standard' | 'monitoring' | 'cinematic'` — use via `scrimPreset` constructor option or `setScrim({ preset })`.
 
@@ -359,11 +359,11 @@ scrim properties can be mutated at runtime — no remount needed.
 The overlay engine (`@surdeddd/bottom-sheet/overlay`) is a standalone slide-up
 panel that mirrors the scrim's runtime-mutability story for content.
 
-| Method                          | Purpose                                                                                         |           |                                                                                                      |
-| ------------------------------- | ----------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `setOverlayChildren(node \      | fragment \                                                                                      | factory)` | Replace overlay contents at runtime. Pass a `Node`, a `DocumentFragment`, or a `() => Node` factory. |
-| `clearOverlayChildren()`        | Remove any injected content.                                                                    |           |                                                                                                      |
-| `setOverlay({ children, ... })` | Batch update — `children` is one of the accepted fields alongside positioning/preset overrides. |           |                                                                                                      |
+| Method | Purpose |
+| --- | --- |
+| `setOverlayChildren(node \| fragment \| factory)` | Replace overlay contents at runtime. Pass a `Node`, a `DocumentFragment`, or a `() => Node` factory. |
+| `clearOverlayChildren()` | Remove any injected content. |
+| `setOverlay({ children, ... })` | Batch update — `children` is one of the accepted fields alongside positioning/preset overrides. |
 
 **Presets**: `OverlayPreset` is `'sheet' | 'dialog' | 'sidebar' | 'toast'` —
 exposed as the `OVERLAY_PRESETS` const map and accepted by `setOverlay({ preset })`.

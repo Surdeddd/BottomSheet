@@ -342,17 +342,17 @@ engine.destroy(); // remove listeners + cancel animation
 Scrim — это затемняющий слой за sheet или вокруг него (`screenComponent`). Все
 свойства scrim можно менять в рантайме — перемонтирование не нужно.
 
-| Метод                                                  | Назначение                                                                                                                                       |         |                                                                        |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ---------------------------------------------------------------------- |
-| `setScrimMode('full' \                                 | 'above-sheet' \                                                                                                                                  | 'off')` | Переключает позиционирование в рантайме. `'off'` полностью отключает слой scrim. |
-| `setScrimEnabled(boolean)`                             | Удобный переключатель — сохраняет/восстанавливает диапазоны opacity.                                                                             |         |                                                                        |
-| `setScrimTapToClose(boolean)`                          | Устанавливает/снимает закрытие по клику на scrim.                                                                                                |         |                                                                        |
-| `setScrimColor(color \                                 | null)` / `setScrimBlur(blur \                                                                                                                    | null)`  | Живое изменение цвета и blur через backdrop-filter. `null` сбрасывает. |
-| `setScrimInteractive(boolean)`                         | Переключает `pointer-events` на слое scrim.                                                                                                      |         |                                                                        |
-| `setBackdropRange([s, e])` / `setScreenRange([s, e])`  | Отображение диапазона на opacity (progress 0..1 → opacity 0..1).                                                                                 |         |                                                                        |
-| `setScrim({ ... })`                                    | Пакетное обновление — применяет preset и отдельные поля за один проход с единственным `applySize`.                                               |         |                                                                        |
-| `setScrimOverlay({ children, position, interactive })` | Вставляет позиционированный плавающий элемент в область scrim. Возвращает функцию снятия. Полезно для мониторинговых UX вида «затемнить всё, кроме этого бейджа». |         |                                                                        |
-| `getScrimState()`                                      | Read-only снимок `{ mode, enabled }`. Стабильный публичный API для интроспекции без привязки к внутренностям.                                    |         |                                                                        |
+| Метод | Назначение |
+| --- | --- |
+| `setScrimMode('full' \| 'above-sheet' \| 'off')` | Переключает позиционирование в рантайме. `'off'` полностью отключает слой scrim. |
+| `setScrimEnabled(boolean)` | Удобный переключатель — сохраняет/восстанавливает диапазоны opacity. |
+| `setScrimTapToClose(boolean)` | Устанавливает/снимает закрытие по клику на scrim. |
+| `setScrimColor(color \| null)` / `setScrimBlur(blur \| null)` | Живое изменение цвета и blur через backdrop-filter. `null` сбрасывает. |
+| `setScrimInteractive(boolean)` | Переключает `pointer-events` на слое scrim. |
+| `setBackdropRange([s, e])` / `setScreenRange([s, e])` | Отображение диапазона на opacity (progress 0..1 → opacity 0..1). |
+| `setScrim({ ... })` | Пакетное обновление — применяет preset и отдельные поля за один проход с единственным `applySize`. |
+| `setScrimOverlay({ children, position, interactive })` | Вставляет позиционированный плавающий элемент в область scrim. Возвращает функцию снятия. Полезно для мониторинговых UX вида «затемнить всё, кроме этого бейджа». |
+| `getScrimState()` | Read-only снимок `{ mode, enabled }`. Стабильный публичный API для интроспекции без привязки к внутренностям. |
 
 **Пресеты**: `'subtle' | 'standard' | 'monitoring' | 'cinematic'` — задаются опцией конструктора `scrimPreset` или через `setScrim({ preset })`.
 
@@ -361,11 +361,11 @@ Scrim — это затемняющий слой за sheet или вокруг 
 Overlay-движок (`@surdeddd/bottom-sheet/overlay`) — это отдельная выезжающая
 панель, которая повторяет для контента ту же runtime-изменяемость, что и scrim.
 
-| Метод                           | Назначение                                                                                      |           |                                                                                                      |
-| ------------------------------- | ----------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `setOverlayChildren(node \      | fragment \                                                                                      | factory)` | Заменяет содержимое overlay в рантайме. Принимает `Node`, `DocumentFragment` или фабрику `() => Node`. |
-| `clearOverlayChildren()`        | Удаляет вставленный контент.                                                                    |           |                                                                                                      |
-| `setOverlay({ children, ... })` | Пакетное обновление — `children` входит в число допустимых полей наряду с позиционированием и переопределениями preset. |           |                                                                                                      |
+| Метод | Назначение |
+| --- | --- |
+| `setOverlayChildren(node \| fragment \| factory)` | Заменяет содержимое overlay в рантайме. Принимает `Node`, `DocumentFragment` или фабрику `() => Node`. |
+| `clearOverlayChildren()` | Удаляет вставленный контент. |
+| `setOverlay({ children, ... })` | Пакетное обновление — `children` входит в число допустимых полей наряду с позиционированием и переопределениями preset. |
 
 **Пресеты**: `OverlayPreset` — это `'sheet' | 'dialog' | 'sidebar' | 'toast'`;
 доступны как константа-словарь `OVERLAY_PRESETS` и принимаются в `setOverlay({ preset })`.
