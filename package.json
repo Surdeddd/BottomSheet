@@ -419,7 +419,7 @@
     "esbuild-plugin-solid": "^0.6.0",
     "esbuild-svelte": "0.9.5",
     "fast-check": "^4.9.0",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^21.0.4",
     "husky": "^9.1.7",
     "lit": "^3.3.3",
     "motion": "^13.1.0",
