@@ -177,3 +177,5 @@ export function createBottomSheet<TId extends string = string>(
     getEngine: () => engine,
   };
 }
+
+export { resolveTeleportTarget, teleportElements };

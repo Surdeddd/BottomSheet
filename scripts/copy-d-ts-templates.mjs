@@ -27,18 +27,29 @@ for (const [src, dst] of pairs) {
   console.log(`✓ ${cts}`);
 }
 
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readdirSync } from "node:fs";
 
 const svelteSrcDir = resolve(root, "dist/svelte-src");
 mkdirSync(svelteSrcDir, { recursive: true });
 const sfc = readFileSync(resolve(root, "src/svelte/BottomSheet.svelte"), "utf8")
   .replaceAll('from "../core/BottomSheetEngine"', 'from "@surdeddd/bottom-sheet"')
-  .replaceAll('from "../core/types"', 'from "@surdeddd/bottom-sheet"');
+  .replaceAll('from "../core/types"', 'from "@surdeddd/bottom-sheet"')
+  .replaceAll('from "../core/features/teleport"', 'from "../svelte-core.js"');
 writeFileSync(resolve(svelteSrcDir, "BottomSheet.svelte"), sfc);
 writeFileSync(
   resolve(svelteSrcDir, "index.js"),
   'export { default as BottomSheet } from "./BottomSheet.svelte";\nexport { createBottomSheet } from "../svelte-core.js";\n',
 );
+for (const file of readdirSync(svelteSrcDir)) {
+  const text = readFileSync(resolve(svelteSrcDir, file), "utf8");
+  for (const m of text.matchAll(/(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) {
+    if (!existsSync(resolve(svelteSrcDir, m[1]))) {
+      throw new Error(
+        `dist/svelte-src/${file} imports "${m[1]}", which does not exist in dist/. Rewrite it in scripts/copy-d-ts-templates.mjs.`,
+      );
+    }
+  }
+}
 console.log("✓ dist/svelte-src (svelte export condition source)");
 
 const cssTypeTargets = [

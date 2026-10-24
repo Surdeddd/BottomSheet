@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, beforeAll } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -41,5 +41,23 @@ describe("@surdeddd/bottom-sheet/svelte", () => {
     expect(mod).not.toHaveProperty("createSignal");
     expect(mod).not.toHaveProperty("useSyncExternalStore");
     expect(mod).not.toHaveProperty("component$");
+  });
+
+  it("ships a svelte-src whose relative imports all resolve inside dist/", () => {
+    const srcDir = resolve(distDir, "svelte-src");
+    const unresolved: string[] = [];
+    for (const file of readdirSync(srcDir)) {
+      const source = readFileSync(resolve(srcDir, file), "utf8");
+      for (const m of source.matchAll(/(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) {
+        if (!existsSync(resolve(srcDir, m[1]!))) unresolved.push(`${file}: ${m[1]}`);
+      }
+    }
+    expect(unresolved).toEqual([]);
+  });
+
+  it("exposes the teleport helpers that the svelte-src component imports", async () => {
+    const core = await import(resolve(distDir, "svelte-core.js"));
+    expect(core.resolveTeleportTarget).toBeTypeOf("function");
+    expect(core.teleportElements).toBeTypeOf("function");
   });
 });
