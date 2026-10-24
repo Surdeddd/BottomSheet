@@ -1,5 +1,7 @@
 # @surdeddd/bottom-sheet
 
+Русская версия: [README.ru.md](https://github.com/Surdeddd/BottomSheet/blob/main/README.ru.md)
+
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
 ![bundle](https://img.shields.io/badge/core-%E2%89%A424%20KB%20gzip%20budget-1a1614?style=flat-square)
