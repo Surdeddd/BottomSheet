@@ -162,19 +162,21 @@ type SheetAnchoredCase = {
   transform: string | null;
 };
 
+const SHEET_ANCHOR = "calc(var(--bs-size, 0px) + 16px)";
+
 const sheetAnchoredCases: SheetAnchoredCase[] = [
-  { mode: "bottom", position: "sheet-top-left",   top: null, bottom: null, left: "16px", right: null,   transform: null },
-  { mode: "bottom", position: "sheet-top-center", top: null, bottom: null, left: "50%",  right: null,   transform: "translateX(-50%)" },
-  { mode: "bottom", position: "sheet-top-right",  top: null, bottom: null, left: null,   right: "16px", transform: null },
-  { mode: "top",    position: "sheet-top-left",   top: null, bottom: null, left: "16px", right: null,   transform: null },
-  { mode: "top",    position: "sheet-top-center", top: null, bottom: null, left: "50%",  right: null,   transform: "translateX(-50%)" },
-  { mode: "top",    position: "sheet-top-right",  top: null, bottom: null, left: null,   right: "16px", transform: null },
-  { mode: "left",   position: "sheet-top-left",   top: "16px", bottom: null,   left: null, right: null, transform: null },
-  { mode: "left",   position: "sheet-top-center", top: "50%",  bottom: null,   left: null, right: null, transform: "translateY(-50%)" },
-  { mode: "left",   position: "sheet-top-right",  top: null,   bottom: "16px", left: null, right: null, transform: null },
-  { mode: "right",  position: "sheet-top-left",   top: "16px", bottom: null,   left: null, right: null, transform: null },
-  { mode: "right",  position: "sheet-top-center", top: "50%",  bottom: null,   left: null, right: null, transform: "translateY(-50%)" },
-  { mode: "right",  position: "sheet-top-right",  top: null,   bottom: "16px", left: null, right: null, transform: null },
+  { mode: "bottom", position: "sheet-top-left",   top: null, bottom: SHEET_ANCHOR, left: "16px", right: null,   transform: null },
+  { mode: "bottom", position: "sheet-top-center", top: null, bottom: SHEET_ANCHOR, left: "50%",  right: null,   transform: "translateX(-50%)" },
+  { mode: "bottom", position: "sheet-top-right",  top: null, bottom: SHEET_ANCHOR, left: null,   right: "16px", transform: null },
+  { mode: "top",    position: "sheet-top-left",   top: SHEET_ANCHOR, bottom: null, left: "16px", right: null,   transform: null },
+  { mode: "top",    position: "sheet-top-center", top: SHEET_ANCHOR, bottom: null, left: "50%",  right: null,   transform: "translateX(-50%)" },
+  { mode: "top",    position: "sheet-top-right",  top: SHEET_ANCHOR, bottom: null, left: null,   right: "16px", transform: null },
+  { mode: "left",   position: "sheet-top-left",   top: "16px", bottom: null,   left: SHEET_ANCHOR, right: null, transform: null },
+  { mode: "left",   position: "sheet-top-center", top: "50%",  bottom: null,   left: SHEET_ANCHOR, right: null, transform: "translateY(-50%)" },
+  { mode: "left",   position: "sheet-top-right",  top: null,   bottom: "16px", left: SHEET_ANCHOR, right: null, transform: null },
+  { mode: "right",  position: "sheet-top-left",   top: "16px", bottom: null,   left: null, right: SHEET_ANCHOR, transform: null },
+  { mode: "right",  position: "sheet-top-center", top: "50%",  bottom: null,   left: null, right: SHEET_ANCHOR, transform: "translateY(-50%)" },
+  { mode: "right",  position: "sheet-top-right",  top: null,   bottom: "16px", left: null, right: SHEET_ANCHOR, transform: null },
 ];
 
 describe("resolveSheetAnchoredStyle (pure helper) — full 4×3 matrix incl. anchor edge", () => {

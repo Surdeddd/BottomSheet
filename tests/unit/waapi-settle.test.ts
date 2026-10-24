@@ -70,6 +70,7 @@ describe("waapi settle samplers", () => {
 describe("waapi settle engine path", () => {
   it("falls back to rAF animation when element.animate is missing (happy-dom)", async () => {
     const n = makeSheet();
+    Object.defineProperty(n.sheet, "animate", { value: undefined, configurable: true });
     const engine = new BottomSheetEngine({
       element: n.sheet,
       handle: n.handle,

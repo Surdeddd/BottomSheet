@@ -1545,6 +1545,20 @@ describe("BottomSheetEngine — scrim runtime setters", () => {
 
   it("setScrimBlur writes blur(...) on backdrop-filter and the WebKit prefix", () => {
     const { sheet, handle, screen } = makeDomWithScrim();
+    let webkitFilter: string | undefined;
+    const realStyle = screen.style;
+    Object.defineProperty(screen, "style", {
+      configurable: true,
+      value: new Proxy(realStyle, {
+        set(target, key, value) {
+          if (key === "webkitBackdropFilter") {
+            webkitFilter = value as string;
+            return true;
+          }
+          return Reflect.set(target, key, value);
+        },
+      }),
+    });
     const engine = new BottomSheetEngine({
       element: sheet,
       handle,
@@ -1557,8 +1571,7 @@ describe("BottomSheetEngine — scrim runtime setters", () => {
       screen.style.backdropFilter ||
       screen.style.getPropertyValue("backdrop-filter");
     expect(filter).toBe("blur(10px)");
-    const w = screen.style as unknown as Record<string, string>;
-    expect(w.webkitBackdropFilter).toBe("blur(10px)");
+    expect(webkitFilter).toBe("blur(10px)");
     engine.destroy();
   });
 
