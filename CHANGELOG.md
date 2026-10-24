@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.4]
+
+### Fixed
+
+- **The Svelte component failed to resolve in every consumer build** — `@surdeddd/bottom-sheet/svelte` has a `svelte` export condition that points at `dist/svelte-src`, the component's source, so the consumer's own Svelte plugin compiles it. The package build copies `src/svelte/BottomSheet.svelte` there and rewrites its relative imports to the package root. The teleport import, added in 0.10.0, was never rewritten, so the shipped component imported `../core/features/teleport`, a path that does not exist in the published package. Any Vite or Rollup build that resolved the `svelte` condition stopped with `Could not resolve "../core/features/teleport"`, which also broke the repository's own Svelte example. The component now takes the teleport helpers from the built `svelte-core` chunk, which re-exports them; the public exports of `/svelte` are unchanged. The package build now checks every relative import in `dist/svelte-src` and fails with the file and specifier when one does not resolve, and a unit test covers the same check, so a new relative import in the component can no longer ship broken.
+
 ## [0.23.3]
 
 ### Fixed
