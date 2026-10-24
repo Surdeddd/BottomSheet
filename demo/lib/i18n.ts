@@ -335,7 +335,7 @@ export const applyLang = (lang: Lang): void => {
     .getElementById("lang-toggle")
     ?.setAttribute(
       "aria-label",
-      `Language: ${lang === "en" ? "English" : "Russian"}. Click to switch.`,
+      `EN · RU. Language: ${lang === "en" ? "English" : "Russian"}. Click to switch.`,
     );
 };
 
