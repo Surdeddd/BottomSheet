@@ -409,7 +409,7 @@
     "@playwright/test": "^1.63.0",
     "@size-limit/preset-small-lib": "^14.0.0",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
-    "@types/node": "^20.19.43",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.185.1",
