@@ -80,7 +80,7 @@ describe("waapi settle engine path", () => {
       ],
       initial: "closed",
       animation: "tween",
-      duration: 0,
+      duration: 160,
       respectReducedMotion: false,
       settleAnimation: "waapi",
     });
