@@ -395,7 +395,7 @@ describe("drag hardening — teardown and rest state", () => {
 });
 
 describe("drag hardening — churn", () => {
-  it("100 open/close round-trips never overlap open and closed", async () => {
+  it("100 open/close round-trips keep open and close strictly alternating", async () => {
     const dom = makeDom();
     stub(dom.sheet);
     const engine = new BottomSheetEngine({
@@ -407,7 +407,7 @@ describe("drag hardening — churn", () => {
     });
     const seen: string[] = [];
     engine.on("open", () => seen.push("open"));
-    engine.on("closed", () => seen.push("closed"));
+    engine.on("close", () => seen.push("close"));
 
     for (let i = 0; i < 100; i++) {
       void engine.open("full");
@@ -421,7 +421,9 @@ describe("drag hardening — churn", () => {
     for (const e of seen) {
       depth += e === "open" ? 1 : -1;
       expect(depth).toBeLessThanOrEqual(1);
+      expect(depth).toBeGreaterThanOrEqual(0);
     }
+    expect(depth).toBe(0);
     engine.destroy();
   });
 

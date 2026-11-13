@@ -10,8 +10,11 @@ export const easeLinear = (t: number): number => t;
 
 export const easeOutQuint = (t: number): number => 1 - Math.pow(1 - t, 5);
 
+const MIN_RETARGET_MS = 120;
+
 export type Tween = {
   cancel: () => void;
+  retarget: (to: number) => void;
   promise: Promise<void>;
 };
 
@@ -31,13 +34,19 @@ export const tween = ({
   onUpdate,
 }: TweenOptions): Tween => {
   let cancelled = false;
+  let finished = false;
   let rafId = 0;
   let resolveFn: (() => void) | null = null;
-  const start = performance.now();
+  let start = performance.now();
+  let origin = from;
+  let target = to;
+  let span = duration;
+  let last = from;
 
   const promise = new Promise<void>(resolve => {
     resolveFn = resolve;
     if (duration <= 0) {
+      finished = true;
       onUpdate(to);
       resolve();
       return;
@@ -45,12 +54,13 @@ export const tween = ({
     const step = (now: number) => {
       if (cancelled) return;
       const elapsed = Math.max(0, now - start);
-      const t = Math.min(elapsed / duration, 1);
-      const value = from + (to - from) * easing(t);
-      onUpdate(value);
+      const t = Math.min(elapsed / span, 1);
+      last = origin + (target - origin) * easing(t);
+      onUpdate(last);
       if (t < 1) {
         rafId = requestAnimationFrame(step);
       } else {
+        finished = true;
         resolve();
       }
     };
@@ -62,6 +72,15 @@ export const tween = ({
       cancelled = true;
       cancelAnimationFrame(rafId);
       resolveFn?.();
+    },
+    retarget: next => {
+      if (cancelled || finished || next === target) return;
+      const now = performance.now();
+      const remaining = span - Math.max(0, now - start);
+      origin = last;
+      target = next;
+      start = now;
+      span = Math.max(remaining, MIN_RETARGET_MS);
     },
     promise,
   };

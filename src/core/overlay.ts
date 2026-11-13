@@ -145,6 +145,7 @@ export class OverlayEngine {
       {
         element: this.element,
         close: () => this.close("escape"),
+        isTop: () => this.isTop,
       },
       {
         focusTrap: this.focusTrapEnabled,

@@ -15,7 +15,7 @@ export function routeFeature(): EngineFeature {
         teardowns.add(
           installRouteChange({
             isDestroyed: ctx.isDestroyed,
-            getSize: ctx.getSize,
+            isOpen: () => ctx.getPhase() !== "closed",
             close: () => ctx.close(),
           }),
         );
@@ -25,7 +25,7 @@ export function routeFeature(): EngineFeature {
           routedTo: ctx.options.routedTo,
           closeOnBack: ctx.options.closeOnBack,
           isTopSheet: ctx.isTopSheet,
-          getSize: ctx.getSize,
+          isOpen: () => ctx.getPhase() !== "closed",
           isDestroyed: ctx.isDestroyed,
           close: () => ctx.close("back"),
           on: ctx.on,
@@ -85,21 +85,13 @@ export function visualViewportFeature(): EngineFeature {
     install: ctx => {
       if (typeof window === "undefined") return;
       return installVisualViewport({
-        element: ctx.element,
         isVerticalAxis: ctx.isVerticalAxis,
         isDestroyed: ctx.isDestroyed,
-        isDragging: ctx.isDragging,
         recomputeSnaps: ctx.recomputeSnaps,
         resolveActiveSnap: ctx.resolveActiveSnap,
         getMaxAxisSize: ctx.getMaxAxisSize,
-        getSize: ctx.getSize,
         setMaxAxisSize: ctx.setMaxAxisSize,
-        setSize: ctx.setSize,
-        applySize: ctx.applySize,
-        cancelInFlight: ctx.cancelInFlight,
-        newCycle: ctx.newCycle,
-        isAnimating: ctx.isAnimating,
-        resyncAfterCancel: ctx.resyncAfterResize,
+        reseat: ctx.reseat,
       });
     },
   };

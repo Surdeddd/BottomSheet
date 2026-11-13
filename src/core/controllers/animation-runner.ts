@@ -37,7 +37,11 @@ type WaapiEntry = {
   anim: Animation;
   stop: () => void;
   sizeNow: () => number;
+  velocityNow: () => number;
+  retarget: (to: number) => void;
 };
+
+type WaapiLeg = { samples: SettleSamples; target: number };
 
 export class AnimationRunner {
   private element: HTMLElement;
@@ -132,22 +136,42 @@ export class AnimationRunner {
   }
 
   cancel(): void {
-    this.currentTween?.cancel();
-    this.currentSpring?.cancel();
+    const tween = this.currentTween;
+    const spring = this.currentSpring;
+    this.currentTween = null;
+    this.currentSpring = null;
+    tween?.cancel();
+    spring?.cancel();
     this.cancelWaapi();
+  }
+
+  retarget(target: number): boolean {
+    if (this.currentSpring) {
+      this.currentSpring.retarget(target);
+      return true;
+    }
+    if (this.currentTween) {
+      this.currentTween.retarget(target);
+      return true;
+    }
+    if (this.currentWaapi) {
+      this.currentWaapi.retarget(target);
+      return true;
+    }
+    return false;
   }
 
   async animateTo(target: number, velocityPxPerMs: number): Promise<void> {
     if (target === this.getSize()) {
-      if (!this.isAnimating && !this.isDragging()) {
+      if (this.isAnimating) this.cancel();
+      if (!this.isDragging()) {
         this.applySizeFn(target);
+        this.getRootEl()?.removeAttribute("data-animating");
         this.element.style.willChange = "";
       }
       return;
     }
-    this.currentTween?.cancel();
-    this.currentSpring?.cancel();
-    this.cancelWaapi();
+    this.cancel();
     this.getRootEl()?.setAttribute("data-animating", "true");
     this.element.style.willChange = "transform";
 
@@ -164,22 +188,13 @@ export class AnimationRunner {
       this.getTransformFor &&
       typeof this.element.animate === "function"
     ) {
-      const samples =
-        this.animationKind === "spring"
-          ? sampleSpringSettle(
-              this.getSize(),
-              target,
-              velocityPxPerMs * VELOCITY_PX_PER_S,
-              this.springConfig,
-            )
-          : sampleTweenSettle(
-              this.getSize(),
-              target,
-              this.duration,
-              this.easing,
-            );
+      const samples = this.sampleSettle(
+        this.getSize(),
+        target,
+        velocityPxPerMs * VELOCITY_PX_PER_S,
+      );
       if (samples.values.length >= 2 && samples.durationMs > 0) {
-        await this.runWaapiSettle(samples, target);
+        await this.runWaapiSettle({ samples, target });
         if (!this.isAnimating) {
           this.getRootEl()?.removeAttribute("data-animating");
           if (!this.isDragging()) this.element.style.willChange = "";
@@ -223,10 +238,20 @@ export class AnimationRunner {
     }
   }
 
-  private async runWaapiSettle(
+  private sampleSettle(
+    from: number,
+    to: number,
+    velocityPxPerS: number,
+  ): SettleSamples {
+    return this.animationKind === "spring"
+      ? sampleSpringSettle(from, to, velocityPxPerS, this.springConfig)
+      : sampleTweenSettle(from, to, this.duration, this.easing);
+  }
+
+  private startWaapiLeg(
     samples: SettleSamples,
-    target: number,
-  ): Promise<void> {
+    onRetarget: (entry: WaapiEntry, to: number) => void,
+  ): WaapiEntry {
     const applyAux = this.applyAux!;
     const getTransformFor = this.getTransformFor!;
     const frames = samples.values.map(v => ({
@@ -242,15 +267,20 @@ export class AnimationRunner {
     let stopped = false;
     let auxRaf = 0;
     const lastIdx = samples.values.length - 1;
+    const cursor = (): number =>
+      Math.min((Number(anim.currentTime) || 0) / samples.stepMs, lastIdx);
     const sizeNow = (): number => {
-      const at = Math.min(
-        (Number(anim.currentTime) || 0) / samples.stepMs,
-        lastIdx,
-      );
+      const at = cursor();
       const idx = Math.floor(at);
       const from = samples.values[idx]!;
       const to = samples.values[Math.min(idx + 1, lastIdx)]!;
       return from + (to - from) * (at - idx);
+    };
+    const velocityNow = (): number => {
+      const idx = Math.min(Math.floor(cursor()), Math.max(lastIdx - 1, 0));
+      const from = samples.values[idx]!;
+      const to = samples.values[Math.min(idx + 1, lastIdx)]!;
+      return ((to - from) / samples.stepMs) * 1000;
     };
     const auxTick = (): void => {
       if (stopped) return;
@@ -266,23 +296,58 @@ export class AnimationRunner {
         cancelAnimationFrame(auxRaf);
       },
       sizeNow,
+      velocityNow,
+      retarget: to => onRetarget(entry, to),
     };
-    this.currentWaapi = entry;
+    return entry;
+  }
 
-    try {
-      await anim.finished;
-    } catch {
-    }
-    entry.stop();
-    const wasCurrent = this.currentWaapi === entry;
-    if (wasCurrent) this.currentWaapi = null;
+  private async runWaapiSettle(first: WaapiLeg): Promise<void> {
+    let leg = first;
+    for (;;) {
+      let queued: WaapiLeg | null = null;
+      const entry = this.startWaapiLeg(leg.samples, (running, to) => {
+        const size = this.readShownSize?.() ?? running.sizeNow();
+        queued = {
+          samples: this.sampleSettle(size, to, running.velocityNow()),
+          target: to,
+        };
+        running.stop();
+        try {
+          running.anim.cancel();
+        } catch {
+        }
+        this.applySizeFn(size);
+      });
+      this.currentWaapi = entry;
 
-    if (wasCurrent && anim.playState === "finished") {
-      this.applySizeFn(target);
       try {
-        anim.cancel();
+        await entry.anim.finished;
       } catch {
       }
+      entry.stop();
+      const wasCurrent = this.currentWaapi === entry;
+      const next = queued as WaapiLeg | null;
+
+      if (wasCurrent && next) {
+        if (next.samples.values.length >= 2 && next.samples.durationMs > 0) {
+          leg = next;
+          continue;
+        }
+        this.currentWaapi = null;
+        this.applySizeFn(next.target);
+        return;
+      }
+
+      if (wasCurrent) this.currentWaapi = null;
+      if (wasCurrent && entry.anim.playState === "finished") {
+        this.applySizeFn(leg.target);
+        try {
+          entry.anim.cancel();
+        } catch {
+        }
+      }
+      return;
     }
   }
 

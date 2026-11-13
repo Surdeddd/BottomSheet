@@ -20,7 +20,7 @@ export type GestureControllerDeps = {
   getDisableDrag?: () => boolean;
   cancelAnimation: () => void;
   applySize: (size: number) => void;
-  animateTo: (size: number, velocity: number) => Promise<void>;
+  restoreAfterDrag: () => void;
   settleAfterDrag: (
     delta: number,
     velocity: number,
@@ -125,8 +125,7 @@ export class GestureController {
           size: this.deps.getDragContext().size,
           velocity: 0,
         });
-        const restoreTo = this.dragStartSize;
-        void this.deps.animateTo(restoreTo, 0);
+        this.deps.restoreAfterDrag();
       },
     }, this.deps.gestureOptions);
     return this.detach;

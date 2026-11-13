@@ -4,8 +4,8 @@ export type ScrollCacheDeps = {
 };
 
 export type ScrollCache = {
-  cache: (id: string, prevSize: number, nextSize: number) => void;
-  restore: (id: string, prevSize: number, nextSize: number) => void;
+  leave: (fromId: string, prevSize: number, nextSize: number) => void;
+  enter: (toId: string, prevSize: number, nextSize: number) => void;
   clear: () => void;
 };
 
@@ -19,22 +19,24 @@ export function createScrollCache(deps: ScrollCacheDeps): ScrollCache {
   };
 
   return {
-    cache(fromId, prevSize, nextSize) {
+    leave(fromId, prevSize, nextSize) {
       const container = deps.scrollContainer;
       if (!container) return;
-      if (isSmallSize(prevSize)) return;
-      if (!isSmallSize(nextSize)) return;
+      if (nextSize <= 0) {
+        positions.clear();
+        return;
+      }
+      if (isSmallSize(prevSize) || !isSmallSize(nextSize)) return;
       positions.set(fromId, container.scrollTop);
     },
-    restore(toId, prevSize, nextSize) {
+    enter(toId, prevSize, nextSize) {
       const container = deps.scrollContainer;
       if (!container) return;
-      if (isSmallSize(nextSize)) return;
-      if (!isSmallSize(prevSize)) return;
+      if (isSmallSize(nextSize) || !isSmallSize(prevSize)) return;
       const cached = positions.get(toId);
       if (cached === undefined) return;
-      container.scrollTop = cached;
       positions.delete(toId);
+      container.scrollTop = cached;
     },
     clear() {
       positions.clear();

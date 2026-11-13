@@ -74,6 +74,7 @@ export type SvelteBottomSheetController<TId extends string = string> = {
 const SSR_STATE: EngineState = Object.freeze({
   size: 0,
   activeId: "",
+  phase: "closed",
   isDragging: false,
   isAnimating: false,
   progress: 0,

@@ -1,4 +1,6 @@
-const counters: Record<string, number> = {};
+import { shared } from "./shared";
+
+const counters = shared("instanceIds", () => ({}) as Record<string, number>);
 
 export function nextInstanceId(prefix: string): string {
   if (

@@ -18,7 +18,7 @@ export type RouteDeps = {
   routedTo: string | undefined;
   closeOnBack: boolean;
   isTopSheet: () => boolean;
-  getSize: () => number;
+  isOpen: () => boolean;
   isDestroyed: () => boolean;
   close: () => Promise<void>;
   on: RouteEngine["on"];
@@ -38,7 +38,7 @@ export function installRoute(deps: RouteDeps): () => void {
   const onOpen = (): void => {
     if (handle) return;
     handle = pushBackMarker({
-      isOpen: () => !deps.isDestroyed() && deps.getSize() > 0,
+      isOpen: () => !deps.isDestroyed() && deps.isOpen(),
       isTop: deps.isTopSheet,
       close: deps.close,
       markerState: () =>
@@ -57,7 +57,7 @@ export function installRoute(deps: RouteDeps): () => void {
 
   const unsubscribeOpen = deps.on("open", onOpen);
   const unsubscribeClose = deps.on("close", onClose);
-  if (deps.getSize() > 0) onOpen();
+  if (deps.isOpen()) onOpen();
 
   return () => {
     unsubscribeOpen();
@@ -75,13 +75,13 @@ export const __resetRouteCoordinatorForTests = (): void => {
 
 export type RouteChangeDeps = {
   isDestroyed: () => boolean;
-  getSize: () => number;
+  isOpen: () => boolean;
   close: () => Promise<void>;
 };
 
 export function installRouteChange(deps: RouteChangeDeps): () => void {
   return subscribeRouteChange(() => {
-    if (deps.isDestroyed() || deps.getSize() <= 0) return;
+    if (deps.isDestroyed() || !deps.isOpen()) return;
     void deps.close();
   });
 }

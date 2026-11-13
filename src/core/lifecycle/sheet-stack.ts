@@ -1,3 +1,5 @@
+import { shared } from "../primitives/shared";
+
 export type StackEntry = {
   id: string;
   setZIndex: (z: number) => void;
@@ -80,7 +82,7 @@ class SheetStack {
   }
 }
 
-export const sheetStack = new SheetStack();
+export const sheetStack = shared("stack", () => new SheetStack());
 
 export const __resetSheetStackForTests = (): void => {
   sheetStack.clear();

@@ -133,6 +133,7 @@
     activeId: untrack(
       () => (initial ?? snapPoints[0]?.id ?? "default") as TId,
     ),
+    phase: "closed",
     isDragging: false,
     isAnimating: false,
     progress: 0,

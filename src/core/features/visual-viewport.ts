@@ -1,21 +1,16 @@
+import { sameSeat, seatOf } from "./resize-observer";
+
 const SAFETY_PAD = 8;
+const KEYBOARD_MIN_INSET = 1;
 
 export type VisualViewportDeps = {
-  element: HTMLElement;
   isVerticalAxis: () => boolean;
   isDestroyed: () => boolean;
-  isDragging: () => boolean;
   recomputeSnaps: () => void;
   resolveActiveSnap: () => { id: string; size: number } | null;
   getMaxAxisSize: () => number;
-  getSize: () => number;
   setMaxAxisSize: (size: number) => void;
-  setSize: (size: number) => void;
-  applySize: (size: number) => void;
-  cancelInFlight: () => void;
-  newCycle: () => void;
-  isAnimating?: () => boolean;
-  resyncAfterCancel?: () => void;
+  reseat: () => void;
 };
 
 export function installVisualViewport(deps: VisualViewportDeps): () => void {
@@ -30,26 +25,18 @@ export function installVisualViewport(deps: VisualViewportDeps): () => void {
     rafId = requestAnimationFrame(() => {
       rafId = null;
       if (deps.isDestroyed()) return;
+      const before = seatOf(deps);
       deps.recomputeSnaps();
       const isVertical = deps.isVerticalAxis();
       const visible = isVertical ? vv.height : vv.width;
       const windowSize = isVertical ? window.innerHeight : window.innerWidth;
-      const clamp = Math.max(0, Math.min(windowSize, visible) - SAFETY_PAD);
+      const pad = windowSize - visible > KEYBOARD_MIN_INSET ? SAFETY_PAD : 0;
+      const clamp = Math.max(0, Math.min(windowSize, visible) - pad);
       if (clamp < deps.getMaxAxisSize()) {
         deps.setMaxAxisSize(clamp);
       }
-      const wasAnimating = deps.isAnimating?.() ?? false;
-      deps.cancelInFlight();
-      deps.newCycle();
-      const max = deps.getMaxAxisSize();
-      deps.setSize(Math.min(deps.getSize(), max));
-      const current = deps.resolveActiveSnap();
-      if (current && !deps.isDragging()) {
-        deps.applySize(Math.min(current.size, max));
-        if (wasAnimating) deps.resyncAfterCancel?.();
-      } else {
-        deps.applySize(deps.getSize());
-      }
+      if (sameSeat(before, seatOf(deps))) return;
+      deps.reseat();
     });
   };
   vv.addEventListener("resize", onResize);

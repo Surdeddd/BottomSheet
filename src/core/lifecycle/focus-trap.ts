@@ -1,3 +1,5 @@
+import { shared } from "../primitives/shared";
+
 const FOCUSABLE = [
   "a[href]",
   "area[href]",
@@ -40,34 +42,53 @@ const focusables = (root: HTMLElement): HTMLElement[] =>
       !el.matches("[aria-hidden='true']"),
   );
 
+const FOCUS_ALLOW_ATTR = "data-bs-focus-allow";
+
+const composedParent = (node: Node): Node | null => {
+  const slot = (node as Element).assignedSlot;
+  if (slot) return slot;
+  const parent = node.parentNode;
+  return parent instanceof ShadowRoot ? parent.host : parent;
+};
+
 const containsComposed = (container: HTMLElement, node: Node | null): boolean => {
-  let n: Node | null = node;
-  while (n) {
+  for (let n = node; n; n = composedParent(n)) {
     if (n === container) return true;
-    const slot = (n as Element).assignedSlot;
-    if (slot) {
-      n = slot;
-      continue;
-    }
-    const parent = n.parentNode;
-    n = parent instanceof ShadowRoot ? parent.host : parent;
   }
   return false;
 };
 
-const trapStack: object[] = [];
+const isAllowedOutside = (node: Node | null): boolean => {
+  for (let n = node; n; n = composedParent(n)) {
+    if (n instanceof Element && n.hasAttribute(FOCUS_ALLOW_ATTR)) return true;
+  }
+  return false;
+};
+
+const deepActiveElement = (): Element | null => {
+  let active = document.activeElement;
+  while (active?.shadowRoot?.activeElement) {
+    active = active.shadowRoot.activeElement;
+  }
+  return active;
+};
+
+const trapStack = shared("focusTraps", () => [] as object[]);
 
 export const installFocusTrap = (
   container: HTMLElement,
   options: {
     initialFocus?: HTMLElement | string | false;
     onEscape?: () => void;
+    isActive?: () => boolean;
   } = {},
 ): (() => void) => {
   if (typeof document === "undefined") return () => {};
   const token = {};
-  trapStack.push(token);
-  const isActive = (): boolean => trapStack[trapStack.length - 1] === token;
+  if (!options.isActive) trapStack.push(token);
+  const isActive =
+    options.isActive ??
+    ((): boolean => trapStack[trapStack.length - 1] === token);
   const previouslyFocused = document.activeElement as HTMLElement | null;
 
   const focusInitial = () => {
@@ -83,7 +104,7 @@ export const installFocusTrap = (
         : spec ?? focusables(container)[0] ?? container;
     initial?.focus({ preventScroll: true });
   };
-  focusInitial();
+  if (!containsComposed(container, deepActiveElement())) focusInitial();
 
   const handleKey = (e: KeyboardEvent) => {
     if (!isActive()) return;
@@ -99,7 +120,7 @@ export const installFocusTrap = (
     }
     const first = list[0]!;
     const last = list[list.length - 1]!;
-    const active = document.activeElement as HTMLElement | null;
+    const active = deepActiveElement();
     if (e.shiftKey && active === first) {
       e.preventDefault();
       last.focus();
@@ -111,11 +132,10 @@ export const installFocusTrap = (
 
   const handleFocusIn = (e: FocusEvent) => {
     if (!isActive()) return;
-    const target = e.target as Node | null;
-    if (target && !containsComposed(container, target)) {
-      const list = focusables(container);
-      list[0]?.focus({ preventScroll: true });
-    }
+    const target = (e.composedPath()[0] ?? e.target) as Node | null;
+    if (!target || containsComposed(container, target)) return;
+    if (isAllowedOutside(target)) return;
+    focusables(container)[0]?.focus({ preventScroll: true });
   };
 
   document.addEventListener("keydown", handleKey, true);

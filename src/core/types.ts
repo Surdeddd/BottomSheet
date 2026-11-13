@@ -231,10 +231,12 @@ export type EngineFeatureContext = {
   getMaxAxisSize: () => number;
   resolveSnap: (id: string) => { id: string; size: number } | null;
   resolveActiveSnap: () => { id: string; size: number } | null;
+  getPhase: () => SheetPhase;
   setSize: (size: number) => void;
   setMaxAxisSize: (size: number) => void;
   applySize: (size: number) => void;
   recomputeSnaps: () => void;
+  reseat: () => void;
   newCycle: () => void;
   cancelInFlight: () => void;
   resyncAfterResize: () => void;
@@ -270,9 +272,12 @@ export type Plugin = {
   ) => void | (() => void);
 };
 
+export type SheetPhase = "closed" | "opening" | "open" | "closing";
+
 export type EngineState = {
   size: number;
   activeId: string;
+  phase: SheetPhase;
   isDragging: boolean;
   isAnimating: boolean;
   progress: number;

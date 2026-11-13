@@ -73,12 +73,16 @@ import type {
   SheetEventMap,
   PhysicalSheetMode,
   SheetMode,
+  SheetPhase,
   TeardownScope,
 } from "./types";
+import type { ResolvedSnap } from "./primitives/snap-points";
 
 type Listener<K extends keyof SheetEventMap> = (
   payload: SheetEventMap[K],
 ) => void;
+
+type Flight = { id: string; done: Promise<void> };
 
 const HAPTIC_DURATION_MS = 8;
 
@@ -131,8 +135,12 @@ export class BottomSheetCore {
   private sizeWriteSentinel = new WriteSentinel();
   private progressWriteSentinel = new WriteSentinel();
   private isTopSheet = true;
-  private opening = false;
-  private promotedForOpen = false;
+  private phase: SheetPhase = "closed";
+  private transition: { size: number; cap: number } | null = null;
+  private inFlight: Flight | null = null;
+  private outbox: Array<() => void> = [];
+  private flushing = false;
+  private openPending = false;
   private allowOvershoot = false;
   private progressPayload: { value: number; size: number } = {
     value: 0,
@@ -205,7 +213,6 @@ export class BottomSheetCore {
           void this.snapTo(id);
         },
         close: () => {
-          if (!this.canDismiss()) return;
           void this.close("backdrop");
         },
       },
@@ -240,6 +247,7 @@ export class BottomSheetCore {
       {
         element: this.element,
         close: () => this.close(),
+        isTop: () => this.isTopSheet,
       },
       resolved.lifecycle,
     );
@@ -298,6 +306,7 @@ export class BottomSheetCore {
     );
     const initial = this.snaps.findById(this.activeId);
     if (initial) this.size = initial.size;
+    this.phase = this.size > 0 ? "open" : "closed";
     this.applySize(this.size);
     this.setRestClosed(this.size === 0);
     this.updateAriaSlider();
@@ -320,8 +329,7 @@ export class BottomSheetCore {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           if (this.destroyed) return;
-          this.snaps.recompute();
-          this.healActiveSnap();
+          this.recompute();
           io.disconnect();
           return;
         }
@@ -351,9 +359,7 @@ export class BottomSheetCore {
     this.runFeatureStage("post");
     this.warnOrphanFeatureOptions();
 
-    if (this.size > 0) {
-      this.handleOpen();
-    }
+    if (this.phase === "open") this.installLifecycle(true);
   }
 
   private buildFeatureContext(
@@ -384,6 +390,7 @@ export class BottomSheetCore {
       getMaxAxisSize: () => this.snaps.getMaxAxisSize(),
       resolveSnap: id => this.snaps.findById(id),
       resolveActiveSnap: () => this.snaps.findById(this.activeId),
+      getPhase: () => this.phase,
       setSize: size => {
         this.size = size;
       },
@@ -392,13 +399,14 @@ export class BottomSheetCore {
       },
       applySize: size => this.applySize(size),
       recomputeSnaps: () => this.recomputeSnaps(),
+      reseat: () => this.reseat(),
       newCycle: () => {
         this.newCycle();
       },
-      cancelInFlight: () => {
-        this.animation.cancel();
+      cancelInFlight: () => this.suspend(),
+      resyncAfterResize: () => {
+        if (!this.destroyed) this.land(false);
       },
-      resyncAfterResize: () => this.resyncAfterResize(),
       snapTo: id => {
         void this.snapTo(id);
       },
@@ -444,6 +452,7 @@ export class BottomSheetCore {
     return {
       size: this.size,
       activeId: this.activeId,
+      phase: this.phase,
       isDragging: this.isDraggingAny(),
       isAnimating: this.animation.isAnimating,
       progress: this.computeProgress(this.size),
@@ -505,55 +514,72 @@ export class BottomSheetCore {
     return this.snaps.getResolvedSnaps();
   }
 
-  async snapTo(
+  snapTo(
     id: string,
     velocityOrOpts:
       | number
       | { velocity?: number; signal?: AbortSignal } = 0,
     _skipBeforeSnap = false,
   ): Promise<void> {
-    if (this.destroyed) return;
     const opts =
       typeof velocityOrOpts === "object"
         ? velocityOrOpts
         : { velocity: velocityOrOpts };
-    const velocityPxPerMs = opts.velocity ?? 0;
-    const externalSignal = opts.signal;
-    if (externalSignal?.aborted) return;
+    return this.transitionTo(
+      id,
+      opts.velocity ?? 0,
+      _skipBeforeSnap,
+      opts.signal,
+    );
+  }
+
+  private transitionTo(
+    id: string,
+    velocityPxPerMs = 0,
+    skipBeforeSnap = false,
+    externalSignal?: AbortSignal,
+  ): Promise<void> {
+    if (this.destroyed || externalSignal?.aborted) return Promise.resolve();
     const target = this.snaps.findById(id);
     if (!target) {
       devWarn(`[BottomSheet] unknown snap id: ${id}`);
-      return;
+      return Promise.resolve();
     }
     if (!this.snaps.getAllowedIds().includes(id)) {
       devWarn(`[BottomSheet] snap "${id}" is not in allowed list`);
-      return;
+      return Promise.resolve();
     }
-    if (!_skipBeforeSnap && this.emitBeforeSnap(target, this.activeId)) {
-      return;
+    if (target.size === 0 && this.closingBlocked()) return Promise.resolve();
+    if (!externalSignal && this.inFlight?.id === id) return this.inFlight.done;
+    if (!skipBeforeSnap && this.emitBeforeSnap(target, this.activeId)) {
+      return Promise.resolve();
     }
-    const resumingOpen = this.opening;
-    const signal = this.newCycle();
-    const onExternalAbort = (): void => {
-      this.animation.cancel();
-      this.newCycle();
-    };
+    const flight: Flight = { id, done: Promise.resolve() };
+    flight.done = this.runTransition(
+      target,
+      velocityPxPerMs,
+      false,
+      externalSignal,
+      flight,
+    );
+    return flight.done;
+  }
+
+  private async runTransition(
+    target: ResolvedSnap,
+    velocityPxPerMs: number,
+    fromDrag: boolean,
+    externalSignal?: AbortSignal,
+    flight: Flight | null = null,
+  ): Promise<void> {
+    const signal = this.beginTransition(target);
+    const transition = this.transition;
+    if (signal.aborted || !transition) return;
+    this.inFlight = flight;
+    const onExternalAbort = (): void => this.suspend();
     externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
-    const wasClosed = this.size === 0 || resumingOpen;
-    const previousId = this.activeId;
-    const previousSize = this.size;
-    this.scrollCache.cache(previousId, previousSize, target.size);
-    this.activeId = id;
-    const rawTargetSize = this.snapPointsRaw.find(p => p.id === id)?.size;
-    const opensToRest = id === "closed" || rawTargetSize === 0;
-    if (wasClosed && !opensToRest) {
-      this.opening = true;
-      if (!resumingOpen) {
-        this.promotedForOpen = true;
-        sheetStack.promote(this.id);
-      }
-    }
-    if (this.animation.viewTransitionsAvailable) {
+    this.allowOvershoot = fromDrag;
+    if (!fromDrag && this.animation.viewTransitionsAvailable) {
       this.currentViewTransition?.skipTransition?.();
       const vt = (
         document as unknown as {
@@ -564,7 +590,7 @@ export class BottomSheetCore {
           };
         }
       ).startViewTransition(() => {
-        this.applySize(target.size);
+        if (!signal.aborted) this.applySize(transition.size);
       });
       vt.ready?.catch(() => {});
       this.currentViewTransition = vt;
@@ -574,32 +600,203 @@ export class BottomSheetCore {
       }
       if (this.currentViewTransition === vt) this.currentViewTransition = null;
     } else {
-      await this.animation.animateTo(target.size, velocityPxPerMs);
+      await this.animation.animateTo(transition.size, velocityPxPerMs);
     }
     externalSignal?.removeEventListener("abort", onExternalAbort);
     if (signal.aborted) return;
-    this.opening = false;
-    this.completeSnap(id, target.size, previousSize, wasClosed, false);
+    if (this.size !== transition.size) this.applySize(transition.size);
+    this.land(fromDrag);
   }
 
-  private completeSnap(
-    id: string,
-    targetSize: number,
-    previousSize: number,
-    wasClosed: boolean,
-    withHaptic: boolean,
-  ): void {
-    this.scrollCache.restore(id, previousSize, targetSize);
+  private beginTransition(target: ResolvedSnap): AbortSignal {
+    const signal = this.newCycle();
+    const cap = this.snaps.getMaxAxisSize();
+    const fromId = this.activeId;
+    const fromSize = this.snaps.findById(fromId)?.size ?? this.size;
+    this.scrollCache.leave(fromId, fromSize, target.size);
+    this.scrollCache.enter(target.id, fromSize, target.size);
+    this.activeId = target.id;
+    this.transition = {
+      size: cap > 0 ? Math.min(target.size, cap) : target.size,
+      cap,
+    };
+    if (target.size > 0) {
+      this.enterOpening(target.id);
+    } else {
+      if (this.phase === "closed" && !this.isClosedSnap(target.id)) {
+        sheetStack.promote(this.id);
+      }
+      this.enterClosing();
+    }
+    this.flush();
+    return signal;
+  }
+
+  private enterOpening(id: string): void {
+    if (this.phase === "open" || this.phase === "opening") return;
+    const fresh = this.phase === "closed";
+    this.phase = "opening";
+    this.setRestClosed(false);
+    if (!this.installLifecycle(fresh)) return;
+    this.post("open", { id });
+    this.outbox.push(() => {
+      if (this.phase !== "closed") {
+        notifyLinkedSheets(this.linkedSheets, this);
+      }
+    });
+  }
+
+  private enterClosing(): void {
+    if (this.phase === "closed" || this.phase === "closing") return;
+    this.phase = "closing";
+    this.post("close", undefined);
+  }
+
+  private settlePhase(heal: boolean): void {
+    if (this.size > 0) {
+      this.enterOpening(this.activeId);
+      if (this.phase === "opening") {
+        this.phase = "open";
+        this.post("opened", { id: this.activeId });
+      }
+      return;
+    }
+    if (heal && this.phase !== "closing") return;
+    this.enterClosing();
+    if (this.phase === "closing") {
+      this.phase = "closed";
+      this.setRestClosed(true);
+      sheetStack.update();
+      this.lifecycle.release();
+      this.post("closed", undefined);
+    }
+  }
+
+  private land(haptic: boolean): void {
+    this.transition = null;
+    this.inFlight = null;
+    this.allowOvershoot = false;
+    this.openPending = this.size === 0 && !this.isClosedSnap(this.activeId);
     this.updateAriaSlider();
-    this.emit("snap", {
-      id,
+    this.setRestClosed(this.size === 0);
+    this.post("snap", {
+      id: this.activeId,
       size: this.size,
       progress: this.computeProgress(this.size),
     });
-    if (withHaptic) this.haptic();
-    this.setRestClosed(targetSize === 0);
-    if (wasClosed && targetSize > 0) this.emitOpenSequence(id);
-    if (targetSize === 0) this.emitCloseSequence();
+    this.settlePhase(false);
+    if (haptic) this.haptic();
+    this.flush();
+  }
+
+  private suspend(): void {
+    this.animation.cancel();
+    this.currentViewTransition?.skipTransition?.();
+    this.newCycle();
+  }
+
+  private landNow(): void {
+    const transition = this.transition;
+    if (this.destroyed || !transition || this.isDraggingAny()) return;
+    this.animation.cancel();
+    this.currentViewTransition?.skipTransition?.();
+    this.newCycle();
+    this.applySize(transition.size);
+    this.land(false);
+  }
+
+  private reseat(): void {
+    if (this.destroyed || this.isDraggingAny()) return;
+    const active = this.snaps.findById(this.activeId);
+    if (!active) return;
+    const cap = this.snaps.getMaxAxisSize();
+    const target = cap > 0 ? Math.min(active.size, cap) : active.size;
+    this.updateAriaSlider();
+    const transition = this.transition;
+    if (transition) {
+      if (
+        Math.abs(target - transition.size) < SIZE_WRITE_EPSILON &&
+        Math.abs(cap - transition.cap) < SIZE_WRITE_EPSILON
+      ) {
+        return;
+      }
+      transition.size = target;
+      transition.cap = cap;
+      this.applySize(this.animation.retarget(target) ? this.size : target);
+      return;
+    }
+    if (this.openPending && target > 0 && this.phase === "closed") {
+      void this.runTransition(active, 0, false);
+      return;
+    }
+    this.applySize(target);
+    this.settlePhase(true);
+    this.flush();
+  }
+
+  private installLifecycle(promote: boolean): boolean {
+    if (promote) sheetStack.promote(this.id);
+    if (this.lifecycle.isInstalled) return true;
+    try {
+      this.lifecycle.install();
+      return true;
+    } catch (err) {
+      this.abortOpen();
+      queueMicrotask(() => {
+        throw err;
+      });
+      return false;
+    }
+  }
+
+  private abortOpen(): void {
+    this.animation.cancel();
+    if (!this.destroyed) this.newCycle();
+    this.phase = "closed";
+    this.openPending = false;
+    this.lifecycle.release();
+    sheetStack.update();
+    this.activeId = this.zeroSnapId() ?? this.activeId;
+    this.applySize(0);
+    this.setRestClosed(true);
+    this.updateAriaSlider();
+  }
+
+  private zeroSnapId(): string | undefined {
+    return (
+      this.snapPointsRaw.find(p => p.id === "closed")?.id ??
+      this.snaps
+        .getAllowedIds()
+        .find(a => this.snaps.findById(a)?.size === 0)
+    );
+  }
+
+  private isClosedSnap(id: string): boolean {
+    if (id === "closed") return true;
+    return this.snapPointsRaw.find(p => p.id === id)?.size === 0;
+  }
+
+  private closingBlocked(): boolean {
+    return this.disableCloseFlag && this.phase !== "closed";
+  }
+
+  private post<K extends keyof SheetEventMap>(
+    event: K,
+    payload: SheetEventMap[K],
+  ): void {
+    this.outbox.push(() => this.bus.emit(event, payload));
+  }
+
+  private flush(): void {
+    if (this.flushing) return;
+    this.flushing = true;
+    try {
+      for (let next = this.outbox.shift(); next; next = this.outbox.shift()) {
+        next();
+      }
+    } finally {
+      this.flushing = false;
+    }
   }
 
   private setRestClosed(closed: boolean): void {
@@ -607,19 +804,6 @@ export class BottomSheetCore {
     this.restClosed = closed;
     if (closed) this.element.setAttribute("data-bs-rest", "closed");
     else this.element.removeAttribute("data-bs-rest");
-  }
-
-  private emitOpenSequence(id: string): void {
-    this.emit("open", { id });
-    this.handleOpen();
-    notifyLinkedSheets(this.linkedSheets, this);
-    this.emit("opened", { id });
-  }
-
-  private emitCloseSequence(): void {
-    this.emit("close", undefined);
-    this.handleClose();
-    this.emit("closed", undefined);
   }
 
   async dragTo(
@@ -637,15 +821,11 @@ export class BottomSheetCore {
     const externalSignal = opts.signal;
     if (externalSignal?.aborted) return;
     this.newCycle();
-    const onExternalAbort = (): void => {
-      this.animation.cancel();
-      this.newCycle();
-    };
+    const onExternalAbort = (): void => this.suspend();
     externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
     const clamped = Math.max(0, Math.min(targetSize, this.snaps.getMaxAxisSize()));
     await this.animation.animateTo(clamped, velocityPxPerMs);
     externalSignal?.removeEventListener("abort", onExternalAbort);
-    if (this.destroyed || externalSignal?.aborted) return;
   }
 
   open(id?: string): Promise<void> {
@@ -660,16 +840,16 @@ export class BottomSheetCore {
   }
 
   close(reason: CloseReason = "programmatic"): Promise<void> {
-    if (this.destroyed) return Promise.resolve();
-    if (this.disableCloseFlag) return Promise.resolve();
-    if (this.size > 0 && this.emitBeforeClose(reason)) return Promise.resolve();
-    const closedId =
-      this.snapPointsRaw.find(p => p.id === "closed")?.id ??
-      this.snaps
-        .getAllowedIds()
-        .find(a => this.snaps.findById(a)?.size === 0) ??
-      this.snaps.getAllowedIds()[0];
-    return this.snapTo(closedId ?? this.activeId);
+    if (this.destroyed || this.disableCloseFlag) return Promise.resolve();
+    if (this.persistent && reason !== "programmatic") return Promise.resolve();
+    const target = this.zeroSnapId() ?? this.snaps.getAllowedIds()[0];
+    if (target === undefined) return Promise.resolve();
+    if (this.phase === "closed" && this.activeId === target) {
+      return Promise.resolve();
+    }
+    const visible = this.phase === "open" || this.phase === "opening";
+    if (visible && this.emitBeforeClose(reason)) return Promise.resolve();
+    return this.snapTo(target);
   }
 
   canDismiss(): boolean {
@@ -698,10 +878,12 @@ export class BottomSheetCore {
 
   setDragFrom(mode: DragFrom): void {
     if (this.destroyed || mode === this.dragFromMode) return;
+    const wasDragging = this.gesture?.isDragging ?? false;
     this.gesture?.forceClearDragState();
     this.detachSheetGesture?.();
     this.dragFromMode = mode;
     this.mountSheetGesture();
+    if (wasDragging) this.restoreAfterDrag();
   }
 
   getDragFrom(): DragFrom {
@@ -718,6 +900,7 @@ export class BottomSheetCore {
 
     this.gesture?.forceClearDragState();
     this.detachSheetGesture?.();
+    this.landNow();
     this.animation.cancel();
 
     this.element.style.removeProperty(layoutAxis(this.mode as TransformAxis));
@@ -789,7 +972,9 @@ export class BottomSheetCore {
     if (snap && ids.includes(snap)) {
       void this.snapTo(snap, 0, true);
     } else if (!ids.includes(this.activeId)) {
-      const fallback = ids[0];
+      const fallback = this.closingBlocked()
+        ? ids.find(id => (this.snaps.findById(id)?.size ?? 0) > 0)
+        : ids[0];
       if (fallback) void this.snapTo(fallback, 0, true);
     }
   }
@@ -915,12 +1100,12 @@ export class BottomSheetCore {
 
   setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void {
     if (this.destroyed) return;
-    this.animation.cancel();
-    this.newCycle();
     this.snapPointsRaw = points;
     auditVhUsage(points);
     this.auditDuplicateSnapIds(points);
+    this.maxHeight.resolveCap();
     this.snaps.setRaw(points);
+    this.maxHeight.clampTo();
     if (allowed) {
       this.snaps.setAllowedIds(allowed);
     } else {
@@ -930,21 +1115,18 @@ export class BottomSheetCore {
     }
     this.scrollCache.clear();
     this.scrim.invalidateOpacityCache();
-    const current = this.snaps.findById(this.activeId);
-    if (current) {
-      this.applySize(current.size);
-    } else {
-      const fallback =
-        this.snaps
-          .getResolvedSnaps()
-          .find(s => this.snaps.getAllowedIds().includes(s.id)) ??
-        this.snaps.getResolvedSnaps()[0];
-      if (fallback) {
-        this.activeId = fallback.id;
-        this.applySize(fallback.size);
-      }
+    if (this.snaps.findById(this.activeId)) {
+      this.reseat();
+      return;
     }
-    this.updateAriaSlider();
+    const allowedNow = this.snaps.getAllowedIds();
+    const openOnly = this.closingBlocked();
+    const fallback =
+      this.snaps
+        .getResolvedSnaps()
+        .find(s => allowedNow.includes(s.id) && (!openOnly || s.size > 0)) ??
+      this.snaps.getResolvedSnaps()[0];
+    if (fallback) void this.transitionTo(fallback.id, 0, true);
   }
 
   recompute(): void {
@@ -953,29 +1135,12 @@ export class BottomSheetCore {
     this.snaps.recompute();
     this.maxHeight.clampTo();
     this.scrim.invalidateOpacityCache();
-    if (this.isDraggingAny()) return;
-    this.healActiveSnap();
-  }
-
-  private healActiveSnap(): void {
-    const current = this.snaps.findById(this.activeId);
-    if (!current) return;
-    this.size = current.size;
-    this.applySize(this.size);
-    this.updateAriaSlider();
-    if (
-      this.size > 0 &&
-      !this.lifecycle.isInstalled &&
-      !this.opening &&
-      !this.animation.isAnimating
-    ) {
-      this.emitOpenSequence(this.activeId);
-    }
+    this.reseat();
   }
 
   destroy(): void {
     this.destroyed = true;
-    this.opening = false;
+    this.outbox.length = 0;
     this.currentAbort.abort();
     this.currentViewTransition?.skipTransition?.();
     this.currentViewTransition = null;
@@ -1014,7 +1179,8 @@ export class BottomSheetCore {
 
   private newCycle(): AbortSignal {
     this.allowOvershoot = false;
-    this.opening = false;
+    this.transition = null;
+    this.inFlight = null;
     this.currentAbort.abort();
     this.currentAbort = new AbortController();
     return this.currentAbort.signal;
@@ -1104,7 +1270,7 @@ export class BottomSheetCore {
       setIsTop: isTop => {
         this.isTopSheet = isTop;
       },
-      isOpen: () => this.size > 0 || this.opening,
+      isOpen: () => this.phase !== "closed",
       setDepth: depth => this.applyStackDepth(depth),
     }));
   }
@@ -1140,15 +1306,17 @@ export class BottomSheetCore {
         const r = this.getAllowedRange();
         buf.size = this.size;
         buf.maxAxisSize = this.snaps.getMaxAxisSize();
-        buf.range.min = r.min;
+        buf.range.min = this.closingBlocked()
+          ? Math.max(r.min, this.smallestOpenSize())
+          : r.min;
         buf.range.max = r.max;
         buf.rubberBandEnabled = this.rubberBandEnabled;
         return buf;
       },
       getDisableDrag: () => this.disableDragFlag,
-      cancelAnimation: () => this.animation.cancel(),
+      cancelAnimation: () => this.suspend(),
       applySize: size => this.applySize(size),
-      animateTo: (size, velocity) => this.animation.animateTo(size, velocity),
+      restoreAfterDrag: () => this.restoreAfterDrag(),
       settleAfterDrag: (delta, velocity, kind) =>
         this.settleAfterDrag(delta, velocity, kind),
       emit: (event, payload) => this.emit(event, payload),
@@ -1302,33 +1470,20 @@ export class BottomSheetCore {
         element: this.element,
         getMode: () => this.mode as TransformAxis,
         isDestroyed: () => this.destroyed,
-        isDragging: () => this.isDraggingAny(),
         resolveActiveSnap: () => this.snaps.findById(this.activeId),
         getMaxAxisSize: () => this.snaps.getMaxAxisSize(),
-        getSize: () => this.size,
         setMaxAxisSize: size => {
           this.snaps.setMaxAxisSize(size);
         },
-        setSize: size => {
-          this.size = size;
-        },
         recomputeSnaps: () => this.recomputeSnaps(),
-        applySize: size => this.applySize(size),
-        cancelInFlight: () => {
-          this.animation.cancel();
-        },
-        newCycle: () => {
-          this.newCycle();
-        },
-        isAnimating: () => this.animation.isAnimating,
-        resyncAfterCancel: () => this.resyncAfterResize(),
+        reseat: () => this.reseat(),
+        landNow: () => this.landNow(),
       }));
 
       if (this.lifecycle.closeOnEscape) {
         const onKey = (e: KeyboardEvent) => {
           if (this.destroyed || e.defaultPrevented) return;
-          if (!this.canDismiss()) return;
-          if (e.key === "Escape" && this.isTopSheet && this.size > 0) {
+          if (e.key === "Escape" && this.isTopSheet) {
             void this.close("escape");
           }
         };
@@ -1350,7 +1505,12 @@ export class BottomSheetCore {
       handle: this.handle,
       mode: this.mode as TransformAxis,
       isDestroyed: () => this.destroyed,
-      getAllowedIds: () => this.allowedIdsBySize(),
+      getAllowedIds: () => {
+        const ids = this.allowedIdsBySize();
+        return this.closingBlocked()
+          ? ids.filter(id => (this.snaps.findById(id)?.size ?? 0) > 0)
+          : ids;
+      },
       getActiveId: () => this.activeId,
       snapTo: id => {
         void this.snapTo(id);
@@ -1368,16 +1528,18 @@ export class BottomSheetCore {
     velocity: number,
     kind: "touch" | "mouse" | "pen" = "touch",
   ): void {
-    const signal = this.newCycle();
-    const target = this.snaps.findDragSettleTarget({
-      delta,
-      velocity,
-      pointerKind: kind,
-      size: this.size,
-      activeId: this.activeId,
-      flickVelocity: this.flickVelocity,
-      dragThreshold: this.dragThreshold,
-    });
+    const target = this.snaps.findDragSettleTarget(
+      {
+        delta,
+        velocity,
+        pointerKind: kind,
+        size: this.size,
+        activeId: this.activeId,
+        flickVelocity: this.flickVelocity,
+        dragThreshold: this.dragThreshold,
+      },
+      this.closingBlocked(),
+    );
     if (!target) {
       this.clearWillChangeIfIdle();
       return;
@@ -1385,41 +1547,30 @@ export class BottomSheetCore {
 
     const previousId = this.activeId;
     if (target.id === previousId && target.size === this.size) {
+      if (this.phase === "opening" || this.phase === "closing") {
+        this.land(false);
+      }
       this.clearWillChangeIfIdle();
       return;
     }
     if (this.emitBeforeSnap(target, previousId)) {
-      const restore = this.snaps.findById(previousId);
-      if (restore) {
-        void this.animation.animateTo(restore.size, 0);
-      }
+      this.restoreAfterDrag();
       return;
     }
-    const previousSize = this.size;
-    const previousSnapSize = this.snaps.findById(previousId)?.size;
-    this.scrollCache.cache(previousId, previousSize, target.size);
-    this.activeId = target.id;
-    if (previousSnapSize === 0 && target.size > 0) {
-      this.opening = true;
-      this.promotedForOpen = true;
-      sheetStack.promote(this.id);
+    void this.runTransition(target, velocity, true);
+  }
+
+  private restoreAfterDrag(): void {
+    const active = this.snaps.findById(this.activeId);
+    if (active) void this.runTransition(active, 0, false);
+  }
+
+  private smallestOpenSize(): number {
+    const allowed = this.snaps.getAllowedIds();
+    for (const snap of this.snaps.getResolvedSnaps()) {
+      if (snap.size > 0 && allowed.includes(snap.id)) return snap.size;
     }
-    const settleCap = this.snaps.getMaxAxisSize();
-    const settleSize =
-      settleCap > 0 ? Math.min(target.size, settleCap) : target.size;
-    this.allowOvershoot = true;
-    void this.animation.animateTo(settleSize, velocity).then(() => {
-      if (signal.aborted) return;
-      this.allowOvershoot = false;
-      this.opening = false;
-      this.completeSnap(
-        target!.id,
-        target!.size,
-        previousSize,
-        previousSnapSize === 0,
-        true,
-      );
-    });
+    return 0;
   }
 
   private isDraggingAny(): boolean {
@@ -1507,47 +1658,5 @@ export class BottomSheetCore {
     const reachableMax = Math.min(max, this.snaps.getMaxAxisSize());
     if (reachableMax <= min) return 0;
     return Math.min(Math.max((size - min) / (reachableMax - min), 0), 1);
-  }
-
-  private handleOpen(): void {
-    if (this.promotedForOpen) this.promotedForOpen = false;
-    else sheetStack.promote(this.id);
-    try {
-      this.lifecycle.install();
-    } catch (err) {
-      if (!this.destroyed) this.newCycle();
-      this.handleClose();
-      this.applySize(0);
-      this.activeId =
-        this.snapPointsRaw.find(p => p.id === "closed")?.id ?? this.activeId;
-      this.size = 0;
-      queueMicrotask(() => {
-        throw err;
-      });
-    }
-  }
-
-  private resyncAfterResize(): void {
-    if (this.destroyed) return;
-    const target = this.snaps.findById(this.activeId);
-    if (!target) return;
-    this.updateAriaSlider();
-    this.emit("snap", {
-      id: target.id,
-      size: this.size,
-      progress: this.computeProgress(this.size),
-    });
-    if (target.size > 0 && !this.lifecycle.isInstalled) {
-      this.emitOpenSequence(target.id);
-    } else if (target.size === 0 && this.lifecycle.isInstalled) {
-      this.emitCloseSequence();
-    }
-  }
-
-  private handleClose(): void {
-    this.opening = false;
-    this.promotedForOpen = false;
-    this.lifecycle.release();
-    sheetStack.update();
   }
 }

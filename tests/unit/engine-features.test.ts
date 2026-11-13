@@ -199,7 +199,7 @@ describe("BottomSheetEngine — persistKey", () => {
 describe("BottomSheetEngine — resize mid-animation resync", () => {
   beforeEach(() => resetGlobals());
 
-  it("re-emits snap/open and installs lifecycle when a resize cancels an opening animation", async () => {
+  it("retargets an opening animation on resize and still lands it with snap/open and the lifecycle", async () => {
     const { sheet, handle } = makeDom();
     const engine = new BottomSheetEngine({
       element: sheet,
@@ -223,9 +223,10 @@ describe("BottomSheetEngine — resize mid-animation resync", () => {
       configurable: true,
     });
     window.dispatchEvent(new Event("orientationchange"));
-    await new Promise(r => setTimeout(r, 60));
-    expect(events).toContain("snap:full");
-    expect(events).toContain("open:full");
+    expect(events).toEqual(["open:full"]);
+    expect(engine.state.isAnimating).toBe(true);
+    await new Promise(r => setTimeout(r, 400));
+    expect(events).toEqual(["open:full", "snap:full"]);
     expect(engine.state.size).toBe(700);
     document.dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),

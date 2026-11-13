@@ -94,6 +94,7 @@ export const BottomSheet = <TId extends string = string>(
   const [state, setState] = createSignal<EngineState & { activeId: TId }>({
     size: 0,
     activeId: initialActive(),
+    phase: "closed",
     isDragging: false,
     isAnimating: false,
     progress: 0,

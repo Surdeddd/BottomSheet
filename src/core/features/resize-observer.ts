@@ -2,22 +2,35 @@ import type { TransformAxis } from "../primitives/transform";
 import type { ResolvedSnap } from "../primitives/snap-points";
 import { SIZE_WRITE_EPSILON } from "../primitives/hot-path-thresholds";
 
+export type Seat = { target: number | null; max: number };
+
+export type SeatDeps = {
+  resolveActiveSnap: () => { id: string; size: number } | null;
+  getMaxAxisSize: () => number;
+};
+
+export const seatOf = (deps: SeatDeps): Seat => {
+  const snap = deps.resolveActiveSnap();
+  const max = deps.getMaxAxisSize();
+  return { target: snap ? Math.min(snap.size, max) : null, max };
+};
+
+export const sameSeat = (before: Seat, after: Seat): boolean =>
+  before.target !== null &&
+  after.target !== null &&
+  Math.abs(after.target - before.target) < SIZE_WRITE_EPSILON &&
+  Math.abs(after.max - before.max) < SIZE_WRITE_EPSILON;
+
 export type ResizeObserverDeps = {
   element: HTMLElement;
   getMode: () => TransformAxis;
   isDestroyed: () => boolean;
-  isDragging: () => boolean;
   resolveActiveSnap: () => ResolvedSnap | null;
   getMaxAxisSize: () => number;
-  getSize: () => number;
   setMaxAxisSize: (size: number) => void;
-  setSize: (size: number) => void;
   recomputeSnaps: () => void;
-  applySize: (size: number) => void;
-  cancelInFlight: () => void;
-  newCycle: () => void;
-  isAnimating?: () => boolean;
-  resyncAfterCancel?: () => void;
+  reseat: () => void;
+  landNow: () => void;
 };
 
 export function installResizeObserver(deps: ResizeObserverDeps): () => void {
@@ -25,15 +38,9 @@ export function installResizeObserver(deps: ResizeObserverDeps): () => void {
     return () => {};
   }
 
-  const seatFor = (): { target: number | null; max: number } => {
-    const snap = deps.resolveActiveSnap();
-    const max = deps.getMaxAxisSize();
-    return { target: snap ? Math.min(snap.size, max) : null, max };
-  };
-
   const onResize = (): void => {
     if (deps.isDestroyed()) return;
-    const before = seatFor();
+    const before = seatOf(deps);
     deps.recomputeSnaps();
     const mode = deps.getMode();
     const isVerticalAxis = mode === "bottom" || mode === "top";
@@ -44,29 +51,8 @@ export function installResizeObserver(deps: ResizeObserverDeps): () => void {
     if (viewportSize > 0 && viewportSize < max) {
       deps.setMaxAxisSize(viewportSize);
     }
-    const after = seatFor();
-    if (
-      before.target !== null &&
-      after.target !== null &&
-      Math.abs(after.target - before.target) < SIZE_WRITE_EPSILON &&
-      Math.abs(after.max - before.max) < SIZE_WRITE_EPSILON
-    ) {
-      return;
-    }
-    const wasAnimating = deps.isAnimating?.() ?? false;
-    deps.cancelInFlight();
-    deps.newCycle();
-
-    const current = deps.resolveActiveSnap();
-    const newMax = deps.getMaxAxisSize();
-    const targetSize = current
-      ? Math.min(current.size, newMax)
-      : Math.min(deps.getSize(), newMax);
-    deps.setSize(targetSize);
-    if (current && !deps.isDragging()) {
-      deps.applySize(targetSize);
-      if (wasAnimating) deps.resyncAfterCancel?.();
-    }
+    if (sameSeat(before, seatOf(deps))) return;
+    deps.reseat();
   };
 
   let resizeObserver: ResizeObserver | null = null;
@@ -80,7 +66,7 @@ export function installResizeObserver(deps: ResizeObserverDeps): () => void {
 
   const onVisibility = (): void => {
     if (deps.isDestroyed()) return;
-    if (document.hidden) deps.cancelInFlight();
+    if (document.hidden) deps.landNow();
   };
   document.addEventListener("visibilitychange", onVisibility);
 

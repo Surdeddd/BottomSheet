@@ -69,11 +69,14 @@ export class SnapResolver {
 
   findDragSettleTarget(
     args: Omit<SettleTargetInput, "resolved" | "allowed" | "maxAxisSize">,
+    openOnly = false,
   ): ResolvedSnap | null {
     return findDragSettleTarget({
       ...args,
       resolved: this.resolved,
-      allowed: this.allowedIds,
+      allowed: openOnly
+        ? this.allowedIds.filter(id => (this.findById(id)?.size ?? 0) > 0)
+        : this.allowedIds,
       maxAxisSize: this.maxAxisSize,
     });
   }

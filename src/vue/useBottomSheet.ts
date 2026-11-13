@@ -95,6 +95,7 @@ export function useBottomSheet<TId extends string = string>(
   const state = reactive<EngineState>({
     size: 0,
     activeId: opts.initial ?? opts.snapPoints[0]?.id ?? "default",
+    phase: "closed",
     isDragging: false,
     isAnimating: false,
     progress: 0,

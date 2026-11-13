@@ -32,7 +32,13 @@ export function createEventBus<
       if (!set) return;
 
       for (const fn of [...set]) {
-        (fn as (payload: Map[typeof event]) => void)(payload);
+        try {
+          (fn as (payload: Map[typeof event]) => void)(payload);
+        } catch (err) {
+          queueMicrotask(() => {
+            throw err;
+          });
+        }
       }
     },
     listenerCount(event) {

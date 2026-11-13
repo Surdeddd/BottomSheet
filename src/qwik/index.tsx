@@ -83,6 +83,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
   const state = useStore<EngineState>({
     size: 0,
     activeId: initialActive,
+    phase: "closed",
     isDragging: false,
     isAnimating: false,
     progress: 0,
@@ -150,6 +151,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       state.size = s.size;
       state.activeId = s.activeId;
       state.isDragging = s.isDragging;
+      state.phase = s.phase;
       state.isAnimating = s.isAnimating;
       state.progress = s.progress;
       props.onChange$?.(s);

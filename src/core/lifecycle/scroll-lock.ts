@@ -1,18 +1,24 @@
-let lockCount = 0;
-let savedStyles: {
+import { shared } from "../primitives/shared";
+
+type SavedStyles = {
   overflow: string;
   position: string;
   top: string;
   width: string;
   paddingRight: string;
   scrollY: number;
-} | null = null;
+};
+
+const state = shared("scrollLock", () => ({
+  count: 0,
+  saved: null as SavedStyles | null,
+}));
 
 export const lockBodyScroll = (): (() => void) => {
   if (typeof document === "undefined") return () => {};
-  if (lockCount === 0) {
+  if (state.count === 0) {
     const body = document.body;
-    savedStyles = {
+    const saved: SavedStyles = {
       overflow: body.style.overflow,
       position: body.style.position,
       top: body.style.top,
@@ -20,6 +26,7 @@ export const lockBodyScroll = (): (() => void) => {
       paddingRight: body.style.paddingRight,
       scrollY: window.scrollY,
     };
+    state.saved = saved;
     const scrollbarGap =
       window.innerWidth - document.documentElement.clientWidth;
     if (scrollbarGap > 0) {
@@ -28,31 +35,32 @@ export const lockBodyScroll = (): (() => void) => {
     }
     body.style.overflow = "hidden";
     body.style.position = "fixed";
-    body.style.top = `-${savedStyles.scrollY}px`;
+    body.style.top = `-${saved.scrollY}px`;
     body.style.width = "100%";
   }
-  lockCount++;
+  state.count++;
   let released = false;
   return () => {
     if (released) return;
     released = true;
-    lockCount = Math.max(0, lockCount - 1);
-    if (lockCount === 0 && savedStyles) {
+    state.count = Math.max(0, state.count - 1);
+    if (state.count === 0 && state.saved) {
       const body = document.body;
-      body.style.overflow = savedStyles.overflow;
-      body.style.position = savedStyles.position;
-      body.style.top = savedStyles.top;
-      body.style.width = savedStyles.width;
-      body.style.paddingRight = savedStyles.paddingRight;
-      window.scrollTo(0, savedStyles.scrollY);
-      savedStyles = null;
+      const saved = state.saved;
+      body.style.overflow = saved.overflow;
+      body.style.position = saved.position;
+      body.style.top = saved.top;
+      body.style.width = saved.width;
+      body.style.paddingRight = saved.paddingRight;
+      window.scrollTo(0, saved.scrollY);
+      state.saved = null;
     }
   };
 };
 
 export const __resetScrollLockForTests = (): void => {
-  lockCount = 0;
-  savedStyles = null;
+  state.count = 0;
+  state.saved = null;
   if (typeof document !== "undefined") {
     document.body.style.overflow = "";
     document.body.style.position = "";
