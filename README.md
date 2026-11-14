@@ -4,9 +4,9 @@
 
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
-![bundle](https://img.shields.io/badge/core-%E2%89%A425.1%20KB%20gzip%20budget-1a1614?style=flat-square)
-![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.4%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-850%2B%20unit-2ea44f?style=flat-square)
+![bundle](https://img.shields.io/badge/core-%E2%89%A425.2%20KB%20gzip%20budget-1a1614?style=flat-square)
+![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.5%20KB%20gzip-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-930%2B%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -51,7 +51,7 @@ Every item below is verifiable in this repo's `src/`:
 - **Multi-sheet stacking** plus a typed sheet-manager registry.
 - **Cancelable `before-snap` / `before-close`** — veto a transition
   synchronously.
-- Backed by 850+ unit tests and ~190 Playwright e2e tests on each of
+- Backed by 930+ unit tests and ~330 Playwright e2e tests on each of
   three browser engines (`mobile-chrome` / `mobile-safari` /
   `firefox`).
 
@@ -234,15 +234,23 @@ type SnapPoint =
 | `settleAnimation`    | off           | `"waapi"` — settle runs as a compositor-driven Web Animation (pre-sampled spring keyframes); falls back to rAF automatically |
 | `features`           | all defaults  | `EngineFeature[]` — override/extend the composable feature set (see Slim core below)                                       |
 | `spring`             | snappy        | `{ stiffness, damping, mass }`                                                                                             |
-| `flickVelocity`      | `0.65 px/ms`  | Mobile flick threshold                                                                                                     |
-| `dragThreshold`      | `18 px`       | Below this, drag snaps back                                                                                                |
+| `duration`, `easing` | `220 ms`, ease-out-back | Length and curve of the `tween` animation; `easing` is `(t: number) => number`                                   |
+| `respectReducedMotion` | `true`      | Jump straight to the snap under `prefers-reduced-motion: reduce`                                                           |
+| `flickVelocity`      | `0.65 px/ms`  | Flick threshold for touch and pen. A mouse flicks at a fixed 0.4 px/ms                                                     |
+| `dragThreshold`      | `18 px`       | A touch or pen drag shorter than this snaps back. A mouse uses a fixed 12 px                                               |
 | `rubberBand`         | `true`        | iOS-style soft over-drag                                                                                                   |
 | `backdropRange`      | `[0, 1]`      | Progress range over which backdrop fades                                                                                   |
 | `screenRange`        | `[0, 1]`      | Progress range over which the `screen`/scrim content fades                                                                 |
+| `scrimMode`          | `"full"`      | Where the scrim sits: the `full` screen, `above-sheet` (it stops at the sheet's edge) or `off`                             |
+| `scrimPreset`        | none          | `subtle`, `standard`, `monitoring` or `cinematic` — colour, blur and range in one option                                   |
+| `scrimColor`, `scrimBlur` | preset   | Scrim fill and the radius of its `backdrop-filter` blur                                                                    |
+| `scrimInteractive`   | `false`       | The scrim takes pointer input instead of letting it through to the page                                                    |
+| `scrimTapToClose`    | `false`       | A tap on the scrim closes the sheet                                                                                        |
 | `focusTrap`          | `false`       | Trap Tab focus inside the sheet while it is the top one. Mark a popup rendered outside the sheet (dropdown, date picker) with `data-bs-focus-allow` and focus may go there |
 | `initialFocus`       | first field   | Element / selector to focus on open; `false` focuses the sheet container (`tabindex=-1`) instead — avoids the iOS keyboard |
 | `closeOnEscape`      | `true`        | Listen for Escape and close                                                                                                |
 | `closeOnBack`        | `false`       | Close on the Back button. Pushes a history entry that keeps the router's `history.state`; see `historySettled()` below     |
+| `routedTo`           | none          | URL pushed while the sheet is open; Back closes the sheet and restores the address                                         |
 | `closeOnRouteChange` | `false`       | Close when the URL changes (`pushState` / `replaceState` / popstate). A History API call that keeps the URL does not count |
 | `lockBodyScroll`     | `true`        | iOS-safe body lock (`position: fixed`)                                                                                     |
 | `stackEffect`        | `false`       | iOS card-stack: back sheets scale down per depth                                                                           |
@@ -256,6 +264,10 @@ type SnapPoint =
 | `radius`             | token default | Corner radius (`string` CSS length or `number` px); also `setRadius()`                                                     |
 | `maxHeight`          | none          | Cap the sheet height. `number` (px) or a string (`"92dvh"`, `"50%"`) re-resolved on viewport / orientation changes         |
 | `returnFocusTo`      | opener        | Focus target on dismiss — an `HTMLElement`, a selector `string`, or a `() => HTMLElement` factory                          |
+| `persistKey`         | none          | `localStorage` key: the sheet remembers its last snap and starts there next time                                           |
+| `autoCollapseAfter`  | off           | Milliseconds of rest after which the sheet returns to its smallest open snap                                               |
+| `linkedSheets`       | none          | Other engines that collapse to their smallest open snap when this one opens; also `setLinkedSheets()`                      |
+| `viewTransitions`    | `false`       | Move between snaps through `document.startViewTransition()` where the browser has it                                       |
 
 ### Anchored elements, docked bars & scrim stages
 
@@ -334,6 +346,16 @@ engine.isTop(); // top of the multi-sheet stack?
 engine.depth(); // open sheets above this one
 engine.destroy(); // remove listeners + cancel animation
 ```
+
+When `setAllowed()` or `setSnapPoints()` takes the active snap away, an open
+sheet moves to the nearest point that keeps it open; it closes only when no
+open point is left. Pass the snap you want as the second argument of
+`setAllowed()` to choose it yourself.
+
+The handle is a keyboard slider: the arrow that points away from the sheet's
+edge grows it (`ArrowUp` for `bottom`, `ArrowDown` for `top`, `ArrowRight`
+for `left`, `ArrowLeft` for `right`), the opposite one shrinks it, and
+`Home` / `End` jump to the smallest and largest allowed snap.
 
 With `closeOnBack` or `routedTo`, closing pops a history entry, and the
 browser applies `history.back()` asynchronously. `await engine.close()`
@@ -685,7 +707,7 @@ Events, CSS custom properties, `ResizeObserver`). Everything else, from
 ## Testing
 
 ```bash
-npm test                 # 850+ unit tests via vitest + happy-dom
+npm test                 # 930+ unit tests via vitest + happy-dom
 npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
 npm run typecheck        # TypeScript --noEmit
 ```

@@ -62,9 +62,10 @@ npm i @surdeddd/bottom-sheet
 
 ### Live attributes (no re-init)
 
-`radius`, `max-height`, `backdrop-color`, `scrim-color`, `snap`, `persistent`,
-`disable-close`, `disable-drag`, `drag-from` and `drag-from-content` apply in place — changing them mutates the
-running engine without tearing it down. Any other observed attribute triggers a
+`mode`, `radius`, `max-height`, `backdrop-color`, `scrim-color`, `snap`,
+`persistent`, `disable-close`, `disable-drag`, `drag-from` and
+`drag-from-content` apply in place — changing them mutates the running engine
+without tearing it down. Any other observed attribute triggers a
 re-init. The active snap survives DOM moves and structural re-inits: if the
 current snap id still exists in the new `snap-points`, the element re-opens at
 it instead of the `initial` attribute.

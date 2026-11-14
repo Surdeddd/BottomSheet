@@ -4,9 +4,9 @@ English: [README.md](./README.md)
 
 > Универсальный headless-движок bottom sheet. **Одно ядро, восемь адаптеров, GPU-ускорение, полное покрытие тестами.**
 
-![bundle](https://img.shields.io/badge/core-%E2%89%A425.1%20KB%20gzip%20budget-1a1614?style=flat-square)
-![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.4%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-850%2B%20unit-2ea44f?style=flat-square)
+![bundle](https://img.shields.io/badge/core-%E2%89%A425.2%20KB%20gzip%20budget-1a1614?style=flat-square)
+![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.5%20KB%20gzip-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-930%2B%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -53,7 +53,7 @@ English: [README.md](./README.md)
 - **Стек из нескольких sheet** и типизированный реестр sheet manager.
 - **Отменяемые `before-snap` / `before-close`** — переход можно
   синхронно заблокировать.
-- Под капотом 850+ unit-тестов и ~190 e2e-тестов Playwright на каждом из
+- Под капотом 930+ unit-тестов и ~330 e2e-тестов Playwright на каждом из
   трёх браузерных движков (`mobile-chrome` / `mobile-safari` / `firefox`).
 
 ## Установка
@@ -235,15 +235,23 @@ type SnapPoint =
 | `settleAnimation`    | выкл.              | `"waapi"` — финальная доводка идёт как Web Animation на compositor (заранее насэмплированные spring-кейфреймы); при необходимости автоматически откатывается на rAF |
 | `features`           | все по умолчанию   | `EngineFeature[]` — переопределить/расширить набор composable-фич (см. «Slim core» ниже)                                   |
 | `spring`             | snappy             | `{ stiffness, damping, mass }`                                                                                             |
-| `flickVelocity`      | `0.65 px/ms`       | Порог флика на мобильных                                                                                                   |
-| `dragThreshold`      | `18 px`            | Если drag короче, sheet возвращается назад                                                                                 |
+| `duration`, `easing` | `220 ms`, ease-out-back | Длительность и кривая анимации `tween`; `easing` — функция `(t: number) => number`                             |
+| `respectReducedMotion` | `true`           | При `prefers-reduced-motion: reduce` sheet сразу встаёт в точку, без анимации                                              |
+| `flickVelocity`      | `0.65 px/ms`       | Порог флика для касания и пера. У мыши порог фиксированный: 0.4 px/ms                                                      |
+| `dragThreshold`      | `18 px`            | Жест касанием или пером короче этого возвращает sheet назад. У мыши порог фиксированный: 12 px                             |
 | `rubberBand`         | `true`             | Мягкое «резиновое» перетягивание в стиле iOS                                                                               |
 | `backdropRange`      | `[0, 1]`           | Диапазон progress, в котором backdrop проявляется                                                                          |
 | `screenRange`        | `[0, 1]`           | Диапазон progress, в котором проявляется контент `screen`/scrim                                                            |
+| `scrimMode`          | `"full"`           | Где лежит scrim: на весь экран (`full`), только до края sheet (`above-sheet`) или выключен (`off`)                         |
+| `scrimPreset`        | нет                | `subtle`, `standard`, `monitoring` или `cinematic` — цвет, размытие и диапазон одной опцией                                |
+| `scrimColor`, `scrimBlur` | из пресета    | Заливка scrim и радиус его размытия `backdrop-filter`                                                                      |
+| `scrimInteractive`   | `false`            | Scrim принимает указатель на себя, а не пропускает его к странице                                                          |
+| `scrimTapToClose`    | `false`            | Тап по scrim закрывает sheet                                                                                               |
 | `focusTrap`          | `false`            | Удерживать Tab-фокус внутри sheet, пока он верхний. Попап, отрисованный вне sheet (выпадающий список, датапикер), пометьте `data-bs-focus-allow` — фокус сможет уходить в него |
 | `initialFocus`       | первое поле        | Элемент / селектор, получающий фокус при открытии; `false` фокусирует контейнер sheet (`tabindex=-1`) — так не открывается клавиатура iOS |
 | `closeOnEscape`      | `true`             | Слушать Escape и закрывать                                                                                                 |
 | `closeOnBack`        | `false`            | Закрывать по кнопке «Назад». Кладёт запись в историю, сохраняя `history.state` роутера; см. `historySettled()` ниже        |
+| `routedTo`           | нет                | URL, который кладётся в историю, пока sheet открыт; «Назад» закрывает sheet и возвращает прежний адрес                     |
 | `closeOnRouteChange` | `false`            | Закрывать при смене URL (`pushState` / `replaceState` / popstate). Вызов History API с тем же адресом не считается          |
 | `lockBodyScroll`     | `true`             | Блокировка прокрутки body, безопасная для iOS (`position: fixed`)                                                          |
 | `stackEffect`        | `false`            | Стек карточек как в iOS: нижние sheet уменьшаются с глубиной                                                               |
@@ -257,6 +265,10 @@ type SnapPoint =
 | `radius`             | токен по умолчанию | Радиус скругления (`string` — CSS-длина или `number` — px); также `setRadius()`                                            |
 | `maxHeight`          | нет                | Ограничение высоты sheet. `number` (px) или строка (`"92dvh"`, `"50%"`), пересчитывается при смене viewport / ориентации   |
 | `returnFocusTo`      | opener             | Куда вернуть фокус при закрытии — `HTMLElement`, строка-селектор или фабрика `() => HTMLElement`                           |
+| `persistKey`         | нет                | Ключ `localStorage`: sheet запоминает последнюю точку и в следующий раз стартует с неё                                     |
+| `autoCollapseAfter`  | выкл.              | Через сколько миллисекунд покоя sheet возвращается к наименьшей открытой точке                                             |
+| `linkedSheets`       | нет                | Другие движки, которые сворачиваются к наименьшей открытой точке, когда открывается этот; также `setLinkedSheets()`        |
+| `viewTransitions`    | `false`            | Переход между точками через `document.startViewTransition()`, где браузер это умеет                                        |
 
 ### Anchored-элементы, docked-бары и сцены scrim
 
@@ -336,6 +348,17 @@ engine.isTop(); // top of the multi-sheet stack?
 engine.depth(); // open sheets above this one
 engine.destroy(); // remove listeners + cancel animation
 ```
+
+Если `setAllowed()` или `setSnapPoints()` убирает активную точку, открытый
+sheet переходит к ближайшей точке, на которой он остаётся открытым, и
+закрывается, только когда открытых точек не осталось. Чтобы выбрать точку
+самому, передайте её вторым аргументом `setAllowed()`.
+
+Ручка работает как клавиатурный слайдер: стрелка, направленная от края
+sheet, увеличивает его (`ArrowUp` для `bottom`, `ArrowDown` для `top`,
+`ArrowRight` для `left`, `ArrowLeft` для `right`), противоположная
+уменьшает, а `Home` / `End` переводят к наименьшей и наибольшей
+разрешённой точке.
 
 С `closeOnBack` или `routedTo` закрытие снимает запись в истории, а
 `history.back()` браузер применяет асинхронно. `await engine.close()`
@@ -699,7 +722,7 @@ new BottomSheetEngine({ element, handle, mode: 'start', snapPoints });
 ## Тестирование
 
 ```bash
-npm test                 # 850+ unit tests via vitest + happy-dom
+npm test                 # 930+ unit tests via vitest + happy-dom
 npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
 npm run typecheck        # TypeScript --noEmit
 ```
