@@ -150,7 +150,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "Elements ride the sheet edge on the compositor via <code>--bs-size</code>. Scrim stages swap content per state; docked bars let the sheet slide under them.",
     "f15.title": "Pay for what you use",
     "f15.body":
-      "<code>/core</code> is the engine alone at ~21 KB. Route, persist, auto-collapse and the rest are opt-in <code>EngineFeature</code>s you register per instance.",
+      "<code>/core</code> is the engine alone at ~22 KB. Route, persist, auto-collapse and the rest are opt-in <code>EngineFeature</code>s you register per instance.",
     "f16.title": "Debuggable",
     "f16.body":
       "<code>attachDebugOverlay(engine)</code> prints live snap, size, progress and flags from public events only — and ships zero bytes into every other bundle.",
@@ -316,7 +316,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "Элементы едут по краю листа на композиторе через <code>--bs-size</code>. Сцены затемнения меняют контент по состоянию; докнутые панели пропускают лист под собой.",
     "f15.title": "Платишь за то, что берёшь",
     "f15.body":
-      "<code>/core</code> — только движок, ~21 КБ. Роутинг, persist, авто-сворачивание и прочее — опциональные <code>EngineFeature</code>, подключаемые на инстанс.",
+      "<code>/core</code> — только движок, ~22 КБ. Роутинг, persist, авто-сворачивание и прочее — опциональные <code>EngineFeature</code>, подключаемые на инстанс.",
     "f16.title": "Отлаживаемый",
     "f16.body":
       "<code>attachDebugOverlay(engine)</code> показывает живой снап, размер, прогресс и флаги — только из публичных событий, и ноль байт в остальных бандлах.",
