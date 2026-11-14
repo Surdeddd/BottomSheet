@@ -1,6 +1,5 @@
 import { LitElement, html } from "lit";
-import "@surdeddd/bottom-sheet/element"; // registers <bottom-sheet>
-import "@surdeddd/bottom-sheet/styles";
+import "@surdeddd/bottom-sheet/element"; // registers <bottom-sheet>; it carries its own styles
 
 const snapPoints = [
   { id: "minimized", size: 96 },
