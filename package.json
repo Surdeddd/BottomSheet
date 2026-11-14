@@ -240,37 +240,37 @@
     {
       "name": "core (engine + types)",
       "path": "dist/index.js",
-      "limit": "22.77 KB",
+      "limit": "25.03 KB",
       "gzip": true
     },
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "30.22 KB",
+      "limit": "32.51 KB",
       "gzip": true
     },
     {
       "name": "vue adapter",
       "path": "dist/vue.js",
-      "limit": "25.98 KB",
+      "limit": "28.27 KB",
       "gzip": true
     },
     {
       "name": "svelte adapter",
       "path": "dist/svelte.js",
-      "limit": "25.62 KB",
+      "limit": "27.64 KB",
       "gzip": true
     },
     {
       "name": "solid adapter",
       "path": "dist/solid.js",
-      "limit": "24.29 KB",
+      "limit": "26.57 KB",
       "gzip": true
     },
     {
       "name": "qwik adapter",
       "path": "dist/qwik.js",
-      "limit": "24.35 KB",
+      "limit": "26.58 KB",
       "gzip": true
     },
     {
@@ -285,19 +285,19 @@
     {
       "name": "web component (self-contained)",
       "path": "dist/element.js",
-      "limit": "29.52 KB",
+      "limit": "31.92 KB",
       "gzip": true
     },
     {
       "name": "web component (IIFE / CDN)",
       "path": "dist/element.iife.global.js",
-      "limit": "29.10 KB",
+      "limit": "31.47 KB",
       "gzip": true
     },
     {
       "name": "overlay (subpath)",
       "path": "dist/overlay.js",
-      "limit": "7.5 KB",
+      "limit": "8.29 KB",
       "gzip": true
     },
     {
@@ -309,13 +309,13 @@
     {
       "name": "slim core (subpath, no optional features)",
       "path": "dist/core.js",
-      "limit": "20.10 KB",
+      "limit": "21.39 KB",
       "gzip": true
     },
     {
       "name": "features (subpath)",
       "path": "dist/features.js",
-      "limit": "3.13 KB",
+      "limit": "4.10 KB",
       "gzip": true
     },
     {
