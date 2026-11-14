@@ -451,6 +451,7 @@ html:not(.has-stage) .asm-item {
   z-index:60
 }
 .rail-mark {
+  position:relative;
   width:26px;
   height:26px;
   padding:0;
@@ -459,6 +460,34 @@ html:not(.has-stage) .asm-item {
   cursor:pointer;
   display:grid;
   place-items:center
+}
+.rail-mark::before {
+  content:attr(data-label);
+  position:absolute;
+  right:30px;
+  top:50%;
+  transform:translateY(-50%);
+  padding:5px 9px;
+  white-space:nowrap;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-2);
+  background:var(--paper);
+  border:1px solid var(--hairline);
+  border-radius:3px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity var(--t-fast) var(--e-out)
+}
+.rail-mark:focus-visible::before {
+  opacity:1
+}
+@media (hover:hover) {
+  .rail-mark:hover::before {
+    opacity:1
+  }
 }
 .rail-mark::after {
   content:"";
@@ -626,6 +655,12 @@ html:not(.has-stage) .asm-item {
     top:12vh;
     height:76vh
   }
+  .hero-actions {
+    max-width:calc(100% - 30vw)
+  }
+  html.no-stage .hero-actions {
+    max-width:none
+  }
   html.no-stage .hero .hero-lede {
     max-width:820px
   }
@@ -634,6 +669,9 @@ html:not(.has-stage) .asm-item {
   }
 }
 @media (min-width:900px) and (prefers-reduced-motion:reduce) {
+  .hero-actions {
+    max-width:none
+  }
   .hero .hero-lede {
     max-width:820px
   }
@@ -711,6 +749,66 @@ html:not(.has-stage) .asm-item {
   font-style:italic;
   color:var(--vermillion);
   font-weight:400
+}
+.hero-actions {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:14px 28px;
+  margin:-18px 0 44px
+}
+.hero-install {
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+  max-width:100%;
+  padding:6px 6px 6px 18px;
+  background:var(--ink);
+  color:var(--paper);
+  border-radius:4px;
+  font-size:15px
+}
+.hero-install code {
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+.hero-link {
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  min-height:40px;
+  font-family:var(--mono);
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  text-decoration:none;
+  color:var(--ink-2);
+  transition:color var(--t-fast) var(--e-out)
+}
+.hero-link::after {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:9px;
+  height:1px;
+  background:var(--vermillion);
+  transform:scaleX(.24);
+  transform-origin:left center;
+  transition:transform var(--t-base) var(--e-out)
+}
+.hero-link:focus-visible {
+  outline:2px solid var(--vermillion);
+  outline-offset:4px
+}
+@media (hover:hover) {
+  .hero-link:hover {
+    color:var(--vermillion)
+  }
+  .hero-link:hover::after {
+    transform:scaleX(1)
+  }
 }
 .hero-stats {
   display:grid;
@@ -2111,11 +2209,13 @@ html:not(.has-stage) .asm-item {
 }
 .hero-meta,
 .hero-lede,
+.hero-actions,
 .hero-stats {
   animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .hero-meta { animation-delay: 0.02s; }
 .hero-lede { animation-delay: 0.32s; }
+.hero-actions { animation-delay: 0.4s; }
 .hero-stats { animation-delay: 0.48s; }
 
 .reveal {

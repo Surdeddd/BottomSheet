@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to demo</a>
+    <a class="skip-link" href="#main-content" data-i18n="a11y.skip">Skip to demo</a>
     <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
     <div class="grain"></div>
 
@@ -32,6 +32,7 @@
         id="lang-toggle"
         type="button"
         aria-label="EN · RU. Language: English. Click to switch."
+        data-i18n-label="a11y.lang"
       >
         <span class="topbar-active" id="lang-en" aria-hidden="true">EN</span>
         <span class="topbar-sep" aria-hidden="true">·</span>
@@ -70,6 +71,35 @@
         A <em>universal</em> sheet engine. One framework-agnostic core, seven
         adapters, native-feel gestures.
       </p>
+      <div class="hero-actions">
+        <div class="hero-install">
+          <code class="mono">npm i @surdeddd/bottom-sheet</code>
+          <button
+            type="button"
+            class="topbar-btn hero-copy"
+            id="hero-install-copy"
+            aria-label="Copy install command"
+            data-i18n-label="a11y.copyInstall"
+          >
+            <span id="hero-install-copy-label" data-i18n="install.copy"
+              >copy</span
+            >
+          </button>
+        </div>
+        <a
+          class="hero-link"
+          href="https://github.com/Surdeddd/BottomSheet"
+          rel="noreferrer"
+          >GitHub</a
+        >
+        <a
+          class="hero-link"
+          href="https://surdeddd.github.io/BottomSheet/"
+          rel="noreferrer"
+          data-i18n="hero.docs"
+          >API docs</a
+        >
+      </div>
       <div class="hero-stats">
         <div class="stat">
           <span class="stat-num">25<span class="stat-unit">KB gzip</span></span>
@@ -161,7 +191,11 @@
     </section>
     </div>
 
-    <section class="adapter-row" aria-label="Adapter selector">
+    <section
+      class="adapter-row"
+      aria-label="Adapter selector"
+      data-i18n-label="a11y.adapters"
+    >
       <button class="adapter is-active" data-adapter="react">
         <span class="adapter-no">01</span>
         <span class="adapter-name">React</span>
@@ -249,7 +283,7 @@
 
         <div class="readout">
           <span class="readout-label" data-i18n="live.fps"
-            >fps · drag-frame</span
+            >fps while dragging</span
           >
           <span class="readout-value mono" id="ro-fps">—</span>
         </div>
@@ -306,8 +340,8 @@
         </div>
         <div class="device-cap mono">
           <span
-            >360×720&nbsp;·&nbsp;<span id="cap-mode">bottom</span
-            >&nbsp;mode</span
+            >360×720&nbsp;·&nbsp;<span data-i18n="device.mode">mode</span
+            >:&nbsp;<span id="cap-mode">bottom</span></span
           >
           <span>
             <kbd class="mono">↑↓</kbd>
@@ -317,20 +351,26 @@
         </div>
       </div>
 
-      <aside class="snippet" aria-label="Code snippet for active adapter">
+      <aside
+        class="snippet"
+        aria-label="Code snippet for active adapter"
+        data-i18n-label="a11y.snippet"
+      >
         <h2 class="section-title">
-          Usage <span class="section-tag mono" id="snip-tag">react</span>
+          <span data-i18n="snippet.title">Usage</span>
+          <span class="section-tag mono" id="snip-tag">react</span>
           <button
             type="button"
             id="code-copy"
             class="topbar-btn snippet-action snippet-action-first"
             aria-label="Copy code to clipboard"
+            data-i18n-label="a11y.copyCode"
           >
-            <span id="code-copy-label">copy</span>
+            <span id="code-copy-label" data-i18n="install.copy">copy</span>
           </button>
         </h2>
         <div id="snippet-status" class="sr-only" role="status" aria-live="polite"></div>
-        <pre class="code" tabindex="0" role="region" aria-label="React code example" id="code-react">
+        <pre class="code" tabindex="0" role="region" aria-label="React · code example" data-i18n-label="a11y.code" data-label-prefix="React" id="code-react">
 <span class="c-c">// React</span>
 <span class="c-k">import</span> { <span class="c-i">BottomSheet</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet/react"</span>;
 <span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/styles"</span>;
@@ -352,7 +392,7 @@
   &lt;<span class="c-i">YourList</span> /&gt;
 &lt;/<span class="c-i">BottomSheet</span>&gt;</pre>
 
-        <pre class="code" tabindex="0" role="region" aria-label="Vue code example" id="code-vue" hidden>
+        <pre class="code" tabindex="0" role="region" aria-label="Vue · code example" data-i18n-label="a11y.code" data-label-prefix="Vue" id="code-vue" hidden>
 <span class="c-c">&lt;!-- Vue 3 --&gt;</span>
 &lt;<span class="c-k">script setup</span>&gt;
 <span class="c-k">import</span> { <span class="c-i">BottomSheet</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet/vue"</span>;
@@ -375,7 +415,7 @@
   &lt;/<span class="c-i">BottomSheet</span>&gt;
 &lt;/<span class="c-k">template</span>&gt;</pre>
 
-        <pre class="code" tabindex="0" role="region" aria-label="Svelte code example" id="code-svelte" hidden>
+        <pre class="code" tabindex="0" role="region" aria-label="Svelte · code example" data-i18n-label="a11y.code" data-label-prefix="Svelte" id="code-svelte" hidden>
 <span class="c-c">&lt;!-- Svelte 5 — runes + SFC --&gt;</span>
 &lt;<span class="c-k">script lang</span>=<span class="c-s">"ts"</span>&gt;
 <span class="c-k">import</span> { <span class="c-i">BottomSheet</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet/svelte"</span>;
@@ -397,7 +437,7 @@
   &lt;<span class="c-i">YourList</span> /&gt;
 &lt;/<span class="c-i">BottomSheet</span>&gt;</pre>
 
-        <pre class="code" tabindex="0" role="region" aria-label="Solid code example" id="code-solid" hidden>
+        <pre class="code" tabindex="0" role="region" aria-label="Solid · code example" data-i18n-label="a11y.code" data-label-prefix="Solid" id="code-solid" hidden>
 <span class="c-c">// Solid — engine wired to refs via `ref={...}`</span>
 <span class="c-k">import</span> { <span class="c-i">BottomSheetEngine</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet"</span>;
 <span class="c-k">import</span> { onMount } <span class="c-k">from</span> <span class="c-s">"solid-js"</span>;
@@ -423,7 +463,7 @@ onMount(() =&gt; {
   &lt;/<span class="c-k">section</span>&gt;
 &lt;/<span class="c-k">div</span>&gt;</pre>
 
-        <pre class="code" tabindex="0" role="region" aria-label="Lit code example" id="code-lit" hidden>
+        <pre class="code" tabindex="0" role="region" aria-label="Lit · code example" data-i18n-label="a11y.code" data-label-prefix="Lit" id="code-lit" hidden>
 <span class="c-c">// Lit — wraps the &lt;bottom-sheet&gt; custom element</span>
 <span class="c-k">import</span> { <span class="c-i">LitElement</span>, html } <span class="c-k">from</span> <span class="c-s">"lit"</span>;
 <span class="c-k">import</span> { <span class="c-i">customElement</span> } <span class="c-k">from</span> <span class="c-s">"lit/decorators.js"</span>;
@@ -446,7 +486,7 @@ onMount(() =&gt; {
   }
 }</pre>
 
-        <pre class="code" tabindex="0" role="region" aria-label="Web Component code example" id="code-element" hidden>
+        <pre class="code" tabindex="0" role="region" aria-label="Web Component · code example" data-i18n-label="a11y.code" data-label-prefix="Web Component" id="code-element" hidden>
 <span class="c-c">&lt;!-- Web Component --&gt;</span>
 &lt;<span class="c-k">link</span> rel=<span class="c-s">"stylesheet"</span> href=<span class="c-s">"/styles.css"</span>&gt;
 &lt;<span class="c-k">script type</span>=<span class="c-s">"module"</span> src=<span class="c-s">"/element.js"</span>&gt;&lt;/script&gt;
@@ -465,7 +505,7 @@ onMount(() =&gt; {
   &lt;<span class="c-k">ul</span>&gt;...&lt;/<span class="c-k">ul</span>&gt;
 &lt;/<span class="c-i">bottom-sheet</span>&gt;</pre>
 
-        <pre class="code" tabindex="0" role="region" aria-label="Vanilla JS code example" id="code-vanilla" hidden>
+        <pre class="code" tabindex="0" role="region" aria-label="Vanilla JS · code example" data-i18n-label="a11y.code" data-label-prefix="Vanilla JS" id="code-vanilla" hidden>
 <span class="c-c">// Vanilla — engine wired to plain DOM</span>
 <span class="c-k">import</span> { <span class="c-i">BottomSheetEngine</span> } <span class="c-k">from</span> <span class="c-s">"@surdeddd/bottom-sheet"</span>;
 <span class="c-k">import</span> <span class="c-s">"@surdeddd/bottom-sheet/styles"</span>;
@@ -585,8 +625,12 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <input type="checkbox" id="tg-drag-content" checked />
           <span data-i18n="ctrl.drag.content">drag from content</span>
         </label>
-        <p class="control-note" id="dragfrom-note" data-i18n="ctrl.drag.note">
-          Pull the sheet by its handle only.
+        <p
+          class="control-note"
+          id="dragfrom-note"
+          data-i18n="ctrl.drag.note.handle"
+        >
+          Only the handle starts a drag — the default.
         </p>
       </div>
 
@@ -647,7 +691,13 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           >
             ⚡ stress 8s
           </button>
-          <p class="recorder-status mono" id="stress-status">idle</p>
+          <p
+            class="recorder-status mono"
+            id="stress-status"
+            data-i18n="adv.stress.idle"
+          >
+            idle
+          </p>
         </div>
 
         <div class="advanced-card" data-viz="compass">
@@ -742,22 +792,25 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <span class="feature-no mono">F.04</span>
           <h3 class="feature-title" data-i18n="f04.title">Four directions</h3>
           <p class="feature-body" data-i18n-html="f04.body">
-            <em>bottom · top · left · right</em>. Same engine — drawer-side
-            sheets without code duplication. Pointer axis & sign computed.
+            <em>bottom · top · left · right</em>, plus logical
+            <code>start</code> / <code>end</code> that follow <code>dir</code>.
+            One engine, so a side drawer is the same sheet on another edge.
           </p>
-          <div class="feature-spec mono">switch (mode) { ... }</div>
+          <div class="feature-spec mono">setMode() · rtl-aware</div>
         </article>
 
-        <article class="feature" data-viz="pointers">
+        <article class="feature" data-viz="history">
           <span class="feature-no mono">F.05</span>
           <h3 class="feature-title" data-i18n="f05.title">
-            Pointer-type tuned
+            Back button aware
           </h3>
           <p class="feature-body" data-i18n-html="f05.body">
-            Touch flicks: 0.65px/ms threshold, 120ms velocity window. Mouse
-            inertia: 0.4px/ms, 160ms window. Gesture parses what the pointer is.
+            <code>closeOnBack</code> gives the sheet a history entry, so Back
+            closes it instead of leaving the page. <code>routedTo</code> puts it
+            on its own URL, and <code>await close()</code> waits for the history
+            to settle.
           </p>
-          <div class="feature-spec mono">PointerEvent.pointerType</div>
+          <div class="feature-spec mono">closeOnBack · routedTo</div>
         </article>
 
         <article class="feature" data-viz="keys">
@@ -830,15 +883,16 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <div class="feature-spec mono">manager.transition(prev, next)</div>
         </article>
 
-        <article class="feature" data-viz="grid">
+        <article class="feature" data-viz="surface">
           <span class="feature-no mono">F.12</span>
-          <h3 class="feature-title" data-i18n="f12.title">Tested</h3>
+          <h3 class="feature-title" data-i18n="f12.title">WebGL renderer</h3>
           <p class="feature-body" data-i18n-html="f12.body">
-            860+ unit tests (vitest + happy-dom) on snap math, spring, gestures,
-            the phase machine, history, focus trap and scroll lock. ~190 e2e
-            tests on each of Chromium, WebKit and Firefox.
+            An opt-in second renderer paints the surface on the GPU: it bends
+            with drag velocity and hands the text back to the DOM when it
+            settles. Layout, scrolling and the accessibility tree never leave
+            the DOM.
           </p>
-          <div class="feature-spec mono">npm test · npx playwright test</div>
+          <div class="feature-spec mono">/webgl · 5.9 KB · DOM fallback</div>
         </article>
 
         <article class="feature" data-viz="zones">
@@ -895,23 +949,33 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           id="install-copy"
           class="topbar-btn install-copy"
           aria-label="Copy install command"
+          data-i18n-label="a11y.copyInstall"
         >
           <span id="install-copy-label" data-i18n="install.copy">copy</span>
         </button>
       </div>
-      <nav class="footer-links" aria-label="Project links">
+      <nav
+        class="footer-links"
+        aria-label="Project links"
+        data-i18n-label="a11y.links"
+      >
         <a href="https://github.com/Surdeddd/BottomSheet" rel="noreferrer">
           GitHub
         </a>
         <a href="https://www.npmjs.com/package/@surdeddd/bottom-sheet" rel="noreferrer">
           npm
         </a>
-        <a href="https://surdeddd.github.io/BottomSheet/" rel="noreferrer">
+        <a
+          href="https://surdeddd.github.io/BottomSheet/"
+          rel="noreferrer"
+          data-i18n="hero.docs"
+        >
           API docs
         </a>
         <a
           href="https://github.com/Surdeddd/BottomSheet/blob/main/CHANGELOG.md"
           rel="noreferrer"
+          data-i18n="footer.changelog"
         >
           Changelog
         </a>
@@ -919,7 +983,9 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
       <div class="footer-meta">
         <span>MIT</span>
         <span>·</span>
-        <span>Distilled from a fleet-monitoring app, rebuilt headless</span>
+        <span data-i18n="footer.note"
+          >Distilled from a fleet-monitoring app, rebuilt headless</span
+        >
         <span>·</span>
         <span class="mono" id="footer-version">v0.24.0</span>
       </div>

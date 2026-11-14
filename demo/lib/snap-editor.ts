@@ -1,5 +1,9 @@
+import { t } from "./i18n";
 import { $, type Settings } from "./types";
 import { snapPoints } from "../apps/shared";
+
+const label = (key: string, value: string | number): string =>
+  t(key).replace("%n", String(value));
 
 export type EditableSnap = { id: string; size: number };
 
@@ -66,19 +70,19 @@ export const mountSnapEditor = (deps: SnapEditorDeps): void => {
       const idIn = document.createElement("input");
       idIn.value = snap.id;
       idIn.placeholder = "id";
-      idIn.setAttribute("aria-label", `Snap ${i + 1} id`);
+      idIn.setAttribute("aria-label", label("a11y.snap.id", i + 1));
 
       const sizeIn = document.createElement("input");
       sizeIn.value = String(snap.size);
       sizeIn.placeholder = "size";
       sizeIn.type = "number";
-      sizeIn.setAttribute("aria-label", `Snap ${i + 1} size in pixels`);
+      sizeIn.setAttribute("aria-label", label("a11y.snap.size", i + 1));
 
       const remove = document.createElement("button");
       remove.className = "remove";
       remove.type = "button";
       remove.textContent = "×";
-      remove.setAttribute("aria-label", `Remove snap ${snap.id}`);
+      remove.setAttribute("aria-label", label("a11y.snap.remove", snap.id));
 
       const apply = (): void => {
         const next = (customSnaps ?? current).slice();

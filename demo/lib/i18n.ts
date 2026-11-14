@@ -6,6 +6,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "hero.kicker.left": "Issue Nº {issue} · v{version} · MIT",
     "adapters.more": "same engine, no live tab here",
     "hero.kicker.right": "Filed under: gestures · physics · a11y",
+    "hero.docs": "API docs",
     "hero.lede":
       "A <em>universal</em> sheet engine. One framework-agnostic core, seven adapters, native-feel gestures.",
     "sec.assembly": "§ 01 — the anatomy",
@@ -29,6 +30,34 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.features": "§ 05 — what's inside",
     "install.copy": "copy",
     "install.copied": "copied",
+    "install.failed": "failed",
+    "a11y.skip": "Skip to demo",
+    "a11y.lang": "EN · RU. Language: English. Click to switch.",
+    "a11y.theme.light": "Theme: light. Click to switch.",
+    "a11y.theme.dark": "Theme: dark. Click to switch.",
+    "a11y.copyInstall": "Copy install command",
+    "a11y.copyCode": "Copy code to clipboard",
+    "a11y.adapters": "Adapter selector",
+    "a11y.readouts": "Live engine readouts",
+    "a11y.snippet": "Code snippet for active adapter",
+    "a11y.code": "code example",
+    "a11y.links": "Project links",
+    "a11y.rail": "Section navigation",
+    "a11y.snap.id": "Snap %n id",
+    "a11y.snap.size": "Snap %n size in pixels",
+    "a11y.snap.remove": "Remove snap %n",
+    "a11y.copied": "Code copied to clipboard",
+    "a11y.copyFailed": "Copy failed",
+    "snippet.title": "Usage",
+    "device.mode": "mode",
+    "footer.changelog": "Changelog",
+    "footer.note": "Distilled from a fleet-monitoring app, rebuilt headless",
+    "adv.stress.idle": "idle",
+    "adv.stress.stop": "■ stop",
+    "adv.stress.stopped": "stopped",
+    "adv.stress.done": "done · %n cycles",
+    "adv.stress.cycle": "cycle %n · %ims · %ss",
+    "adv.stress.gone": "sheet is gone",
     "stat.core": "core / esm",
     "stat.adapters": "adapters",
     "stat.modes": "modes",
@@ -40,7 +69,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "live.size": "size · px",
     "live.velocity": "velocity · px/ms",
     "live.flags": "flags",
-    "live.fps": "fps · drag-frame",
+    "live.fps": "fps while dragging",
     "kbd.title": "keyboard",
     "kbd.step": "step snap",
     "kbd.jump": "jump min · max",
@@ -88,10 +117,10 @@ const DICT: Record<Lang, Record<string, string>> = {
       "Snap points accept px, percentages, <code>fit</code>, <code>full</code>, plus arbitrary CSS: <code>50dvh</code>, <code>clamp()</code>, <code>env()</code>.",
     "f04.title": "Four directions",
     "f04.body":
-      "<em>bottom · top · left · right</em>. Same engine — drawer-side sheets without code duplication. Pointer axis & sign computed.",
-    "f05.title": "Pointer-type tuned",
+      "<em>bottom · top · left · right</em>, plus logical <code>start</code> / <code>end</code> that follow <code>dir</code>. One engine, so a side drawer is the same sheet on another edge.",
+    "f05.title": "Back button aware",
     "f05.body":
-      "Touch flicks: 0.65px/ms threshold, 120ms velocity window. Mouse inertia: 0.4px/ms, 160ms window. Gesture parses what the pointer is.",
+      "<code>closeOnBack</code> gives the sheet a history entry, so Back closes it instead of leaving the page. <code>routedTo</code> puts it on its own URL, and <code>await close()</code> waits for the history to settle.",
     "f06.title": "Native a11y",
     "f06.body":
       "<code>role=slider</code> on handle. ↑↓ steps snaps, Home/End jumps, Esc closes. Focus trap with restore. ARIA-live announcer. WCAG 2.1 AA.",
@@ -110,9 +139,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "f11.title": "Sheet manager",
     "f11.body":
       "<code>createSheetManager()</code> — typed registry mapping route keys to configs. <code>onOpen</code>/<code>onClose</code> hooks, framework-agnostic.",
-    "f12.title": "Tested",
+    "f12.title": "WebGL renderer",
     "f12.body":
-      "860+ unit tests (vitest + happy-dom) on snap math, spring, gestures, the phase machine, history, focus trap and scroll lock. ~190 e2e tests on each of Chromium, WebKit and Firefox.",
+      "An opt-in second renderer paints the surface on the GPU: it bends with drag velocity and hands the text back to the DOM when it settles. Layout, scrolling and the accessibility tree never leave the DOM.",
     "f13.title": "Drag zones",
     "f13.body":
       "<code>dragFrom</code>: handle, whole sheet, or opt-in <code>[data-bs-drag]</code> islands. <code>[data-bs-no-drag]</code> excludes a subtree, so carousels keep their own gesture.",
@@ -143,6 +172,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "hero.kicker.left": "Выпуск № {issue} · v{version} · MIT",
     "adapters.more": "тот же движок, без вкладки в демо",
     "hero.kicker.right": "Раздел: жесты · физика · доступность",
+    "hero.docs": "Документация API",
     "hero.lede":
       "<em>Универсальный</em> движок шторки. Одно ядро без привязки к фреймворку, семь адаптеров, нативные жесты.",
     "sec.assembly": "§ 01 — анатомия",
@@ -166,6 +196,34 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.features": "§ 05 — что внутри",
     "install.copy": "копировать",
     "install.copied": "скопировано",
+    "install.failed": "не вышло",
+    "a11y.skip": "К демо",
+    "a11y.lang": "EN · RU. Язык: русский. Нажмите, чтобы переключить.",
+    "a11y.theme.light": "Тема: светлая. Нажмите, чтобы переключить.",
+    "a11y.theme.dark": "Тема: тёмная. Нажмите, чтобы переключить.",
+    "a11y.copyInstall": "Копировать команду установки",
+    "a11y.copyCode": "Копировать код в буфер обмена",
+    "a11y.adapters": "Выбор адаптера",
+    "a11y.readouts": "Показания движка в реальном времени",
+    "a11y.snippet": "Пример кода для выбранного адаптера",
+    "a11y.code": "пример кода",
+    "a11y.links": "Ссылки проекта",
+    "a11y.rail": "Навигация по разделам",
+    "a11y.snap.id": "Идентификатор точки %n",
+    "a11y.snap.size": "Размер точки %n в пикселях",
+    "a11y.snap.remove": "Удалить точку %n",
+    "a11y.copied": "Код скопирован в буфер обмена",
+    "a11y.copyFailed": "Скопировать не удалось",
+    "snippet.title": "Использование",
+    "device.mode": "режим",
+    "footer.changelog": "История версий",
+    "footer.note": "Выросло из приложения для мониторинга автопарка, пересобрано без привязки к UI",
+    "adv.stress.idle": "ожидание",
+    "adv.stress.stop": "■ стоп",
+    "adv.stress.stopped": "остановлено",
+    "adv.stress.done": "готово · циклов: %n",
+    "adv.stress.cycle": "цикл %n · %i мс · %s с",
+    "adv.stress.gone": "лист исчез",
     "stat.core": "ядро / esm",
     "stat.adapters": "адаптеры",
     "stat.modes": "режимы",
@@ -177,7 +235,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "live.size": "размер · px",
     "live.velocity": "скорость · px/мс",
     "live.flags": "флаги",
-    "live.fps": "fps · кадр перетаскивания",
+    "live.fps": "fps во время жеста",
     "kbd.title": "клавиатура",
     "kbd.step": "шаг по точкам",
     "kbd.jump": "к мин · макс",
@@ -225,10 +283,10 @@ const DICT: Record<Lang, Record<string, string>> = {
       "Точки принимают px, проценты, <code>fit</code>, <code>full</code> и любой CSS: <code>50dvh</code>, <code>clamp()</code>, <code>env()</code>.",
     "f04.title": "Четыре направления",
     "f04.body":
-      "<em>снизу · сверху · слева · справа</em>. Один движок — боковые шторки без дублирования кода. Ось и знак указателя вычисляются автоматически.",
-    "f05.title": "Настройка под тип указателя",
+      "<em>снизу · сверху · слева · справа</em> и логические <code>start</code> / <code>end</code>, которые идут за <code>dir</code>. Движок один: боковая шторка — тот же лист у другого края.",
+    "f05.title": "Знает про «Назад»",
     "f05.body":
-      "Тач-флик: порог 0,65 px/мс, окно 120 мс. Инерция мыши: 0,4 px/мс, 160 мс. Жест распознаёт тип указателя.",
+      "<code>closeOnBack</code> заводит шторке запись в истории: «Назад» закрывает её, а не уводит со страницы. <code>routedTo</code> даёт ей свой адрес, а <code>await close()</code> ждёт, пока история успокоится.",
     "f06.title": "Нативная доступность",
     "f06.body":
       "<code>role=slider</code> на ручке. ↑↓ — шаг, Home/End — крайние точки, Esc — закрыть. Ловушка фокуса с возвратом. ARIA-live. WCAG 2.1 AA.",
@@ -247,9 +305,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "f11.title": "Менеджер шторок",
     "f11.body":
       "<code>createSheetManager()</code> — типизированный реестр ключ маршрута → конфиг. Хуки <code>onOpen</code>/<code>onClose</code>, без привязки к фреймворку.",
-    "f12.title": "Покрытие тестами",
+    "f12.title": "WebGL-рендерер",
     "f12.body":
-      "860+ unit-тестов (vitest + happy-dom): snap-математика, пружина, жесты, машина фаз, история, ловушка фокуса, блокировка прокрутки. ~190 e2e-тестов на каждом из Chromium, WebKit и Firefox.",
+      "Второй рендерер по желанию рисует поверхность на GPU: она гнётся от скорости жеста и возвращает текст в DOM, когда успокаивается. Вёрстка, прокрутка и дерево доступности остаются в DOM.",
     "f13.title": "Зоны перетаскивания",
     "f13.body":
       "<code>dragFrom</code>: ручка, весь лист или только острова <code>[data-bs-drag]</code>. <code>[data-bs-no-drag]</code> исключает поддерево — карусель сохраняет свой жест.",
@@ -326,6 +384,17 @@ export const getLang = (): Lang => currentLang;
 export const t = (key: string): string =>
   fill(DICT[currentLang][key] ?? key) ?? key;
 
+const paintLabel = (el: HTMLElement): void => {
+  const text = t(el.dataset.i18nLabel!);
+  const prefix = el.dataset.labelPrefix;
+  el.setAttribute("aria-label", prefix ? `${prefix} · ${text}` : text);
+};
+
+export const setLabel = (el: HTMLElement, key: string): void => {
+  el.dataset.i18nLabel = key;
+  paintLabel(el);
+};
+
 export const applyLang = (lang: Lang): void => {
   currentLang = lang;
   localStorage.setItem("bs-demo-lang", lang);
@@ -348,11 +417,8 @@ export const applyLang = (lang: Lang): void => {
     .getElementById("lang-ru")
     ?.classList.toggle("topbar-active", lang === "ru");
   document
-    .getElementById("lang-toggle")
-    ?.setAttribute(
-      "aria-label",
-      `EN · RU. Language: ${lang === "en" ? "English" : "Russian"}. Click to switch.`,
-    );
+    .querySelectorAll<HTMLElement>("[data-i18n-label]")
+    .forEach(paintLabel);
 };
 
 export const setLangVars = (next: Record<string, string>): void => {

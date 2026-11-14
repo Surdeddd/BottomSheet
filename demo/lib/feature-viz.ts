@@ -7,16 +7,16 @@ export type VizKind =
   | "compass"
   | "stack"
   | "keys"
-  | "pointers"
   | "safearea"
   | "layers"
   | "hydrate"
   | "registry"
-  | "grid"
   | "zones"
   | "anchors"
   | "modules"
-  | "probe";
+  | "probe"
+  | "history"
+  | "surface";
 
 const NS = "http://www.w3.org/2000/svg";
 const W = 200;
@@ -178,23 +178,6 @@ const build = (kind: VizKind): SVGSVGElement => {
     });
   }
 
-  if (kind === "pointers") {
-
-    const midY = H / 2;
-    svg.append(el("circle", { cx: 34, cy: midY, r: 9, fill: stroke, opacity: 0.85, "data-touch": "1" }));
-    for (let i = 0; i < 4; i++) {
-      svg.append(
-        el("circle", { cx: 34 - 14 - i * 11, cy: midY, r: 2.4 - i * 0.4, fill: stroke, opacity: 0.4 - i * 0.08 }),
-      );
-    }
-    svg.append(
-      el("path", { d: `M126 ${midY - 9} L126 ${midY + 7} L131 ${midY + 2} L136 ${midY + 9} L139 ${midY + 6} L134 ${midY} L140 ${midY - 1} Z`, fill: faint, stroke: faint, "stroke-width": 1, "data-mouse": "1" }),
-    );
-    for (let i = 0; i < 3; i++) {
-      svg.append(el("line", { x1: 150 + i * 14, y1: midY, x2: 158 + i * 14, y2: midY, stroke: faint, "stroke-width": 1.5, opacity: 0.5 - i * 0.12 }));
-    }
-  }
-
   if (kind === "safearea") {
     svg.append(el("rect", { x: 52, y: 3, width: 96, height: H - 6, rx: 10, stroke: faint, "stroke-width": 1 }));
 
@@ -282,22 +265,46 @@ const build = (kind: VizKind): SVGSVGElement => {
     }
   }
 
-  if (kind === "grid") {
-
-    const cols = 20;
-    const rows = 3;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        svg.append(
-          el("rect", {
-            x: c * 10, y: 4 + r * 13, width: 7, height: 9, rx: 1.5,
-            fill: (r * cols + c) % 7 === 0 ? stroke : faint,
-            opacity: (r * cols + c) % 7 === 0 ? 0.9 : 0.4,
-            "data-cell": r * cols + c,
-          }),
-        );
-      }
+  if (kind === "history") {
+    for (let i = 0; i < 4; i++) {
+      const last = i === 3;
+      svg.append(
+        el("rect", {
+          x: 36 + i * 34,
+          y: H / 2 - 4,
+          width: 26,
+          height: 16,
+          rx: 3,
+          ...(last
+            ? { fill: stroke, opacity: 0.95, "data-marker": "1" }
+            : { stroke: faint, "stroke-width": 1 }),
+        }),
+      );
     }
+    svg.append(
+      el("path", {
+        d: "M164 8 L130 8 M138 3 L130 8 L138 13",
+        stroke,
+        "stroke-width": 1.4,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "data-back": "1",
+      }),
+    );
+  }
+
+  if (kind === "surface") {
+    svg.append(
+      el("line", { x1: 24, y1: H - 9, x2: W - 24, y2: H - 9, stroke: faint, "stroke-width": 1, "stroke-dasharray": "3 5" }),
+      el("path", {
+        d: `M24 ${H - 9} Q ${W / 2} 0 ${W - 24} ${H - 9}`,
+        stroke,
+        "stroke-width": 1.6,
+        "stroke-linecap": "round",
+        "data-bend": "1",
+        style: `transform-origin: 50% ${H - 9}px; transform-box: view-box`,
+      }),
+    );
   }
 
   return svg;
@@ -344,12 +351,6 @@ const play = (svg: SVGSVGElement, kind: VizKind): void => {
   if (kind === "keys") {
     const keys = Array.from(svg.querySelectorAll<SVGRectElement>("[data-key]"));
     animate(keys, { opacity: [0.25, 1] }, { duration: 0.35, delay: (i: number) => i * 0.08 });
-  }
-  if (kind === "pointers") {
-    const touch = svg.querySelector<SVGCircleElement>("[data-touch]");
-    const mouse = svg.querySelector<SVGPathElement>("[data-mouse]");
-    if (touch) animate(touch, { x: [-26, 0], opacity: [0.3, 0.85] }, { type: "spring", stiffness: 190, damping: 18 });
-    if (mouse) animate(mouse, { x: [22, 0], opacity: [0.2, 1] }, { duration: 0.5, ease: "easeOut" });
   }
   if (kind === "safearea") {
     const safe = svg.querySelector<SVGRectElement>("[data-safe]");
@@ -399,9 +400,15 @@ const play = (svg: SVGSVGElement, kind: VizKind): void => {
       animate(trace, { strokeDashoffset: [len, 0] }, { duration: 1, ease: "easeOut" });
     }
   }
-  if (kind === "grid") {
-    const cells = Array.from(svg.querySelectorAll<SVGRectElement>("[data-cell]"));
-    animate(cells, { opacity: [0.08, 1], scale: [0.6, 1] }, { duration: 0.32, delay: (i: number) => i * 0.006, ease: "easeOut" });
+  if (kind === "history") {
+    const marker = svg.querySelector<SVGRectElement>("[data-marker]");
+    const back = svg.querySelector<SVGPathElement>("[data-back]");
+    if (marker) animate(marker, { x: [14, 0], opacity: [0, 0.95] }, { duration: 0.4, ease: [0.2, 0.8, 0.3, 1] });
+    if (back) animate(back, { x: [8, 0], opacity: [0, 1] }, { duration: 0.4, delay: 0.3 });
+  }
+  if (kind === "surface") {
+    const bend = svg.querySelector<SVGPathElement>("[data-bend]");
+    if (bend) animate(bend, { scaleY: [0.15, 1] }, { type: "spring", stiffness: 190, damping: 9 });
   }
 };
 

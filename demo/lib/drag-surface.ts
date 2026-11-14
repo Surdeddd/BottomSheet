@@ -37,7 +37,8 @@ export const wireDragSurface = (
 
   const renderNote = (): void => {
     if (!note) return;
-    note.textContent = t(`ctrl.drag.note.${dragFrom}`);
+    note.dataset.i18n = `ctrl.drag.note.${dragFrom}`;
+    note.textContent = t(note.dataset.i18n);
   };
 
   const apply = (): void => {

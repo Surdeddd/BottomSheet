@@ -4,6 +4,7 @@ import {
   type AdapterKey as CodegenAdapterKey,
 } from "./codegen";
 import { snapPoints as resolveSnapPoints } from "../apps/shared";
+import { t } from "./i18n";
 import { announce, type AdapterKey, type Settings } from "./types";
 
 const paintCode = (target: HTMLElement, code: string): void => {
@@ -52,12 +53,12 @@ export const wireCopyButton = (
     const raw = target?.dataset.raw ?? target?.textContent ?? "";
     try {
       await navigator.clipboard.writeText(raw);
-      label.textContent = "copied";
-      announce("Code copied to clipboard");
+      label.textContent = t("install.copied");
+      announce(t("a11y.copied"));
     } catch {
-      label.textContent = "failed";
-      announce("Copy failed");
+      label.textContent = t("install.failed");
+      announce(t("a11y.copyFailed"));
     }
-    window.setTimeout(() => (label.textContent = "copy"), 1400);
+    window.setTimeout(() => (label.textContent = t("install.copy")), 1400);
   });
 };

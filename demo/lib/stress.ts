@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { $ } from "./types";
 
 export type StressDeps = {
@@ -15,29 +16,36 @@ const DECAY = 0.85;
 export const wireStressTest = (deps: StressDeps): (() => void) => {
   const status = $<HTMLElement>("#stress-status");
   const button = $<HTMLButtonElement>("#stress-start");
-  const idleLabel = button.textContent ?? "stress";
+
+  const report = (key: string, values: Record<string, number> = {}): void => {
+    delete status.dataset.i18n;
+    status.textContent = t(key).replace(
+      /%([nis])/g,
+      (_match: string, name: string) => String(values[name] ?? ""),
+    );
+  };
 
   let timer: number | null = null;
   let restoreTo: string | null = null;
 
-  const stop = (finalText: string): void => {
+  const stop = (key: string, values?: Record<string, number>): void => {
     if (timer !== null) {
       window.clearTimeout(timer);
       timer = null;
     }
-    button.textContent = idleLabel;
+    button.textContent = t("adv.stress.run");
     button.setAttribute("aria-pressed", "false");
 
     if (restoreTo) {
       deps.getController()?.snapTo(restoreTo);
       restoreTo = null;
     }
-    status.textContent = finalText;
+    report(key, values);
   };
 
   const start = (): void => {
     restoreTo = deps.getController()?.getState?.()?.activeId ?? null;
-    button.textContent = "■ stop";
+    button.textContent = t("adv.stress.stop");
     button.setAttribute("aria-pressed", "true");
 
     let cycle = 0;
@@ -48,7 +56,7 @@ export const wireStressTest = (deps: StressDeps): (() => void) => {
     const tick = (): void => {
       const controller = deps.getController();
       if (!controller) {
-        stop("controller gone");
+        stop("adv.stress.gone");
         return;
       }
       controller.snapTo(toMax ? "full" : "minimized");
@@ -58,10 +66,14 @@ export const wireStressTest = (deps: StressDeps): (() => void) => {
 
       const elapsed = performance.now() - startedAt;
       if (elapsed > DURATION_MS) {
-        stop(`done · ${cycle} cycles`);
+        stop("adv.stress.done", { n: cycle });
         return;
       }
-      status.textContent = `cycle ${cycle} · ${Math.round(interval)}ms · ${Math.round(elapsed / 1000)}s`;
+      report("adv.stress.cycle", {
+        n: cycle,
+        i: Math.round(interval),
+        s: Math.round(elapsed / 1000),
+      });
       timer = window.setTimeout(tick, interval);
     };
 
@@ -69,13 +81,13 @@ export const wireStressTest = (deps: StressDeps): (() => void) => {
   };
 
   const onClick = (): void => {
-    if (timer !== null) stop("stopped");
+    if (timer !== null) stop("adv.stress.stopped");
     else start();
   };
   button.addEventListener("click", onClick);
 
   const onPageHide = (): void => {
-    if (timer !== null) stop("stopped");
+    if (timer !== null) stop("adv.stress.stopped");
   };
   window.addEventListener("pagehide", onPageHide);
 

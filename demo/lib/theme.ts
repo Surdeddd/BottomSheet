@@ -1,3 +1,4 @@
+import { setLabel } from "./i18n";
 import type { Theme, ThemePreset } from "./types";
 import { startViewTransition } from "./view-transition";
 
@@ -19,9 +20,8 @@ export const applyTheme = (theme: Theme): void => {
   document
     .getElementById("theme-dark")
     ?.classList.toggle("topbar-active", theme === "dark");
-  document
-    .getElementById("theme-toggle")
-    ?.setAttribute("aria-label", `Theme: ${theme}. Click to switch.`);
+  const toggle = document.getElementById("theme-toggle");
+  if (toggle) setLabel(toggle, `a11y.theme.${theme}`);
 };
 
 let themeToggleWired = false;

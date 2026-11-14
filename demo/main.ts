@@ -489,17 +489,21 @@ void (async () => {
   }
 })();
 
-$<HTMLButtonElement>("#install-copy")?.addEventListener("click", async () => {
-  const label = $<HTMLElement>("#install-copy-label");
-  try {
-    await navigator.clipboard.writeText("npm i @surdeddd/bottom-sheet");
-    if (label) label.textContent = t("install.copied");
-  } catch {
-    if (label) label.textContent = "failed";
-  }
-  window.setTimeout(() => {
-    if (label) label.textContent = t("install.copy");
-  }, 1400);
-});
+const wireInstallCopy = (buttonId: string, labelId: string): void => {
+  document.getElementById(buttonId)?.addEventListener("click", async () => {
+    const label = document.getElementById(labelId);
+    try {
+      await navigator.clipboard.writeText("npm i @surdeddd/bottom-sheet");
+      if (label) label.textContent = t("install.copied");
+    } catch {
+      if (label) label.textContent = t("install.failed");
+    }
+    window.setTimeout(() => {
+      if (label) label.textContent = t("install.copy");
+    }, 1400);
+  });
+};
+wireInstallCopy("install-copy", "install-copy-label");
+wireInstallCopy("hero-install-copy", "hero-install-copy-label");
 
 export { defaultSnaps };
