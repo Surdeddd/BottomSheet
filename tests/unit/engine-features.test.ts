@@ -1770,7 +1770,7 @@ describe("scrim runtime mode + enabled + overlay slot", () => {
     engine.setScrimMode("full");
     expect(screen.style.position).toBe("");
     expect(screen.style.inset).toBe("");
-    expect(screen.style.pointerEvents).toBe("");
+    expect(screen.style.pointerEvents).toBe("none");
     engine.destroy();
   });
 

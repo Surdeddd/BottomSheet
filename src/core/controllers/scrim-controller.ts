@@ -231,7 +231,7 @@ export class ScrimController {
       if (previous === "above-sheet" && mode !== "above-sheet") {
         s.position = "";
         s.inset = "";
-        s.pointerEvents = "";
+        this.syncPointer();
       }
       if (mode === "above-sheet") {
         this.applyAboveSheetInset();
@@ -257,9 +257,6 @@ export class ScrimController {
     if (enabled === installed) return;
     if (enabled) {
       const target = this.screenComponent;
-      if (target.style.pointerEvents === "none") {
-        target.style.pointerEvents = "auto";
-      }
       const onClick = (): void => {
         if (this.isDestroyed()) return;
         if (this.closeFn) {
@@ -282,6 +279,13 @@ export class ScrimController {
       this.detachScrimTap = null;
       this.scrimTapToCloseEnabled = false;
     }
+    this.syncPointer();
+  }
+
+  private syncPointer(): void {
+    if (!this.screenComponent) return;
+    this.screenComponent.style.pointerEvents =
+      this.scrimInteractive || this.detachScrimTap ? "auto" : "none";
   }
 
   setScrimEnabled(enabled: boolean, applySize: () => void): void {
@@ -451,7 +455,7 @@ export class ScrimController {
     }
     if (opts.interactive !== undefined) {
       this.scrimInteractive = opts.interactive;
-      s.pointerEvents = opts.interactive ? "auto" : "none";
+      this.syncPointer();
     }
   }
 
@@ -466,8 +470,7 @@ export class ScrimController {
     const s = this.screenComponent.style;
     s.position = "fixed";
     s.inset = insetByMode[this.mode];
-    s.pointerEvents =
-      this.scrimInteractive || this.scrimTapToCloseEnabled ? "auto" : "none";
+    this.syncPointer();
   }
 }
 

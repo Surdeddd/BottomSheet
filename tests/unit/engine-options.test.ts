@@ -179,8 +179,8 @@ describe("resolveEngineOptions — persist override", () => {
   });
 });
 
-describe("resolveEngineOptions — scrim auto-promotion", () => {
-  it("auto-promotes scrimInteractive=true when scrimTapToClose is set and interactive omitted", () => {
+describe("resolveEngineOptions — scrim interactivity", () => {
+  it("leaves scrimInteractive to the option when scrimTapToClose is set", () => {
     const el = baseElement();
     const r = resolveEngineOptions({
       element: el,
@@ -188,7 +188,7 @@ describe("resolveEngineOptions — scrim auto-promotion", () => {
       snapPoints: [{ id: "a", size: 100 }],
       scrimTapToClose: true,
     });
-    expect(r.scrim.scrimInteractive).toBe(true);
+    expect(r.scrim.scrimInteractive).toBeUndefined();
     expect(r.scrim.scrimTapToClose).toBe(true);
   });
 

@@ -90,9 +90,7 @@ export function resolveEngineOptions(
       scrimColor: opts.scrimColor,
       scrimBlur: opts.scrimBlur,
 
-      scrimInteractive:
-        opts.scrimInteractive ??
-        (opts.scrimTapToClose ? true : undefined),
+      scrimInteractive: opts.scrimInteractive,
       scrimTapToClose: opts.scrimTapToClose,
       scrimPreset: opts.scrimPreset,
       screenRange: opts.screenRange,
