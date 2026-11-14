@@ -2,6 +2,7 @@ import {
   allowedRange,
   findById,
   findDragSettleTarget,
+  findNearest,
   resolveSnapList,
   type ResolvedSnap,
   type SettleTargetInput,
@@ -75,11 +76,19 @@ export class SnapResolver {
     return findDragSettleTarget({
       ...args,
       resolved: this.resolved,
-      allowed: openOnly
-        ? this.allowedIds.filter(id => (this.findById(id)?.size ?? 0) > 0)
-        : this.allowedIds,
+      allowed: this.pool(openOnly),
       maxAxisSize: this.maxAxisSize,
     });
+  }
+
+  nearest(size: number, openOnly: boolean): ResolvedSnap | null {
+    return findNearest(size, this.resolved, this.pool(openOnly));
+  }
+
+  private pool(openOnly: boolean): string[] {
+    return openOnly
+      ? this.allowedIds.filter(id => (this.findById(id)?.size ?? 0) > 0)
+      : this.allowedIds;
   }
 
   getAllowedRange(): { min: number; max: number } {

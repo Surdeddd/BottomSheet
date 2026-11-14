@@ -988,11 +988,18 @@ export class BottomSheetCore {
     if (snap && ids.includes(snap)) {
       void this.snapTo(snap, 0, true);
     } else if (!ids.includes(this.activeId)) {
-      const fallback = this.closingBlocked()
-        ? ids.find(id => (this.snaps.findById(id)?.size ?? 0) > 0)
-        : ids[0];
-      if (fallback) void this.snapTo(fallback, 0, true);
+      const fallback = this.fallbackSnap(
+        this.snaps.findById(this.activeId)?.size ?? this.size,
+      );
+      if (fallback) void this.snapTo(fallback.id, 0, true);
     }
+  }
+
+  private fallbackSnap(from: number): ResolvedSnap | null {
+    return (
+      (from > 0 ? this.snaps.nearest(from, true) : null) ??
+      this.snaps.nearest(from, false)
+    );
   }
 
   setBackdropRange(range: [number, number]): void {
@@ -1120,6 +1127,10 @@ export class BottomSheetCore {
 
   setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void {
     if (this.destroyed) return;
+    const from = this.snaps.findById(this.activeId)?.size ?? this.size;
+    const restricted = this.snaps
+      .getResolvedSnaps()
+      .some(s => !this.snaps.getAllowedIds().includes(s.id));
     this.snapPointsRaw = points;
     auditVhUsage(points);
     this.auditDuplicateSnapIds(points);
@@ -1130,7 +1141,9 @@ export class BottomSheetCore {
       this.snaps.setAllowedIds(allowed);
     } else {
       const present = this.snaps.getResolvedSnaps().map(s => s.id);
-      const kept = this.snaps.getAllowedIds().filter(id => present.includes(id));
+      const kept = restricted
+        ? this.snaps.getAllowedIds().filter(id => present.includes(id))
+        : [];
       this.snaps.setAllowedIds(kept.length ? kept : present);
     }
     this.scrollCache.clear();
@@ -1139,13 +1152,7 @@ export class BottomSheetCore {
       this.reseat();
       return;
     }
-    const allowedNow = this.snaps.getAllowedIds();
-    const openOnly = this.closingBlocked();
-    const fallback =
-      this.snaps
-        .getResolvedSnaps()
-        .find(s => allowedNow.includes(s.id) && (!openOnly || s.size > 0)) ??
-      this.snaps.getResolvedSnaps()[0];
+    const fallback = this.fallbackSnap(from) ?? this.snaps.getResolvedSnaps()[0];
     if (fallback) void this.transitionTo(fallback.id, 0, true);
   }
 
