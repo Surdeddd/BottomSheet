@@ -24,6 +24,8 @@ const [persistent, setPersistent] = createSignal<boolean | undefined>();
 const [mode, setMode] = createSignal<SheetMode | undefined>();
 const [radius, setRadius] = createSignal(12);
 const [allowed, setAllowed] = createSignal<string[] | undefined>();
+const [open, setOpen] = createSignal<boolean | undefined>();
+const openChanges: boolean[] = [];
 
 render(
   () => (
@@ -39,6 +41,10 @@ render(
       mode={mode()}
       radius={radius()}
       allowed={allowed()}
+      open={open()}
+      onOpenChange={next => {
+        openChanges.push(next);
+      }}
       engineRef={next => {
         engine = next;
       }}
@@ -56,6 +62,9 @@ Object.assign(window as unknown as Record<string, unknown>, {
     setMode,
     setRadius,
     setAllowed,
+    setOpen,
+    openChanges: (): boolean[] => [...openChanges],
+    phase: (): string => engine!.state.phase,
     canDismiss: (): boolean => engine!.canDismiss(),
     allowedIds: (): string[] => engine!.getAllowedIds(),
     headerMounts: (): number => headerMounts,

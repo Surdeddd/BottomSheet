@@ -156,6 +156,26 @@ test.describe("<bottom-sheet> attributes", () => {
     expect(await page.evaluate(() => window.elementLab.el().snap)).toBe("full");
   });
 
+  test("the open attribute drives the sheet and mirrors what it does", async ({
+    page,
+  }) => {
+    await mountEl(page, markup().replace('initial="peek"', 'initial="closed"'));
+    const isOpen = () =>
+      page.evaluate(() => window.elementLab.el().hasAttribute("open"));
+    expect(await isOpen()).toBe(false);
+
+    await setAttr(page, "open", "");
+    expect((await elSettled(page)).activeId).toBe("peek");
+
+    await page.keyboard.press("Escape");
+    expect((await elSettled(page)).phase).toBe("closed");
+    expect(await isOpen()).toBe(false);
+
+    await page.evaluate(() => void window.elementLab.el().open());
+    await elSettled(page);
+    expect(await isOpen()).toBe(true);
+  });
+
   test("at creation the snap attribute wins over initial", async ({ page }) => {
     await mountEl(page, markup('snap="half"'));
     expect((await elState(page))?.activeId).toBe("half");

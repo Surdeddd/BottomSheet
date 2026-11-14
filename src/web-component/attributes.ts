@@ -35,6 +35,7 @@ export const ATTR_RETURN_FOCUS_TO = "return-focus-to";
 export const ATTR_BACKDROP_COLOR = "backdrop-color";
 export const ATTR_SCRIM_COLOR = "scrim-color";
 export const ATTR_SNAP = "snap";
+export const ATTR_OPEN = "open";
 export const ATTR_OPTIONS = "options";
 export const ATTR_HANDLE_LABEL = "handle-label";
 export const ATTR_CONTENT_LABEL = "content-label";
@@ -53,6 +54,7 @@ export const LIVE_ATTRS: ReadonlySet<string> = new Set([
   ATTR_DRAG_FROM_CONTENT,
   ATTR_HANDLE_LABEL,
   ATTR_CONTENT_LABEL,
+  ATTR_OPEN,
 ]);
 
 export const OBSERVED_ATTRS: ReadonlyArray<string> = [
@@ -83,6 +85,7 @@ export const OBSERVED_ATTRS: ReadonlyArray<string> = [
   ATTR_OPTIONS,
   ATTR_HANDLE_LABEL,
   ATTR_CONTENT_LABEL,
+  ATTR_OPEN,
 ];
 
 export const parseOptions = (raw: string | null): Partial<EngineConfig> => {

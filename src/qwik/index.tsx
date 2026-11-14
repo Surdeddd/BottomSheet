@@ -22,6 +22,7 @@ import {
   pickEngineOptions,
   type EngineConfig,
 } from "../core/primitives/option-keys";
+import { closedSnapId, syncOpen } from "../core/primitives/open-state";
 import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
@@ -48,6 +49,8 @@ export type BottomSheetProps<TId extends string = string> = Serialisable & {
   ariaLabel?: string;
   handleLabel?: string;
   contentLabel?: string;
+  open?: boolean;
+  onOpenChange$?: QRL<(open: boolean) => void>;
 
   onSnap$?: QRL<(id: TId) => void>;
   onOpen$?: QRL<(id: TId) => void>;
@@ -71,8 +74,10 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
   const leftBtnRef = useSignal<HTMLElement>();
   const rightBtnRef = useSignal<HTMLElement>();
 
-  const initialActive =
-    props.initial ?? props.snapPoints[0]?.id ?? "default";
+  const initialSnap =
+    props.initial ??
+    (props.open === false ? closedSnapId(props.snapPoints) : undefined);
+  const initialActive = initialSnap ?? props.snapPoints[0]?.id ?? "default";
 
   const state = useStore<EngineState>({
     size: 0,
@@ -90,7 +95,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
   );
   const restAtStart = startsClosed(
     props.snapPoints,
-    props.initial,
+    initialSnap,
     props.allowed,
   )
     ? "closed"
@@ -115,6 +120,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       scrim: scrimRef.value,
       mode: props.mode ?? "bottom",
       snapPoints: props.snapPoints as unknown as SnapPointDef[],
+      initial: initialSnap,
     };
 
     const teleportTarget =
@@ -146,8 +152,15 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       sync();
       props.onSnap$?.(payload.id);
     });
-    engine.on("open", payload => props.onOpen$?.(payload.id));
-    engine.on("close", () => props.onClose$?.());
+    engine.on("open", payload => {
+      props.onOpen$?.(payload.id);
+      props.onOpenChange$?.(true);
+    });
+    engine.on("close", () => {
+      props.onClose$?.();
+      props.onOpenChange$?.(false);
+    });
+    if (props.open !== undefined) syncOpen(engine, props.open);
     engine.on("opened", payload => props.onOpened$?.(payload.id));
     engine.on("closed", () => props.onClosed$?.());
     engine.on("dragstart", payload => {
@@ -249,6 +262,12 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       engine.setDragFromContent(dragFromContent);
     }
     if (dragFrom !== undefined) engine.setDragFrom(dragFrom);
+  });
+
+  useTask$(({ track }) => {
+    const open = track(() => props.open);
+    const engine = engineStore.engine;
+    if (engine && open !== undefined) syncOpen(engine, open);
   });
 
   useTask$(({ track }) => {

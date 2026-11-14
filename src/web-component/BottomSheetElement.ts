@@ -5,6 +5,7 @@ import type {
   EngineOptions,
   EngineState,
 } from "../core/types";
+import { closedSnapId, syncOpen } from "../core/primitives/open-state";
 import {
   pickEngineOptions,
   type EngineConfig,
@@ -22,6 +23,7 @@ import {
   ATTR_CLOSE_ON_ROUTE_CHANGE,
   ATTR_CONTENT_LABEL,
   ATTR_HANDLE_LABEL,
+  ATTR_OPEN,
   ATTR_OPTIONS,
   parseOptions,
   ATTR_DISABLE_CLOSE,
@@ -193,6 +195,9 @@ export class BottomSheetElement extends BaseHTMLElement {
       case ATTR_CONTENT_LABEL:
         this.writeLabels();
         break;
+      case ATTR_OPEN:
+        syncOpen(this.engine, value !== null && value !== "false");
+        break;
     }
   }
 
@@ -215,6 +220,13 @@ export class BottomSheetElement extends BaseHTMLElement {
     this.declarativeAnchors = [];
     this.engine?.destroy();
     this.engine = null;
+  }
+
+  private reflectOpen(open: boolean): void {
+    const raw = this.getAttribute(ATTR_OPEN);
+    if (open === (raw !== null && raw !== "false")) return;
+    if (open) this.setAttribute(ATTR_OPEN, "");
+    else this.removeAttribute(ATTR_OPEN);
   }
 
   private writeLabels(): void {
@@ -287,7 +299,11 @@ export class BottomSheetElement extends BaseHTMLElement {
       ? this.lastActiveId
       : known(snapAttr)
         ? snapAttr
-        : (this.getAttribute(ATTR_INITIAL) ?? extra.initial);
+        : (this.getAttribute(ATTR_INITIAL) ??
+          extra.initial ??
+          (this.getAttribute(ATTR_OPEN) === "false"
+            ? closedSnapId(snapPoints)
+            : undefined));
 
     const opts: EngineOptions = {
       ...extra,
@@ -323,6 +339,9 @@ export class BottomSheetElement extends BaseHTMLElement {
     };
 
     this.engine = new BottomSheetEngine(opts);
+    const wanted = this.getAttribute(ATTR_OPEN);
+    if (wanted !== null) syncOpen(this.engine, wanted !== "false");
+    this.reflectOpen(this.engine.state.phase !== "closed");
     this.writeMode(this.engine.getMode());
     sheet.setAttribute("data-active", this.engine.state.activeId);
 
@@ -363,12 +382,14 @@ export class BottomSheetElement extends BaseHTMLElement {
         );
         if (!accepted) payload.cancel();
       }),
-      this.engine.on("open", payload =>
-        this.dispatchEvent(new CustomEvent("open", { detail: payload })),
-      ),
-      this.engine.on("close", () =>
-        this.dispatchEvent(new CustomEvent("close")),
-      ),
+      this.engine.on("open", payload => {
+        this.reflectOpen(true);
+        this.dispatchEvent(new CustomEvent("open", { detail: payload }));
+      }),
+      this.engine.on("close", () => {
+        this.reflectOpen(false);
+        this.dispatchEvent(new CustomEvent("close"));
+      }),
       this.engine.on("progress", payload =>
         this.dispatchEvent(new CustomEvent("progress", { detail: payload })),
       ),

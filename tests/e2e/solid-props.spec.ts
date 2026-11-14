@@ -5,6 +5,9 @@ type SolidApi = {
   setMode: (value: string | undefined) => void;
   setRadius: (value: number) => void;
   setAllowed: (value: string[] | undefined) => void;
+  setOpen: (value: boolean | undefined) => void;
+  openChanges: () => boolean[];
+  phase: () => string;
   canDismiss: () => boolean;
   allowedIds: () => string[];
   headerMounts: () => number;
@@ -86,6 +89,23 @@ test.describe("Solid adapter props", () => {
       "aria-label",
       "Panel content",
     );
+  });
+
+  test("a controlled open closes and reopens the sheet and reports both", async ({
+    page,
+  }) => {
+    await page.evaluate(() => window.bsSolid.setOpen(false));
+    await expect
+      .poll(() => page.evaluate(() => window.bsSolid.phase()))
+      .toBe("closed");
+    await page.evaluate(() => window.bsSolid.setOpen(true));
+    await expect
+      .poll(() => page.evaluate(() => window.bsSolid.phase()))
+      .toBe("open");
+    expect(await page.evaluate(() => window.bsSolid.openChanges())).toEqual([
+      false,
+      true,
+    ]);
   });
 
   test("the header is created once", async ({ page }) => {

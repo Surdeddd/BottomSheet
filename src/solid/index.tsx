@@ -22,6 +22,7 @@ import {
   pickEngineOptions,
   type EngineConfig,
 } from "../core/primitives/option-keys";
+import { closedSnapId, syncOpen } from "../core/primitives/open-state";
 import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
@@ -46,6 +47,8 @@ export type BottomSheetProps<TId extends string = string> = Omit<
   ariaLabel?: string;
   handleLabel?: string;
   contentLabel?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSnap?: (id: TId) => void;
   onBeforeSnap?: (payload: SheetEventMap["before-snap"]) => void;
   onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
@@ -76,8 +79,13 @@ export const BottomSheet = <TId extends string = string>(
   let backdropEl: HTMLElement | undefined;
   let scrimEl: HTMLElement | undefined;
 
+  const initialSnap = (): TId | undefined =>
+    props.initial ??
+    (props.open === false
+      ? (closedSnapId(props.snapPoints) as TId | undefined)
+      : undefined);
   const initialActive = (): TId =>
-    (props.initial ?? props.snapPoints[0]?.id ?? "default") as TId;
+    (initialSnap() ?? props.snapPoints[0]?.id ?? "default") as TId;
 
   const [state, setState] = createSignal<EngineState & { activeId: TId }>({
     size: 0,
@@ -94,7 +102,7 @@ export const BottomSheet = <TId extends string = string>(
     guessPhysicalMode(untrack(() => props.mode)),
   );
   const restAtStart = untrack(() =>
-    startsClosed(props.snapPoints, props.initial, props.allowed)
+    startsClosed(props.snapPoints, initialSnap(), props.allowed)
       ? "closed"
       : undefined,
   );
@@ -111,6 +119,7 @@ export const BottomSheet = <TId extends string = string>(
       scrim: scrimEl,
       mode: props.mode ?? "bottom",
       snapPoints: props.snapPoints as unknown as SnapPointDef[],
+      initial: initialSnap(),
     };
 
     const teleportTarget =
@@ -140,8 +149,15 @@ export const BottomSheet = <TId extends string = string>(
     });
     engine.on("before-snap", payload => props.onBeforeSnap?.(payload));
     engine.on("before-close", payload => props.onBeforeClose?.(payload));
-    engine.on("open", payload => props.onOpen?.(payload.id as TId));
-    engine.on("close", () => props.onClose?.());
+    engine.on("open", payload => {
+      props.onOpen?.(payload.id as TId);
+      props.onOpenChange?.(true);
+    });
+    engine.on("close", () => {
+      props.onClose?.();
+      props.onOpenChange?.(false);
+    });
+    if (props.open !== undefined) syncOpen(engine, props.open);
     engine.on("opened", payload => props.onOpened?.(payload.id as TId));
     engine.on("closed", () => props.onClosed?.());
     engine.on("dragstart", payload => {
@@ -198,6 +214,16 @@ export const BottomSheet = <TId extends string = string>(
       () => props.allowed,
       allowed => {
         if (allowed) engine?.setAllowed(allowed as unknown as string[]);
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.open,
+      value => {
+        if (value !== undefined && engine) syncOpen(engine, value);
       },
       { defer: true },
     ),

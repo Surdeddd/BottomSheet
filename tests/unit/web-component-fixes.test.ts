@@ -117,6 +117,65 @@ describe("<bottom-sheet> options", () => {
   });
 });
 
+describe("<bottom-sheet open>", () => {
+  const wait = (ms: number): Promise<void> =>
+    new Promise(resolve => setTimeout(resolve, ms));
+
+  it("opens a sheet that would start closed", async () => {
+    const el = create({ "snap-points": POINTS, animation: "tween", open: "" });
+    document.body.appendChild(el);
+    await wait(400);
+    expect(el.getEngine()!.state.activeId).toBe("half");
+    el.remove();
+  });
+
+  it("starts closed for open=false, whatever comes first in the list", () => {
+    const el = create({
+      "snap-points": JSON.stringify([
+        { id: "half", size: 300 },
+        { id: "closed", size: 0 },
+      ]),
+      open: "false",
+    });
+    document.body.appendChild(el);
+    expect(el.getEngine()!.state.size).toBe(0);
+    el.remove();
+  });
+
+  it("follows the attribute on a live sheet", async () => {
+    const el = create({
+      "snap-points": POINTS,
+      initial: "closed",
+      animation: "tween",
+    });
+    document.body.appendChild(el);
+    const engine = el.getEngine();
+    el.setAttribute("open", "");
+    await wait(400);
+    expect(el.getEngine()!.state.phase).toBe("open");
+    el.removeAttribute("open");
+    await wait(400);
+    expect(el.getEngine()!.state.phase).toBe("closed");
+    expect(el.getEngine()).toBe(engine);
+    el.remove();
+  });
+
+  it("reflects what the sheet does", async () => {
+    const el = create({
+      "snap-points": POINTS,
+      initial: "half",
+      animation: "tween",
+    });
+    document.body.appendChild(el);
+    expect(el.hasAttribute("open")).toBe(true);
+    await el.getEngine()!.close();
+    expect(el.hasAttribute("open")).toBe(false);
+    void el.getEngine()!.open();
+    expect(el.hasAttribute("open")).toBe(true);
+    el.remove();
+  });
+});
+
 describe("<bottom-sheet> attributes", () => {
   it("starts on the snap named by the snap attribute", () => {
     const el = create({ "snap-points": POINTS, initial: "closed", snap: "half" });

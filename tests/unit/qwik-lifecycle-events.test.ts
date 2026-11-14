@@ -36,7 +36,9 @@ describe("@surdeddd/bottom-sheet/qwik — QRL lifecycle props (compile-time cont
         Has<"autoCollapseAfter"> &
         Has<"viewTransitions"> &
         Has<"handleLabel"> &
-        Has<"contentLabel">
+        Has<"contentLabel"> &
+        Has<"open"> &
+        Has<"onOpenChange$">
     >;
     const marker: _passed = true;
     expect(marker).toBe(true);

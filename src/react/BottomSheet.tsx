@@ -12,6 +12,7 @@ import { useBottomSheet } from "./useBottomSheet";
 import type { BottomSheetEngine } from "../core/BottomSheetEngine";
 import { guessPhysicalMode } from "../core/primitives/logical-mode";
 import { startsClosed } from "../core/primitives/snap-points";
+import { closedSnapId, syncOpen } from "../core/primitives/open-state";
 import type {
   CloseReason,
   EngineOptions,
@@ -83,6 +84,8 @@ export type BottomSheetProps = EngineOptionsForProps & {
   ariaLabelledBy?: string;
   handleLabel?: string;
   contentLabel?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   noSSR?: boolean;
 };
 
@@ -151,9 +154,15 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       ariaLabelledBy,
       handleLabel = "Resize sheet",
       contentLabel = "Sheet content",
+      open: openProp,
+      onOpenChange,
       noSSR: _noSSR,
       ...engineOpts
     } = props;
+
+    const initial =
+      engineOpts.initial ??
+      (openProp === false ? closedSnapId(engineOpts.snapPoints) : undefined);
 
     const {
       sheetRef,
@@ -174,9 +183,16 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       getEngine,
     } = useBottomSheet({
       ...engineOpts,
+      initial,
       onBeforeClose,
-      onOpen,
-      onClose,
+      onOpen: id => {
+        onOpen?.(id);
+        onOpenChange?.(true);
+      },
+      onClose: () => {
+        onClose?.();
+        onOpenChange?.(false);
+      },
       onOpened,
       onClosed,
       onDragStart,
@@ -186,6 +202,11 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     });
 
     const ariaModal = engineOpts.focusTrap === true;
+
+    useEffect(() => {
+      const engine = getEngine();
+      if (openProp !== undefined && engine) syncOpen(engine, openProp);
+    }, [openProp, getEngine]);
 
     const lastAnnouncedRef = useRef<string>("");
     const [announce, setAnnounce] = useState("");
@@ -253,11 +274,7 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     }, [getEngine, mode]);
 
     const [restAtStart] = useState(() =>
-      startsClosed(
-        engineOpts.snapPoints,
-        engineOpts.initial,
-        engineOpts.allowed,
-      )
+      startsClosed(engineOpts.snapPoints, initial, engineOpts.allowed)
         ? "closed"
         : undefined,
     );
