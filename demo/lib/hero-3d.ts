@@ -112,7 +112,7 @@ export const initHero3D = async (
   const key = new THREE.DirectionalLight(0xffffff, 2.1);
   key.position.set(-4, 5, 8);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xffe2cf, 1.1);
+  const rim = new THREE.DirectionalLight(0xf3ebe2, 0.75);
   rim.position.set(5, -2, -4);
   scene.add(rim);
 

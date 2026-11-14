@@ -21,8 +21,8 @@ type Three = typeof import("three");
 export type Role = "ink" | "paper" | "surface" | "vermillion";
 export type Palette = Record<Role, number> & { dark: boolean };
 
-export const PHONE_W = 2.5;
-export const PHONE_H = 5.1;
+const PHONE_W = 2.5;
+const PHONE_H = 5.1;
 const PHONE_D = 0.24;
 const BEVEL = 0.035;
 const BEZEL = 0.1;
@@ -230,8 +230,8 @@ export const buildPhone = (THREE: Three, initial: Palette): PhoneModel => {
         bevelEnabled: true,
         bevelThickness: BEVEL,
         bevelSize: BEVEL,
-        bevelSegments: 5,
-        curveSegments: 20,
+        bevelSegments: 8,
+        curveSegments: 48,
       },
     ),
   );
