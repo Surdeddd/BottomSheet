@@ -33,11 +33,16 @@ type FakeGl = {
   getParameter: (id: number) => unknown;
 };
 
-const fakeGl = (unmasked: string | null, plain = ""): FakeGl & { lost: number } => {
+const fakeGl = (
+  unmasked: string | null,
+  plain = "",
+): FakeGl & { lost: number; asked: string[] } => {
   const gl = {
     RENDERER: 7937,
     lost: 0,
+    asked: [] as string[],
     getExtension(name: string) {
+      gl.asked.push(name);
       if (name === "WEBGL_debug_renderer_info") {
         return unmasked === null ? null : { UNMASKED_RENDERER_WEBGL: 37446 };
       }
@@ -87,6 +92,18 @@ describe("the demo's 3D stage and software WebGL", () => {
 
   it("reads the plain renderer name where the unmasked one is withheld", () => {
     withContext(fakeGl(null, "Mesa/X.org, llvmpipe (LLVM 17.0.6, 256 bits), or similar"));
+    expect(hasHardwareWebGL()).toBe(false);
+  });
+
+  it("settles on the plain renderer name without asking for the deprecated extension", () => {
+    const gl = fakeGl("Apple GPU", "Mesa/X.org, llvmpipe (LLVM 17.0.6, 256 bits), or similar");
+    withContext(gl);
+    expect(hasHardwareWebGL()).toBe(false);
+    expect(gl.asked).not.toContain("WEBGL_debug_renderer_info");
+  });
+
+  it("asks for the unmasked name when the plain one is the browser placeholder", () => {
+    withContext(fakeGl(SOFTWARE[0]!, "WebKit WebGL"));
     expect(hasHardwareWebGL()).toBe(false);
   });
 

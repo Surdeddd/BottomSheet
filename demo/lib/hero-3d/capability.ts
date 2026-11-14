@@ -1,4 +1,5 @@
 const SOFTWARE = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+const MASKED = /^webkit webgl$/i;
 
 type Gl = WebGLRenderingContext | WebGL2RenderingContext;
 
@@ -8,10 +9,10 @@ export const isSoftwareRenderer = (name: string): boolean =>
   SOFTWARE.test(name);
 
 const rendererName = (gl: Gl): string => {
+  const plain: unknown = gl.getParameter(gl.RENDERER);
+  if (typeof plain === "string" && plain && !MASKED.test(plain)) return plain;
   const info = gl.getExtension("WEBGL_debug_renderer_info");
-  const raw: unknown = info
-    ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL)
-    : gl.getParameter(gl.RENDERER);
+  const raw: unknown = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : "";
   return typeof raw === "string" ? raw : "";
 };
 
