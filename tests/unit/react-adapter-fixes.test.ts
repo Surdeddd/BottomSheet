@@ -99,6 +99,36 @@ describe("React <BottomSheet> fixes", () => {
     await act(async () => root.unmount());
   });
 
+  it("calls onChange for a new state, not for a new handler", async () => {
+    let calls = 0;
+    const render = (label: string) =>
+      act(async () => {
+        root.render(
+          jsx(BottomSheet, {
+            ariaLabel: label,
+            onChange: () => {
+              calls += 1;
+            },
+            snapPoints: points,
+            initial: "half",
+            animation: "tween",
+            duration: 0,
+          }),
+        );
+      });
+
+    await render("one");
+    await act(async () => wait(20));
+    const settled = calls;
+    expect(settled).toBeGreaterThan(0);
+
+    await render("two");
+    await render("three");
+    await act(async () => wait(20));
+    expect(calls).toBe(settled);
+    await act(async () => root.unmount());
+  });
+
   it("opens at mount when open starts true", async () => {
     const ref = createRef<BottomSheetHandle>();
     await act(async () => {

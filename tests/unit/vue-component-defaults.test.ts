@@ -170,6 +170,63 @@ describe("Vue <BottomSheet> engine defaults", () => {
   });
 });
 
+describe("Vue <BottomSheet> controlled open", () => {
+  const reversed = [
+    { id: "full", size: 600 },
+    { id: "closed", size: 0 },
+  ];
+
+  it("starts at the closed point when open is false, wherever that point is listed", async () => {
+    const onClose = vi.fn();
+    const { app, vm, host } = mount({
+      snapPoints: reversed,
+      open: false,
+      animation: "tween",
+      duration: 0,
+      onClose,
+    });
+    await flush();
+    expect(vm.getEngine()!.state.size).toBe(0);
+    expect(vm.getEngine()!.state.phase).toBe("closed");
+    expect(onClose).not.toHaveBeenCalled();
+    expect(host.querySelector(".bs-sheet")!.getAttribute("data-bs-rest")).toBe(
+      "closed",
+    );
+    app.unmount();
+  });
+
+  it("starts at the point named by snap when initial is not given", async () => {
+    const { app, vm } = mount({ snap: "full", animation: "tween" });
+    await vue.nextTick();
+    expect(vm.getEngine()!.state.activeId).toBe("full");
+    expect(vm.getEngine()!.state.isAnimating).toBe(false);
+    app.unmount();
+  });
+
+  it("stays closed when open is false and snap names an open point", async () => {
+    const { app, vm } = mount({
+      open: false,
+      snap: "full",
+      animation: "tween",
+      duration: 0,
+    });
+    await flush();
+    expect(vm.getEngine()!.state.phase).toBe("closed");
+    app.unmount();
+  });
+
+  it("renders that sheet hidden on the server", async () => {
+    const html = await renderToString(
+      vue.createSSRApp(Cmp as never, {
+        snapPoints: reversed,
+        open: false,
+        teleport: false,
+      }),
+    );
+    expect(html).toContain('data-bs-rest="closed"');
+  });
+});
+
 describe("Vue <BottomSheet> events and props", () => {
   it("calls a snap listener once per snap", async () => {
     const onSnap = vi.fn();

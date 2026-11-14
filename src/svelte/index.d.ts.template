@@ -2,6 +2,7 @@ import type { Component, Snippet } from "svelte";
 import type {
   AnchorOptions,
   BottomSheetEngine,
+  CloseReason,
   EngineOptions,
   EngineState,
   SheetEventMap,
@@ -50,7 +51,7 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   ): () => void;
   snapTo(id: TId): Promise<void>;
   open(id?: TId): Promise<void>;
-  close(): Promise<void>;
+  close(reason?: CloseReason): Promise<void>;
   expand(): Promise<void>;
   collapse(): Promise<void>;
   isTop(): boolean;
@@ -109,14 +110,40 @@ export type BottomSheetProps<TId extends string = string> = Omit<
   onbeforeclose?: (payload: SheetEventMap["before-close"]) => void;
   onopened?: (id: TId) => void;
   onclosed?: () => void;
-  ondragstart?: () => void;
-  ondragend?: () => void;
+  ondragstart?: (payload: SheetEventMap["dragstart"]) => void;
+  ondragend?: (payload: SheetEventMap["dragend"]) => void;
   ondrag?: (payload: SheetEventMap["drag"]) => void;
   onprogress?: (payload: SheetEventMap["progress"]) => void;
   onchange?: (state: EngineState & { activeId: TId }) => void;
 };
 
-export const BottomSheet: Component<BottomSheetProps>;
+export type BottomSheetExports<TId extends string = string> = {
+  snapTo(id: TId): Promise<void>;
+  open(id?: TId): Promise<void>;
+  close(reason?: CloseReason): Promise<void>;
+  expand(): Promise<void>;
+  collapse(): Promise<void>;
+  isTop(): boolean;
+  depth(): number;
+  setAllowed(ids: TId[], snap?: TId): void;
+  setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
+  setScrim(opts: ScrimUpdate): void;
+  setScrimOverlay(opts: ScrimOverlayOptions): () => void;
+  addAnchor(opts: AnchorOptions): () => void;
+  setScrimStages(opts: ScrimStagesOptions | null): () => void;
+  recompute(): void;
+  setRadius(r: string | number): void;
+  setMaxHeight(h: string | number): void;
+  canDismiss(): boolean;
+  getState(): EngineState & { activeId: TId };
+  getEngine(): BottomSheetEngine | null;
+};
+
+export const BottomSheet: Component<
+  BottomSheetProps,
+  BottomSheetExports,
+  "open" | "snap"
+>;
 
 export type {
   SnapPoint,

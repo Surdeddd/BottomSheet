@@ -60,4 +60,26 @@ describe("@surdeddd/bottom-sheet/svelte", () => {
     expect(core.resolveTeleportTarget).toBeTypeOf("function");
     expect(core.teleportElements).toBeTypeOf("function");
   });
+
+  it("exposes every helper the svelte-src component names", async () => {
+    const core = (await import(resolve(distDir, "svelte-core.js"))) as Record<
+      string,
+      unknown
+    >;
+    const source = readFileSync(
+      resolve(distDir, "svelte-src", "BottomSheet.svelte"),
+      "utf8",
+    );
+    const missing: string[] = [];
+    for (const m of source.matchAll(
+      /import\s*\{([^}]+)\}\s*from\s*["']\.\.\/svelte-core\.js["']/g,
+    )) {
+      for (const raw of m[1]!.split(",")) {
+        const name = raw.trim();
+        if (!name || name.startsWith("type ")) continue;
+        if (typeof core[name] !== "function") missing.push(name);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
 });

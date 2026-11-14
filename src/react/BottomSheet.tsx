@@ -255,9 +255,11 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       ],
     );
 
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
     useEffect(() => {
-      onChange?.(state);
-    }, [state, onChange]);
+      onChangeRef.current?.(state);
+    }, [state]);
 
     const mode = engineOpts.mode;
     const [physicalMode, setPhysicalMode] = useState<PhysicalSheetMode>(() =>

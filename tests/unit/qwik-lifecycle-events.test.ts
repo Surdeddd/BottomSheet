@@ -38,7 +38,8 @@ describe("@surdeddd/bottom-sheet/qwik — QRL lifecycle props (compile-time cont
         Has<"handleLabel"> &
         Has<"contentLabel"> &
         Has<"open"> &
-        Has<"onOpenChange$">
+        Has<"onOpenChange$"> &
+        Has<"snap">
     >;
     const marker: _passed = true;
     expect(marker).toBe(true);

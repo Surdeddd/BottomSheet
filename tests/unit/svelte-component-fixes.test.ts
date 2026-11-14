@@ -184,6 +184,145 @@ describe("Svelte <BottomSheet> fixes", () => {
     unmount(instance);
   });
 
+  it("starts at the closed point when open is false, wherever that point is listed", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    let closes = 0;
+    const props = makeProps({
+      snapPoints: [
+        { id: "full", size: 400 },
+        { id: "closed", size: 0 },
+      ],
+      open: false,
+      teleport: false,
+      animation: "tween",
+      duration: 0,
+      onclose: () => {
+        closes += 1;
+      },
+    });
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    expect(instance.getEngine()!.state.size).toBe(0);
+    expect(instance.getEngine()!.state.phase).toBe("closed");
+    expect(closes).toBe(0);
+    unmount(instance);
+  });
+
+  it("starts at the point named by snap when initial is not given", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const props = makeProps({
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 200 },
+        { id: "full", size: 400 },
+      ],
+      snap: "full",
+      teleport: false,
+      animation: "tween",
+    });
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    const engine = instance.getEngine() as unknown as {
+      state: { activeId: string; isAnimating: boolean };
+    };
+    expect(engine.state.activeId).toBe("full");
+    expect(engine.state.isAnimating).toBe(false);
+    unmount(instance);
+  });
+
+  it("stays closed when open is false and snap names an open point", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const props = makeProps(
+      baseProps({ initial: undefined, open: false, snap: "full", duration: 0 }),
+    );
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    expect(instance.getEngine()!.state.phase).toBe("closed");
+    unmount(instance);
+  });
+
+  it("hands the drag payloads to ondragstart and ondragend", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const seen: Array<[string, unknown]> = [];
+    const props = makeProps(
+      baseProps({
+        initial: "full",
+        duration: 0,
+        ondragstart: (payload: unknown) => seen.push(["start", payload]),
+        ondragend: (payload: unknown) => seen.push(["end", payload]),
+      }),
+    );
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    const handle = target.querySelector<HTMLElement>(".bs-handle")!;
+    const fire = (type: string, clientY: number): void => {
+      handle.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          pointerId: 1,
+          pointerType: "touch",
+          isPrimary: true,
+          clientX: 100,
+          clientY,
+        }),
+      );
+    };
+    fire("pointerdown", 600);
+    fire("pointermove", 640);
+    fire("pointermove", 680);
+    fire("pointerup", 680);
+    await wait(40);
+    const start = seen.find(([kind]) => kind === "start")?.[1] as
+      | { size: number }
+      | undefined;
+    const end = seen.find(([kind]) => kind === "end")?.[1] as
+      | { size: number; velocity: number }
+      | undefined;
+    expect(typeof start?.size).toBe("number");
+    expect(typeof end?.size).toBe("number");
+    expect(typeof end?.velocity).toBe("number");
+    unmount(instance);
+  });
+
+  it("passes the reason of close() on, and forwards the layout methods", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const reasons: string[] = [];
+    const props = makeProps(
+      baseProps({
+        initial: "full",
+        duration: 0,
+        onbeforeclose: (payload: { reason: string }) =>
+          reasons.push(payload.reason),
+      }),
+    );
+    const instance = mount(Cmp, { target, props }) as unknown as {
+      close: (reason?: string) => Promise<void>;
+      recompute: () => void;
+      addAnchor: (opts: { element: HTMLElement }) => () => void;
+      setScrimStages: (opts: null) => () => void;
+    };
+    flushSync();
+    await wait(40);
+    expect(typeof instance.recompute).toBe("function");
+    const detach = instance.addAnchor({
+      element: document.createElement("div"),
+    });
+    expect(typeof detach).toBe("function");
+    detach();
+    expect(typeof instance.setScrimStages(null)).toBe("function");
+    await instance.close("escape");
+    expect(reasons).toEqual(["escape"]);
+    unmount(instance);
+  });
+
   it("writes the physical edge to data-mode for logical modes", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

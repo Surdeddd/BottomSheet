@@ -51,6 +51,7 @@ export type BottomSheetProps<TId extends string = string> = Serialisable & {
   contentLabel?: string;
   open?: boolean;
   onOpenChange$?: QRL<(open: boolean) => void>;
+  snap?: TId;
 
   onSnap$?: QRL<(id: TId) => void>;
   onOpen$?: QRL<(id: TId) => void>;
@@ -76,7 +77,8 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
 
   const initialSnap =
     props.initial ??
-    (props.open === false ? closedSnapId(props.snapPoints) : undefined);
+    (props.open === false ? closedSnapId(props.snapPoints) : undefined) ??
+    props.snap;
   const initialActive = initialSnap ?? props.snapPoints[0]?.id ?? "default";
 
   const state = useStore<EngineState>({
@@ -268,6 +270,13 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     const open = track(() => props.open);
     const engine = engineStore.engine;
     if (engine && open !== undefined) syncOpen(engine, open);
+  });
+
+  useTask$(({ track }) => {
+    const snap = track(() => props.snap);
+    const engine = engineStore.engine;
+    if (!engine || snap === undefined || snap === engine.state.activeId) return;
+    void engine.snapTo(snap);
   });
 
   useTask$(({ track }) => {

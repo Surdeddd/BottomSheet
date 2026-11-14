@@ -1,5 +1,6 @@
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
 import type {
+  CloseReason,
   EngineOptions,
   EngineState,
   ScrimOverlayOptions,
@@ -52,7 +53,7 @@ export type SvelteBottomSheetController<TId extends string = string> = {
   ) => () => void;
   snapTo: (id: TId) => Promise<void>;
   open: (id?: TId) => Promise<void>;
-  close: () => Promise<void>;
+  close: (reason?: CloseReason) => Promise<void>;
   expand: () => Promise<void>;
   collapse: () => Promise<void>;
   isTop: () => boolean;
@@ -153,7 +154,8 @@ export function createBottomSheet<TId extends string = string>(
     },
     snapTo: (id: TId) => engine?.snapTo(id) ?? Promise.resolve(),
     open: (id?: TId) => engine?.open(id) ?? Promise.resolve(),
-    close: () => engine?.close() ?? Promise.resolve(),
+    close: (reason?: CloseReason) =>
+      engine?.close(reason) ?? Promise.resolve(),
     expand: () => engine?.expand() ?? Promise.resolve(),
     collapse: () => engine?.collapse() ?? Promise.resolve(),
     isTop: () => engine?.isTop() ?? false,
@@ -181,3 +183,4 @@ export function createBottomSheet<TId extends string = string>(
 export { resolveTeleportTarget, teleportElements };
 export { guessPhysicalMode } from "../core/primitives/logical-mode";
 export { startsClosed } from "../core/primitives/snap-points";
+export { closedSnapId } from "../core/primitives/open-state";

@@ -108,6 +108,9 @@ jobs:
       - name: Install system deps only (browser restored from cache)
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps ${{ matrix.project }}
+      - name: Qwik consumer client contract (open and snap in a browser)
+        if: matrix.project == 'chromium'
+        run: npm run check:qwik-client
       - name: E2E tests (${{ matrix.playwright_project }})
         run: npx playwright test --project=${{ matrix.playwright_project }}
       - uses: actions/upload-artifact@v7

@@ -348,6 +348,7 @@
     "bench": "vitest bench",
     "bench:check": "node ./scripts/bench-check.mjs",
     "check:qwik-ssr": "node ./scripts/qwik-ssr-check.mjs",
+    "check:qwik-client": "node ./scripts/qwik-client-check.mjs",
     "size": "size-limit",
     "docs:api": "typedoc",
     "lhci": "lhci autorun --config=./lighthouserc.json",

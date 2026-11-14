@@ -7,6 +7,7 @@ import {
 } from "../core/features/teleport";
 import { guessPhysicalMode } from "../core/primitives/logical-mode";
 import { startsClosed } from "../core/primitives/snap-points";
+import { closedSnapId } from "../core/primitives/open-state";
 import type {
   EngineOptions,
   EngineState,
@@ -15,6 +16,8 @@ import type {
   SheetMode,
   SnapPointDef,
 } from "../core/types";
+
+export { closedSnapId };
 
 export type UseBottomSheetVueOptions<TId extends string = string> = Omit<
   EngineOptions,

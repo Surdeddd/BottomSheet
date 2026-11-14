@@ -9,7 +9,11 @@ import {
   watch,
   type TeleportProps,
 } from "vue";
-import { useBottomSheet, type UseBottomSheetVueOptions } from "./useBottomSheet";
+import {
+  closedSnapId,
+  useBottomSheet,
+  type UseBottomSheetVueOptions,
+} from "./useBottomSheet";
 import type { CloseReason, EngineState } from "../core/types";
 import type { AnchorOptions } from "../core/features/sheet-anchors";
 import type { ScrimStagesOptions } from "../core/features/scrim-stages";
@@ -116,7 +120,16 @@ const {
   physicalMode,
   restAtStart,
   setMode,
-} = useBottomSheet<TId>({ ...props, teleport: false });
+} = useBottomSheet<TId>({
+  ...props,
+  initial:
+    props.initial ??
+    (props.open === false
+      ? (closedSnapId(props.snapPoints) as TId | undefined)
+      : undefined) ??
+    props.snap,
+  teleport: false,
+});
 
 watch(
   () => ({ ...state }),
@@ -328,6 +341,10 @@ onMounted(() => {
   watch(anchorsKey, buildAnchors);
   watch(() => props.scrimStages, applyStages, { deep: true });
   if (props.open && !isOpening()) void open();
+  const active = getEngine()?.state.activeId;
+  if (props.snap !== undefined && active && active !== props.snap) {
+    emit("update:snap", active as TId);
+  }
 });
 
 onBeforeUnmount(() => {

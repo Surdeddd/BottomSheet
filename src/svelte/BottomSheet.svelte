@@ -8,7 +8,11 @@
   } from "../core/features/teleport";
   import { guessPhysicalMode } from "../core/primitives/logical-mode";
   import { startsClosed } from "../core/primitives/snap-points";
+  import { closedSnapId } from "../core/primitives/open-state";
+  import type { AnchorOptions } from "../core/features/sheet-anchors";
+  import type { ScrimStagesOptions } from "../core/features/scrim-stages";
   import type {
+    CloseReason,
     EngineState,
     PhysicalSheetMode,
     SnapPointDef,
@@ -57,8 +61,8 @@
     onbeforeclose?: (payload: SheetEventMap["before-close"]) => void;
     onopened?: (id: TId) => void;
     onclosed?: () => void;
-    ondragstart?: () => void;
-    ondragend?: () => void;
+    ondragstart?: (payload: SheetEventMap["dragstart"]) => void;
+    ondragend?: (payload: SheetEventMap["dragend"]) => void;
     ondrag?: (payload: SheetEventMap["drag"]) => void;
     onprogress?: (payload: SheetEventMap["progress"]) => void;
     onchange?: (state: EngineState & { activeId: TId }) => void;
@@ -126,10 +130,19 @@
   let backdropEl: HTMLElement | undefined = $state();
   let screenEl: HTMLElement | undefined = $state();
 
+  const startAt = untrack(
+    () =>
+      initial ??
+      (openProp === false
+        ? (closedSnapId(snapPoints) as TId | undefined)
+        : undefined) ??
+      snap,
+  );
+
   let viewState: EngineState & { activeId: TId } = $state({
     size: 0,
     activeId: untrack(
-      () => (initial ?? snapPoints[0]?.id ?? "default") as TId,
+      () => (startAt ?? snapPoints[0]?.id ?? "default") as TId,
     ),
     phase: "closed",
     isDragging: false,
@@ -143,7 +156,7 @@
     untrack(() => guessPhysicalMode(mode)),
   );
   const restAtStart = untrack(() =>
-    startsClosed(snapPoints, initial, allowed) ? "closed" : undefined,
+    startsClosed(snapPoints, startAt, allowed) ? "closed" : undefined,
   );
 
   onMount(() => {
@@ -166,7 +179,7 @@
       mode,
       snapPoints,
       allowed,
-      initial,
+      initial: startAt,
       animation,
       spring,
       focusTrap,
@@ -194,6 +207,9 @@
     };
     physicalMode = engine.getMode();
     sync();
+    if (snap !== undefined && snap !== engine.state.activeId) {
+      snap = engine.state.activeId as TId;
+    }
     if (backdropColor !== undefined) engine.setScrimColor(backdropColor);
     if (backdropOpacity !== undefined)
       engine.setBackdropRange([0, backdropOpacity]);
@@ -222,13 +238,13 @@
       sync();
       onclosed?.();
     });
-    engine.on("dragstart", () => {
+    engine.on("dragstart", payload => {
       sync();
-      ondragstart?.();
+      ondragstart?.(payload);
     });
-    engine.on("dragend", () => {
+    engine.on("dragend", payload => {
       sync();
-      ondragend?.();
+      ondragend?.(payload);
     });
     if (ondrag) engine.on("drag", payload => ondrag(payload));
     if (onprogress) engine.on("progress", payload => onprogress(payload));
@@ -245,7 +261,8 @@
     engine?.snapTo(id) ?? Promise.resolve();
   export const open = (id?: TId) =>
     engine?.open(id) ?? Promise.resolve();
-  export const close = () => engine?.close() ?? Promise.resolve();
+  export const close = (reason?: CloseReason) =>
+    engine?.close(reason) ?? Promise.resolve();
   export const expand = () => engine?.expand() ?? Promise.resolve();
   export const collapse = () => engine?.collapse() ?? Promise.resolve();
   export const isTop = (): boolean => engine?.isTop() ?? false;
@@ -259,6 +276,12 @@
   export const setScrim = (opts: ScrimUpdate) => engine?.setScrim(opts);
   export const setScrimOverlay = (opts: ScrimOverlayOptions): (() => void) =>
     engine?.setScrimOverlay(opts) ?? (() => {});
+  export const addAnchor = (opts: AnchorOptions): (() => void) =>
+    engine?.addAnchor(opts) ?? (() => {});
+  export const setScrimStages = (
+    opts: ScrimStagesOptions | null,
+  ): (() => void) => engine?.setScrimStages(opts) ?? (() => {});
+  export const recompute = () => engine?.recompute();
   export const setRadius = (r: string | number) => engine?.setRadius(r);
   export const setMaxHeight = (h: string | number) => engine?.setMaxHeight(h);
   export const canDismiss = (): boolean => engine?.canDismiss() ?? false;

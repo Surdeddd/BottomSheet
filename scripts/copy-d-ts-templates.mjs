@@ -36,7 +36,10 @@ const sfc = readFileSync(resolve(root, "src/svelte/BottomSheet.svelte"), "utf8")
   .replaceAll('from "../core/types"', 'from "@surdeddd/bottom-sheet"')
   .replaceAll('from "../core/features/teleport"', 'from "../svelte-core.js"')
   .replaceAll('from "../core/primitives/logical-mode"', 'from "../svelte-core.js"')
-  .replaceAll('from "../core/primitives/snap-points"', 'from "../svelte-core.js"');
+  .replaceAll('from "../core/primitives/snap-points"', 'from "../svelte-core.js"')
+  .replaceAll('from "../core/primitives/open-state"', 'from "../svelte-core.js"')
+  .replaceAll('from "../core/features/sheet-anchors"', 'from "@surdeddd/bottom-sheet"')
+  .replaceAll('from "../core/features/scrim-stages"', 'from "@surdeddd/bottom-sheet"');
 writeFileSync(resolve(svelteSrcDir, "BottomSheet.svelte"), sfc);
 writeFileSync(
   resolve(svelteSrcDir, "index.js"),
