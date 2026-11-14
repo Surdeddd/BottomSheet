@@ -91,6 +91,85 @@ describe("persistent", () => {
     expect(engine.state.size).toBe(0);
     engine.destroy();
   });
+
+  it("does not let a drag carry the sheet to a closed snap", async () => {
+    const { dom, engine } = build({ persistent: true });
+    dragDown(dom.handle);
+    await wait(60);
+    expect(engine.state.size).toBe(300);
+    expect(engine.state.activeId).toBe("half");
+    engine.destroy();
+  });
+
+  it("does not let the slider keys reach a closed snap", async () => {
+    const { dom, engine } = build({ persistent: true });
+    dom.handle.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Home", bubbles: true }),
+    );
+    dom.handle.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+    );
+    await wait(40);
+    expect(engine.state.size).toBe(300);
+    engine.destroy();
+  });
+
+  it("still lets the user move between open snaps", async () => {
+    const { dom, engine } = build({ persistent: true });
+    dom.handle.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+    );
+    await wait(40);
+    expect(engine.state.activeId).toBe("full");
+    engine.destroy();
+  });
+
+  it("lets the user close again once it is switched off", async () => {
+    const { dom, engine } = build({ persistent: true });
+    engine.setPersistent(false);
+    dragDown(dom.handle);
+    await wait(60);
+    expect(engine.state.size).toBe(0);
+    engine.destroy();
+  });
+});
+
+describe("open() and close() targets", () => {
+  it("open() leaves an open sheet where it is", async () => {
+    const { engine } = build({ initial: "full" });
+    await engine.open();
+    expect(engine.state.activeId).toBe("full");
+    engine.destroy();
+  });
+
+  it("open() with an id still moves an open sheet", async () => {
+    const { engine } = build({ initial: "full" });
+    await engine.open("half");
+    expect(engine.state.activeId).toBe("half");
+    engine.destroy();
+  });
+
+  it("open() opens a closed sheet at its first open snap", async () => {
+    const { engine } = build({ initial: "closed" });
+    await engine.open();
+    expect(engine.state.activeId).toBe("half");
+    engine.destroy();
+  });
+
+  it("close() without a closed snap goes to the smallest snap, whatever the order", async () => {
+    const { engine } = build({
+      snapPoints: [
+        { id: "tall", size: 800 },
+        { id: "mid", size: 500 },
+        { id: "low", size: 200 },
+      ],
+      allowed: ["tall", "mid", "low"],
+      initial: "mid",
+    });
+    await engine.close();
+    expect(engine.state.activeId).toBe("low");
+    engine.destroy();
+  });
 });
 
 describe("disableClose", () => {

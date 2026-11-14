@@ -873,6 +873,9 @@ export class BottomSheetCore {
 
   open(id?: string): Promise<void> {
     if (this.destroyed) return Promise.resolve();
+    if (!id && (this.phase === "open" || this.phase === "opening")) {
+      return Promise.resolve();
+    }
     const target =
       id ??
       this.snaps
@@ -885,7 +888,7 @@ export class BottomSheetCore {
   close(reason: CloseReason = "programmatic"): Promise<void> {
     if (this.destroyed || this.disableCloseFlag) return Promise.resolve();
     if (this.persistent && reason !== "programmatic") return Promise.resolve();
-    const target = this.zeroSnapId() ?? this.snaps.getAllowedIds()[0];
+    const target = this.zeroSnapId() ?? this.allowedIdsBySize()[0];
     if (target === undefined) return Promise.resolve();
     if (this.phase === "closed" && this.activeId === target) {
       return Promise.resolve();
@@ -1377,7 +1380,7 @@ export class BottomSheetCore {
         const r = this.getAllowedRange();
         buf.size = this.size;
         buf.maxAxisSize = this.snaps.getMaxAxisSize();
-        buf.range.min = this.closingBlocked()
+        buf.range.min = this.dismissBlocked()
           ? Math.max(r.min, this.smallestOpenSize())
           : r.min;
         buf.range.max = r.max;
@@ -1578,7 +1581,7 @@ export class BottomSheetCore {
       isDestroyed: () => this.destroyed,
       getAllowedIds: () => {
         const ids = this.allowedIdsBySize();
-        return this.closingBlocked()
+        return this.dismissBlocked()
           ? ids.filter(id => (this.snaps.findById(id)?.size ?? 0) > 0)
           : ids;
       },
@@ -1609,7 +1612,7 @@ export class BottomSheetCore {
         flickVelocity: this.flickVelocity,
         dragThreshold: this.dragThreshold,
       },
-      this.closingBlocked(),
+      this.dismissBlocked(),
     );
     if (!target) {
       this.clearWillChangeIfIdle();
