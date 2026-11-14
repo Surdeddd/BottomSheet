@@ -22,7 +22,8 @@ const rendererName = (gl: WebGLRenderingContext): string => {
   const plain = String(gl.getParameter(gl.RENDERER) ?? "");
   if (plain && !MASKED.test(plain)) return plain;
   const info = gl.getExtension("WEBGL_debug_renderer_info");
-  return info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) ?? "") : "";
+  if (!info) return "";
+  return String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) ?? "");
 };
 
 export const drawsOnCpu = (gl: WebGLRenderingContext): boolean => {

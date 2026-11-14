@@ -73,7 +73,9 @@ const parseColor = (value: string): Rgba => {
 };
 
 const parentAcrossShadow = (node: Element): Element | null =>
-  node.parentElement ?? (node.getRootNode() as Partial<ShadowRoot>).host ?? null;
+  node.parentElement ??
+  (node.getRootNode() as Partial<ShadowRoot>).host ??
+  null;
 
 const parseRadius = (value: string): number => {
   const n = parseFloat(value);
@@ -403,7 +405,11 @@ export const webglRenderer = (
       attributes: true,
       attributeFilter: ["class"],
     });
-    for (let node = parentAcrossShadow(element); node; node = parentAcrossShadow(node)) {
+    for (
+      let node = parentAcrossShadow(element);
+      node;
+      node = parentAcrossShadow(node)
+    ) {
       themeObserver.observe(node, { attributes: true });
     }
     const scheme =
