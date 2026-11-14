@@ -286,7 +286,9 @@ describe("setMode leftovers", () => {
   it("re-applies the above-sheet scrim inset for the new edge", () => {
     const n = buildSheet();
     const engine = engineFor(n, { scrimMode: "above-sheet" });
-    expect(n.screen.style.inset).toBe("0 0 var(--bs-size) 0");
+    expect(n.screen.style.inset).toBe(
+      "0 0 calc(var(--bs-size) + var(--bs-keyboard-inset, 0px)) 0",
+    );
     engine.setMode("right");
     expect(n.screen.style.inset).toBe("0 var(--bs-size) 0 0");
     engine.destroy();

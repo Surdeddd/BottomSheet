@@ -2,6 +2,8 @@ import { sameSeat, seatOf } from "./resize-observer";
 
 const SAFETY_PAD = 8;
 const KEYBOARD_MIN_INSET = 1;
+const KEYBOARD_MIN_COVER = 60;
+const ZOOMED = 1.01;
 
 export type VisualViewportDeps = {
   isVerticalAxis: () => boolean;
@@ -10,6 +12,7 @@ export type VisualViewportDeps = {
   resolveActiveSnap: () => { id: string; size: number } | null;
   getMaxAxisSize: () => number;
   setMaxAxisSize: (size: number) => void;
+  setKeyboardInset: (px: number) => void;
   reseat: () => void;
 };
 
@@ -20,11 +23,18 @@ export function installVisualViewport(deps: VisualViewportDeps): () => void {
   const vv = window.visualViewport;
   let rafId: number | null = null;
 
+  const coveredByKeyboard = (): number => {
+    if ((vv.scale || 1) > ZOOMED) return 0;
+    const covered = window.innerHeight - ((vv.offsetTop || 0) + vv.height);
+    return covered >= KEYBOARD_MIN_COVER ? Math.round(covered) : 0;
+  };
+
   const onResize = (): void => {
     if (rafId !== null) return;
     rafId = requestAnimationFrame(() => {
       rafId = null;
       if (deps.isDestroyed()) return;
+      deps.setKeyboardInset(coveredByKeyboard());
       const before = seatOf(deps);
       deps.recomputeSnaps();
       const isVertical = deps.isVerticalAxis();
@@ -40,8 +50,10 @@ export function installVisualViewport(deps: VisualViewportDeps): () => void {
     });
   };
   vv.addEventListener("resize", onResize);
+  vv.addEventListener("scroll", onResize);
   return () => {
     vv.removeEventListener("resize", onResize);
+    vv.removeEventListener("scroll", onResize);
     if (rafId !== null) cancelAnimationFrame(rafId);
   };
 }

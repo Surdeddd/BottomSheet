@@ -110,6 +110,7 @@ export class BottomSheetCore {
   private fitContentToSnap: boolean;
   private settleAnimation: "waapi" | undefined;
   private persistent: boolean;
+  private keyboardInset = 0;
   private disableCloseFlag: boolean;
   private disableDragFlag: boolean;
   private closeOnRouteChange: boolean;
@@ -404,6 +405,7 @@ export class BottomSheetCore {
       setMaxAxisSize: size => {
         this.snaps.setMaxAxisSize(size);
       },
+      setKeyboardInset: px => this.setKeyboardInset(px),
       applySize: size => this.applySize(size),
       recomputeSnaps: () => this.recomputeSnaps(),
       reseat: () => this.reseat(),
@@ -792,6 +794,33 @@ export class BottomSheetCore {
 
   private closingBlocked(): boolean {
     return this.disableCloseFlag && this.phase !== "closed";
+  }
+
+  private setKeyboardInset(px: number): void {
+    if (px === this.keyboardInset) return;
+    this.keyboardInset = px;
+    for (const host of this.varHosts()) {
+      host.style.setProperty("--bs-keyboard-inset", `${px}px`);
+    }
+  }
+
+  private varHosts(): Set<HTMLElement> {
+    const hosts = new Set<HTMLElement>([this.element]);
+    for (const host of [
+      this.anchorHost,
+      this.scrimParent,
+      this.rootEl,
+      this.homeRoot,
+    ]) {
+      if (host) hosts.add(host);
+    }
+    return hosts;
+  }
+
+  private dismissBlocked(): boolean {
+    return (
+      (this.disableCloseFlag || this.persistent) && this.phase !== "closed"
+    );
   }
 
   private post<K extends keyof SheetEventMap>(
@@ -1195,7 +1224,9 @@ export class BottomSheetCore {
       host.style.removeProperty("--bs-size");
       host.style.removeProperty("--bs-progress");
       host.style.removeProperty("--bs-z-sheet");
+      host.style.removeProperty("--bs-keyboard-inset");
     }
+    this.element.style.removeProperty("--bs-keyboard-inset");
     if (this.screenComponent) {
       this.screenComponent.style.opacity = "";
       this.screenComponent.style.display = "";

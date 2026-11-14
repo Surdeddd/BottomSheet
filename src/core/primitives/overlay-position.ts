@@ -14,11 +14,12 @@ export function resolveSheetAnchoredStyle(
   inset: string,
 ): SheetAnchoredStyle {
   const sizeOffset = `calc(var(--bs-size, 0px) + ${inset})`;
+  const lifted = `calc(var(--bs-size, 0px) + var(--bs-keyboard-inset, 0px) + ${inset})`;
   switch (mode) {
     case "bottom":
-      if (position === "sheet-top-left") return { bottom: sizeOffset, left: inset };
-      if (position === "sheet-top-right") return { bottom: sizeOffset, right: inset };
-      return { bottom: sizeOffset, left: "50%", transform: "translateX(-50%)" };
+      if (position === "sheet-top-left") return { bottom: lifted, left: inset };
+      if (position === "sheet-top-right") return { bottom: lifted, right: inset };
+      return { bottom: lifted, left: "50%", transform: "translateX(-50%)" };
     case "top":
       if (position === "sheet-top-left") return { top: sizeOffset, left: inset };
       if (position === "sheet-top-right") return { top: sizeOffset, right: inset };

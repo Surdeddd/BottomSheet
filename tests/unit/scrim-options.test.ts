@@ -163,11 +163,13 @@ type SheetAnchoredCase = {
 };
 
 const SHEET_ANCHOR = "calc(var(--bs-size, 0px) + 16px)";
+const LIFTED_ANCHOR =
+  "calc(var(--bs-size, 0px) + var(--bs-keyboard-inset, 0px) + 16px)";
 
 const sheetAnchoredCases: SheetAnchoredCase[] = [
-  { mode: "bottom", position: "sheet-top-left",   top: null, bottom: SHEET_ANCHOR, left: "16px", right: null,   transform: null },
-  { mode: "bottom", position: "sheet-top-center", top: null, bottom: SHEET_ANCHOR, left: "50%",  right: null,   transform: "translateX(-50%)" },
-  { mode: "bottom", position: "sheet-top-right",  top: null, bottom: SHEET_ANCHOR, left: null,   right: "16px", transform: null },
+  { mode: "bottom", position: "sheet-top-left",   top: null, bottom: LIFTED_ANCHOR, left: "16px", right: null,   transform: null },
+  { mode: "bottom", position: "sheet-top-center", top: null, bottom: LIFTED_ANCHOR, left: "50%",  right: null,   transform: "translateX(-50%)" },
+  { mode: "bottom", position: "sheet-top-right",  top: null, bottom: LIFTED_ANCHOR, left: null,   right: "16px", transform: null },
   { mode: "top",    position: "sheet-top-left",   top: SHEET_ANCHOR, bottom: null, left: "16px", right: null,   transform: null },
   { mode: "top",    position: "sheet-top-center", top: SHEET_ANCHOR, bottom: null, left: "50%",  right: null,   transform: "translateX(-50%)" },
   { mode: "top",    position: "sheet-top-right",  top: SHEET_ANCHOR, bottom: null, left: null,   right: "16px", transform: null },
@@ -181,14 +183,16 @@ const sheetAnchoredCases: SheetAnchoredCase[] = [
 
 describe("resolveSheetAnchoredStyle (pure helper) — full 4×3 matrix incl. anchor edge", () => {
   const SIZE_OFFSET = "calc(var(--bs-size, 0px) + 16px)";
+  const LIFTED_OFFSET =
+    "calc(var(--bs-size, 0px) + var(--bs-keyboard-inset, 0px) + 16px)";
   const ANCHOR_CASES: Array<{
     mode: "bottom" | "top" | "left" | "right";
     position: "sheet-top-left" | "sheet-top-center" | "sheet-top-right";
     expected: { top?: string; bottom?: string; left?: string; right?: string; transform?: string };
   }> = [
-    { mode: "bottom", position: "sheet-top-left",   expected: { bottom: SIZE_OFFSET, left: "16px" } },
-    { mode: "bottom", position: "sheet-top-center", expected: { bottom: SIZE_OFFSET, left: "50%", transform: "translateX(-50%)" } },
-    { mode: "bottom", position: "sheet-top-right",  expected: { bottom: SIZE_OFFSET, right: "16px" } },
+    { mode: "bottom", position: "sheet-top-left",   expected: { bottom: LIFTED_OFFSET, left: "16px" } },
+    { mode: "bottom", position: "sheet-top-center", expected: { bottom: LIFTED_OFFSET, left: "50%", transform: "translateX(-50%)" } },
+    { mode: "bottom", position: "sheet-top-right",  expected: { bottom: LIFTED_OFFSET, right: "16px" } },
     { mode: "top",    position: "sheet-top-left",   expected: { top: SIZE_OFFSET, left: "16px" } },
     { mode: "top",    position: "sheet-top-center", expected: { top: SIZE_OFFSET, left: "50%", transform: "translateX(-50%)" } },
     { mode: "top",    position: "sheet-top-right",  expected: { top: SIZE_OFFSET, right: "16px" } },
@@ -208,7 +212,7 @@ describe("resolveSheetAnchoredStyle (pure helper) — full 4×3 matrix incl. anc
 
   it("propagates a non-default inset into the calc expression and cross-axis", () => {
     expect(resolveSheetAnchoredStyle("bottom", "sheet-top-right", "24px")).toEqual({
-      bottom: "calc(var(--bs-size, 0px) + 24px)",
+      bottom: "calc(var(--bs-size, 0px) + var(--bs-keyboard-inset, 0px) + 24px)",
       right: "24px",
     });
   });

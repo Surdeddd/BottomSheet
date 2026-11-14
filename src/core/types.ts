@@ -234,6 +234,7 @@ export type EngineFeatureContext = {
   getPhase: () => SheetPhase;
   setSize: (size: number) => void;
   setMaxAxisSize: (size: number) => void;
+  setKeyboardInset: (px: number) => void;
   applySize: (size: number) => void;
   recomputeSnaps: () => void;
   reseat: () => void;

@@ -212,6 +212,95 @@ test.describe("limits that follow the viewport", () => {
   });
 });
 
+test.describe("the on-screen keyboard", () => {
+  const keyboard = (page: Page, covered: number) =>
+    page.evaluate(px => {
+      const vv = window.visualViewport!;
+      const full = window.innerHeight;
+      Object.defineProperty(vv, "height", {
+        configurable: true,
+        get: () => full - px,
+      });
+      vv.dispatchEvent(new Event("resize"));
+    }, covered);
+
+  const edges = (page: Page) =>
+    page.evaluate(() => {
+      const sheet = document.querySelector("#sheet-0")!.getBoundingClientRect();
+      const field = document.querySelector("#field-0")!.getBoundingClientRect();
+      return {
+        top: Math.round(sheet.top),
+        bottom: Math.round(sheet.bottom),
+        field: Math.round(field.bottom),
+      };
+    });
+
+  test("the sheet rests on top of the keyboard and keeps its field in view", async ({
+    page,
+  }) => {
+    await mount(page, { initial: "full", rows: 2 });
+    const { height } = await viewport(page);
+    await page.evaluate(() =>
+      document.querySelector<HTMLElement>("#field-0")!.focus(),
+    );
+
+    await keyboard(page, 300);
+    await expect
+      .poll(async () => (await edges(page)).bottom, { timeout: 3000 })
+      .toBe(height - 300);
+    const lifted = await edges(page);
+    expect(lifted.top).toBeGreaterThanOrEqual(0);
+    expect(lifted.field).toBeLessThanOrEqual(height - 300);
+    await expect(page.locator("#sheet-0")).toHaveCSS(
+      "--bs-keyboard-inset",
+      "300px",
+    );
+
+    await keyboard(page, 0);
+    await expect
+      .poll(async () => (await edges(page)).bottom, { timeout: 3000 })
+      .toBe(height);
+  });
+
+  test("anchors and the above-sheet scrim follow the lifted sheet", async ({
+    page,
+  }) => {
+    await mount(page, {
+      initial: "half",
+      scrimMode: "above-sheet",
+      scrimColor: "rgba(0, 0, 0, 0.5)",
+    });
+    const { height } = await viewport(page);
+    const id = await page.evaluate(() =>
+      window.lab.anchor({
+        position: "sheet-top-right",
+        inset: "12px",
+        animation: "none",
+      }),
+    );
+    await keyboard(page, 280);
+
+    const read = () =>
+      page.evaluate(sel => {
+        const sheet = document.querySelector("#sheet-0")!.getBoundingClientRect();
+        const anchor = document.querySelector(sel)!.getBoundingClientRect();
+        const scrim = document.querySelector("#scrim-0")!.getBoundingClientRect();
+        return {
+          sheetTop: Math.round(sheet.top),
+          anchorBottom: Math.round(anchor.bottom),
+          scrimBottom: Math.round(scrim.bottom),
+        };
+      }, `#${id}`);
+
+    await expect
+      .poll(async () => (await read()).sheetTop, { timeout: 3000 })
+      .toBe(height - 280 - 300);
+    const placed = await read();
+    expect(placed.anchorBottom).toBe(placed.sheetTop - 12);
+    expect(placed.scrimBottom).toBe(placed.sheetTop);
+  });
+});
+
 test.describe("where a drag may start", () => {
   test("dragFrom: handle ignores the rest of the sheet", async ({ page }) => {
     await mount(page);

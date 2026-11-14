@@ -30,6 +30,8 @@ const place = (
 
 const EMPTY: Placed = { top: "", bottom: "", left: "", right: "", transform: "" };
 const RIDE = "calc(var(--bs-size, 0px) + 16px)";
+const LIFTED =
+  "calc(var(--bs-size, 0px) + var(--bs-keyboard-inset, 0px) + 16px)";
 
 describe("overlay position", () => {
   const screen: Array<[ScrimOverlayPosition, Partial<Placed>]> = [
@@ -58,12 +60,12 @@ describe("overlay position", () => {
   const riding: Array<
     [PhysicalSheetMode, ScrimOverlayPosition, Partial<Placed>]
   > = [
-    ["bottom", "sheet-top-left", { bottom: RIDE, left: "16px" }],
-    ["bottom", "sheet-top-right", { bottom: RIDE, right: "16px" }],
+    ["bottom", "sheet-top-left", { bottom: LIFTED, left: "16px" }],
+    ["bottom", "sheet-top-right", { bottom: LIFTED, right: "16px" }],
     [
       "bottom",
       "sheet-top-center",
-      { bottom: RIDE, left: "50%", transform: "translateX(-50%)" },
+      { bottom: LIFTED, left: "50%", transform: "translateX(-50%)" },
     ],
     ["top", "sheet-top-left", { top: RIDE, left: "16px" }],
     ["top", "sheet-top-right", { top: RIDE, right: "16px" }],
@@ -98,7 +100,7 @@ describe("overlay position", () => {
     expect(
       resolveSheetAnchoredStyle("bottom", "sheet-top-right", "2rem"),
     ).toEqual({
-      bottom: "calc(var(--bs-size, 0px) + 2rem)",
+      bottom: "calc(var(--bs-size, 0px) + var(--bs-keyboard-inset, 0px) + 2rem)",
       right: "2rem",
     });
   });

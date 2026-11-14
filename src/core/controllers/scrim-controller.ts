@@ -462,7 +462,7 @@ export class ScrimController {
   private applyAboveSheetInset(): void {
     if (!this.screenComponent) return;
     const insetByMode: Record<PhysicalSheetMode, string> = {
-      bottom: "0 0 var(--bs-size) 0",
+      bottom: "0 0 calc(var(--bs-size) + var(--bs-keyboard-inset, 0px)) 0",
       top: "var(--bs-size) 0 0 0",
       left: "0 0 0 var(--bs-size)",
       right: "0 var(--bs-size) 0 0",
