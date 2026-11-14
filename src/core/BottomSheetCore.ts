@@ -309,6 +309,7 @@ export class BottomSheetCore {
     if (initial) this.size = initial.size;
     this.phase = this.size > 0 ? "open" : "closed";
     this.applySize(this.size);
+    this.restClosed = this.element.getAttribute("data-bs-rest") === "closed";
     this.setRestClosed(this.size === 0);
     this.updateAriaSlider();
 

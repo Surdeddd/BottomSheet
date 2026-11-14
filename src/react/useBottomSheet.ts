@@ -51,6 +51,10 @@ export type UseBottomSheetReturn<TId extends string = string> =
       opts: import("../core/features/scrim-stages").ScrimStagesOptions | null,
     ) => () => void;
     recompute: () => void;
+    on: <K extends keyof SheetEventMap>(
+      event: K,
+      fn: (payload: SheetEventMap[K]) => void,
+    ) => () => void;
     getEngine: () => BottomSheetEngine | null;
   };
 
@@ -108,6 +112,13 @@ export function useBottomSheet<TId extends string = string>(
   const optsRef = useRef(opts);
   optsRef.current = opts;
 
+  type Subscription = {
+    event: keyof SheetEventMap;
+    fn: (payload: never) => void;
+    off: (() => void) | null;
+  };
+  const subscriptionsRef = useRef<Subscription[]>([]);
+
   const [, setMounted] = useState(0);
 
   useIsomorphicLayoutEffect(() => {
@@ -125,6 +136,12 @@ export function useBottomSheet<TId extends string = string>(
       scrim: screenRef.current ?? undefined,
     });
     engineRef.current = engine;
+    for (const entry of subscriptionsRef.current) {
+      entry.off = engine.on(
+        entry.event,
+        entry.fn as (payload: SheetEventMap[typeof entry.event]) => void,
+      );
+    }
 
     const target = resolveTeleportTarget(optsRef.current.teleportTo);
     const restoreTeleport = target
@@ -198,6 +215,7 @@ export function useBottomSheet<TId extends string = string>(
       offs.forEach(off => off());
       restoreTeleport?.();
       engine.destroy();
+      for (const entry of subscriptionsRef.current) entry.off = null;
       engineRef.current = null;
       cachedSnapshotRef.current = SSR_STATE;
       setMounted(n => n + 1);
@@ -274,6 +292,26 @@ export function useBottomSheet<TId extends string = string>(
     [],
   );
   const recompute = useCallback(() => engineRef.current?.recompute(), []);
+  const on = useCallback(
+    <K extends keyof SheetEventMap>(
+      event: K,
+      fn: (payload: SheetEventMap[K]) => void,
+    ): (() => void) => {
+      const entry: Subscription = {
+        event,
+        fn: fn as (payload: never) => void,
+        off: engineRef.current ? engineRef.current.on(event, fn) : null,
+      };
+      subscriptionsRef.current.push(entry);
+      return () => {
+        entry.off?.();
+        subscriptionsRef.current = subscriptionsRef.current.filter(
+          e => e !== entry,
+        );
+      };
+    },
+    [],
+  );
 
   return useMemo(
     () =>
@@ -295,6 +333,7 @@ export function useBottomSheet<TId extends string = string>(
         addAnchor,
         setScrimStages,
         recompute,
+        on,
         getEngine,
       }) as unknown as UseBottomSheetReturn<TId>,
     [

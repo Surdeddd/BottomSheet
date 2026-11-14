@@ -10,10 +10,13 @@ import {
 import { createPortal } from "react-dom";
 import { useBottomSheet } from "./useBottomSheet";
 import type { BottomSheetEngine } from "../core/BottomSheetEngine";
+import { guessPhysicalMode } from "../core/primitives/logical-mode";
+import { startsClosed } from "../core/primitives/snap-points";
 import type {
   CloseReason,
   EngineOptions,
   EngineState,
+  PhysicalSheetMode,
   SheetEventMap,
 } from "../core/types";
 import type { TeleportTarget } from "../core/features/teleport";
@@ -101,12 +104,24 @@ export type BottomSheetHandle<TId extends string = string> = {
   addAnchor: (opts: AnchorOptions) => () => void;
   setScrimStages: (opts: ScrimStagesOptions | null) => () => void;
   recompute: () => void;
+  on: <K extends keyof SheetEventMap>(
+    event: K,
+    fn: (payload: SheetEventMap[K]) => void,
+  ) => () => void;
   state: EngineState & { activeId: TId };
   getEngine: () => BottomSheetEngine | null;
 };
 
 export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
   function BottomSheet(props, ref) {
+    const mounted = useHasMounted();
+    if (props.noSSR && !mounted) return null;
+    return <MountedBottomSheet {...props} ref={ref} />;
+  },
+);
+
+const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
+  function MountedBottomSheet(props, ref) {
     const {
       backdrop = true,
       closeOnBackdrop = true,
@@ -132,10 +147,9 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       onProgress,
       ariaLabel = "Bottom sheet",
       ariaLabelledBy,
-      noSSR = false,
+      noSSR: _noSSR,
       ...engineOpts
     } = props;
-    const mounted = useHasMounted();
 
     const {
       sheetRef,
@@ -152,6 +166,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       isTop,
       depth,
       setAllowed,
+      on,
       getEngine,
     } = useBottomSheet({
       ...engineOpts,
@@ -195,6 +210,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
         addAnchor: opts => getEngine()?.addAnchor(opts) ?? (() => {}),
         setScrimStages: opts => getEngine()?.setScrimStages(opts) ?? (() => {}),
         recompute: () => getEngine()?.recompute(),
+        on,
         getEngine,
         get state() {
           return getEngine()?.state ?? state;
@@ -219,10 +235,28 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     }, [state, onChange]);
 
     const mode = engineOpts.mode;
+    const [physicalMode, setPhysicalMode] = useState<PhysicalSheetMode>(() =>
+      guessPhysicalMode(mode),
+    );
     useEffect(() => {
-      if (mode === undefined) return;
-      getEngine()?.setMode(mode);
+      const engine = getEngine();
+      if (!engine) {
+        setPhysicalMode(guessPhysicalMode(mode));
+        return;
+      }
+      if (mode !== undefined) engine.setMode(mode);
+      setPhysicalMode(engine.getMode());
     }, [getEngine, mode]);
+
+    const [restAtStart] = useState(() =>
+      startsClosed(
+        engineOpts.snapPoints,
+        engineOpts.initial,
+        engineOpts.allowed,
+      )
+        ? "closed"
+        : undefined,
+    );
 
     const [anchorHosts, setAnchorHosts] = useState<HTMLElement[]>([]);
     const anchorsKey = anchors
@@ -293,8 +327,6 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       };
     }, [getEngine, stagesKey]);
 
-    if (noSSR && !mounted) return null;
-
     return (
       <div className="bs-root">
         {backdrop && (
@@ -320,7 +352,8 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           ref={sheetRef as React.RefObject<HTMLElement>}
           className={`bs-sheet ${className}`.trim()}
           style={style}
-          data-mode={engineOpts.mode ?? "bottom"}
+          data-mode={physicalMode}
+          data-bs-rest={restAtStart}
           data-active={state.activeId}
           role={ariaModal ? "dialog" : "region"}
           aria-modal={ariaModal ? "true" : undefined}
@@ -361,7 +394,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           <div
             className="bs-button-slot"
             data-side="left"
-            data-mode={engineOpts.mode ?? "bottom"}
+            data-mode={physicalMode}
           >
             {leftButton}
           </div>
@@ -370,7 +403,7 @@ export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           <div
             className="bs-button-slot"
             data-side="right"
-            data-mode={engineOpts.mode ?? "bottom"}
+            data-mode={physicalMode}
           >
             {rightButton}
           </div>

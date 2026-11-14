@@ -5,10 +5,14 @@ import {
   teleportElements,
   type TeleportTarget,
 } from "../core/features/teleport";
+import { guessPhysicalMode } from "../core/primitives/logical-mode";
+import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
   EngineState,
+  PhysicalSheetMode,
   SheetEventMap,
+  SheetMode,
   SnapPointDef,
 } from "../core/types";
 
@@ -74,6 +78,9 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
     fn: (payload: SheetEventMap[K]) => void,
   ) => () => void;
   getEngine: () => BottomSheetEngine | null;
+  physicalMode: Ref<PhysicalSheetMode>;
+  restAtStart: "closed" | undefined;
+  setMode: (mode: SheetMode) => void;
 };
 
 export function useBottomSheet<TId extends string = string>(
@@ -102,6 +109,14 @@ export function useBottomSheet<TId extends string = string>(
   });
 
   let restoreTeleport: (() => void) | null = null;
+  const physicalMode = ref<PhysicalSheetMode>(guessPhysicalMode(opts.mode));
+  const restAtStart = startsClosed(
+    opts.snapPoints,
+    opts.initial,
+    opts.allowed,
+  )
+    ? "closed"
+    : undefined;
 
   const sync = (): void => {
     if (!engine) return;
@@ -129,6 +144,7 @@ export function useBottomSheet<TId extends string = string>(
       backdrop: backdropRef.value ?? undefined,
       scrim: screenRef.value ?? undefined,
     });
+    physicalMode.value = engine.getMode();
     sync();
 
     const target = teleport === false ? null : resolveTeleportTarget(teleportTo);
@@ -149,6 +165,10 @@ export function useBottomSheet<TId extends string = string>(
     });
     engine.on("dragstart", sync);
     engine.on("dragend", sync);
+    engine.on("open", sync);
+    engine.on("close", sync);
+    engine.on("opened", sync);
+    engine.on("closed", sync);
 
     for (const entry of pending) {
       entry.engineUnsub = engine.on(
@@ -227,5 +247,11 @@ export function useBottomSheet<TId extends string = string>(
       };
     },
     getEngine: () => engine,
+    physicalMode,
+    restAtStart,
+    setMode: (mode: SheetMode) => {
+      engine?.setMode(mode);
+      physicalMode.value = engine ? engine.getMode() : guessPhysicalMode(mode);
+    },
   } as unknown as UseBottomSheetVueReturn<TId>;
 }

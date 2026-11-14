@@ -28,6 +28,12 @@ export const readDirection = (el: Element | null | undefined): "ltr" | "rtl" => 
   return "ltr";
 };
 
+export const guessPhysicalMode = (mode: AnyMode | undefined): TransformAxis => {
+  if (mode === "start") return "left";
+  if (mode === "end") return "right";
+  return mode ?? "bottom";
+};
+
 export const resolveMode = (
   mode: AnyMode,
   el: Element | null | undefined,

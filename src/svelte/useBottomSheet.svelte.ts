@@ -180,3 +180,5 @@ export function createBottomSheet<TId extends string = string>(
 }
 
 export { resolveTeleportTarget, teleportElements };
+export { guessPhysicalMode } from "../core/primitives/logical-mode";
+export { startsClosed } from "../core/primitives/snap-points";

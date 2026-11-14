@@ -2,6 +2,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useRef,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -46,21 +47,35 @@ export const Overlay = forwardRef<OverlayHandle, OverlayProps>(function Overlay(
     ...engineOpts
   } = props;
 
-  const { panelRef, backdropRef, state, open, close, toggle } = useOverlay({
-    ...engineOpts,
-    edge,
-  });
+  const { panelRef, backdropRef, state, open, close, toggle, getEngine } =
+    useOverlay({
+      ...engineOpts,
+      edge,
+    });
 
   useEffect(() => {
     if (openProp === undefined) return;
-    if (openProp && !state.isOpen) void open();
-    else if (!openProp && state.isOpen) void close();
+    const live = getEngine()?.state.isOpen ?? false;
+    if (openProp && !live) void open();
+    else if (!openProp && live) void close();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openProp, state.isOpen]);
+  }, [openProp]);
 
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   useEffect(() => {
-    onChange?.(state);
-  }, [state, onChange]);
+    const engine = getEngine();
+    if (!engine) return;
+    const report = (): void => onChangeRef.current?.(engine.state);
+    const offs = [
+      engine.on("before-open", report),
+      engine.on("open", report),
+      engine.on("before-close", report),
+      engine.on("close", report),
+    ];
+    report();
+    return () => offs.forEach(off => off());
+  }, [getEngine]);
 
   useImperativeHandle(
     ref,

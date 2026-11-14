@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { SheetEventMap } from "../core/types";
 
 export type FormikStateLike = {
@@ -26,21 +26,33 @@ export function useFormikGuard<Values extends Record<string, unknown> = Record<s
   formikRef: FormikRefLike,
   _tag?: Values,
 ): void {
+  const boundTo = useRef<SheetEventTarget | null>(null);
+  const release = useRef<(() => void) | null>(null);
+
   useEffect(() => {
-    const target = sheetRef.current;
-    if (!target) return;
-    const off = target.on("before-snap", payload => {
+    const target = sheetRef.current ?? null;
+    if (target === boundTo.current) return;
+    release.current?.();
+    boundTo.current = target;
+    if (!target) {
+      release.current = null;
+      return;
+    }
+    release.current = target.on("before-snap", payload => {
       const formik = formikRef.current;
       if (!formik) return;
-      if (formik.isSubmitting) {
-        payload.cancel();
-        return;
-      }
-      if (payload.id === "closed" && formik.dirty) {
+      if (formik.isSubmitting || (payload.size === 0 && formik.dirty)) {
         payload.cancel();
       }
     });
-    return off;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheetRef, formikRef]);
+  });
+
+  useEffect(
+    () => () => {
+      release.current?.();
+      release.current = null;
+      boundTo.current = null;
+    },
+    [],
+  );
 }

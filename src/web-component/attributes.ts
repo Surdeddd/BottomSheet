@@ -1,3 +1,4 @@
+import { devWarn } from "../core/primitives/dev-warn";
 import type { EngineOptions, SnapPointDef } from "../core/types";
 import type {
   AnchorOptions,
@@ -99,18 +100,28 @@ export const parseSnapPoints = (raw: string | null): SnapPointDef[] => {
   } catch {
 
   }
-  return raw
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean)
-    .map(part => {
-      const [id, size] = part.split(":").map(s => s.trim());
-      const numeric = Number(size);
-      const resolvedSize = Number.isFinite(numeric)
-        ? numeric
-        : (size as SnapPointDef["size"]);
-      return { id: id ?? "default", size: resolvedSize };
+  const points: SnapPointDef[] = [];
+  for (const part of raw.split(",")) {
+    const [id, size] = part.split(":").map(s => s.trim());
+    if (!id || !size) {
+      if (part.trim()) {
+        devWarn(
+          `[BottomSheet] snap-points entry "${part.trim()}" is not "id:size" — skipped.`,
+        );
+      }
+      continue;
+    }
+    const numeric = Number(size);
+    points.push({
+      id,
+      size: Number.isFinite(numeric) ? numeric : (size as SnapPointDef["size"]),
     });
+  }
+  if (points.length > 0) return points;
+  devWarn(
+    `[BottomSheet] snap-points="${raw}" has no usable entry — falling back to a single full-height snap.`,
+  );
+  return DEFAULT_SNAP_POINTS;
 };
 
 const VALID_MODES: ReadonlyArray<NonNullable<EngineOptions["mode"]>> = [
@@ -118,6 +129,8 @@ const VALID_MODES: ReadonlyArray<NonNullable<EngineOptions["mode"]>> = [
   "top",
   "left",
   "right",
+  "start",
+  "end",
 ];
 
 const VALID_ANIMATIONS: ReadonlyArray<NonNullable<EngineOptions["animation"]>> =

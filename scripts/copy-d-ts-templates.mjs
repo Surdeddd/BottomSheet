@@ -34,7 +34,9 @@ mkdirSync(svelteSrcDir, { recursive: true });
 const sfc = readFileSync(resolve(root, "src/svelte/BottomSheet.svelte"), "utf8")
   .replaceAll('from "../core/BottomSheetEngine"', 'from "@surdeddd/bottom-sheet"')
   .replaceAll('from "../core/types"', 'from "@surdeddd/bottom-sheet"')
-  .replaceAll('from "../core/features/teleport"', 'from "../svelte-core.js"');
+  .replaceAll('from "../core/features/teleport"', 'from "../svelte-core.js"')
+  .replaceAll('from "../core/primitives/logical-mode"', 'from "../svelte-core.js"')
+  .replaceAll('from "../core/primitives/snap-points"', 'from "../svelte-core.js"');
 writeFileSync(resolve(svelteSrcDir, "BottomSheet.svelte"), sfc);
 writeFileSync(
   resolve(svelteSrcDir, "index.js"),

@@ -17,9 +17,12 @@ import {
   teleportElements,
   type TeleportTarget,
 } from "../core/features/teleport";
+import { guessPhysicalMode } from "../core/primitives/logical-mode";
+import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
   EngineState,
+  PhysicalSheetMode,
   SheetEventMap,
   SnapPointDef,
   SheetMode,
@@ -91,6 +94,16 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
   const engineStore = useStore<{
     engine: NoSerialize<BottomSheetEngine>;
   }>({ engine: undefined });
+  const physicalMode = useSignal<PhysicalSheetMode>(
+    guessPhysicalMode(props.mode),
+  );
+  const restAtStart = startsClosed(
+    props.snapPoints,
+    props.initial,
+    props.allowed,
+  )
+    ? "closed"
+    : undefined;
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ cleanup }) => {
@@ -136,6 +149,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
 
     const engine = new BottomSheetEngine(engineOpts);
     engineStore.engine = noSerialize(engine);
+    physicalMode.value = engine.getMode();
 
     const teleportTarget =
       props.teleport === false ? null : resolveTeleportTarget(props.teleportTo);
@@ -228,7 +242,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       engineStore.engine = undefined;
       engine.destroy();
     });
-  });
+  }, { strategy: "document-ready" });
 
   useTask$(({ track }) => {
     const points = track(() => props.snapPoints);
@@ -272,10 +286,10 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     const engine = engineStore.engine;
     if (!engine || nextMode === undefined) return;
     engine.setMode(nextMode);
+    physicalMode.value = engine.getMode();
   });
 
   const showBackdrop = props.backdrop !== false;
-  const mode = props.mode ?? "bottom";
   const ariaLabel = props.ariaLabel ?? "Bottom sheet";
 
   return (
@@ -289,7 +303,8 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       <section
         class="bs-sheet"
         ref={sheetRef}
-        data-mode={mode}
+        data-mode={physicalMode.value}
+        data-bs-rest={restAtStart}
         data-active={state.activeId}
         role="dialog"
         aria-modal={props.focusTrap ? "true" : undefined}
@@ -318,7 +333,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       <div
         class="bs-button-slot"
         data-side="left"
-        data-mode={mode}
+        data-mode={physicalMode.value}
         ref={leftBtnRef}
       >
         <Slot name="leftButton" />
@@ -326,7 +341,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       <div
         class="bs-button-slot"
         data-side="right"
-        data-mode={mode}
+        data-mode={physicalMode.value}
         ref={rightBtnRef}
       >
         <Slot name="rightButton" />

@@ -1,4 +1,5 @@
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import { guessPhysicalMode } from "../core/primitives/logical-mode";
 import type {
   CloseReason,
   EngineOptions,
@@ -60,7 +61,8 @@ export class BottomSheetElement extends BaseHTMLElement {
   private refs!: ShadowRefs;
   private backdropClickHandler: (() => void) | null = null;
   private stylesheetLinked = false;
-  private declarativeAnchors: HTMLElement[] = [];
+  private declarativeAnchors: Array<{ el: HTMLElement; detach: () => void }> =
+    [];
   private lastActiveId: string | null = null;
 
   constructor() {
@@ -107,8 +109,8 @@ export class BottomSheetElement extends BaseHTMLElement {
     this.teardownEngine();
   }
 
-  attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
-    if (!this.engine) return;
+  attributeChangedCallback(name: string, old: string | null, value: string | null): void {
+    if (!this.engine || old === value) return;
     if (LIVE_ATTRS.has(name)) {
       this.applyLiveAttribute(name, value);
       return;
@@ -153,6 +155,7 @@ export class BottomSheetElement extends BaseHTMLElement {
       }
       case ATTR_MODE:
         this.engine.setMode(parseMode(value));
+        this.writeMode(this.engine.getMode());
         break;
       case ATTR_SNAP:
         if (value && value !== this.engine.state.activeId) {
@@ -174,21 +177,26 @@ export class BottomSheetElement extends BaseHTMLElement {
       this.refs.backdrop.removeEventListener("click", this.backdropClickHandler);
       this.backdropClickHandler = null;
     }
-    this.engine?.destroy();
-    this.engine = null;
-    for (const el of this.declarativeAnchors) {
-      this.appendChild(el);
+    for (const anchor of this.declarativeAnchors) {
+      anchor.detach();
+      anchor.el.setAttribute("slot", "anchor");
     }
     this.declarativeAnchors = [];
+    this.engine?.destroy();
+    this.engine = null;
+  }
+
+  private writeMode(mode: string): void {
+    this.refs.sheet.setAttribute("data-mode", mode);
+    this.refs.leftButton.setAttribute("data-mode", mode);
+    this.refs.rightButton.setAttribute("data-mode", mode);
   }
 
   private initEngine(): void {
     const { sheet, handle, content, backdrop, announcer } = this.refs;
 
     const mode = parseMode(this.getAttribute(ATTR_MODE));
-    sheet.setAttribute("data-mode", mode);
-    this.refs.leftButton.setAttribute("data-mode", mode);
-    this.refs.rightButton.setAttribute("data-mode", mode);
+    this.writeMode(guessPhysicalMode(mode));
 
     const focusTrap = this.getAttribute(ATTR_FOCUS_TRAP) === "true";
 
@@ -213,11 +221,14 @@ export class BottomSheetElement extends BaseHTMLElement {
     }
 
     const snapPoints = parseSnapPoints(this.getAttribute(ATTR_SNAP_POINTS));
-    const initialAttr = this.getAttribute(ATTR_INITIAL) ?? undefined;
-    const initial =
-      this.lastActiveId && snapPoints.some(p => p.id === this.lastActiveId)
-        ? this.lastActiveId
-        : initialAttr;
+    const known = (id: string | null): id is string =>
+      id !== null && snapPoints.some(p => p.id === id);
+    const snapAttr = this.getAttribute(ATTR_SNAP);
+    const initial = known(this.lastActiveId)
+      ? this.lastActiveId
+      : known(snapAttr)
+        ? snapAttr
+        : (this.getAttribute(ATTR_INITIAL) ?? undefined);
 
     const opts: EngineOptions = {
       element: sheet,
@@ -253,6 +264,7 @@ export class BottomSheetElement extends BaseHTMLElement {
     };
 
     this.engine = new BottomSheetEngine(opts);
+    this.writeMode(this.engine.getMode());
     sheet.setAttribute("data-active", this.engine.state.activeId);
 
     const scrimColor =
@@ -260,12 +272,22 @@ export class BottomSheetElement extends BaseHTMLElement {
       this.getAttribute(ATTR_BACKDROP_COLOR);
     if (scrimColor !== null) this.engine.setScrimColor(scrimColor);
 
-    for (const el of Array.from(
-      this.querySelectorAll<HTMLElement>('[slot="anchor"]'),
-    )) {
-      this.declarativeAnchors.push(el);
-      this.engine.addAnchor({ ...parseAnchorOptions(el), element: el });
-    }
+    const anchors = (Array.from(this.children) as HTMLElement[]).filter(
+      child => child.getAttribute("slot") === "anchor",
+    );
+    anchors.forEach((el, index) => {
+      const name = `bs-anchor-${index}`;
+      const host = document.createElement("div");
+      const slot = document.createElement("slot");
+      slot.name = name;
+      host.appendChild(slot);
+      el.setAttribute("slot", name);
+      const detach = this.engine!.addAnchor({
+        ...parseAnchorOptions(el),
+        element: host,
+      });
+      this.declarativeAnchors.push({ el, detach });
+    });
 
     this.offHandlers = [
       this.engine.on("snap", payload => {
@@ -360,6 +382,11 @@ export class BottomSheetElement extends BaseHTMLElement {
   recompute(): void {
     this.engine?.recompute();
   }
+  setMode(mode: NonNullable<EngineOptions["mode"]>): void {
+    if (!this.engine) return;
+    this.engine.setMode(mode);
+    this.writeMode(this.engine.getMode());
+  }
   get sheetState(): EngineState | null {
     return this.engine?.state ?? null;
   }
@@ -392,6 +419,7 @@ export type TypedBottomSheetElement<TId extends string = string> =
     setRadius: (r: string | number) => void;
     setMaxHeight: (h: string | number) => void;
     setAllowed: (ids: TId[], snap?: TId) => void;
+    setMode: (mode: NonNullable<EngineOptions["mode"]>) => void;
     snap: TId | null;
     readonly sheetState: (EngineState & { activeId: TId }) | null;
   };

@@ -21,7 +21,12 @@ const makeFakeTarget = () => {
     ),
     fire: (id: string) => {
       const cancel = vi.fn();
-      const payload = { id, size: 0, cancel, previousId: "open" };
+      const payload = {
+        id,
+        size: id === "closed" ? 0 : 400,
+        cancel,
+        previousId: "open",
+      };
       listeners.forEach(fn => fn(payload));
       return cancel;
     },
@@ -112,6 +117,55 @@ describe("useFormGuard (react-hook-form)", () => {
     };
     handle.rerender(() => useFormGuard(sheetRef, methods));
     cancel = target.fire("closed");
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+});
+
+describe("form guards and a sheet that shows up later", () => {
+  it("binds once the sheet ref gets a target on a later render", () => {
+    const target = makeFakeTarget();
+    const sheetRef = { current: null } as unknown as {
+      current: typeof target | null;
+    };
+    const methods = {
+      formState: { isDirty: true, isSubmitting: false, isSubmitSuccessful: false },
+    };
+    const guard = () =>
+      useFormGuard(
+        sheetRef as unknown as Parameters<typeof useFormGuard>[0],
+        methods,
+      );
+    const handle = renderHook(guard);
+    expect(target.listenerCount()).toBe(0);
+
+    sheetRef.current = target;
+    handle.rerender(guard);
+    expect(target.listenerCount()).toBe(1);
+    expect(target.fire("closed")).toHaveBeenCalledOnce();
+
+    handle.rerender(guard);
+    expect(target.listenerCount()).toBe(1);
+    handle.unmount();
+    expect(target.listenerCount()).toBe(0);
+  });
+
+  it("guards a close to any zero-size snap, whatever it is called", () => {
+    const listeners = new Set<Listener>();
+    const target = {
+      on: (_event: keyof SheetEventMap, fn: Listener) => {
+        listeners.add(fn);
+        return () => listeners.delete(fn);
+      },
+    };
+    const sheetRef = { current: target } as unknown as Parameters<typeof useFormGuard>[0];
+    const methods = {
+      formState: { isDirty: true, isSubmitting: false, isSubmitSuccessful: false },
+    };
+    renderHook(() => useFormGuard(sheetRef, methods));
+    const cancel = vi.fn();
+    listeners.forEach(fn =>
+      fn({ id: "hidden", size: 0, cancel, previousId: "open" }),
+    );
     expect(cancel).toHaveBeenCalledOnce();
   });
 });

@@ -6,8 +6,11 @@
     teleportElements,
     type TeleportTarget,
   } from "../core/features/teleport";
+  import { guessPhysicalMode } from "../core/primitives/logical-mode";
+  import { startsClosed } from "../core/primitives/snap-points";
   import type {
     EngineState,
+    PhysicalSheetMode,
     SnapPointDef,
     SheetMode,
     ScrimUpdate,
@@ -141,6 +144,12 @@
 
   let engine: BottomSheetEngine | null = null;
   let restoreTeleport: (() => void) | null = null;
+  let physicalMode: PhysicalSheetMode = $state(
+    untrack(() => guessPhysicalMode(mode)),
+  );
+  const restAtStart = untrack(() =>
+    startsClosed(snapPoints, initial, allowed) ? "closed" : undefined,
+  );
 
   onMount(() => {
     if (!sheetEl) return;
@@ -187,6 +196,7 @@
       viewState = { ...engine.state } as EngineState & { activeId: TId };
       onchange?.(viewState);
     };
+    physicalMode = engine.getMode();
     sync();
     if (backdropColor !== undefined) engine.setScrimColor(backdropColor);
     if (backdropOpacity !== undefined)
@@ -197,17 +207,25 @@
       onsnap?.(payload.id as TId);
     });
     engine.on("open", payload => {
+      sync();
       openProp = true;
       onopen?.(payload.id as TId);
     });
     engine.on("close", () => {
+      sync();
       openProp = false;
       onclose?.();
     });
     engine.on("before-close", payload => onbeforeclose?.(payload));
     engine.on("before-snap", payload => onbeforesnap?.(payload));
-    engine.on("opened", payload => onopened?.(payload.id as TId));
-    engine.on("closed", () => onclosed?.());
+    engine.on("opened", payload => {
+      sync();
+      onopened?.(payload.id as TId);
+    });
+    engine.on("closed", () => {
+      sync();
+      onclosed?.();
+    });
     engine.on("dragstart", () => {
       sync();
       ondragstart?.();
@@ -291,7 +309,9 @@
     if (dragFrom !== undefined) engine?.setDragFrom(dragFrom);
   });
   $effect(() => {
-    if (mode !== undefined) engine?.setMode(mode);
+    const next = mode;
+    if (next !== undefined) engine?.setMode(next);
+    physicalMode = engine ? engine.getMode() : guessPhysicalMode(next);
   });
   $effect(() => {
     if (radius !== undefined) engine?.setRadius(radius);
@@ -309,19 +329,22 @@
   $effect(() => {
     if (snap === undefined) return;
     const next = snap;
-    if (!engine || untrack(() => viewState.activeId) === next) return;
+    if (!engine || engine.state.activeId === next) return;
     void engine.snapTo(next);
   });
   $effect(() => {
     if (openProp === undefined) return;
     const next = openProp;
     if (!engine) return;
-    const isOpen = untrack(() => viewState.size) > 0;
-    if (next && !isOpen) void engine.open();
-    else if (!next && isOpen) void engine.close();
+    const phase = engine.state.phase;
+    const opening = phase === "open" || phase === "opening";
+    if (next && !opening) void engine.open();
+    else if (!next && opening) void engine.close();
   });
 
-  let isVerticalAxis = $derived(mode === "bottom" || mode === "top");
+  let isVerticalAxis = $derived(
+    physicalMode === "bottom" || physicalMode === "top",
+  );
 </script>
 
 <div class="bs-root">
@@ -346,7 +369,8 @@
   <section
     class="bs-sheet"
     bind:this={sheetEl}
-    data-mode={mode}
+    data-mode={physicalMode}
+    data-bs-rest={restAtStart}
     data-active={viewState.activeId}
     role="dialog"
     aria-modal={focusTrap ? "true" : undefined}
@@ -374,12 +398,12 @@
     </span>
   </section>
   {#if leftButton}
-    <div class="bs-button-slot" data-side="left" data-mode={mode}>
+    <div class="bs-button-slot" data-side="left" data-mode={physicalMode}>
       {@render leftButton()}
     </div>
   {/if}
   {#if rightButton}
-    <div class="bs-button-slot" data-side="right" data-mode={mode}>
+    <div class="bs-button-slot" data-side="right" data-mode={physicalMode}>
       {@render rightButton()}
     </div>
   {/if}

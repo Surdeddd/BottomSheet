@@ -179,9 +179,9 @@ export class OverlayEngine {
   open(): Promise<void> {
     if (this.destroyed || this.isOpen_) return Promise.resolve();
     this.maybeMount();
-    this.emit("before-open", undefined);
     this.isOpen_ = true;
     this.isAnimating_ = true;
+    this.emit("before-open", undefined);
     sheetStack.promote(this.id);
     this.element.removeAttribute("hidden");
     this.element.setAttribute("data-state", "entering");
@@ -261,9 +261,9 @@ export class OverlayEngine {
 
   close(reason: OverlayCloseReason = "programmatic"): Promise<void> {
     if (this.destroyed || !this.isOpen_) return Promise.resolve();
-    this.emit("before-close", undefined);
     this.isOpen_ = false;
     this.isAnimating_ = true;
+    this.emit("before-close", undefined);
     sheetStack.update();
     const historyDone =
       reason !== "back" && this.backMarker

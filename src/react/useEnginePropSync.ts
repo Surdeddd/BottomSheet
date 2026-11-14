@@ -113,5 +113,6 @@ export function useEnginePropSync(
     if (opts.dragFromContent !== undefined) {
       engineRef.current?.setDragFromContent(opts.dragFromContent);
     }
-  }, [opts.disableDrag]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts.dragFromContent]);
 }

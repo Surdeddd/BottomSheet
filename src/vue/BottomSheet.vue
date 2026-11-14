@@ -16,7 +16,7 @@ import type { ScrimStagesOptions } from "../core/features/scrim-stages";
 
 type VueAnchor = Omit<AnchorOptions, "element"> & { id: string };
 
-type Props = UseBottomSheetVueOptions<TId> & {
+type Props = Omit<UseBottomSheetVueOptions<TId>, "onSnap"> & {
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
@@ -36,6 +36,25 @@ const props = withDefaults(defineProps<Props>(), {
   ariaLabel: "Bottom sheet",
   teleport: true,
   teleportTo: "body",
+  open: undefined,
+  respectReducedMotion: undefined,
+  dragFromContent: undefined,
+  fitContentToSnap: undefined,
+  rubberBand: undefined,
+  scrimInteractive: undefined,
+  scrimTapToClose: undefined,
+  focusTrap: undefined,
+  initialFocus: undefined,
+  closeOnEscape: undefined,
+  lockBodyScroll: undefined,
+  closeOnBack: undefined,
+  inertSiblings: undefined,
+  persistent: undefined,
+  disableClose: undefined,
+  disableDrag: undefined,
+  closeOnRouteChange: undefined,
+  viewTransitions: undefined,
+  stackEffect: undefined,
 });
 
 const emit = defineEmits<{
@@ -90,6 +109,9 @@ const {
   canDismiss,
   on,
   getEngine,
+  physicalMode,
+  restAtStart,
+  setMode,
 } = useBottomSheet<TId>({ ...props, teleport: false });
 
 watch(
@@ -126,34 +148,37 @@ on("dragend", payload => emit("drag-end", payload));
 on("drag", payload => emit("drag", payload));
 on("progress", payload => emit("progress", payload));
 
+const isOpening = (): boolean => {
+  const phase = getEngine()?.state.phase ?? "closed";
+  return phase === "open" || phase === "opening";
+};
+
 watch(
   () => props.open,
   next => {
     if (next === undefined) return;
-    const isOpen = state.size > 0;
-    if (next && !isOpen) void open();
-    else if (!next && isOpen) void close();
+    if (next && !isOpening()) void open();
+    else if (!next && isOpening()) void close();
   },
 );
 
 watch(
   () => props.snap,
   next => {
-    if (next === undefined || next === state.activeId) return;
+    if (next === undefined) return;
+    if (next === (getEngine()?.state.activeId ?? state.activeId)) return;
     void snapTo(next);
   },
 );
 
 watch(
-  () => props.snapPoints,
-  next => {
-    if (!next) return;
+  () => JSON.stringify(props.snapPoints),
+  () => {
     setSnapPoints(
-      next as unknown as Parameters<typeof setSnapPoints>[0],
+      props.snapPoints as unknown as Parameters<typeof setSnapPoints>[0],
       props.allowed as unknown as string[] | undefined,
     );
   },
-  { deep: true },
 );
 
 watch(
@@ -239,8 +264,7 @@ watch(
 watch(
   () => props.mode,
   next => {
-    if (next === undefined) return;
-    getEngine()?.setMode(next);
+    if (next !== undefined) setMode(next);
   },
 );
 
@@ -299,7 +323,7 @@ onMounted(() => {
   applyStages();
   watch(anchorsKey, buildAnchors);
   watch(() => props.scrimStages, applyStages, { deep: true });
-  if (props.open && state.size === 0) void open();
+  if (props.open && !isOpening()) void open();
 });
 
 onBeforeUnmount(() => {
@@ -308,10 +332,9 @@ onBeforeUnmount(() => {
   stagesDetach = null;
 });
 
-const isVerticalAxis = computed(() => {
-  const mode = props.mode ?? "bottom";
-  return mode === "bottom" || mode === "top";
-});
+const isVerticalAxis = computed(
+  () => physicalMode.value === "bottom" || physicalMode.value === "top",
+);
 const ariaModal = computed(() => props.focusTrap === true);
 
 defineExpose({
@@ -356,7 +379,8 @@ defineExpose({
       <section
         ref="sheetRef"
         :class="['bs-sheet']"
-        :data-mode="props.mode ?? 'bottom'"
+        :data-mode="physicalMode"
+        :data-bs-rest="restAtStart"
         :data-active="state.activeId"
         :role="ariaModal ? 'dialog' : 'region'"
         :aria-modal="ariaModal ? 'true' : undefined"
@@ -393,7 +417,7 @@ defineExpose({
         v-if="$slots['button-left']"
         class="bs-button-slot"
         data-side="left"
-        :data-mode="props.mode ?? 'bottom'"
+        :data-mode="physicalMode"
       >
         <slot name="button-left" />
       </div>
@@ -401,7 +425,7 @@ defineExpose({
         v-if="$slots['button-right']"
         class="bs-button-slot"
         data-side="right"
-        :data-mode="props.mode ?? 'bottom'"
+        :data-mode="physicalMode"
       >
         <slot name="button-right" />
       </div>

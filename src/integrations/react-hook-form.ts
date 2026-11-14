@@ -28,20 +28,30 @@ export function useFormGuard<TFieldValues extends Record<string, unknown> = Reco
   const methodsRef = useRef(methods);
   methodsRef.current = methods;
 
+  const boundTo = useRef<SheetEventTarget | null>(null);
+  const release = useRef<(() => void) | null>(null);
+
   useEffect(() => {
-    const target = sheetRef.current;
-    if (!target) return;
-    const off = target.on("before-snap", payload => {
+    const target = sheetRef.current ?? null;
+    if (target === boundTo.current) return;
+    release.current?.();
+    boundTo.current = target;
+    if (!target) {
+      release.current = null;
+      return;
+    }
+    release.current = target.on("before-snap", payload => {
       const { isDirty, isSubmitting } = methodsRef.current.formState;
-      if (isSubmitting) {
-        payload.cancel();
-        return;
-      }
-      if (payload.id === "closed" && isDirty) {
-        payload.cancel();
-      }
+      if (isSubmitting || (payload.size === 0 && isDirty)) payload.cancel();
     });
-    return off;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheetRef]);
+  });
+
+  useEffect(
+    () => () => {
+      release.current?.();
+      release.current = null;
+      boundTo.current = null;
+    },
+    [],
+  );
 }

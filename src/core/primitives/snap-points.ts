@@ -25,6 +25,15 @@ export const resolveSnapList = (
     })
     .sort((a, b) => a.size - b.size);
 
+export const startsClosed = (
+  points: ReadonlyArray<{ id: string; size: number | string }>,
+  initial?: string,
+  allowed?: ReadonlyArray<string>,
+): boolean => {
+  const id = initial ?? allowed?.[0] ?? points[0]?.id;
+  return points.find(p => p.id === id)?.size === 0;
+};
+
 const VH_NOT_DVH = /(^|[^a-z])vh\b/i;
 
 export const auditVhUsage = (points: SnapPointDef[]): void => {

@@ -1,5 +1,6 @@
 /** @jsxImportSource solid-js */
 import {
+  children,
   createSignal,
   createMemo,
   createEffect,
@@ -7,6 +8,7 @@ import {
   onCleanup,
   onMount,
   Show,
+  untrack,
   type JSX,
 } from "solid-js";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
@@ -15,9 +17,12 @@ import {
   teleportElements,
   type TeleportTarget,
 } from "../core/features/teleport";
+import { guessPhysicalMode } from "../core/primitives/logical-mode";
+import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
   EngineState,
+  PhysicalSheetMode,
   SheetEventMap,
   SnapPointDef,
   SheetMode,
@@ -102,6 +107,14 @@ export const BottomSheet = <TId extends string = string>(
 
   let engine: BottomSheetEngine | null = null;
   let restoreTeleport: (() => void) | null = null;
+  const [physicalMode, setPhysicalMode] = createSignal<PhysicalSheetMode>(
+    guessPhysicalMode(untrack(() => props.mode)),
+  );
+  const restAtStart = untrack(() =>
+    startsClosed(props.snapPoints, props.initial, props.allowed)
+      ? "closed"
+      : undefined,
+  );
 
   onMount(() => {
     if (!sheetEl) return;
@@ -138,6 +151,7 @@ export const BottomSheet = <TId extends string = string>(
     };
 
     engine = new BottomSheetEngine(engineOpts);
+    setPhysicalMode(engine.getMode());
     props.engineRef?.(engine);
 
     const teleportTarget =
@@ -206,9 +220,8 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.snapPoints,
-      (points, prev) => {
-        if (!engine || prev === undefined) return;
-        engine.setSnapPoints(
+      points => {
+        engine?.setSnapPoints(
           points as unknown as EngineOptions["snapPoints"],
           props.allowed as unknown as string[] | undefined,
         );
@@ -220,9 +233,8 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.allowed,
-      (allowed, prev) => {
-        if (!engine || prev === undefined) return;
-        if (allowed) engine.setAllowed(allowed as unknown as string[]);
+      allowed => {
+        if (allowed) engine?.setAllowed(allowed as unknown as string[]);
       },
       { defer: true },
     ),
@@ -231,10 +243,7 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.persistent,
-      (value, prev) => {
-        if (!engine || prev === undefined || value === undefined) return;
-        engine.setPersistent(value);
-      },
+      value => engine?.setPersistent(value ?? false),
       { defer: true },
     ),
   );
@@ -242,10 +251,7 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.disableClose,
-      (value, prev) => {
-        if (!engine || prev === undefined || value === undefined) return;
-        engine.setDisableClose(value);
-      },
+      value => engine?.setDisableClose(value ?? false),
       { defer: true },
     ),
   );
@@ -253,10 +259,7 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.disableDrag,
-      (value, prev) => {
-        if (!engine || prev === undefined || value === undefined) return;
-        engine.setDisableDrag(value);
-      },
+      value => engine?.setDisableDrag(value ?? false),
       { defer: true },
     ),
   );
@@ -264,10 +267,7 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.dragFromContent,
-      (value, prev) => {
-        if (!engine || prev === undefined || value === undefined) return;
-        engine.setDragFromContent(value);
-      },
+      value => engine?.setDragFromContent(value ?? true),
       { defer: true },
     ),
   );
@@ -275,9 +275,28 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.dragFrom,
-      (value, prev) => {
-        if (!engine || prev === undefined || value === undefined) return;
-        engine.setDragFrom(value);
+      value => {
+        if (value !== undefined) engine?.setDragFrom(value);
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.radius,
+      value => {
+        if (value !== undefined) engine?.setRadius(value);
+      },
+      { defer: true },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => props.maxHeight,
+      value => {
+        if (value !== undefined) engine?.setMaxHeight(value);
       },
       { defer: true },
     ),
@@ -286,17 +305,21 @@ export const BottomSheet = <TId extends string = string>(
   createEffect(
     on(
       () => props.mode,
-      (value, prev) => {
-        if (!engine || prev === undefined || value === undefined) return;
-        engine.setMode(value);
+      value => {
+        const next = value ?? "bottom";
+        engine?.setMode(next);
+        setPhysicalMode(engine ? engine.getMode() : guessPhysicalMode(next));
       },
       { defer: true },
     ),
   );
 
   const showBackdrop = createMemo(() => props.backdrop !== false);
-  const mode = createMemo<SheetMode>(() => props.mode ?? "bottom");
   const ariaLabel = createMemo(() => props.ariaLabel ?? "Bottom sheet");
+  const header = children(() => props.header);
+  const footer = children(() => props.footer);
+  const leftButton = children(() => props.leftButton);
+  const rightButton = children(() => props.rightButton);
 
   return (
     <div class="bs-root">
@@ -309,7 +332,8 @@ export const BottomSheet = <TId extends string = string>(
       <section
         class="bs-sheet"
         ref={el => (sheetEl = el)}
-        data-mode={mode()}
+        data-mode={physicalMode()}
+        data-bs-rest={restAtStart}
         data-active={state().activeId}
         role="dialog"
         aria-modal={props.focusTrap ? "true" : undefined}
@@ -322,8 +346,8 @@ export const BottomSheet = <TId extends string = string>(
           tabIndex={0}
           aria-label="Resize sheet"
         />
-        <Show when={props.header}>
-          <div class="bs-header">{props.header}</div>
+        <Show when={header()}>
+          <div class="bs-header">{header()}</div>
         </Show>
         <div
           class="bs-content"
@@ -334,21 +358,25 @@ export const BottomSheet = <TId extends string = string>(
         >
           {props.children}
         </div>
-        <Show when={props.footer}>
-          <div class="bs-footer">{props.footer}</div>
+        <Show when={footer()}>
+          <div class="bs-footer">{footer()}</div>
         </Show>
         <span class="bs-sr-only" role="status" aria-live="polite">
           {state().activeId}
         </span>
       </section>
-      <Show when={props.leftButton}>
-        <div class="bs-button-slot" data-side="left" data-mode={mode()}>
-          {props.leftButton}
+      <Show when={leftButton()}>
+        <div class="bs-button-slot" data-side="left" data-mode={physicalMode()}>
+          {leftButton()}
         </div>
       </Show>
-      <Show when={props.rightButton}>
-        <div class="bs-button-slot" data-side="right" data-mode={mode()}>
-          {props.rightButton}
+      <Show when={rightButton()}>
+        <div
+          class="bs-button-slot"
+          data-side="right"
+          data-mode={physicalMode()}
+        >
+          {rightButton()}
         </div>
       </Show>
     </div>

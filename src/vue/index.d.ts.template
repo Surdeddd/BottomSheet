@@ -5,6 +5,7 @@ import type {
   CloseReason,
   EngineOptions,
   EngineState,
+  PhysicalSheetMode,
   SheetEventMap,
   SheetMode,
   SnapPoint,
@@ -68,6 +69,9 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
     fn: (payload: SheetEventMap[K]) => void,
   ) => () => void;
   getEngine: () => BottomSheetEngine | null;
+  physicalMode: { value: PhysicalSheetMode };
+  restAtStart: "closed" | undefined;
+  setMode: (mode: SheetMode) => void;
 };
 
 export function useBottomSheet<TId extends string = string>(
@@ -76,7 +80,14 @@ export function useBottomSheet<TId extends string = string>(
 
 export type BottomSheetInstance<TId extends string = string> = Omit<
   UseBottomSheetVueReturn<TId>,
-  "sheetRef" | "handleRef" | "contentRef" | "backdropRef" | "screenRef"
+  | "sheetRef"
+  | "handleRef"
+  | "contentRef"
+  | "backdropRef"
+  | "screenRef"
+  | "physicalMode"
+  | "restAtStart"
+  | "setMode"
 >;
 
 export type VueAnchor<TId extends string = string> = Omit<
@@ -84,8 +95,10 @@ export type VueAnchor<TId extends string = string> = Omit<
   "element"
 > & { id: string };
 
-export type BottomSheetProps<TId extends string = string> =
-  UseBottomSheetVueOptions<TId> & {
+export type BottomSheetProps<TId extends string = string> = Omit<
+  UseBottomSheetVueOptions<TId>,
+  "onSnap"
+> & {
     backdrop?: boolean;
     closeOnBackdrop?: boolean;
     ariaLabel?: string;
