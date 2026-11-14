@@ -13,6 +13,13 @@ concurrency:
 permissions:
   contents: read
 
+# The declaration build (tsup's dts worker) peaks at about 2.3 GB of heap.
+# On a runner whose default limit is 2 GB it dies with
+# ERR_WORKER_OUT_OF_MEMORY, now and then, depending on GC timing. The flag
+# also sets the limit of worker threads.
+env:
+  NODE_OPTIONS: --max-old-space-size=4096
+
 jobs:
   test:
     name: Test (Node ${{ matrix.node }})

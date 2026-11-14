@@ -89,6 +89,8 @@ npx playwright test --project=mobile-safari --project=firefox
 
 A `.husky/pre-commit` hook runs typecheck + vitest + sync:css drift-guard automatically.
 
+`npm run build` generates the declarations for every entry in one pass, which takes about 2.3 GB of heap. Node's default limit is enough on a machine with 16 GB of RAM. On a smaller one the build can stop with `ERR_WORKER_OUT_OF_MEMORY`; run it as `NODE_OPTIONS=--max-old-space-size=4096 npm run build`. CI sets the same value.
+
 ## Conventions
 
 - **Comments**: the source has none. A name says what a thing is; the reason for a decision goes into the commit message and, when it is about design, into `docs/ARCHITECTURE.md`. Pragmas such as `// @vitest-environment node` are fine.
