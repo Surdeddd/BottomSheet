@@ -40,7 +40,15 @@ const sheet = new BottomSheetEngine({
   focusTrap: true,
   backdropOpacity: 0.6,
   backdropColor: "rgb(0 0 0 / 0.4)",
-  features: [webglRenderer({ jelly: 0.6 })],
+  features: [
+    webglRenderer({
+      jelly: 0.6,
+      allowSoftware: false,
+      onUnsupported: reason => {
+        if (reason === "software-renderer") console.info("no GPU behind WebGL");
+      },
+    }),
+  ],
 });
 
 document.querySelector("#filters")!.addEventListener("click", () => sheet.open());

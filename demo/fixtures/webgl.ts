@@ -13,8 +13,17 @@ const sheet = document.createElement("section");
 sheet.className = "bs-sheet";
 sheet.dataset.mode = "bottom";
 sheet.setAttribute("role", "dialog");
-const surface = new URLSearchParams(location.search).get("surface");
+const params = new URLSearchParams(location.search);
+const surface = params.get("surface");
 if (surface) sheet.style.background = surface;
+const frame = params.get("frame");
+if (frame) mount.dataset.frame = frame;
+const freeScroll = params.get("lock") === "off";
+if (freeScroll) document.body.classList.add("tall");
+if (params.get("scheme") === "follow") {
+  document.documentElement.classList.add("follow-scheme");
+}
+if (params.has("animated")) document.documentElement.classList.add("animated");
 
 const handle = document.createElement("div");
 handle.className = "bs-handle";
@@ -62,12 +71,15 @@ const engine = new BottomSheetEngine({
   snapPoints: [
     { id: "closed", size: 0 },
     { id: "minimized", size: 140 },
-    { id: "full", size: "80%" },
+    { id: "full", size: frame ? 400 : "80%" },
   ],
   initial: "minimized",
+  lockBodyScroll: !freeScroll,
   features: [
     webglRenderer({
       jelly: 0.7,
+      allowSoftware: params.get("software") !== "refuse",
+      ...(params.has("sheen") ? { sheen: Number(params.get("sheen")) } : {}),
       onUnsupported: reason => {
         status.dataset.unsupported = reason;
         status.textContent = `renderer: dom (${reason})`;

@@ -6,6 +6,7 @@ import type {
 } from "./types";
 import {
   createGLHandle,
+  drawsOnCpu,
   hasWebGL,
   resizeDrawingBuffer,
   type GLHandle,
@@ -37,6 +38,7 @@ const prefersReducedMotion = (): boolean =>
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 type Rgba = [number, number, number, number];
+type Corners = [number, number, number, number];
 
 const WHITE: Rgba = [1, 1, 1, 1];
 const SENTINEL = "#010203";
@@ -119,11 +121,16 @@ export const webglRenderer = (
       boxShadow: element.style.boxShadow,
     };
 
-    const readSurfaceStyle = (): { color: [number, number, number, number]; radius: number } => {
+    const readSurfaceStyle = (): { color: Rgba; radii: Corners } => {
       const cs = getComputedStyle(element);
       return {
         color: parseColor(cs.backgroundColor),
-        radius: parseRadius(cs.borderTopLeftRadius),
+        radii: [
+          parseRadius(cs.borderTopLeftRadius),
+          parseRadius(cs.borderTopRightRadius),
+          parseRadius(cs.borderBottomRightRadius),
+          parseRadius(cs.borderBottomLeftRadius),
+        ],
       };
     };
 
@@ -164,6 +171,13 @@ export const webglRenderer = (
       return;
     }
 
+    if (!options.allowSoftware && drawsOnCpu(handle.gl)) {
+      handle.destroy();
+      handle = null;
+      bail("software-renderer");
+      return;
+    }
+
     program = createSurfaceProgram(handle.gl, handle.highp);
     if (!program) {
       handle.destroy();
@@ -175,11 +189,17 @@ export const webglRenderer = (
     const parent = element.parentElement ?? document.body;
     parent.insertBefore(handle.canvas, element);
     let canvasZ = "";
+    let canvasPosition = "fixed";
     const followStack = (): void => {
       if (!handle) return;
-      const elementZ = getComputedStyle(element).zIndex;
+      const cs = getComputedStyle(element);
+      const position = cs.position === "absolute" ? "absolute" : "fixed";
+      if (position !== canvasPosition) {
+        canvasPosition = position;
+        handle.canvas.style.position = position;
+      }
       const next =
-        elementZ && elementZ !== "auto" ? String(Number(elementZ) - 1) : "0";
+        cs.zIndex && cs.zIndex !== "auto" ? String(Number(cs.zIndex) - 1) : "0";
       if (next === canvasZ) return;
       canvasZ = next;
       handle.canvas.style.zIndex = next;
@@ -187,21 +207,6 @@ export const webglRenderer = (
     followStack();
 
     suppressDomPaint();
-
-    const readFrame = (): SurfaceFrame | null => {
-      if (!handle) return null;
-      const rect = element.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return null;
-      return {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height,
-        radius: surfaceStyle.radius,
-        color: surfaceStyle.color,
-        shadow: shadowStrength,
-      };
-    };
 
     const dprOf = (): number => options.dpr ?? window.devicePixelRatio ?? 1;
 
@@ -232,23 +237,23 @@ export const webglRenderer = (
       releaseText = hideCapturedText(next.hiddenNodes);
     };
 
-    const scrollLayer = (frame: SurfaceFrame): ScrollLayer | null => {
+    const scrollLayer = (sheet: DOMRect): ScrollLayer | null => {
       const scroll = capture?.scroll;
       const scroller = ctx.scrollContainer;
       if (!scroll || !scroller) return null;
       const box = scroller.getBoundingClientRect();
-      const left = box.left + scroller.clientLeft - frame.x;
-      const top = box.top + scroller.clientTop - frame.y;
+      const left = box.left + scroller.clientLeft - sheet.left;
+      const top = box.top + scroller.clientTop - sheet.top;
       return {
         texture: scroll.texture,
         rect: [
-          left / frame.width,
-          top / frame.height,
-          (left + scroller.clientWidth) / frame.width,
-          (top + scroller.clientHeight) / frame.height,
+          left / sheet.width,
+          top / sheet.height,
+          (left + scroller.clientWidth) / sheet.width,
+          (top + scroller.clientHeight) / sheet.height,
         ],
         map: [
-          frame.height / scroll.height,
+          sheet.height / scroll.height,
           (scroll.above + scroller.scrollTop - scroll.top) / scroll.height,
         ],
       };
@@ -256,18 +261,29 @@ export const webglRenderer = (
 
     const paint = (): void => {
       if (disposed || !handle || !program) return;
-      const frame = readFrame();
-      if (!frame) return;
+      const sheet = element.getBoundingClientRect();
+      const area = handle.canvas.getBoundingClientRect();
+      if (sheet.width <= 0 || sheet.height <= 0) return;
+      if (area.width <= 0 || area.height <= 0) return;
       const dpr = dprOf();
-      resizeDrawingBuffer(handle, window.innerWidth, window.innerHeight, dpr);
+      resizeDrawingBuffer(handle, area.width, area.height, dpr);
       const motion = Math.min(1, Math.abs(bend) / MAX_BEND_PX);
+      const frame: SurfaceFrame = {
+        x: sheet.left - area.left,
+        y: sheet.top - area.top,
+        width: sheet.width,
+        height: sheet.height,
+        radii: surfaceStyle.radii,
+        color: surfaceStyle.color,
+        shadow: shadowStrength,
+      };
       program.draw(frame, {
         bend,
         dpr,
         sheen: sheenStrength,
         glass: glassStrength * motion,
         content: capture?.texture ?? null,
-        scroll: scrollLayer(frame),
+        scroll: scrollLayer(sheet),
       });
     };
 
@@ -289,6 +305,7 @@ export const webglRenderer = (
         paint();
         running = false;
         frameId = null;
+        queueRefresh();
         return;
       }
       frameId = requestAnimationFrame(tick);
@@ -331,24 +348,68 @@ export const webglRenderer = (
       characterData: true,
     });
 
-    const geometryObserver = new MutationObserver(() => {
+    const onGeometry = (): void => {
       followStack();
       if (!ctx.isDragging()) paint();
       wake();
-    });
+    };
+    const geometryObserver = new MutationObserver(onGeometry);
     geometryObserver.observe(element, {
       attributes: true,
       attributeFilter: ["style"],
     });
 
-    const refreshSurfaceStyle = (): void => {
-      if (disposed) return;
-      element.style.background = painted.background;
-      element.style.boxShadow = painted.boxShadow;
-      surfaceStyle = readSurfaceStyle();
-      element.style.background = "transparent";
-      element.style.boxShadow = "none";
+    const refreshSurfaceStyle = (): boolean => {
+      const moved = geometryObserver.takeRecords().length > 0;
+      const style = element.style;
+      const transition = style.transition;
+      style.transition = "none";
+      style.background = painted.background;
+      style.boxShadow = painted.boxShadow;
+      const next = readSurfaceStyle();
+      style.background = "transparent";
+      style.boxShadow = "none";
+      void getComputedStyle(element).backgroundColor;
+      style.transition = transition;
+      geometryObserver.takeRecords();
+      const changed =
+        next.radii.some((radius, i) => radius !== surfaceStyle.radii[i]) ||
+        next.color.some((channel, i) => channel !== surfaceStyle.color[i]);
+      surfaceStyle = next;
+      if (!moved) {
+        followStack();
+        return changed;
+      }
+      onGeometry();
+      return false;
     };
+
+    let refreshQueued = false;
+    const queueRefresh = (): void => {
+      if (disposed || refreshQueued) return;
+      refreshQueued = true;
+      requestAnimationFrame(() => {
+        refreshQueued = false;
+        if (!disposed && refreshSurfaceStyle()) paint();
+      });
+    };
+
+    const onThemeSignal = (): void => {
+      if (!ctx.isDragging() && !ctx.isAnimating()) queueRefresh();
+    };
+    const themeObserver = new MutationObserver(onThemeSignal);
+    themeObserver.observe(element, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      themeObserver.observe(node, { attributes: true });
+    }
+    const scheme =
+      typeof matchMedia === "function"
+        ? matchMedia("(prefers-color-scheme: dark)")
+        : null;
+    scheme?.addEventListener?.("change", onThemeSignal);
 
     const onResize = (): void => {
       if (disposed) return;
@@ -356,15 +417,15 @@ export const webglRenderer = (
       paint();
     };
     window.addEventListener("resize", onResize, { passive: true });
-    window.addEventListener("scroll", onResize, { passive: true });
 
     paint();
 
     return () => {
       contentObserver.disconnect();
       geometryObserver.disconnect();
+      themeObserver.disconnect();
+      scheme?.removeEventListener?.("change", onThemeSignal);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onResize);
       teardown();
     };
   },

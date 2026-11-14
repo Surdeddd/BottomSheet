@@ -41,6 +41,42 @@
         background: #23232b;
         --bs-handle-color: #6d6d7a;
       }
+      html.light #mount .bs-sheet {
+        background: #f0f0f5;
+      }
+      @media (prefers-color-scheme: light) {
+        html.follow-scheme #mount .bs-sheet {
+          background: #f0f0f5;
+        }
+      }
+      html.animated #mount .bs-sheet {
+        transition: background-color 400ms linear;
+      }
+      body.tall {
+        min-height: 300vh;
+      }
+      #mount[data-frame] {
+        position: relative;
+        width: 300px;
+        height: 520px;
+        margin: 120px 0 0 40px;
+        overflow: hidden;
+        background: #0e1418;
+      }
+      #mount[data-frame="transform"] {
+        transform: translateZ(0);
+      }
+      #mount[data-frame="contain"] {
+        contain: paint;
+      }
+      #mount[data-frame] .bs-root {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      #mount[data-frame] .bs-sheet {
+        position: absolute !important;
+      }
       .sheet-body {
         padding: 16px;
       }

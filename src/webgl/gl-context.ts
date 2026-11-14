@@ -15,6 +15,24 @@ export const supportsHighpFragment = (gl: WebGLRenderingContext): boolean => {
   }
 };
 
+const SOFTWARE = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+const MASKED = /^webkit webgl$/i;
+
+const rendererName = (gl: WebGLRenderingContext): string => {
+  const plain = String(gl.getParameter(gl.RENDERER) ?? "");
+  if (plain && !MASKED.test(plain)) return plain;
+  const info = gl.getExtension("WEBGL_debug_renderer_info");
+  return info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) ?? "") : "";
+};
+
+export const drawsOnCpu = (gl: WebGLRenderingContext): boolean => {
+  try {
+    return SOFTWARE.test(rendererName(gl));
+  } catch {
+    return false;
+  }
+};
+
 export const hasWebGL = (): boolean => {
   if (typeof document === "undefined") return false;
   if (
@@ -48,12 +66,14 @@ export const createGLHandle = (onLost: () => void): GLHandle | null => {
   canvas.style.position = "fixed";
   canvas.style.left = "0";
   canvas.style.top = "0";
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
   canvas.style.pointerEvents = "none";
 
   const attrs: WebGLContextAttributes = {
     alpha: true,
     premultipliedAlpha: true,
-    antialias: true,
+    antialias: false,
     depth: false,
     stencil: false,
     preserveDrawingBuffer: false,
@@ -111,7 +131,5 @@ export const resizeDrawingBuffer = (
     handle.canvas.width = w;
     handle.canvas.height = h;
   }
-  handle.canvas.style.width = `${cssWidth}px`;
-  handle.canvas.style.height = `${cssHeight}px`;
   handle.gl.viewport(0, 0, w, h);
 };

@@ -21,7 +21,7 @@ new BottomSheetEngine({
 ```
 
 The subpath is only pulled into your bundle if you import it: the main entry
-does not reference it. Measured cost when you do: **5.9 KB gzip**.
+does not reference it. Measured cost when you do: **6.4 KB gzip**.
 
 ## What it draws, and what it does not
 
@@ -95,6 +95,7 @@ webglRenderer({
   shadow: 1,
   liftContent: true,
   dpr: window.devicePixelRatio,
+  allowSoftware: false,
   onUnsupported: reason => console.info("sheet fell back:", reason),
 });
 ```
@@ -107,6 +108,7 @@ webglRenderer({
 | `shadow` | `1` | Multiplier on the shadow the shader casts. `0` removes it. |
 | `liftContent` | `true` | Whether text is captured into a texture during motion so it bends with the surface. `false` keeps text in the DOM at all times. |
 | `dpr` | `devicePixelRatio` | Drawing-buffer scale. Pin it lower (e.g. `1`) to trade sharpness for fill rate on weak GPUs. |
+| `allowSoftware` | `false` | Draw even when the browser renders WebGL on the CPU. Off by default, see [Software rasterisers](#software-rasterisers). |
 | `onUnsupported` | — | Called with the reason when the renderer declines or withdraws. |
 
 ## Degradation
@@ -118,12 +120,14 @@ sheet. It declines to install, or removes itself mid-session, when:
 | --- | --- |
 | `no-document` | server-side rendering — there is no DOM to draw over |
 | `no-webgl` | no WebGL context available, or the context failed to initialise |
+| `software-renderer` | the browser draws WebGL on the CPU and `allowSoftware` is not set |
 | `reduced-motion` | the user has `prefers-reduced-motion: reduce` set |
 | `context-lost` | the browser dropped the GL context (tab backgrounded, GPU reset, driver crash) |
 
 In every case the sheet's own paint is restored and the canvas is removed. The
 sheet keeps working — same snap points, same gestures, same events. Shipping
-`webglRenderer()` to a browser without WebGL is safe and silent.
+`webglRenderer()` to a browser without WebGL, or without a GPU behind it, is
+safe and silent.
 
 ```ts
 webglRenderer({
@@ -133,6 +137,60 @@ webglRenderer({
 });
 ```
 
+## Software rasterisers
+
+A browser on a machine without a usable GPU still hands out a WebGL context.
+It draws that context on the CPU: SwiftShader in Chromium, llvmpipe in Mesa,
+the Basic Render Driver on Windows. That covers virtual machines, remote
+desktops, CI runners and laptops whose driver the browser has blocklisted.
+
+There the renderer is a loss, not a gain. Measured in headless Chromium on
+SwiftShader, on a 393×852 viewport, in CPU time per frame:
+
+| Device pixel ratio | WebGL surface | DOM renderer |
+| --- | --- | --- |
+| 3 | 285–370 ms, 2–6 frames a second | 2.5 ms, 60 frames a second |
+| 1 | 31 ms, about 30 frames a second | 2.5 ms, 60 frames a second |
+
+So the renderer reads the name of the WebGL renderer and declines with
+`software-renderer` when it names a software rasteriser. A browser that hides
+the name is taken for a GPU.
+
+`allowSoftware: true` skips the check. It is there for screenshots and tests
+on machines without a GPU, where speed does not matter and the picture does.
+
+## Where the surface is drawn
+
+The canvas is a sibling of the sheet, stacked right under it. It takes the
+sheet's own positioning, `fixed` or `absolute`, and fills the same containing
+block, so the two stay together wherever the sheet lives:
+
+- a sheet fixed to the viewport gets a canvas the size of the viewport;
+- a sheet inside an ancestor with `transform`, `contain` or `filter` is drawn
+  inside that ancestor, and clipped by it;
+- a sheet positioned `absolute` inside a clipping container, a phone mock-up
+  on a landing page for instance, is drawn inside the container and scrolls
+  with it.
+
+An ancestor that rotates or skews the sheet is not supported: the surface is
+placed by bounding boxes.
+
+## Colour and corners
+
+The surface takes its colour and its corner radii from the sheet's computed
+style, one radius per corner, so it rounds exactly the corners your CSS rounds.
+They are read when the renderer installs and again:
+
+- when the window is resized;
+- when the system colour scheme changes;
+- when an attribute changes on any ancestor of the sheet, or the sheet's own
+  `class` does, which is how a theme class or a `data-theme` on `<html>`
+  arrives;
+- after every drag and every snap.
+
+A theme that arrives by another road, a swapped stylesheet for instance, is
+picked up after the next move or resize.
+
 ## Frame budget
 
 The renderer draws only while something moves. It repaints the moment the
@@ -141,7 +199,7 @@ drawn in the same frame as the DOM it sits under rather than a frame behind it;
 during a drag it draws once per frame from its own loop, which also carries the
 deformation as it decays. The loop stops once the sheet has settled and the
 deformation is flat. **A resting sheet costs zero frames**, matching the DOM
-renderer.
+renderer, and scrolling the page under it does not redraw it.
 
 ## Adapters
 
@@ -186,6 +244,10 @@ do not quite match their radius. The fragment shader therefore compiles as
 `highp`, guaranteed under WebGL2 and checked with `getShaderPrecisionFormat`
 under WebGL1. A driver that advertises `highp` and then refuses to compile it
 falls back to `mediump` rather than losing the renderer.
+
+The context is created without multisampling. The surface is one triangle that
+covers the canvas, and its edges are smoothed in the shader, so a multisampled
+buffer would add memory and fill work and change nothing on screen.
 
 ## Browser support
 

@@ -12,7 +12,7 @@ precision ${precision} float;
 
 uniform vec2 u_resolution;
 uniform vec4 u_rect;
-uniform float u_radius;
+uniform vec4 u_radius;
 uniform vec4 u_color;
 uniform float u_shadow;
 uniform float u_bend;
@@ -25,7 +25,9 @@ uniform sampler2D u_scroll;
 uniform vec4 u_scrollRect;
 uniform vec2 u_scrollMap;
 
-float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
+float roundedBoxSDF(vec2 p, vec2 halfSize, vec4 radii) {
+  vec2 side = p.x < 0.0 ? radii.xw : radii.yz;
+  float r = min(p.y < 0.0 ? side.x : side.y, min(halfSize.x, halfSize.y));
   vec2 q = abs(p) - halfSize + r;
   return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
 }
@@ -41,8 +43,7 @@ void main() {
   vec2 p = frag - center;
   p.y -= bend;
 
-  float r = min(u_radius, min(halfSize.x, halfSize.y));
-  float d = roundedBoxSDF(p, halfSize, r);
+  float d = roundedBoxSDF(p, halfSize, u_radius);
   float surface = 1.0 - smoothstep(-1.0, 1.0, d);
 
   vec2 uv = (p + halfSize) / u_rect.zw;
@@ -203,7 +204,14 @@ export const createSurfaceProgram = (
         frame.width * dpr,
         frame.height * dpr,
       );
-      gl.uniform1f(uRadius, frame.radius * dpr);
+      const [topLeft, topRight, bottomRight, bottomLeft] = frame.radii;
+      gl.uniform4f(
+        uRadius,
+        topLeft * dpr,
+        topRight * dpr,
+        bottomRight * dpr,
+        bottomLeft * dpr,
+      );
       gl.uniform4f(uColor, ...frame.color);
       gl.uniform1f(uShadow, frame.shadow);
       gl.uniform1f(uBend, state.bend * dpr);

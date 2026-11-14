@@ -90,6 +90,8 @@ current DOM renderer's behaviour.
 The feature removes itself, restoring the DOM paint, when any of these hold:
 
 - `WebGLRenderingContext` is unavailable, or context creation returns null
+- the context is drawn on the CPU by a software rasteriser, unless
+  `allowSoftware` is set
 - `prefers-reduced-motion: reduce`
 - the GL context is lost (`webglcontextlost`) — including mid-session
 - SSR: no `document`, so the feature never installs

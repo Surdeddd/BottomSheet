@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.1]
+
+Six fixes to the WebGL renderer (`@surdeddd/bottom-sheet/webgl`), found by measuring it in Chromium, WebKit and Firefox. Nothing outside the `/webgl` entry changes.
+
+### Fixed
+
+- **The renderer steps aside on a software rasteriser** — a browser without a usable GPU still hands out a WebGL context and draws it on the CPU (SwiftShader, llvmpipe, the Microsoft Basic Render Driver). The renderer took that for a GPU. Measured on SwiftShader at a device pixel ratio of 3, a frame cost 285–370 ms of CPU time and the sheet moved at 2–6 frames a second, where the DOM renderer needs 2.5 ms and holds 60. It now declines with the reason `software-renderer` and the DOM renderer draws.
+- **The surface follows the theme** — the panel's colour and radii were read once, and again only when the window was resized, so switching a theme left the old colour under the new text. They are re-read when the system colour scheme changes, when an attribute changes on an ancestor of the sheet or the sheet's own `class` does, and after every drag and every snap.
+- **A sheet with an animated `background-color` keeps its surface** — re-reading the colour of such a sheet returned the first frame of its own transition, which is transparent, so the surface vanished on the first window resize.
+- **The surface is drawn on the sheet inside a transformed or contained ancestor** — the canvas was fixed to the viewport. An ancestor with `transform`, `contain` or `filter` moved it into its own corner and the surface landed beside the sheet; inside a plain clipping container the surface spilled out under the container. The canvas now takes the sheet's positioning and its containing block.
+- **Only the corners the sheet rounds are rounded** — the shader rounded all four, so a bottom sheet at its tallest snap showed the page through two notches on its bottom edge. Each corner now takes its own radius from the sheet.
+- **Scrolling the page under a sheet does not redraw it** — with `lockBodyScroll: false` every scroll event cost four redraws and two style reads for a sheet that had not moved.
+
+### Changed
+
+- **No multisampled buffer** — the surface is one triangle whose edges are smoothed in the shader, so the 4x multisampled context bought nothing. At a device pixel ratio of 3 that was a 1179×2556 buffer with four samples a pixel.
+- **`/webgl` is 6.4 KB gzip**, up from 5.9 KB.
+
+### Added
+
+- **`allowSoftware`** — an option of `webglRenderer()` that draws on a software rasteriser anyway, for screenshots and tests on machines without a GPU. The matching reason for `onUnsupported` is `software-renderer`.
+
 ## [0.24.0]
 
 This release has three sources: a full audit of 0.23.4, six bugs reported from a production app, and a pass that ran every option and every adapter in a real browser and brought the adapters and the documentation level with the engine. Most of it is behaviour that now matches the documentation. The changes visible to code that relied on the old behaviour are listed first.

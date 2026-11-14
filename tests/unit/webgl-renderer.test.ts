@@ -133,3 +133,150 @@ describe("webglRenderer — degradation", () => {
     engine.destroy();
   });
 });
+
+type FakeRenderer = { plain?: string; unmasked?: string | null };
+
+const SWIFTSHADER =
+  "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)";
+const APPLE = "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)";
+const MASKED = "WebKit WebGL";
+const RENDERER = 0x1f01;
+const UNMASKED = 0x9246;
+
+const fakeWebGL = (renderer: FakeRenderer) => {
+  const calls = { draws: 0, extensions: [] as string[] };
+  const target: Record<string, unknown> = {
+    RENDERER,
+    getExtension(name: string) {
+      calls.extensions.push(name);
+      if (name === "WEBGL_debug_renderer_info") {
+        return renderer.unmasked == null
+          ? null
+          : { UNMASKED_RENDERER_WEBGL: UNMASKED };
+      }
+      if (name === "WEBGL_lose_context") return { loseContext: () => {} };
+      return null;
+    },
+    getParameter(id: number) {
+      if (id === UNMASKED) return renderer.unmasked;
+      if (id === RENDERER) return renderer.plain ?? MASKED;
+      return 0;
+    },
+    getShaderPrecisionFormat: () => ({ precision: 23 }),
+    getShaderParameter: () => true,
+    getProgramParameter: () => true,
+    drawArrays: () => {
+      calls.draws += 1;
+    },
+  };
+  const gl = new Proxy(target, {
+    get(source, key) {
+      if (key in source) return source[key as string];
+      if (typeof key === "string" && /^[A-Z0-9_]+$/.test(key)) return 1;
+      return () => ({});
+    },
+  });
+  vi.stubGlobal("WebGLRenderingContext", class {});
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(((
+    type: string,
+  ) => (type.includes("webgl") ? gl : null)) as never);
+  return calls;
+};
+
+describe("webglRenderer — software rasteriser", () => {
+  beforeEach(() => {
+    __resetSheetStackForTests();
+    __resetScrollLockForTests();
+    __resetCssLengthProbeForTests();
+    document.body.innerHTML = "";
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    document.body.innerHTML = "";
+  });
+
+  const mount = (
+    renderer: FakeRenderer,
+    options: Record<string, unknown> = {},
+  ) => {
+    const calls = fakeWebGL(renderer);
+    const reasons: WebGLUnsupportedReason[] = [];
+    const opts = baseOpts({
+      features: [
+        webglRenderer({ ...options, onUnsupported: r => reasons.push(r) }),
+      ],
+    });
+    const element = opts.element as HTMLElement;
+    element.style.background = "rgb(20, 20, 20)";
+    const engine = new BottomSheetEngine(opts as never);
+    return { engine, element, reasons, calls };
+  };
+
+  it("draws on a GPU", async () => {
+    const { engine, element, reasons } = mount({ unmasked: APPLE });
+    await settle();
+
+    expect(reasons).toEqual([]);
+    expect(element.getAttribute("data-bs-webgl")).toBe("on");
+    expect(document.querySelectorAll("canvas").length).toBe(1);
+    engine.destroy();
+  });
+
+  it("declines a context that is drawn on the CPU and says why", async () => {
+    const { engine, element, reasons } = mount({ unmasked: SWIFTSHADER });
+    await settle();
+
+    expect(reasons).toEqual(["software-renderer"]);
+    expect(element.hasAttribute("data-bs-webgl")).toBe(false);
+    expect(element.style.background).toBe("rgb(20, 20, 20)");
+    expect(document.querySelectorAll("canvas").length).toBe(0);
+    engine.destroy();
+  });
+  it("recognises it by the plain renderer name without asking for the deprecated extension", async () => {
+    const { engine, reasons, calls } = mount({
+      plain: "Mesa/X.org, llvmpipe (LLVM 17.0.6, 256 bits), or similar",
+      unmasked: "Mesa/X.org, llvmpipe (LLVM 17.0.6, 256 bits), or similar",
+    });
+    await settle();
+
+    expect(reasons).toEqual(["software-renderer"]);
+    expect(calls.extensions).not.toContain("WEBGL_debug_renderer_info");
+    engine.destroy();
+  });
+
+  it("trusts a plain renderer name that names a GPU", async () => {
+    const { engine, reasons, calls } = mount({
+      plain: "Apple M1, or similar",
+      unmasked: SWIFTSHADER,
+    });
+    await settle();
+
+    expect(reasons).toEqual([]);
+    expect(calls.extensions).not.toContain("WEBGL_debug_renderer_info");
+    engine.destroy();
+  });
+
+  it("takes a withheld renderer name for a GPU", async () => {
+    const { engine, element, reasons } = mount({ unmasked: null });
+    await settle();
+
+    expect(reasons).toEqual([]);
+    expect(element.getAttribute("data-bs-webgl")).toBe("on");
+    engine.destroy();
+  });
+
+  it("draws on the CPU when told to", async () => {
+    const { engine, element, reasons } = mount(
+      { unmasked: SWIFTSHADER },
+      { allowSoftware: true },
+    );
+    await settle();
+
+    expect(reasons).toEqual([]);
+    expect(element.getAttribute("data-bs-webgl")).toBe("on");
+    expect(document.querySelectorAll("canvas").length).toBe(1);
+    engine.destroy();
+  });
+});

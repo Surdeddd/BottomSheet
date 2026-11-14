@@ -48,6 +48,7 @@ const engine = new BottomSheetEngine({
   fitContentToSnap: true,
   features: [
     webglRenderer({
+      allowSoftware: true,
       onUnsupported: reason => {
         status.dataset.unsupported = reason;
       },
