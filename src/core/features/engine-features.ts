@@ -24,10 +24,10 @@ export function routeFeature(): EngineFeature {
         installRoute({
           routedTo: ctx.options.routedTo,
           closeOnBack: ctx.options.closeOnBack,
-          isTopSheet: ctx.isTopSheet,
           isOpen: () => ctx.getPhase() !== "closed",
           isDestroyed: ctx.isDestroyed,
           close: () => ctx.close("back"),
+          hold: ctx.holdSettle,
           on: ctx.on,
           sheetId: ctx.sheetId,
         }),

@@ -141,6 +141,7 @@ export class BottomSheetCore {
   private outbox: Array<() => void> = [];
   private flushing = false;
   private openPending = false;
+  private settleHolds: Promise<unknown>[] = [];
   private allowOvershoot = false;
   private progressPayload: { value: number; size: number } = {
     value: 0,
@@ -400,6 +401,9 @@ export class BottomSheetCore {
       applySize: size => this.applySize(size),
       recomputeSnaps: () => this.recomputeSnaps(),
       reseat: () => this.reseat(),
+      holdSettle: settled => {
+        this.settleHolds.push(settled);
+      },
       newCycle: () => {
         this.newCycle();
       },
@@ -606,6 +610,9 @@ export class BottomSheetCore {
     if (signal.aborted) return;
     if (this.size !== transition.size) this.applySize(transition.size);
     this.land(fromDrag);
+    if (this.settleHolds.length > 0) {
+      await Promise.allSettled(this.settleHolds.splice(0));
+    }
   }
 
   private beginTransition(target: ResolvedSnap): AbortSignal {

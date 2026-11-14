@@ -1,5 +1,4 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import type { MockInstance } from "vitest";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import { OverlayEngine } from "../../src/core/overlay";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
@@ -7,6 +6,7 @@ import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock"
 import { __resetCssLengthProbeForTests } from "../../src/core/primitives/css-length";
 import {
   __resetHistoryCoordinatorForTests,
+  historySettled,
   pushBackMarker,
   popBackMarker,
   type BackSurface,
@@ -52,8 +52,11 @@ const makeOverlayDom = () => {
   return { panel, backdrop };
 };
 
-let pushSpy: MockInstance;
-let backSpy: MockInstance;
+const stateOf = (): Record<string, unknown> =>
+  (history.state ?? {}) as Record<string, unknown>;
+
+let page = 0;
+let baseHref = "";
 
 beforeEach(() => {
   __resetHistoryCoordinatorForTests();
@@ -67,19 +70,15 @@ beforeEach(() => {
     value: 1000,
     configurable: true,
   });
-  pushSpy = vi.spyOn(history, "pushState");
-  backSpy = vi.spyOn(history, "back").mockImplementation(() => {
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  });
+  page += 1;
+  history.pushState(null, "", `/coordinator-${page}`);
+  baseHref = location.href;
 });
 
 afterEach(() => {
   __resetHistoryCoordinatorForTests();
   vi.restoreAllMocks();
 });
-
-const netMarkers = (): number =>
-  pushSpy.mock.calls.length - backSpy.mock.calls.length;
 
 describe("history-coordinator — mixed sheet + overlay back stack", () => {
   it("one hardware Back closes only the top overlay; a second closes the sheet", async () => {
@@ -93,14 +92,15 @@ describe("history-coordinator — mixed sheet + overlay back stack", () => {
     expect(sheet.state.size).toBeGreaterThan(0);
     expect(ovl.state.isOpen).toBe(true);
 
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    history.back();
     await settle();
     expect(ovl.state.isOpen).toBe(false);
     expect(sheet.state.size).toBeGreaterThan(0);
 
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    history.back();
     await settle();
     expect(sheet.state.size).toBe(0);
+    expect(location.href).toBe(baseHref);
 
     sheet.destroy();
     ovl.destroy();
@@ -120,13 +120,16 @@ describe("history-coordinator — mixed sheet + overlay back stack", () => {
 
     expect(sheet.state.size).toBe(0);
     expect(ovl.state.isOpen).toBe(true);
-    expect(netMarkers()).toBe(1);
+    expect(stateOf().__bsDepth).toBe(1);
+    expect(stateOf().__bsOverlay).toEqual(expect.any(String));
+    expect(stateOf().__bsSheet).toBeUndefined();
 
-    const backsAfterClose = backSpy.mock.calls.length;
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    const back = vi.spyOn(history, "back");
+    history.back();
     await settle();
     expect(ovl.state.isOpen).toBe(false);
-    expect(backSpy.mock.calls.length).toBe(backsAfterClose);
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(stateOf().__bs).toBeUndefined();
 
     sheet.destroy();
     ovl.destroy();
@@ -146,14 +149,34 @@ describe("history-coordinator — mixed sheet + overlay back stack", () => {
 
     expect(ovl.state.isOpen).toBe(false);
     expect(sheet.state.size).toBeGreaterThan(0);
-    expect(netMarkers()).toBe(1);
+    expect(stateOf().__bsDepth).toBe(1);
+    expect(stateOf().__bsSheet).toEqual(expect.any(String));
 
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    history.back();
     await settle();
     expect(sheet.state.size).toBe(0);
 
     sheet.destroy();
     ovl.destroy();
+  });
+
+  it("two sheets closed in the same tick leave the history on the entry below both", async () => {
+    const lower = new BottomSheetEngine(
+      sheetOpts(makeSheet(), { closeOnBack: true }),
+    );
+    const upper = new BottomSheetEngine(
+      sheetOpts(makeSheet(), { closeOnBack: true }),
+    );
+    await lower.open("full");
+    await upper.open("full");
+    void lower.close();
+    void upper.close();
+    await historySettled();
+    await settle();
+    expect(location.href).toBe(baseHref);
+    expect(stateOf().__bs).toBeUndefined();
+    lower.destroy();
+    upper.destroy();
   });
 });
 
@@ -167,15 +190,17 @@ describe("history-coordinator — cancelable before-close", () => {
     const cancel = (p: { cancel: () => void }) => p.cancel();
     const off = sheet.on("before-close", cancel);
 
-    const pushesBefore = pushSpy.mock.calls.length;
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    const push = vi.spyOn(history, "pushState");
+    history.back();
     await settle();
 
     expect(sheet.state.size).toBeGreaterThan(0);
-    expect(pushSpy.mock.calls.length - pushesBefore).toBe(1);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(stateOf().__bs).toBe(true);
+    expect(stateOf().__bsDepth).toBe(1);
 
     off();
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    history.back();
     await settle();
     expect(sheet.state.size).toBe(0);
 
@@ -185,8 +210,6 @@ describe("history-coordinator — cancelable before-close", () => {
 
 describe("history-coordinator — routed middle-close URL restore", () => {
   it("closing a routed middle sheet reverts the surviving marker URL to the pre-route URL", async () => {
-    const replaceSpy = vi.spyOn(history, "replaceState");
-    const hrefBefore = location.href;
     const a = makeSheet();
     const b = makeSheet();
     const sheetA = new BottomSheetEngine(
@@ -196,18 +219,18 @@ describe("history-coordinator — routed middle-close URL restore", () => {
     await sheetA.open("full");
     await sheetB.open("full");
     await settle();
+    expect(location.hash).toBe("#sheet-a");
 
-    replaceSpy.mockClear();
     await sheetA.close();
     await settle();
 
-    const rebrand = replaceSpy.mock.calls.find(c => c[2] === hrefBefore);
-    expect(rebrand).toBeDefined();
-    expect(rebrand?.[0]).toMatchObject({ __bsSheet: expect.any(String) });
+    expect(location.href).toBe(baseHref);
+    expect(stateOf().__bsSheet).toEqual(expect.any(String));
+    expect(stateOf().__bsRouted).toBeUndefined();
     expect(sheetA.state.size).toBe(0);
     expect(sheetB.state.size).toBeGreaterThan(0);
 
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    history.back();
     await settle();
     expect(sheetB.state.size).toBe(0);
 
@@ -252,7 +275,7 @@ describe("history-coordinator — closeOnRouteChange ref-counted patch", () => {
     await e5.open("full");
     await settle();
     expect(e5.state.size).toBeGreaterThan(0);
-    history.pushState(null, "", location.href);
+    history.pushState(null, "", `/coordinator-${page}/next`);
     await settle();
     expect(e5.state.size).toBe(0);
     e5.destroy();
@@ -271,13 +294,24 @@ describe("history-coordinator — closeOnRouteChange ref-counted patch", () => {
     expect(e1.state.size).toBeGreaterThan(0);
     expect(e2.state.size).toBeGreaterThan(0);
 
-    history.pushState(null, "", location.href);
+    history.pushState(null, "", `/coordinator-${page}/next`);
     await settle();
     expect(e1.state.size).toBe(0);
     expect(e2.state.size).toBe(0);
 
     e1.destroy();
     e2.destroy();
+  });
+
+  it("a Back press that leaves the page closes a closeOnRouteChange sheet", async () => {
+    const sheet = new BottomSheetEngine(
+      sheetOpts(makeSheet(), { closeOnRouteChange: true }),
+    );
+    await sheet.open("full");
+    history.back();
+    await settle();
+    expect(sheet.state.size).toBe(0);
+    sheet.destroy();
   });
 
   it("a closeOnBack marker push does not trigger closeOnRouteChange siblings", async () => {
@@ -289,7 +323,7 @@ describe("history-coordinator — closeOnRouteChange ref-counted patch", () => {
     expect(both.state.size).toBeGreaterThan(0);
 
     const sibling = new BottomSheetEngine(
-      sheetOpts(makeSheet(), { closeOnBack: true }),
+      sheetOpts(makeSheet(), { closeOnBack: true, routedTo: "#sibling" }),
     );
     await sibling.open("full");
     await settle();
@@ -300,9 +334,10 @@ describe("history-coordinator — closeOnRouteChange ref-counted patch", () => {
     sibling.destroy();
   });
 
-  it("a suppressed coordinator back() does not notify closeOnRouteChange subscribers", async () => {
+  it("the coordinator's own back() does not notify closeOnRouteChange subscribers", async () => {
+    const back = vi.spyOn(history, "back");
     const withBack = new BottomSheetEngine(
-      sheetOpts(makeSheet(), { closeOnBack: true }),
+      sheetOpts(makeSheet(), { closeOnBack: true, routedTo: "#routed" }),
     );
     const withRoute = new BottomSheetEngine(
       sheetOpts(makeSheet(), { closeOnRouteChange: true }),
@@ -316,7 +351,7 @@ describe("history-coordinator — closeOnRouteChange ref-counted patch", () => {
 
     expect(withBack.state.size).toBe(0);
     expect(withRoute.state.size).toBeGreaterThan(0);
-    expect(backSpy).toHaveBeenCalled();
+    expect(back).toHaveBeenCalledTimes(1);
 
     withBack.destroy();
     withRoute.destroy();
@@ -326,43 +361,47 @@ describe("history-coordinator — closeOnRouteChange ref-counted patch", () => {
 describe("history-coordinator — overlay marker leak on destroy", () => {
   it("destroying an open closeOnBack overlay pops its marker with no leak", async () => {
     const origPush = history.pushState;
+    const back = vi.spyOn(history, "back");
     const { panel } = makeOverlayDom();
     const ovl = new OverlayEngine({ element: panel, duration: 0, closeOnBack: true });
     await ovl.open();
     await settle();
+    expect(stateOf().__bs).toBe(true);
 
-    const backsBefore = backSpy.mock.calls.length;
     ovl.destroy();
     await settle();
 
-    expect(backSpy.mock.calls.length - backsBefore).toBe(1);
-    expect(netMarkers()).toBe(0);
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(stateOf().__bs).toBeUndefined();
+    expect(location.href).toBe(baseHref);
     expect(history.pushState).toBe(origPush);
   });
 });
 
 describe("history-coordinator — public __bs marker discriminator", () => {
-  const findState = (
-    spy: MockInstance,
-    key: string,
-  ): Record<string, unknown> | undefined => {
-    const hit = spy.mock.calls.find(c => {
-      const st = c[0] as Record<string, unknown> | null;
-      return !!st && key in st;
-    });
-    return hit?.[0] as Record<string, unknown> | undefined;
-  };
-
   it("stamps __bs:true on a pushed closeOnBack sheet marker", async () => {
     const s = makeSheet();
     const sheet = new BottomSheetEngine(sheetOpts(s, { closeOnBack: true }));
     await sheet.open("full");
     await settle();
 
-    expect(findState(pushSpy, "__bsSheet")).toMatchObject({
+    expect(stateOf()).toMatchObject({
       __bsSheet: expect.any(String),
       __bs: true,
     });
+
+    sheet.destroy();
+  });
+
+  it("does not mark the entry the sheet was opened from as a marker", async () => {
+    const s = makeSheet();
+    const sheet = new BottomSheetEngine(sheetOpts(s, { closeOnBack: true }));
+    await sheet.open("full");
+    await sheet.close();
+    await settle();
+
+    expect(stateOf().__bs).toBeUndefined();
+    expect(stateOf().__bsSheet).toBeUndefined();
 
     sheet.destroy();
   });
@@ -375,7 +414,7 @@ describe("history-coordinator — public __bs marker discriminator", () => {
     await sheet.open("full");
     await settle();
 
-    expect(findState(pushSpy, "__bsRouted")).toMatchObject({
+    expect(stateOf()).toMatchObject({
       __bsRouted: expect.any(String),
       __bs: true,
     });
@@ -393,7 +432,7 @@ describe("history-coordinator — public __bs marker discriminator", () => {
     await ovl.open();
     await settle();
 
-    expect(findState(pushSpy, "__bsOverlay")).toMatchObject({
+    expect(stateOf()).toMatchObject({
       __bsOverlay: expect.any(String),
       __bs: true,
     });
@@ -408,19 +447,20 @@ describe("history-coordinator — public __bs marker discriminator", () => {
     await settle();
 
     const off = sheet.on("before-close", p => p.cancel());
-    pushSpy.mockClear();
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    history.back();
     await settle();
 
     expect(sheet.state.size).toBeGreaterThan(0);
-    expect(findState(pushSpy, "__bsSheet")).toMatchObject({ __bs: true });
+    expect(stateOf()).toMatchObject({
+      __bsSheet: expect.any(String),
+      __bs: true,
+    });
 
     off();
     sheet.destroy();
   });
 
   it("stamps __bs:true on the rebrand replaceState of a surviving marker", async () => {
-    const replaceSpy = vi.spyOn(history, "replaceState");
     const a = makeSheet();
     const b = makeSheet();
     const sheetA = new BottomSheetEngine(
@@ -431,11 +471,12 @@ describe("history-coordinator — public __bs marker discriminator", () => {
     await sheetB.open("full");
     await settle();
 
-    replaceSpy.mockClear();
+    const replace = vi.spyOn(history, "replaceState");
     await sheetA.close();
     await settle();
 
-    expect(findState(replaceSpy, "__bsSheet")).toMatchObject({
+    expect(replace).toHaveBeenCalled();
+    expect(stateOf()).toMatchObject({
       __bsSheet: expect.any(String),
       __bs: true,
     });
@@ -445,17 +486,20 @@ describe("history-coordinator — public __bs marker discriminator", () => {
   });
 });
 
-describe("history-coordinator — pending-rebrand FIFO queue", () => {
+describe("history-coordinator — raw surfaces", () => {
+  type Probe = BackSurface & { closeCalls: number; open: boolean };
+
   const mkSurface = (
     tag: string,
     overrides: Partial<BackSurface> = {},
-  ): BackSurface & { closeCalls: number } => {
-    const surface = {
+  ): Probe => {
+    const surface: Probe = {
       closeCalls: 0,
-      isOpen: () => true,
-      isTop: () => false,
-      close: () => {
+      open: true,
+      isOpen: (): boolean => surface.open,
+      close: (): void => {
         surface.closeCalls += 1;
+        surface.open = false;
       },
       markerState: () => ({ __bsSheet: tag }),
       ...overrides,
@@ -463,69 +507,44 @@ describe("history-coordinator — pending-rebrand FIFO queue", () => {
     return surface;
   };
 
-  it("two same-tick middle closes run both rebrands, one per swallowed popstate", () => {
-    const replaceSpy = vi.spyOn(history, "replaceState");
-    backSpy.mockImplementation(() => {});
-
-    const a = mkSurface("qa", { url: "#queue-a" } as Partial<BackSurface>);
+  it("closing two lower surfaces in one tick re-labels the entry that is left for the survivor", async () => {
+    const a = mkSurface("qa", { url: "#queue-a" });
     const b = mkSurface("qb");
     const c = mkSurface("qc");
     const hA = pushBackMarker(a);
     const hB = pushBackMarker(b);
     pushBackMarker(c);
 
-    replaceSpy.mockClear();
-    popBackMarker(hA);
-    popBackMarker(hB);
-    expect(replaceSpy.mock.calls.length).toBe(0);
+    void popBackMarker(hA);
+    void popBackMarker(hB);
+    await historySettled();
+    await settle();
 
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    window.dispatchEvent(new PopStateEvent("popstate"));
-
-    expect(replaceSpy.mock.calls.length).toBe(2);
-    expect(replaceSpy.mock.calls[0]?.[0]).toMatchObject({
-      __bsSheet: "qc",
-      __bs: true,
-    });
-    expect(replaceSpy.mock.calls[1]?.[0]).toMatchObject({
-      __bsSheet: "qc",
-      __bs: true,
-    });
+    expect(stateOf()).toMatchObject({ __bsSheet: "qc", __bs: true });
+    expect(stateOf().__bsDepth).toBe(1);
+    expect(location.href).toBe(baseHref);
     expect(c.closeCalls).toBe(0);
 
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    history.back();
+    await settle();
     expect(c.closeCalls).toBe(1);
   });
 
-  it("a throwing back() unwinds its queue slot without desyncing later rebrands", () => {
-    const replaceSpy = vi.spyOn(history, "replaceState");
-    backSpy
-      .mockImplementationOnce(() => {
-        throw new Error("no-entry");
-      })
-      .mockImplementation(() => {});
-
-    const a = mkSurface("ta");
-    const b = mkSurface("tb");
-    const c = mkSurface("tc");
-    const hA = pushBackMarker(a);
-    const hB = pushBackMarker(b);
-    pushBackMarker(c);
-
-    replaceSpy.mockClear();
-    popBackMarker(hA);
-    expect(replaceSpy.mock.calls.length).toBe(0);
-
-    popBackMarker(hB);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-
-    expect(replaceSpy.mock.calls.length).toBe(1);
-    expect(replaceSpy.mock.calls[0]?.[0]).toMatchObject({
-      __bsSheet: "tc",
-      __bs: true,
+  it("a back() that throws does not leave callers waiting for the history", async () => {
+    const back = vi.spyOn(history, "back").mockImplementationOnce(() => {
+      throw new Error("no-entry");
     });
+    const a = mkSurface("ta");
+    const handle = pushBackMarker(a);
 
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    expect(c.closeCalls).toBe(1);
+    await popBackMarker(handle);
+    expect(back).toHaveBeenCalledTimes(1);
+
+    const b = mkSurface("tb");
+    pushBackMarker(b);
+    expect(stateOf()).toMatchObject({ __bsSheet: "tb", __bs: true });
+    history.back();
+    await settle();
+    expect(b.closeCalls).toBe(1);
   });
 });

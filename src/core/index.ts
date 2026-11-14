@@ -8,6 +8,7 @@ export {
   contentSwipeFeature,
   visualViewportFeature,
 } from "./features/engine-features";
+export { historySettled } from "./features/history-coordinator";
 export type {
   EngineFeature,
   EngineFeatureContext,
@@ -34,6 +35,7 @@ export type {
   CloseReason,
   EngineOptions,
   EngineState,
+  SheetPhase,
   ScrimPreset,
   ScrimPresetConfig,
   ScrimUpdate,

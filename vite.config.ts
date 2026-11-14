@@ -67,6 +67,7 @@ export default defineConfig({
         contentFit: resolve(__dirname, "demo/fixtures/content-fit.html"),
         adaptersFit: resolve(__dirname, "demo/fixtures/adapters-fit.html"),
         webglFit: resolve(__dirname, "demo/fixtures/webgl-fit.html"),
+        history: resolve(__dirname, "demo/fixtures/history.html"),
       },
     },
   },

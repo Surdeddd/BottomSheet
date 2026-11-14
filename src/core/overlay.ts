@@ -265,9 +265,10 @@ export class OverlayEngine {
     this.isOpen_ = false;
     this.isAnimating_ = true;
     sheetStack.update();
-    if (reason !== "back" && this.backMarker) {
-      popBackMarker(this.backMarker);
-    }
+    const historyDone =
+      reason !== "back" && this.backMarker
+        ? popBackMarker(this.backMarker)
+        : Promise.resolve();
     this.backMarker = null;
     this.element.setAttribute("data-state", "exiting");
 
@@ -280,7 +281,7 @@ export class OverlayEngine {
     this.setWillChange(true);
 
     const cycle = ++this.cycleNonce;
-    return new Promise<void>(resolve => {
+    const exited = new Promise<void>(resolve => {
       requestAnimationFrame(() => {
         if (this.destroyed || cycle !== this.cycleNonce) return resolve();
         this.element.style.transform = closedTransformFor(
@@ -317,6 +318,7 @@ export class OverlayEngine {
         });
       });
     });
+    return Promise.all([exited, historyDone]).then(() => undefined);
   }
 
   toggle(): Promise<void> {
@@ -331,7 +333,7 @@ export class OverlayEngine {
     this.setWillChange(false);
     this.releaseInteractiveListeners();
     if (this.backMarker) {
-      popBackMarker(this.backMarker);
+      void popBackMarker(this.backMarker);
       this.backMarker = null;
     }
     this.releaseStackEntry?.();
@@ -694,7 +696,6 @@ export class OverlayEngine {
     ) {
       this.backMarker = pushBackMarker({
         isOpen: () => this.isOpen_,
-        isTop: () => this.isTop,
         close: () => this.close("back"),
         markerState: () => ({ __bsOverlay: this.id }),
       });

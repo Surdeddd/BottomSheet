@@ -2,8 +2,10 @@ import type { SheetEventMap } from "../types";
 import {
   pushBackMarker,
   popBackMarker,
+  releaseOrphanMarker,
   subscribeRouteChange,
   __resetHistoryCoordinatorForTests,
+  type BackSurface,
   type MarkerHandle,
 } from "./history-coordinator";
 
@@ -17,10 +19,10 @@ type RouteEngine = {
 export type RouteDeps = {
   routedTo: string | undefined;
   closeOnBack: boolean;
-  isTopSheet: () => boolean;
   isOpen: () => boolean;
   isDestroyed: () => boolean;
   close: () => Promise<void>;
+  hold: (settled: Promise<void>) => void;
   on: RouteEngine["on"];
   sheetId: string;
 };
@@ -34,36 +36,37 @@ export function installRoute(deps: RouteDeps): () => void {
   }
 
   let handle: MarkerHandle | null = null;
+  const surface: BackSurface = {
+    isOpen: () => !deps.isDestroyed() && deps.isOpen(),
+    close: deps.close,
+    markerState: () =>
+      deps.routedTo !== undefined
+        ? { __bsRouted: deps.sheetId }
+        : { __bsSheet: deps.sheetId },
+    url: deps.routedTo,
+  };
 
   const onOpen = (): void => {
     if (handle) return;
-    handle = pushBackMarker({
-      isOpen: () => !deps.isDestroyed() && deps.isOpen(),
-      isTop: deps.isTopSheet,
-      close: deps.close,
-      markerState: () =>
-        deps.routedTo !== undefined
-          ? { __bsRouted: deps.sheetId }
-          : { __bsSheet: deps.sheetId },
-      url: deps.routedTo,
-    });
+    handle = pushBackMarker(surface);
   };
 
   const onClose = (): void => {
     if (!handle) return;
-    popBackMarker(handle);
+    deps.hold(popBackMarker(handle));
     handle = null;
   };
 
   const unsubscribeOpen = deps.on("open", onOpen);
   const unsubscribeClose = deps.on("close", onClose);
   if (deps.isOpen()) onOpen();
+  else releaseOrphanMarker();
 
   return () => {
     unsubscribeOpen();
     unsubscribeClose();
     if (handle) {
-      popBackMarker(handle);
+      void popBackMarker(handle);
       handle = null;
     }
   };

@@ -237,6 +237,7 @@ export type EngineFeatureContext = {
   applySize: (size: number) => void;
   recomputeSnaps: () => void;
   reseat: () => void;
+  holdSettle: (settled: Promise<unknown>) => void;
   newCycle: () => void;
   cancelInFlight: () => void;
   resyncAfterResize: () => void;
