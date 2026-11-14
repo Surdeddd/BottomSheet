@@ -595,9 +595,9 @@ useFormGuard(sheetRef, form); // stays put while submitting, stays open while di
 
 Every adapter can be imported and rendered on the server; the engine attaches
 on the client. A sheet that starts closed is hidden in the server markup, so
-nothing flashes before hydration. Next.js, Nuxt, SvelteKit, SolidStart, Qwik
-City and Astro work without extra setup; the per-framework guides cover the
-details.
+nothing flashes before hydration. This covers Next.js, Nuxt, SvelteKit,
+SolidStart, Qwik City and Astro; the per-framework guides have the details,
+such as `"use client"` in the Next.js App Router.
 
 ## Slim core
 
@@ -643,7 +643,7 @@ to `backdrop-filter` to WebGL, is detected and degrades.
 | Frameworks | [React](docs/react.md) · [Vue](docs/vue.md) · [Svelte](docs/svelte.md) · [Solid](docs/solid.md) · [Qwik](docs/qwik.md) · [Preact](docs/preact.md) · [Custom element](docs/web-component.md) · [Vanilla](docs/vanilla.md) · [Angular](docs/angular.md) · [Lit](docs/lit.md) · [Astro](docs/astro.md) |
 | Topics | [Theming](docs/theming.md) · [Anchors and scrim stages](docs/anchors.md) · [Content at every snap](docs/content-fit.md) · [Overlay](docs/overlay.md) · [RTL](docs/rtl.md) · [WebGL renderer](docs/webgl.md) · [Plugins](docs/plugins.md) |
 | Recipes | [Ten worked examples](docs/recipes/README.md): filter panel, checkout, comment thread, navigation drawer, mini player and more |
-| Examples | [Runnable projects](examples) for React, Vue, Svelte, Solid, Lit, the custom element and vanilla |
+| Examples | [Runnable projects](https://github.com/Surdeddd/BottomSheet/tree/main/examples) for React, Vue, Svelte, Solid, Lit, the custom element and vanilla |
 | Coming from another library | [From vaul or react-modal-sheet](docs/MIGRATION.md) |
 | Project | [Architecture](docs/ARCHITECTURE.md) · [API stability](docs/api-stability.md) · [Browser support](docs/browser-support.md) · [Contributing](CONTRIBUTING.md) |
 

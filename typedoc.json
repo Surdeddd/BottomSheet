@@ -33,5 +33,17 @@
     "notExported": false,
     "invalidLink": true,
     "notDocumented": false
-  }
+  },
+  "highlightLanguages": [
+    "bash",
+    "css",
+    "html",
+    "javascript",
+    "json",
+    "jsx",
+    "svelte",
+    "tsx",
+    "typescript",
+    "vue"
+  ]
 }

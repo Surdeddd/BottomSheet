@@ -609,9 +609,9 @@ useFormGuard(sheetRef, form); // не двигается во время отп�
 
 Каждый адаптер можно импортировать и отрендерить на сервере; движок
 подключается на клиенте. Шторка, которая начинает закрытой, скрыта уже в
-серверной разметке, поэтому до гидратации ничего не мелькает. Next.js, Nuxt,
-SvelteKit, SolidStart, Qwik City и Astro работают без дополнительной
-настройки; детали описаны в гайдах по фреймворкам.
+серверной разметке, поэтому до гидратации ничего не мелькает. Это относится
+к Next.js, Nuxt, SvelteKit, SolidStart, Qwik City и Astro; детали, например
+`"use client"` в Next.js App Router, описаны в гайдах по фреймворкам.
 
 ## Облегчённое ядро
 
@@ -658,7 +658,7 @@ Chrome и Edge 80, Safari 13.1 (iOS 13.4), Firefox 72. Эту границу з�
 | Фреймворки | [React](docs/react.md) · [Vue](docs/vue.md) · [Svelte](docs/svelte.md) · [Solid](docs/solid.md) · [Qwik](docs/qwik.md) · [Preact](docs/preact.md) · [Веб-компонент](docs/web-component.md) · [Без фреймворка](docs/vanilla.md) · [Angular](docs/angular.md) · [Lit](docs/lit.md) · [Astro](docs/astro.md) |
 | Темы | [Стилизация](docs/theming.md) · [Якоря и сцены скрима](docs/anchors.md) · [Содержимое на каждой точке](docs/content-fit.md) · [Оверлей](docs/overlay.md) · [RTL](docs/rtl.md) · [Рендерер WebGL](docs/webgl.md) · [Плагины](docs/plugins.md) |
 | Рецепты | [Десять разобранных примеров](docs/recipes/README.md): панель фильтров, оформление заказа, тред комментариев, навигационная панель, мини-плеер и другие |
-| Примеры | [Запускаемые проекты](examples) для React, Vue, Svelte, Solid, Lit, веб-компонента и движка без фреймворка |
+| Примеры | [Запускаемые проекты](https://github.com/Surdeddd/BottomSheet/tree/main/examples) для React, Vue, Svelte, Solid, Lit, веб-компонента и движка без фреймворка |
 | Переход с другой библиотеки | [С vaul или react-modal-sheet](docs/MIGRATION.md) |
 | Проект | [Архитектура](docs/ARCHITECTURE.md) · [Стабильность API](docs/api-stability.md) · [Поддержка браузеров](docs/browser-support.md) · [Участие в разработке](CONTRIBUTING.md) |
 
