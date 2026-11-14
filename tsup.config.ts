@@ -30,6 +30,7 @@ export default defineConfig({
       preact: "src/preact/index.ts",
       element: "src/web-component/index.ts",
       qwik: "src/qwik/index.tsx",
+      solid: "src/solid/index.tsx",
       overlay: "src/core/overlay.ts",
       debug: "src/debug/index.ts",
       core: "src/core-slim/index.ts",

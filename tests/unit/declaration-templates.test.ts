@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -64,5 +64,28 @@ describe("hand-written declarations", () => {
     expect(names.length).toBeGreaterThan(10);
     const declarations = read("src/svelte/index.d.ts.template");
     expect(names.filter(name => !declares(declarations, name))).toEqual([]);
+  });
+});
+
+describe("built declarations", () => {
+  const dist = resolve(root, "dist");
+
+  it("declare the engine classes in one place, so every entry shares them", () => {
+    if (!existsSync(dist)) {
+      throw new Error("dist/ is missing: run `npm run build` first");
+    }
+    for (const extension of [".d.ts", ".d.cts"]) {
+      const owners = readdirSync(dist)
+        .filter(name => name.endsWith(extension))
+        .filter(name =>
+          /declare class BottomSheet(Core|Engine)\b/.test(
+            readFileSync(resolve(dist, name), "utf8"),
+          ),
+        )
+        .map(name => name.replace(/-[\w-]+(?=\.d\.c?ts$)/, ""));
+      expect(owners.sort()).toEqual(
+        [`BottomSheetCore${extension}`, `BottomSheetEngine${extension}`].sort(),
+      );
+    }
   });
 });

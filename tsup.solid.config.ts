@@ -7,11 +7,7 @@ export default defineConfig([
       solid: "src/solid/index.tsx",
     },
     format: ["esm", "cjs"],
-    dts: {
-      entry: {
-        solid: "src/solid/index.tsx",
-      },
-    },
+    dts: false,
     splitting: false,
     sourcemap: true,
     clean: false,
