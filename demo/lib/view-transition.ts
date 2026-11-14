@@ -21,6 +21,7 @@ export const startViewTransition = (cb: () => void): void => {
   if (typeof vt === "function") {
     try {
       const transition = vt.call(document, cb);
+      transition.ready.catch(() => {});
       transition.finished.catch(() => {});
       return;
     } catch {
