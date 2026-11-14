@@ -369,6 +369,7 @@
     "bench:check": "node ./scripts/bench-check.mjs",
     "check:qwik-ssr": "node ./scripts/qwik-ssr-check.mjs",
     "check:qwik-client": "node ./scripts/qwik-client-check.mjs",
+    "check:types": "tsc -p type-tests",
     "size": "size-limit",
     "docs:api": "typedoc",
     "lhci": "lhci autorun --config=./lighthouserc.json",

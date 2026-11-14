@@ -60,6 +60,8 @@ jobs:
           npx attw --pack . --profile node16 --exclude-entrypoints ./styles ./styles.css ./themes/ios ./themes/ios.css ./themes/material ./themes/material.css ./themes/vercel ./themes/vercel.css
           for f in index react preact vue element svelte overlay qwik core features debug webgl; do node -e "import('./dist/$f.js')"; done
           node -e "import('./dist/qwik-lib/index.qwik.mjs')"
+      - name: Consumer type contract (the documented examples compile against dist)
+        run: npm run check:types
       - name: Qwik consumer SSR contract
         if: matrix.node == '22'
         run: npm run check:qwik-ssr
