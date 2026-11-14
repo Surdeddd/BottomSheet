@@ -1206,6 +1206,11 @@ html:not(.has-stage) .asm-item {
 .device-cap kbd {
   margin-left:4px
 }
+@media (max-width:400px) {
+  .cap-size {
+    display:none
+  }
+}
 .snippet {
   align-self:center
 }
