@@ -91,7 +91,7 @@
     fitContentToSnap,
     closeOnRouteChange = false,
     stackEffect = false,
-    teleport = false,
+    teleport,
     teleportTo,
     radius,
     maxHeight,

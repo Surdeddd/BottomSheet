@@ -246,6 +246,28 @@ describe("Svelte <BottomSheet> fixes", () => {
     unmount(instance);
   });
 
+  it("moves the sheet to teleportTo without being told twice", async () => {
+    const target = document.createElement("div");
+    const destination = document.createElement("div");
+    document.body.append(target, destination);
+    const props = makeProps({
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "full", size: 400 },
+      ],
+      initial: "full",
+      animation: "tween",
+      duration: 0,
+      teleportTo: destination,
+    });
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    expect(destination.querySelector(".bs-sheet")).not.toBeNull();
+    expect(target.querySelector(".bs-sheet")).toBeNull();
+    unmount(instance);
+  });
+
   it("paints the backdrop with backdropColor, not the scrim layer", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
