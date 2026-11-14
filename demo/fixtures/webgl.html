@@ -37,11 +37,18 @@
         z-index: 999;
         font: 12px ui-monospace, monospace;
       }
-      #mount .bs-sheet {
+      #mount:not([data-themed]) .bs-sheet {
         background: #23232b;
         --bs-handle-color: #6d6d7a;
       }
-      html.light #mount .bs-sheet {
+      #mount[data-themed] {
+        --bs-surface: #23232b;
+        --bs-handle-color: #6d6d7a;
+      }
+      html.light #mount[data-themed] {
+        --bs-surface: #f0f0f5;
+      }
+      html.light #mount:not([data-themed]) .bs-sheet {
         background: #f0f0f5;
       }
       @media (prefers-color-scheme: light) {

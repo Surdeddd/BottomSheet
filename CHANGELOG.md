@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.24.1]
 
-Six fixes to the WebGL renderer (`@surdeddd/bottom-sheet/webgl`), found by measuring it in Chromium, WebKit and Firefox. Nothing outside the `/webgl` entry changes.
+Fixes to the WebGL renderer (`@surdeddd/bottom-sheet/webgl`), found by measuring it in Chromium, WebKit and Firefox and by switching it on in the demo. Nothing outside the `/webgl` entry changes.
 
 ### Fixed
 
 - **The renderer steps aside on a software rasteriser** — a browser without a usable GPU still hands out a WebGL context and draws it on the CPU (SwiftShader, llvmpipe, the Microsoft Basic Render Driver). The renderer took that for a GPU. Measured on SwiftShader at a device pixel ratio of 3, a frame cost 285–370 ms of CPU time and the sheet moved at 2–6 frames a second, where the DOM renderer needs 2.5 ms and holds 60. It now declines with the reason `software-renderer` and the DOM renderer draws.
-- **The surface follows the theme** — the panel's colour and radii were read once, and again only when the window was resized, so switching a theme left the old colour under the new text. They are re-read when the system colour scheme changes, when an attribute changes on an ancestor of the sheet or the sheet's own `class` does, and after every drag and every snap.
-- **A sheet with an animated `background-color` keeps its surface** — re-reading the colour of such a sheet returned the first frame of its own transition, which is transparent, so the surface vanished on the first window resize.
+- **The surface follows the theme** — the panel's colour and radii were read once, and again only when the window was resized, so switching a theme left the old colour under the new text. They are re-read when the system colour scheme changes, when an attribute changes on an ancestor of the sheet or the sheet's own `class` does, and after every drag and every snap. Ancestors are followed out of a shadow root, so `<bottom-sheet>` follows the page's theme too.
+- **The surface survives a window resize** — the stylesheet makes the sheet transparent while the renderer is on, and the renderer re-read the sheet's colour without lifting that rule. A sheet coloured the documented way, through `--bs-surface`, was read as transparent, and its surface vanished on the first resize of the window, which on a phone is the first rotation. A sheet with a transition on `background-color` lost it the same way: the read returned the first frame of the transition.
 - **The surface is drawn on the sheet inside a transformed or contained ancestor** — the canvas was fixed to the viewport. An ancestor with `transform`, `contain` or `filter` moved it into its own corner and the surface landed beside the sheet; inside a plain clipping container the surface spilled out under the container. The canvas now takes the sheet's positioning and its containing block.
 - **Only the corners the sheet rounds are rounded** — the shader rounded all four, so a bottom sheet at its tallest snap showed the page through two notches on its bottom edge. Each corner now takes its own radius from the sheet.
 - **Scrolling the page under a sheet does not redraw it** — with `lockBodyScroll: false` every scroll event cost four redraws and two style reads for a sheet that had not moved.

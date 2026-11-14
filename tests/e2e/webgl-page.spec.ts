@@ -196,6 +196,34 @@ test.describe("WebGL renderer and the page around it", () => {
       .toBeGreaterThan(200);
   });
 
+  test("a sheet coloured through the stylesheet variable keeps its surface after a resize", async ({
+    page,
+  }) => {
+    await open(page, "?theme=variable");
+    const sheet = await boxOf(page, SHEET);
+    const point: Point = [sheet.x + 6, sheet.y + 70];
+    expect((await sample(page, [point]))[0]!.r).toBeGreaterThan(SURFACE);
+
+    await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+    await page.waitForTimeout(300);
+
+    expect((await sample(page, [point]))[0]!.r).toBeGreaterThan(SURFACE);
+  });
+
+  test("a sheet coloured through the stylesheet variable follows the theme", async ({
+    page,
+  }) => {
+    await open(page, "?theme=variable");
+    const sheet = await boxOf(page, SHEET);
+    const point: Point = [sheet.x + 6, sheet.y + 70];
+
+    await page.evaluate(() => document.documentElement.classList.add("light"));
+
+    await expect
+      .poll(async () => (await sample(page, [point]))[0]!.r, { timeout: 4000 })
+      .toBeGreaterThan(200);
+  });
+
   test("the surface takes the new colour of a sheet that animates its background", async ({
     page,
   }) => {

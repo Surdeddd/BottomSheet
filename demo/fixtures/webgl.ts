@@ -16,6 +16,7 @@ sheet.setAttribute("role", "dialog");
 const params = new URLSearchParams(location.search);
 const surface = params.get("surface");
 if (surface) sheet.style.background = surface;
+if (params.get("theme") === "variable") mount.dataset.themed = "";
 const frame = params.get("frame");
 if (frame) mount.dataset.frame = frame;
 const freeScroll = params.get("lock") === "off";

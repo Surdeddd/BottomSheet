@@ -185,7 +185,8 @@ They are read when the renderer installs and again:
 - when the system colour scheme changes;
 - when an attribute changes on any ancestor of the sheet, or the sheet's own
   `class` does, which is how a theme class or a `data-theme` on `<html>`
-  arrives;
+  arrives. Ancestors are followed out of a shadow root, so the custom element
+  is covered;
 - after every drag and every snap.
 
 A theme that arrives by another road, a swapped stylesheet for instance, is
@@ -225,6 +226,17 @@ const sheet = useBottomSheet({
   features: [webglRenderer()],
 });
 </script>
+```
+
+The custom element takes it through `options`:
+
+```ts
+import "@surdeddd/bottom-sheet/element";
+import { webglRenderer } from "@surdeddd/bottom-sheet/webgl";
+
+document.querySelector("bottom-sheet").options = {
+  features: [webglRenderer()],
+};
 ```
 
 Under SSR the feature never installs — it checks for `document` first — so
