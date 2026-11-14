@@ -1,101 +1,120 @@
-# Migration guide
+# Coming from another library
 
-Switching from `vaul` or `react-modal-sheet` to `@surdeddd/bottom-sheet`. Concrete API mappings + code diffs + an honest rundown of what you gain and lose.
+How the APIs of `vaul` and `react-modal-sheet` map onto this one, and what
+you gain and give up by moving.
 
-## From `vaul`
+## From vaul
 
-`vaul` is React-only, popular for its iOS-feel drag and Radix-style composition.
-
-### Prop mapping
-
-| `vaul` | `@surdeddd/bottom-sheet` | Notes |
+| vaul | Here | Notes |
 | --- | --- | --- |
-| `<Drawer.Root open={...}>` | `<BottomSheet>` (controlled via `ref.snapTo`) | We use refs + snap ids, not boolean open |
-| `snapPoints={[0.4, 0.8]}` (decimals 0-1) | `snapPoints={[{id:"half", size:"40%"}, {id:"full", size:"80%"}]}` | Named ids — easier to drive imperatively |
-| `activeSnapPoint`, `setActiveSnapPoint` | `state.activeId` (read), `ref.snapTo("id")` (write) | One state, one method |
-| `dismissible={false}` | `allowed={["minimized", "full"]}` (omit "closed") | Same effect, declarative |
-| `<Drawer.Overlay />` | Auto — render a `<div className="bs-backdrop" />` | Backdrop is a sibling div the engine targets |
-| `direction="bottom" \| "top" \| "left" \| "right"` | `mode="bottom" \| "top" \| "left" \| "right"` | Same 4 axes |
-| `modal={false}` | `inertSiblings={false}` + `focusTrap={false}` | We split modal into two flags |
-| `nested` (sheets within sheets) | Just mount another `<BottomSheet>` | Auto-stacked via `sheetStack` singleton |
-| `shouldScaleBackground` | — | Not exposed — we leave parent transforms alone |
+| `<Drawer.Root open onOpenChange>` | `<BottomSheet open onOpenChange>` | The same two props |
+| `<Drawer.Trigger>` | Your own button that sets `open` | No compound components |
+| `<Drawer.Portal>` | `teleportTo="body"` | Optional; the sheet is `position: fixed` either way |
+| `<Drawer.Overlay>` | Built in | `backdrop={false}` removes it |
+| `<Drawer.Content>` | The children | |
+| `<Drawer.Title>` | `header={<h2>…</h2>}` and `ariaLabelledBy` | |
+| `snapPoints={[0.4, 0.8]}` | `snapPoints={[{ id: "half", size: "40%" }, { id: "full", size: "80%" }]}` | Points have ids, and take any CSS length |
+| `activeSnapPoint`, `setActiveSnapPoint` | `ref.current.state.activeId`, `ref.current.snapTo(id)`, `onSnap` | |
+| `dismissible={false}` | `persistent` | The user cannot close it; your code can |
+| `modal={false}` | Leave `focusTrap` and `inertSiblings` off | They are off by default |
+| `direction` | `mode` | Also `start` and `end` for RTL |
+| `<Drawer.NestedRoot>` | Nothing: mount another sheet | Sheets stack on their own |
+| `shouldScaleBackground` | `stackEffect` scales the sheets underneath | The page itself is not scaled |
+| `handleOnly` | `dragFrom="handle"` | This is the default |
+| `repositionInputs` | Built in | The sheet rests on top of the on-screen keyboard |
+| `container` | `teleportTo` | |
 
-### Code diff
+Before:
 
-**Before (vaul):**
 ```tsx
 import { Drawer } from "vaul";
 
-<Drawer.Root>
+<Drawer.Root open={open} onOpenChange={setOpen}>
   <Drawer.Trigger>Open</Drawer.Trigger>
   <Drawer.Portal>
-    <Drawer.Overlay className="..." />
-    <Drawer.Content className="...">
+    <Drawer.Overlay />
+    <Drawer.Content>
       <Drawer.Title>Settings</Drawer.Title>
-      {/* content */}
+      <Settings />
     </Drawer.Content>
   </Drawer.Portal>
-</Drawer.Root>
+</Drawer.Root>;
 ```
 
-**After (`@surdeddd/bottom-sheet`):**
+After:
+
 ```tsx
-import { useRef } from "react";
-import { BottomSheet, type BottomSheetHandle } from "@surdeddd/bottom-sheet/react";
+import { BottomSheet } from "@surdeddd/bottom-sheet/react";
 import "@surdeddd/bottom-sheet/styles";
 
-const ref = useRef<BottomSheetHandle>(null);
-
 <>
-  <button onClick={() => ref.current?.snapTo("full")}>Open</button>
+  <button onClick={() => setOpen(true)}>Open</button>
   <BottomSheet
-    ref={ref}
-    snapPoints={[{ id: "closed", size: 0 }, { id: "full", size: "85%" }]}
-    initial="closed"
+    open={open}
+    onOpenChange={setOpen}
+    snapPoints={[
+      { id: "closed", size: 0 },
+      { id: "open", size: "fit" },
+    ]}
     focusTrap
     header={<h2>Settings</h2>}
   >
-    {/* content */}
+    <Settings />
   </BottomSheet>
-</>
+</>;
 ```
 
-## From `react-modal-sheet`
+## From react-modal-sheet
 
-`react-modal-sheet` is also React-only with a Framer-Motion-driven animation.
-
-### Prop mapping
-
-| `react-modal-sheet` | `@surdeddd/bottom-sheet` | Notes |
+| react-modal-sheet | Here | Notes |
 | --- | --- | --- |
-| `<Sheet isOpen={...} onClose={...}>` | `ref.snapTo("closed")` + `engine.on("close", ...)` | Ref-driven |
-| `snapPoints={[0.5, 0.8]}` | `snapPoints={[{id:"half", size:"50%"}, ...]}` | Named ids |
-| `springConfig={{stiffness: 300}}` | `spring={{stiffness: 300, damping: 28}}` | Same shape, name change |
-| `<Sheet.Container>` | `<section className="bs-sheet">` | We don't use compound components |
-| `disableDrag={true}` | Mount engine without `handle` ref | Removes drag attach |
-| `tweenConfig` (Framer) | `animation="tween"` + `duration` + `easing` | Built-in tween, no Framer |
+| `<Sheet isOpen onClose>` | `<BottomSheet open onOpenChange>` | |
+| `<Sheet.Container>`, `<Sheet.Content>` | The component and its children | |
+| `<Sheet.Header>` | `header` | The handle is built in; `header` is the region under it |
+| `<Sheet.Backdrop>` | Built in | `backdrop={false}` removes it |
+| `snapPoints={[0, 0.5, 1]}`, `initialSnap` | `snapPoints` with ids, `initial` | Points are named, not indexed |
+| `detent="content"` | A point of size `"fit"` | |
+| `disableDrag` | `disableDrag` | |
+| `disableDismiss` | `persistent` | |
+| `onSnap` | `onSnap` | Receives the id, not an index |
+| `onOpenStart`, `onOpenEnd`, `onCloseStart`, `onCloseEnd` | `onOpen`, `onOpened`, `onClose`, `onClosed` | |
+| `tweenConfig` | `animation="tween"` with `duration` and `easing` | The default here is a spring |
+| `avoidKeyboard` | Built in | |
+| `mountPoint` | `teleportTo` | |
+| `prefersReducedMotion` | `respectReducedMotion` | On by default; follows the system setting |
+| `sheetRef.current.snapTo(i)` | `ref.current.snapTo(id)` | |
 
 ## What you gain
 
-- **8 build targets** — React, Preact, Vue 3, Svelte 5, Solid, Qwik, Web Component (Lit-compatible), Vanilla core. `vaul` and `react-modal-sheet` are React-only.
-- **4 sheet directions** — bottom, top, left, right. Both alternatives support bottom only (vaul has limited top support).
-- **Hardware back interception** on Android — opt-in via `closeOnBack`.
-- **WCAG 2.1 AA keyboard slider** — Arrow Up/Down stepping, Home/End, Esc, focus trap with restore.
-- **iOS soft-keyboard awareness** via `visualViewport` API — sheet auto-clamps above keyboard.
-- **Hardware-accelerated transform-only motion** — no layout thrash per frame.
-- **No Framer-Motion / Radix dependencies** — `@surdeddd/bottom-sheet` ships only the engine, no animation/primitive libraries. The React adapter is held to a 26 KB gzip budget (core 22.5 KB) by `size-limit` in CI.
+- One engine outside React as well: the same component for Vue, Svelte,
+  Solid, Qwik and Preact, and a custom element for everything else.
+- Snap points with names, in any CSS unit, including `fit` for the content's
+  own height, and an allow-list that changes at run time.
+- Sheets on the top, left and right (react-modal-sheet is bottom only), and
+  logical `start` and `end` edges that follow the writing direction.
+- The Back button closing the sheet, and a sheet tied to a URL.
+- A keyboard slider on the handle: arrows, Home and End resize the sheet.
+- No runtime dependencies. vaul builds on Radix Dialog and react-modal-sheet
+  on Motion; this package ships its own gesture and spring code.
 
-## What you lose
+## What you give up
 
-Honest list:
-
-- **Radix-style compound components** — `vaul` uses `<Drawer.Trigger>`, `<Drawer.Title>`, etc. We use ref methods and a flat prop API. The plus side: less boilerplate, the minus: less explicit composition.
-- **`shouldScaleBackground`** — `vaul`'s "background page scales down" effect on iOS is not built-in. You can replicate it with a `transform: scale(...)` driven by the `progress` event, but it's not one prop.
-- **Animation library hooks** — `react-modal-sheet`'s direct Framer-Motion access (custom variants) isn't available. We expose `spring` config and `progress` events; that's enough for 95% of use cases.
-- **Server actions integration** — `vaul` has special handling for Next.js Server Actions in modal context. We don't, but `inertSiblings + focusTrap` covers the same ground.
+- **Compound components.** There is one component with props and slots. It is
+  less to write and less to rearrange: you cannot put the overlay and the
+  content in different places in the tree.
+- **Scaling the page.** vaul's `shouldScaleBackground` and react-modal-sheet's
+  `modalEffectRootId` shrink the page behind the sheet. Here `stackEffect`
+  does that for sheets under sheets, not for the page; you can drive a
+  transform on the page from the `progress` event.
+- **Animation library hooks.** There are no Motion values to subscribe to and
+  no `motion.div` props to pass through. There is the spring configuration,
+  the `progress` event and the `--bs-progress` custom property.
+- **Radix semantics.** vaul inherits Radix Dialog's focus management and
+  `asChild` composition. The focus trap here is its own, and is off until you
+  ask for it with `focusTrap`.
 
 ## See also
 
-- [API reference](../README.md#api-at-a-glance)
-- [Recipe gallery](recipes/README.md)
-- [React docs](react.md)
+- [Options, methods and events](../README.md#api)
+- [React guide](react.md)
+- [Recipes](recipes/README.md)

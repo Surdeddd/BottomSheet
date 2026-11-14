@@ -1,253 +1,244 @@
-# @surdeddd/bottom-sheet · React
+# React
 
-React 18+ adapter (peer dep `react >=18`). Ships a `<BottomSheet>` component
-(forwardRef) and a `useBottomSheet()` hook for headless control.
-
-## Install
+`@surdeddd/bottom-sheet/react` has a `<BottomSheet>` component and a
+`useBottomSheet()` hook for when you want to write the markup yourself. React
+18 or newer.
 
 ```bash
-npm i @surdeddd/bottom-sheet react react-dom
+npm i @surdeddd/bottom-sheet
 ```
 
-## Component API
+## A modal sheet
 
 ```tsx
-import { BottomSheet, type BottomSheetHandle } from "@surdeddd/bottom-sheet/react";
+import { useState } from "react";
+import { BottomSheet } from "@surdeddd/bottom-sheet/react";
 import "@surdeddd/bottom-sheet/styles";
-import { useRef } from "react";
 
-export const App = () => {
-  const ref = useRef<BottomSheetHandle>(null);
+export function Filters() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        snapPoints={[
+          { id: "closed", size: 0 },
+          { id: "open", size: "fit" },
+        ]}
+        focusTrap
+        header={<h2>Filters</h2>}
+        footer={<button onClick={() => setOpen(false)}>Apply</button>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
+```
+
+`open` needs a snap point of size `0`; that point is the closed state. When
+`open` starts `false` the sheet starts there, and is hidden in the server
+markup. A backdrop tap, Escape, the Back button and a drag down all report
+through `onOpenChange(false)`.
+
+Leave `open` out and the sheet is uncontrolled: it starts at `initial` (or the
+first point) and you move it through the ref.
+
+## A sheet that stays on screen
+
+```tsx
+import { useRef } from "react";
+import { BottomSheet, type BottomSheetHandle } from "@surdeddd/bottom-sheet/react";
+
+export function Nearby() {
+  const sheet = useRef<BottomSheetHandle>(null);
 
   return (
     <BottomSheet
-      ref={ref}
+      ref={sheet}
       snapPoints={[
-        { id: "minimized", size: 96 },
-        { id: "half",      size: "45dvh" },
-        { id: "full",      size: "85%" },
+        { id: "peek", size: 96 },
+        { id: "half", size: "45dvh" },
+        { id: "full", size: "90%" },
       ]}
-      initial="minimized"
-      animation="spring"
-      spring={{ stiffness: 260, damping: 28 }}
-      focusTrap
-      closeOnEscape
-      closeOnBack                 // Android hardware back
-      backdropRange={[0.4, 1]}    // backdrop fades in only past 40% progress
-      header={<h2>Search</h2>}
-      leftButton={<BackButton />}
-      rightButton={<MoreButton />}
-      screen={<MapPreview />}     // fades in behind the sheet by progress
-      onChange={(state) => console.log(state.activeId, state.progress)}
+      initial="peek"
+      header={<h2>Nearby</h2>}
+      onSnap={id => console.log("rests at", id)}
     >
-      <YourScrollableContent />
+      <PlaceList onPick={() => sheet.current?.snapTo("full")} />
     </BottomSheet>
   );
-};
+}
 ```
 
-### Props
+## Props
 
-Every `EngineOption` is forwarded plus:
+Every [engine option](../README.md#options) is a prop. The component adds:
 
-| Prop | Default | Description |
+| Prop | Default | What it does |
 | --- | --- | --- |
-| `backdrop` | `true` | Render the dimmed overlay element |
-| `closeOnBackdrop` | `true` | Tap-out closes (only when `canDismiss()`) |
-| `header` | — | Header content — `ReactNode` or `(state) => ReactNode` |
-| `footer` | — | Footer content, pinned below the scroll area — same signature as `header`. Below the largest snap it sits under the screen edge unless `fitContentToSnap` is on |
-| `leftButton` / `rightButton` | — | Slots above the sheet |
-| `screen` | — | Background fading by progress |
-| `teleportTo` | — | Relocate the sheet DOM (`HTMLElement`, selector, or `"body"`) to escape a transformed/clipping ancestor |
-| `backdropColor` | — | Scrim color, applied via `setScrimColor` (no `--bs-backdrop-color` needed) |
-| `backdropOpacity` | — | Max backdrop opacity, applied via `setBackdropRange([0, opacity])` |
-| `noSSR` | `false` | Skip render on server (Next.js) |
-| `ariaLabel` / `ariaLabelledBy` | — | Accessible name |
+| `open`, `onOpenChange` | uncontrolled | Controlled open state |
+| `header`, `footer` | none | Regions above and below the scroll area. A node, or `(state) => node` |
+| `leftButton`, `rightButton` | none | Slots that float above the sheet's leading edge |
+| `screen` | none | Content of the scrim layer; fades in with `progress` |
+| `anchors`, `scrimStages` | none | [Anchors and scrim stages](anchors.md), declared as data with a `node` each |
+| `backdrop` | `true` | Render the backdrop |
+| `closeOnBackdrop` | `true` | A tap on the backdrop closes the sheet |
+| `teleportTo` | none | Element, selector or `"body"` to move the sheet's DOM to, out of a clipping or transformed ancestor |
+| `className`, `style` | none | Go on the sheet element (`.bs-sheet`) |
+| `ariaLabel` | `"Bottom sheet"` | Accessible name. `ariaLabelledBy` points at a heading instead |
+| `handleLabel`, `contentLabel` | English | Accessible names of the handle and the scroll area |
+| `noSSR` | `false` | Render nothing on the server and on the first client render |
 
-### Event callbacks
+The sheet has `role="dialog"` and `aria-modal` when `focusTrap` is on, and
+`role="region"` when it is not.
 
-| Prop | Payload | Fires |
+### Callbacks
+
+| Prop | Receives | When |
 | --- | --- | --- |
-| `onChange(state)` | `EngineState` | On settled snap transitions |
-| `onSnap(id)` | `string` | Settled on a new snap |
-| `onBeforeSnap(e)` | `{ id, size, previousId, cancel }` | Before a snap settles — call `e.cancel()` **synchronously** to veto |
-| `onBeforeClose(e)` | `{ reason, cancel }` | Before a dismissal — call `e.cancel()` synchronously to veto |
-| `onOpen(id)` | `string` | Enter starts (0 → >0); scroll lock, focus trap and the history entry go on here |
-| `onOpened(id)` | `string` | Enter landed |
-| `onClose()` | — | Exit starts |
-| `onClosed()` | — | Exit landed — unmount the sheet here, not in `onClose` |
-| `onDragStart(e)` | `{ size }` | Pointer drag begins |
-| `onDragEnd(e)` | `{ size, velocity }` | Pointer drag ends |
-| `onDrag(e)` | `{ size, delta }` | ~60 fps during drag — **provide at mount** (see below) |
-| `onProgress(e)` | `{ value, size }` | ~60 fps during motion — **provide at mount** (see below) |
+| `onSnap` | `id` | The sheet settled on a point |
+| `onOpen`, `onOpened` | `id` | It starts to appear; it has landed |
+| `onClose`, `onClosed` | nothing | It starts to leave; it is gone. Unmount in `onClosed` |
+| `onBeforeSnap` | `{ id, size, previousId, cancel }` | Before a move. `cancel()` stops it |
+| `onBeforeClose` | `{ reason, cancel }` | Before a close. `reason` is `programmatic`, `backdrop`, `escape` or `back` |
+| `onDragStart`, `onDragEnd` | `{ size }`, `{ size, velocity }` | A drag begins and ends |
+| `onDrag`, `onProgress` | `{ size, delta }`, `{ value, size }` | Every frame of a drag; every frame of any motion |
+| `onChange` | `EngineState` | The state React sees changed: after a snap, and when a drag starts or ends |
 
-`onDrag` / `onProgress` are hot-path: the hook only subscribes to the engine's
-`drag` / `progress` streams when the handler is present **at mount**. Adding
-these props after mount has no effect (and the engine builds no per-frame
-payload at all when no handler is attached). Keep the handler stable and don't
-call `setState` from it — mutate the DOM directly.
+`cancel()` must be called synchronously, inside the callback.
 
-### Imperative handle (`ref`)
+`onDrag` and `onProgress` are subscribed only if they are present when the
+component mounts, so that a sheet without them builds no per-frame payload. Do
+not call `setState` from them; write to the DOM.
+
+### Props you can change after mount
+
+`open`, `snapPoints`, `allowed`, `mode`, `radius`, `maxHeight`, `persistent`,
+`disableClose`, `disableDrag`, `dragFrom`, `dragFromContent`, `backdropColor`
+and `backdropOpacity` are applied to the running sheet. `snapPoints` is
+compared by content, so an array written inline does not reset anything on
+re-render.
+
+The remaining options, such as `animation`, `focusTrap` or `closeOnBack`, are
+read once. To change one of them, give the component a `key` that changes with
+it.
+
+## The ref
 
 ```ts
 type BottomSheetHandle = {
   snapTo(id: string): Promise<void>;
   open(id?: string): Promise<void>;
   close(reason?: CloseReason): Promise<void>;
-  expand(): Promise<void>;    // largest allowed snap
-  collapse(): Promise<void>;  // smallest allowed snap > 0
-  isTop(): boolean;           // top of the multi-sheet stack?
-  depth(): number;            // open sheets above this one
+  expand(): Promise<void>;
+  collapse(): Promise<void>;
   setAllowed(ids: string[], snap?: string): void;
-  setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
-  setScrim(opts: ScrimUpdate): void;
-  setScrimOverlay(opts: ScrimOverlayOptions): () => void;
-  addAnchor(opts: AnchorOptions): () => void;
-  setScrimStages(opts: ScrimStagesOptions | null): () => void;
-  recompute(): void;          // re-measure a 'fit' / 'content' snap
+  setSnapPoints(points: SnapPointDef[], allowed?: string[]): void;
+  recompute(): void;
+  isTop(): boolean;
+  depth(): number;
+  setScrim(update: ScrimUpdate): void;
+  setScrimOverlay(options: ScrimOverlayOptions): () => void;
+  addAnchor(options: AnchorOptions): () => void;
+  setScrimStages(options: ScrimStagesOptions | null): () => void;
+  on(event, listener): () => void;
   getEngine(): BottomSheetEngine | null;
-  state: EngineState;        // settled-only snapshot
+  state: EngineState;
 };
 ```
 
-Runtime setters that aren't on the handle — `setPersistent`, `setDisableClose`,
-`setDisableDrag`, `setDragFrom`, `setDragFromContent`, `setRadius`,
-`setMaxHeight`, `getResolvedSnaps` — are reached via `getEngine()`. The
-`persistent` / `disableClose` / `disableDrag` / `dragFrom` / `dragFromContent` /
-`radius` / `maxHeight` props are also **reactive**: changing them after mount
-applies to the live engine without a remount.
+`state` on the ref is live. Everything else the engine can do, such as
+`setRadius()` or `getResolvedSnaps()`, is on `getEngine()`.
 
-`open()` / `snapTo()` are safe to call **synchronously in the mount tick** (e.g.
-a mount `useEffect` / `useLayoutEffect`) — no `requestAnimationFrame` delay is
-needed, including `fit` / `content` and teleported sheets. Or pass `initial`
-(a snap whose size resolves `> 0`) to start the sheet born open.
+`open()` and `snapTo()` are safe to call in a mount effect; no
+`requestAnimationFrame` is needed.
 
-### Anchors & scrim stages (declarative)
+To follow the sheet frame by frame, subscribe once and write to the DOM:
 
 ```tsx
-<BottomSheet
-  anchors={[
-    { position: "sheet-top-right", showOn: ["half", "full"], animation: "pop",
-      node: <CloseButton /> },
-    { position: "dock-bottom", node: <TabBar /> },
-  ]}
-  scrimStages={{
-    stages: [
-      { for: "peek", node: <Teaser /> },
-      { forRange: [0.5, 1], node: <Expanded /> },
-    ],
-  }}
-  ...
-/>
+useEffect(
+  () =>
+    sheet.current?.on("progress", ({ value }) => {
+      mapRef.current!.style.opacity = String(1 - value);
+    }),
+  [],
+);
 ```
 
-See [anchors & stages docs](anchors.md) for positions, `showOn`, `fadeRange`
-and the animation spec.
+## The hook
 
-```ts
-```
-
-## Headless hook
-
-For full JSX control, use `useBottomSheet()`:
+`useBottomSheet()` gives you the refs and the methods and leaves the markup to
+you:
 
 ```tsx
 import { useBottomSheet } from "@surdeddd/bottom-sheet/react";
 
-const { sheetRef, handleRef, contentRef, backdropRef, screenRef, state, snapTo } =
-  useBottomSheet({ snapPoints, animation: "spring" });
+const { sheetRef, handleRef, contentRef, backdropRef, state, snapTo } =
+  useBottomSheet({ snapPoints, initial: "peek" });
 
 return (
   <div className="bs-root">
     <div ref={backdropRef} className="bs-backdrop" />
-    <section ref={sheetRef} className="bs-sheet" data-mode="bottom">
-      <div ref={handleRef} className="bs-handle">…</div>
+    <section ref={sheetRef} className="bs-sheet" data-mode="bottom" aria-label="Places">
+      <div ref={handleRef} className="bs-handle" role="slider" tabIndex={0} aria-label="Resize sheet" />
       <div ref={contentRef} className="bs-content">…</div>
     </section>
   </div>
 );
 ```
 
-## SSR / Next.js
+`state` here is a snapshot that updates on `snap`, `dragstart` and `dragend`,
+so a drag does not re-render your component on every frame. The hook follows
+the same props as the component, apart from `open` and `mode`: use `open()`,
+`close()` and `getEngine()?.setMode()`.
 
-The adapter is **import-safe in Node** — importing it server-side touches no
-`window`/DOM. It is **SSR-renderable**: the sheet markup renders on the server,
-and the engine (all gesture/DOM work) attaches only on **client hydration**.
-A sheet that starts closed is rendered with `data-bs-rest="closed"`, so it is
-hidden in the server markup instead of being painted open until hydration.
-For hydration-strict pages where you want to skip the server render entirely,
-pass `noSSR`:
+## Server rendering
 
-```tsx
-<BottomSheet noSSR snapPoints={…}>…</BottomSheet>
-```
+The adapter can be imported and rendered in Node. The markup comes from the
+server and the engine attaches during hydration. A sheet that starts closed is
+rendered with `data-bs-rest="closed"`, which hides it until then.
 
-Or wrap with `dynamic`:
+In the Next.js App Router the component needs a client boundary:
 
 ```tsx
-const BottomSheet = dynamic(
-  () => import("@surdeddd/bottom-sheet/react").then(m => m.BottomSheet),
-  { ssr: false },
-);
+"use client";
+import { BottomSheet } from "@surdeddd/bottom-sheet/react";
 ```
 
-## One-shot construction
+`noSSR` skips the server render where you want that.
 
-`useBottomSheet(opts)` reads `opts` once on mount and never re-watches it.
-Mutating `opts.snapPoints` / `opts.allowed` / `opts.mode` between renders has
-**no effect** on the engine — this matches React's "uncontrolled state owned
-by an effect" pattern and avoids whole-engine remount thrash on every render.
-
-For runtime updates, use the returned setter methods:
+## Forms
 
 ```tsx
-const sheet = useBottomSheet({ snapPoints, allowed, initial: "min" });
+import { useFormGuard } from "@surdeddd/bottom-sheet/integrations/react-hook-form";
 
-// Replace allow-list at runtime (e.g. lock to "full" while a form is dirty):
-useEffect(() => {
-  sheet.setAllowed(formDirty ? ["full"] : ["min", "full"]);
-}, [formDirty, sheet]);
-
-// Replace snap-point geometry (respond to viewport changes):
-sheet.getEngine()?.setSnapPoints(newSnapPoints);
+const form = useForm();
+const sheet = useRef<BottomSheetHandle>(null);
+useFormGuard(sheet, form);
 ```
 
-Engine recreation (changing `mode`, `animation`, `focusTrap`) requires a
-keyed remount — wrap the component in a parent with a `key` that flips
-when those config props change.
+The sheet stays put while the form submits and stays open while it has unsaved
+changes. `useFormikGuard(sheet, formikRef)` from
+`@surdeddd/bottom-sheet/integrations/formik` does the same for Formik.
 
-> Use `getEngine()` rather than the deprecated `engine` field on the return
-> value: under React Strict Mode the layout effect double-invokes and the
-> bare `engine` field is briefly `null` for one render between teardown and
-> remount.
+## A sheet from JSON
 
-## Performance
+`<BottomSheetFromConfig>` builds a sheet from a plain object, for sheets
+described by a CMS or a feature flag. See the
+[recipe](recipes/json-config.md).
 
-The hook subscribes to `useSyncExternalStore` only on `snap` / `dragstart` /
-`dragend` — drag pixels and animation frames don't trigger React renders. For
-continuous progress in your UI, subscribe imperatively:
+## Things to know
 
-```tsx
-const ref = useRef<BottomSheetHandle>(null);
-
-useEffect(() => {
-  const id = setInterval(() => {
-    if (ref.current) updateMyDOM(ref.current.state.progress);
-  }, 33);
-  return () => clearInterval(id);
-}, []);
-```
-
-## Gotchas
-
-- **Don't set `z-index` on `.bs-sheet` / `.bs-backdrop` / anchors.** The engine
-  rewrites inline `z-index` on these on every stack change (base `100`, step
-  `10` per depth); your value is overwritten and races. Position the sheet layer
-  by moving the `teleportTo` target / `.bs-root` parent or changing the open
-  order. See [Architecture](ARCHITECTURE.md).
-- **Router guards + `closeOnBack`.** The Back-button marker is a same-URL
-  `history.pushState` entry tagged `__bs: true` in `history.state`. In a global
-  router guard (React Router, TanStack Router, Next.js) skip your app's
-  confirm-guard when `window.history.state?.__bs` is truthy, falling back to a
-  same-path check. See the [Vue router-guard pattern](vue.md) for the full
-  worked example.
+- **Do not set `z-index` on `.bs-sheet`, `.bs-backdrop` or anchors.** The
+  engine writes it on every change of the stack. To place the sheets against
+  the rest of the app, move the `teleportTo` target or the parent of
+  `.bs-root`. See [Theming → stacking](theming.md#stacking).
+- **Router guards and `closeOnBack`.** The Back button entry is a same-URL
+  `history.pushState` marked `__bs: true` in `history.state`. A global guard
+  that asks "leave this page?" should let it through; the
+  [Vue guide](vue.md#router-guards) has the pattern.

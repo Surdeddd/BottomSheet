@@ -85,4 +85,4 @@ await engine.snapTo("minimized");     // commit to the real snap
 
 - [Filter panel recipe](filter-panel.md) — uses `setAllowed` for a similar dynamic-state pattern
 - [Comment composer recipe](comment-composer.md) — auto-expand on input focus is a snap, not a drag
-- [API reference](../../README.md#api-at-a-glance)
+- [API reference](../../README.md#api)

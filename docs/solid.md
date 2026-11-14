@@ -1,196 +1,131 @@
-# @surdeddd/bottom-sheet · SolidJS adapter
+# Solid
 
-Solid ships as a first-class subpath: `@surdeddd/bottom-sheet/solid`. The
-adapter wraps the same headless `BottomSheetEngine` the rest of the framework
-adapters use, but funnels engine events through a single `createSignal` so
-Solid's compiled JSX patches DOM attributes surgically — no virtual DOM diff,
-no full-subtree re-render.
-
-## Install
+`@surdeddd/bottom-sheet/solid` has a `<BottomSheet>` component. The engine's
+state goes through one signal, so a snap patches the attributes that changed
+and nothing else.
 
 ```bash
-npm i @surdeddd/bottom-sheet solid-js
+npm i @surdeddd/bottom-sheet
 ```
 
-## Quick start
+## A modal sheet
 
 ```tsx
+import { createSignal } from "solid-js";
 import { BottomSheet } from "@surdeddd/bottom-sheet/solid";
 import "@surdeddd/bottom-sheet/styles";
 
-export const Search = () => (
-  <BottomSheet
-    snapPoints={[
-      { id: "min",  size: 96 },
-      { id: "half", size: "45%" },
-      { id: "full", size: "85%" },
-    ]}
-    initial="min"
-    animation="ios-spring"
-    header={<h2>Search</h2>}
-    onSnap={id => console.log("settled at", id)}
-  >
-    <ul class="results">{/* ... */}</ul>
-  </BottomSheet>
-);
+export function Filters() {
+  const [open, setOpen] = createSignal(false);
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+
+      <BottomSheet
+        open={open()}
+        onOpenChange={setOpen}
+        snapPoints={[
+          { id: "closed", size: 0 },
+          { id: "open", size: "fit" },
+        ]}
+        focusTrap
+        header={<h2>Filters</h2>}
+        footer={<button onClick={() => setOpen(false)}>Apply</button>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
 ```
+
+`open` needs a snap point of size `0`; that point is the closed state. When
+`open` starts `false` the sheet starts there, and is hidden in the server
+markup. A backdrop tap, Escape, the Back button and a drag down all report
+through `onOpenChange(false)`.
+
+## A sheet that stays on screen
+
+```tsx
+import type { BottomSheetEngine } from "@surdeddd/bottom-sheet";
+
+let sheet: BottomSheetEngine | null = null;
+
+<BottomSheet
+  engineRef={engine => (sheet = engine)}
+  snapPoints={[
+    { id: "peek", size: 96 },
+    { id: "half", size: "45dvh" },
+    { id: "full", size: "90%" },
+  ]}
+  initial="peek"
+  header={<h2>Nearby</h2>}
+  onSnap={id => console.log("rests at", id)}
+>
+  <PlaceList onPick={() => sheet?.snapTo("full")} />
+</BottomSheet>;
+```
+
+`engineRef` receives the engine when the sheet mounts and `null` when it
+unmounts. Every [method](../README.md#methods) is on it.
 
 ## Props
 
-| Prop | Type | Notes |
+Every [engine option](../README.md#options) is a prop. The component adds:
+
+| Prop | Default | What it does |
 | --- | --- | --- |
-| `snapPoints` | `SnapPointDef[]` | Required. `{ id, size }` — size is px or `"NN%"`. |
-| `allowed` | `string[]` | Whitelist of snap ids the gesture can settle to. |
-| `initial` | `string` | Initial snap id (defaults to first snap point). |
-| `mode` | `"bottom" \| "top" \| "left" \| "right"` | Pull direction (default `"bottom"`). |
-| `animation` | `"spring" \| "tween" \| "ios-spring" \| "material-bounce" \| "linear" \| "snappy"` | Preset (default `"spring"`). |
-| `spring` | `{ stiffness?, damping?, mass? }` | Override the spring physics. |
-| `focusTrap` | `boolean` | Trap focus when the sheet is open. |
-| `closeOnEscape` | `boolean` | ESC closes the sheet. |
-| `closeOnBack` | `boolean` | Browser back-button closes the sheet. |
-| `lockBodyScroll` | `boolean` | Lock `<body>` scroll while interactive. |
-| `rubberBand` | `boolean` | Engine spring overshoot at the edges. |
-| `backdrop` | `boolean` | Render the dimming backdrop (default `true`). |
-| `closeOnBackdrop` | `boolean` | Tap backdrop to close (default `true`). |
-| `backdropRange` | `[number, number]` | `[minOpacity, maxOpacity]` for the backdrop. |
-| `radius` | `string \| number` | Corner radius. Reactive. |
-| `maxHeight` | `string \| number` | Height cap; a string is re-resolved on viewport changes. |
-| `persistent` | `boolean` | Block dismissal (backdrop / Escape / back). Reactive. |
-| `disableClose` | `boolean` | Block all closing. Reactive. |
-| `disableDrag` | `boolean` | Suppress the drag gesture. Reactive. |
-| `dragFrom` | `"handle" \| "sheet" \| "zones"` | Which regions start a drag; `"zones"` limits it to `[data-bs-drag]` subtrees. Reactive. |
-| `dragFromContent` | `boolean` | Whether a touch gesture on the scroll container drags the sheet. Reactive; override per snap point with `dragFromContent` on the point. |
-| `closeOnRouteChange` | `boolean` | Close when the URL changes. |
-| `stackEffect` | `boolean` | iOS card-stack scaling of back sheets. |
-| `teleport` / `teleportTo` | `boolean` / `HTMLElement \| string \| null` | Relocate the sheet DOM. Opt-in — **off by default** (`teleportTo` unset). |
-| `returnFocusTo` | `HTMLElement \| string \| (() => HTMLElement \| null)` | Focus target on dismiss. |
-| `ariaLabel` | `string` | Accessible name (default `"Bottom sheet"`). |
-| `header` / `footer` | `JSX.Element` | Header / footer content. |
-| `leftButton` / `rightButton` | `JSX.Element` | Buttons docked above the sheet. |
-| `screen` | `JSX.Element` | Background that fades in by progress. |
-| `engineRef` | `(engine) => void` | Receives the `BottomSheetEngine` (or `null` on cleanup). |
+| `open`, `onOpenChange` | uncontrolled | Controlled open state |
+| `engineRef` | none | Receives the engine, then `null` |
+| `header`, `footer` | none | Regions above and below the scroll area |
+| `leftButton`, `rightButton` | none | Buttons that float above the sheet's leading edge |
+| `screen` | none | Content of the scrim layer; fades in with `progress` |
+| `backdrop` | `true` | Render the backdrop |
+| `closeOnBackdrop` | `true` | A tap on the backdrop closes the sheet |
+| `teleportTo` | none | Element, selector or `"body"` to move the sheet's DOM to. `teleport={false}` switches it off |
+| `ariaLabel` | `"Bottom sheet"` | Accessible name |
+| `handleLabel`, `contentLabel` | English | Accessible names of the handle and the scroll area |
 
-### Event callbacks
+### Callbacks
 
-| Prop | Payload | Fires |
+| Prop | Receives | When |
 | --- | --- | --- |
-| `onSnap` | `id: string` | Settled on a new snap. |
-| `onBeforeSnap` | `{ id, size, previousId, cancel }` | Before a snap — call `cancel()` **synchronously** to veto. |
-| `onBeforeClose` | `{ reason, cancel }` | Before a dismissal — call `cancel()` synchronously to veto. |
-| `onOpen` / `onOpened` | `id: string` | Enter starts / enter settled. |
-| `onClose` / `onClosed` | — | Exit starts / exit settled. |
-| `onDragStart` / `onDragEnd` | `{ size }` / `{ size, velocity }` | Pointer drag boundaries. |
-| `onDrag` / `onProgress` | `{ size, delta }` / `{ value, size }` | ~60 fps — **provide at mount**; the engine only subscribes when the handler is present, so adding them later has no effect. Don't push these through signals. |
-| `onChange` | `EngineState` | On `snap` / `dragstart` / `dragend`. |
+| `onSnap` | `id` | The sheet settled on a point |
+| `onOpen`, `onOpened` | `id` | It starts to appear; it has landed |
+| `onClose`, `onClosed` | nothing | It starts to leave; it is gone |
+| `onBeforeSnap` | `{ id, size, previousId, cancel }` | Before a move. `cancel()` stops it |
+| `onBeforeClose` | `{ reason, cancel }` | Before a close. `reason` is `programmatic`, `backdrop`, `escape` or `back` |
+| `onDragStart`, `onDragEnd` | `{ size }`, `{ size, velocity }` | A drag begins and ends |
+| `onDrag`, `onProgress` | `{ size, delta }`, `{ value, size }` | Every frame of a drag; every frame of any motion |
+| `onChange` | `EngineState` | After a snap, and when a drag starts or ends |
 
-`onBeforeSnap` / `onBeforeClose` cancel synchronously — Solid callbacks run
-inline, so vetoing works (unlike Qwik's async QRLs).
+`cancel()` must be called synchronously, inside the callback. `onDrag` and
+`onProgress` are subscribed only if they are present when the component
+mounts; write to the DOM from them, not to a signal.
 
-## Recipe (engine-direct)
+### Props you can change after mount
 
-If you need full control — multiple sheets sharing one engine, custom DOM
-shape, embedding the engine in a Solid `<Show>` boundary that mounts
-asynchronously — drop the adapter and wire `BottomSheetEngine` directly:
+`open`, `snapPoints`, `allowed`, `mode`, `radius`, `maxHeight`, `persistent`,
+`disableClose`, `disableDrag`, `dragFrom` and `dragFromContent` follow their
+signals. For the rest, either call the engine (`sheet.setBackdropColor(…)`) or
+remount the component inside a `<Show>`.
 
-```tsx
-import { createSignal, onMount, onCleanup, For } from "solid-js";
-import { BottomSheetEngine, type EngineState } from "@surdeddd/bottom-sheet";
-import "@surdeddd/bottom-sheet/styles";
+## Server rendering
 
-export const BottomSheet = (props: { items: { title: string; sub: string }[] }) => {
-  let sheetEl!: HTMLElement;
-  let handleEl!: HTMLElement;
-  let contentEl!: HTMLElement;
-  let backdropEl!: HTMLElement;
+The adapter can be imported and rendered on the server; the engine attaches in
+`onMount`. A sheet that starts closed is rendered with
+`data-bs-rest="closed"`, which hides it until then.
 
-  const [state, setState] = createSignal<EngineState>({
-    size: 0, activeId: "", isDragging: false, isAnimating: false, progress: 0,
-  });
-  let engine: BottomSheetEngine | null = null;
+The package has a `solid` export condition that points at the JSX source, so
+SolidStart compiles the component with your own Solid toolchain, for both the
+server and the client.
 
-  onMount(() => {
-    engine = new BottomSheetEngine({
-      element: sheetEl,
-      handle: handleEl,
-      scrollContainer: contentEl,
-      backdrop: backdropEl,
-      snapPoints: [
-        { id: "min", size: 96 },
-        { id: "half", size: "45%" },
-        { id: "full", size: "85%" },
-      ],
-      initial: "min",
-      animation: "spring",
-    });
-    const sync = () => setState({ ...engine!.state });
-    engine.on("snap", sync);
-    engine.on("dragstart", sync);
-    engine.on("dragend", sync);
-    sync();
-  });
+## Things to know
 
-  onCleanup(() => engine?.destroy());
-
-  return (
-    <div class="bs-root">
-      <div class="bs-backdrop" ref={backdropEl} />
-      <section class="bs-sheet" ref={sheetEl} data-mode="bottom" role="dialog">
-        <div class="bs-handle" ref={handleEl} role="slider" tabIndex={0}>
-          <h2>Search</h2>
-        </div>
-        <div class="bs-content" ref={contentEl}>
-          <For each={props.items}>
-            {item => (
-              <div class="sheet-item">
-                <strong>{item.title}</strong>
-                <span>{item.sub}</span>
-              </div>
-            )}
-          </For>
-        </div>
-      </section>
-      <p>active: {state().activeId} ({(state().progress * 100).toFixed(0)}%)</p>
-    </div>
-  );
-};
-```
-
-## One-shot construction
-
-The engine is constructed once inside `onMount` from the props read at that
-moment. Subsequent changes to `snapPoints` / `allowed` / `mode` props after
-mount do **not** auto-recreate the engine — Solid signals don't propagate
-through to the imperative engine state. For runtime updates, capture the
-engine via the `engineRef` callback prop and drive it directly:
-
-```tsx
-let engine: BottomSheetEngine | null = null;
-// On the component: <BottomSheet engineRef={(e) => (engine = e)} ... />
-
-createEffect(() => {
-  engine?.setAllowed(formDirty() ? ["full"] : ["min", "full"]);
-});
-
-// Subscribe to events:
-onMount(() => {
-  const off = engine?.on("before-snap", e => {
-    if (formDirty() && e.id === "closed") e.cancel();
-  });
-  onCleanup(() => off?.());
-});
-```
-
-Engine recreation (changing `mode`, `animation`, `focusTrap`) requires a
-`<Show>`-gated remount with a fresh component instance.
-
-## Notes
-
-- Solid's `createSignal` already gives you fine-grained reactivity — equivalent
-  to React's `useSyncExternalStore` settled-snapshot pattern.
-- Subscribe only to `snap` / `dragstart` / `dragend` for reactive state. Use
-  `engine.on("progress", ...)` imperatively if you need 60 fps progress —
-  update the DOM directly, don't push through signals.
-- The bundled adapter ships as `dist/solid.js`, held to a 20.5 KB gzip budget
-  (engine + adapter + types) by `size-limit` in CI. Solid also gets a
-  preserved-JSX source bundle via the `"solid"` export condition, so
-  SSR/hydration compiles against your app's Solid toolchain.
+- **Do not set `z-index` on `.bs-sheet`, `.bs-backdrop` or anchors.** The
+  engine writes it on every change of the stack. See
+  [Theming → stacking](theming.md#stacking).
+- **Anchors and scrim stages** have no props on this component. Add them
+  through the engine: `sheet.addAnchor()` and `sheet.setScrimStages()`; see
+  [Anchors and scrim stages](anchors.md).

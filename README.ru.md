@@ -1,60 +1,54 @@
 # @surdeddd/bottom-sheet
 
-English: [README.md](./README.md)
+Нижняя шторка (bottom sheet), боковая панель и модальный лист для веба. Один
+движок жестов с точками привязки, пружинной физикой и управлением с
+клавиатуры, и тот же движок под адаптерами для **React, Vue 3, Svelte 5,
+Solid, Qwik, Preact** и под **веб-компонентом** `<bottom-sheet>`, который
+работает в Angular, Lit, Astro и в обычном HTML.
 
-> Универсальный headless-движок bottom sheet. **Одно ядро, восемь адаптеров, GPU-ускорение, полное покрытие тестами.**
-
-![bundle](https://img.shields.io/badge/core-%E2%89%A425.2%20KB%20gzip%20budget-1a1614?style=flat-square)
-![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.5%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-930%2B%20unit-2ea44f?style=flat-square)
-![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
+[![npm](https://img.shields.io/npm/v/@surdeddd/bottom-sheet?style=flat-square&color=1a1614)](https://www.npmjs.com/package/@surdeddd/bottom-sheet)
+[![downloads](https://img.shields.io/npm/dm/@surdeddd/bottom-sheet?style=flat-square&color=1a1614)](https://www.npmjs.com/package/@surdeddd/bottom-sheet)
+![core size](https://img.shields.io/badge/core-25.6%20KB%20gzip-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-1000%2B%20unit%20%C2%B7%20340%20e2e%20per%20engine-2ea44f?style=flat-square)
+![types](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
-Фреймворк-независимый примитив bottom sheet. Spring-физика, Pointer Events,
-анимации только на GPU, полноценная клавиатурная a11y, перехват аппаратной
-кнопки «Назад», стек из нескольких sheet — и один и тот же движок под каждым
-адаптером.
-
-## 🚀 [Живое демо → bottom-sheet-demo-ashy.vercel.app](https://bottom-sheet-demo-ashy.vercel.app)
-
-📚 [Справочник API (typedoc) → surdeddd.github.io/BottomSheet](https://surdeddd.github.io/BottomSheet/)
+**[Живое демо](https://bottom-sheet-demo-ashy.vercel.app)** ·
+**[Справочник API](https://surdeddd.github.io/BottomSheet/)** ·
+[История изменений](CHANGELOG.md) ·
+[English](https://github.com/Surdeddd/BottomSheet/blob/main/README.md)
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/sheet-dark.png" />
-    <img src="docs/screenshots/sheet-light.png" alt="bottom sheet на средней snap point поверх затемнённой страницы" width="420" />
+    <img src="docs/screenshots/sheet-light.png" alt="Шторка на средней точке привязки поверх затемнённой страницы" width="380" />
   </picture>
+  <img src="https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/gifs/01-drag-to-close.gif" alt="Шторку перетаскивают между точками привязки и закрывают броском" width="300" />
 </p>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/gifs/01-drag-to-close.gif" alt="перетаскивание для закрытия — spring-физика" width="380" />
-</p>
+## Чем она отличается
 
-<p align="center">
-  <img src="docs/assets/architecture.svg" alt="Одно ядро движка питает восемь адаптеров — React, Preact, Vue 3, Svelte, Solid, Qwik, Web Component и Vanilla — плюс отдельный subpath /overlay" width="720" />
-</p>
-
-## Возможности
-
-Всё перечисленное ниже можно проверить в `src/` этого репозитория:
-
-- **8 целей сборки** — React, Preact, Vue 3, Svelte 5, Solid, Qwik, Web
-  Component (`<bottom-sheet>`, совместимый с Lit) и vanilla-ядро, плюс
-  subpath `/overlay` (отдельная выезжающая панель).
-- **4 оси** — `bottom`, `top`, `left`, `right` (через `mode`).
-- **Spring-физика с переносом скорости**, плюс настройка под тип указателя
-  (отдельные пороги drag для touch / mouse / pen).
-- **Перехват аппаратной кнопки «Назад»** на Android — включается опцией
-  `closeOnBack`.
-- **Отступы с учётом `env(safe-area-inset-*)`**, чтобы ряды кнопок не
-  попадали под индикатор «Домой».
-- **Клавиатурный слайдер по WCAG 2.1 AA** — шаги Arrow/Home/End/Esc, focus
-  trap с возвратом фокуса.
-- **Стек из нескольких sheet** и типизированный реестр sheet manager.
-- **Отменяемые `before-snap` / `before-close`** — переход можно
-  синхронно заблокировать.
-- Под капотом 930+ unit-тестов и ~330 e2e-тестов Playwright на каждом из
-  трёх браузерных движков (`mobile-chrome` / `mobile-safari` / `firefox`).
+- **Один движок на все фреймворки.** Компонент в React ведёт себя так же,
+  как в Vue, Svelte, Solid, Qwik или в веб-компоненте: это тонкие адаптеры
+  над одним ядром.
+- **Точки привязки в любых единицах.** Пиксели, проценты, `fit` (высота
+  самого содержимого) или любая длина CSS: `50dvh`,
+  `clamp(200px, 60%, 800px)`.
+- **Четыре края.** `bottom`, `top`, `left`, `right`, а также `start` и `end`,
+  которые следуют за направлением письма.
+- **Ощущается как нативная.** Пружина, которая подхватывает скорость пальца,
+  резиновое сопротивление за крайней точкой, отдельные пороги для пальца и
+  мыши, движение только на композиторе.
+- **Доступность.** Ручка работает как слайдер с клавиатуры, фокус можно
+  запереть в шторке и вернуть обратно, всё за модальной шторкой получает
+  `inert`, учитываются reduced motion и forced colors.
+- **Знает про телефон.** Встаёт на экранную клавиатуру, учитывает безопасные
+  зоны, закрывается кнопкой «Назад», блокирует прокрутку страницы способом,
+  который работает в iOS.
+- **Стек.** Несколько шторок открыты одновременно, у каждой свой бэкдроп и
+  своя область фокуса.
+- **Небольшой размер.** 25.6 KB gzip у полного движка, 21.9 KB у
+  облегчённого ядра, зависимостей в рантайме нет.
 
 ## Установка
 
@@ -62,681 +56,630 @@ English: [README.md](./README.md)
 npm i @surdeddd/bottom-sheet
 ```
 
-React / Vue / Svelte указаны как **опциональные peer deps** — ставьте только
-тот фреймворк, который используете: в бандл попадает только его адаптер.
+Фреймворки объявлены необязательными peer-зависимостями: ставится только
+тот, которым вы пользуетесь.
 
 ## Быстрый старт
 
-### React
+### Модальная шторка по кнопке
 
 ```tsx
+import { useState } from 'react';
 import { BottomSheet } from '@surdeddd/bottom-sheet/react';
 import '@surdeddd/bottom-sheet/styles';
 
-<BottomSheet
-  snapPoints={[
-    { id: 'minimized', size: 96 },
-    { id: 'half', size: '45dvh' },
-    { id: 'full', size: '85%' },
-  ]}
-  initial='minimized'
-  animation='spring'
-  spring={{ stiffness: 260, damping: 28 }}
-  focusTrap
-  closeOnEscape
-  header={<h2>Search vehicles</h2>}
->
-  <YourList />
-</BottomSheet>;
+export function Filters() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        snapPoints={[
+          { id: 'closed', size: 0 },
+          { id: 'open', size: 'fit' },
+        ]}
+        focusTrap
+        header={<h2>Filters</h2>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
 ```
 
-[Полная документация по React →](docs/react.md)
+Пропсу `open` нужна точка привязки размером `0`: это и есть закрытое
+состояние. Тап по бэкдропу, Escape и перетаскивание вниз закрывают шторку и
+сообщают об этом через `onOpenChange`.
 
-### Vue 3
+### Шторка, которая всегда на экране
+
+Как в картах: полоса снизу, которую тянут вверх.
+
+```tsx
+<BottomSheet
+  snapPoints={[
+    { id: 'peek', size: 96 },
+    { id: 'half', size: '45dvh' },
+    { id: 'full', size: '90%' },
+  ]}
+  initial="peek"
+  header={<h2>Nearby</h2>}
+>
+  <PlaceList />
+</BottomSheet>
+```
+
+### Другие фреймворки
+
+<details>
+<summary><b>Vue 3</b></summary>
 
 ```vue
-<script setup>
-  import { BottomSheet } from '@surdeddd/bottom-sheet/vue';
-  import '@surdeddd/bottom-sheet/styles';
+<script setup lang="ts">
+import { ref } from 'vue';
+import { BottomSheet } from '@surdeddd/bottom-sheet/vue';
+import '@surdeddd/bottom-sheet/styles';
+
+const open = ref(false);
+const points = [
+  { id: 'closed', size: 0 },
+  { id: 'open', size: 'fit' },
+];
 </script>
 
 <template>
-  <BottomSheet
-    :snap-points="snaps"
-    initial="minimized"
-    focus-trap
-    @snap="onSnap"
-  >
-    <template #header><h2>Search</h2></template>
-    <YourList />
+  <button @click="open = true">Filters</button>
+  <BottomSheet v-model:open="open" :snap-points="points" focus-trap>
+    <template #header><h2>Filters</h2></template>
+    <FilterForm />
   </BottomSheet>
 </template>
 ```
 
-[Полная документация по Vue →](docs/vue.md)
+[Гайд по Vue →](docs/vue.md)
 
-### Svelte 5
+</details>
+
+<details>
+<summary><b>Svelte 5</b></summary>
 
 ```svelte
 <script lang="ts">
-  import { createBottomSheet } from "@surdeddd/bottom-sheet/svelte";
-  import "@surdeddd/bottom-sheet/styles";
+  import { BottomSheet } from '@surdeddd/bottom-sheet/svelte';
+  import '@surdeddd/bottom-sheet/styles';
 
-  let sheetEl: HTMLElement | undefined = $state();
-  let handleEl: HTMLElement | undefined = $state();
-  let contentEl: HTMLElement | undefined = $state();
-
-  const ctrl = createBottomSheet({
-    snapPoints: [{ id: "min", size: 96 }, { id: "full", size: "85%" }],
-    initial: "min",
-  });
-
-  $effect(() => {
-    if (!sheetEl) return;
-    return ctrl.attach({ element: sheetEl, handle: handleEl, scrollContainer: contentEl });
-  });
+  let open = $state(false);
 </script>
 
-<section class="bs-sheet" bind:this={sheetEl} data-mode="bottom">
-  <div class="bs-handle" bind:this={handleEl}><h2>Search</h2></div>
-  <div class="bs-content" bind:this={contentEl}><!-- list --></div>
-</section>
+<button onclick={() => (open = true)}>Filters</button>
+
+<BottomSheet
+  bind:open
+  snapPoints={[{ id: 'closed', size: 0 }, { id: 'open', size: 'fit' }]}
+  focusTrap
+>
+  {#snippet header()}<h2>Filters</h2>{/snippet}
+  {#snippet children()}<FilterForm />{/snippet}
+</BottomSheet>
 ```
 
-[Полная документация по Svelte →](docs/svelte.md)
+[Гайд по Svelte →](docs/svelte.md)
 
-### Web Component (любой фреймворк)
+</details>
+
+<details>
+<summary><b>Solid</b></summary>
+
+```tsx
+import { createSignal } from 'solid-js';
+import { BottomSheet } from '@surdeddd/bottom-sheet/solid';
+import '@surdeddd/bottom-sheet/styles';
+
+export function Filters() {
+  const [open, setOpen] = createSignal(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+      <BottomSheet
+        open={open()}
+        onOpenChange={setOpen}
+        snapPoints={[{ id: 'closed', size: 0 }, { id: 'open', size: 'fit' }]}
+        focusTrap
+        header={<h2>Filters</h2>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
+```
+
+[Гайд по Solid →](docs/solid.md)
+
+</details>
+
+<details>
+<summary><b>Qwik</b></summary>
+
+```tsx
+import { component$, useSignal } from '@builder.io/qwik';
+import { BottomSheet } from '@surdeddd/bottom-sheet/qwik';
+import '@surdeddd/bottom-sheet/styles';
+
+export const Filters = component$(() => {
+  const open = useSignal(false);
+  return (
+    <>
+      <button onClick$={() => (open.value = true)}>Filters</button>
+      <BottomSheet
+        open={open.value}
+        onOpenChange$={next => (open.value = next)}
+        snapPoints={[{ id: 'closed', size: 0 }, { id: 'open', size: 'fit' }]}
+        focusTrap
+      >
+        <h2 q:slot="header">Filters</h2>
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+});
+```
+
+[Гайд по Qwik →](docs/qwik.md)
+
+</details>
+
+<details>
+<summary><b>Веб-компонент</b> (Angular, Lit, Astro, обычный HTML)</summary>
 
 ```html
-<link rel="stylesheet" href="/styles.css" />
-<script type="module" src="/element.js"></script>
+<script type="module">
+  import '@surdeddd/bottom-sheet/element';
+</script>
 
-<bottom-sheet
-  snap-points='[{"id":"min","size":96},{"id":"full","size":"85%"}]'
-  initial="min"
-  animation="spring"
-  focus-trap="true"
->
-  <h2 slot="header">Search</h2>
-  <ul>
-    ...
-  </ul>
+<button onclick="document.querySelector('bottom-sheet').open()">Filters</button>
+
+<bottom-sheet snap-points="closed:0,open:fit" focus-trap="true">
+  <h2 slot="header">Filters</h2>
+  <form>…</form>
 </bottom-sheet>
 ```
 
-[Полная документация по Web Component →](docs/web-component.md)
-
-### CDN — без сборщика и установки
-
-Готовое подключение из статической HTML-страницы. IIFE-бандл регистрирует
-`<bottom-sheet>` как побочный эффект — JS-обвязка не нужна.
+Стили элемент несёт в собственном shadow root, отдельная таблица стилей не
+нужна. Без сборщика подключите его с CDN:
 
 ```html
-<!-- CDN, no bundler -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/@surdeddd/bottom-sheet/dist/styles.css"
-/>
 <script src="https://unpkg.com/@surdeddd/bottom-sheet/dist/element.iife.global.js"></script>
-<bottom-sheet
-  snap-points='[{"id":"min","size":96},{"id":"full","size":"85%"}]'
-  initial="min"
->
-  <h2 slot="header">Title</h2>
-  <p>Content</p>
-</bottom-sheet>
 ```
 
-### Vanilla-ядро (без фреймворка)
+[Гайд по веб-компоненту →](docs/web-component.md)
+
+</details>
+
+<details>
+<summary><b>Без фреймворка</b></summary>
+
+```html
+<div class="bs-root">
+  <div class="bs-backdrop"></div>
+  <section class="bs-sheet" data-mode="bottom" role="dialog" aria-label="Filters">
+    <div class="bs-handle" role="slider" tabindex="0" aria-label="Resize sheet"></div>
+    <div class="bs-content">…</div>
+  </section>
+</div>
+```
 
 ```ts
 import { BottomSheetEngine } from '@surdeddd/bottom-sheet';
 import '@surdeddd/bottom-sheet/styles';
 
-const engine = new BottomSheetEngine({
-  element: document.querySelector('.bs-sheet'),
-  handle: document.querySelector('.bs-handle'),
-  scrollContainer: document.querySelector('.bs-content'),
-  backdrop: document.querySelector('.bs-backdrop'),
+const root = document.querySelector('.bs-root')!;
+const sheet = new BottomSheetEngine({
+  element: root.querySelector('.bs-sheet')!,
+  handle: root.querySelector('.bs-handle')!,
+  scrollContainer: root.querySelector('.bs-content')!,
+  backdrop: root.querySelector('.bs-backdrop')!,
   snapPoints: [
-    { id: 'min', size: 96 },
-    { id: 'full', size: '85%' },
+    { id: 'closed', size: 0 },
+    { id: 'open', size: 'fit' },
   ],
-  animation: 'spring',
+  initial: 'closed',
 });
-engine.snapTo('full');
+
+document.querySelector('#filters')!.addEventListener('click', () => sheet.open());
 ```
 
-[Полная документация по vanilla →](docs/vanilla.md)
+[Гайд по движку без фреймворка →](docs/vanilla.md)
 
-## API кратко
+</details>
 
-### Snap points
+Preact: `@surdeddd/bottom-sheet/preact` — это React-адаптер, работающий через
+`preact/compat` ([гайд](docs/preact.md)). В Angular, Lit и Astro используется
+веб-компонент или сам движок: [Angular](docs/angular.md), [Lit](docs/lit.md),
+[Astro](docs/astro.md).
+
+Гайды в `docs/` написаны на английском.
+
+## Основные понятия
+
+**Точки привязки** (snap points) — размеры, на которых шторка может
+остановиться. У каждой есть `id`, по которому к ней обращаются, и `size`:
 
 ```ts
 type SnapPoint =
-  | number // pixels
-  | `${number}%` // percent of viewport along the axis
-  | 'fit' // natural height of the whole sheet (handle + header + content + footer)
-  | 'content' // alias of 'fit'
-  | 'full' // 100 % of axis
-  | string; // any CSS length — "50dvh", "clamp(200px, 60%, 800px)"
+  | number                 // пиксели
+  | `${number}%`           // доля вьюпорта вдоль оси шторки
+  | 'fit' | 'content'      // высота самой шторки: ручка, шапка, содержимое, подвал
+  | 'full'                 // вся ось
+  | string;                // любая длина CSS: "50dvh", "clamp(200px, 60%, 800px)"
 ```
 
-### Опции движка
+Точка размером `0` — это **закрытое** состояние. Шторку без такой точки
+нельзя закрыть, только свернуть до самой маленькой.
 
-| Опция                | По умолчанию       | Что делает                                                                                                                 |
-| -------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `snapPoints`         | обязательная       | Упорядоченный список `{ id, size }`                                                                                        |
-| `allowed`            | все id             | Подмножество snap point, на которых sheet может остановиться сейчас                                                        |
-| `initial`            | первая из allowed  | Id snap point, с которой стартовать                                                                                        |
-| `mode`               | `"bottom"`         | `bottom`, `top`, `left`, `right` или логические `start` / `end`; в адаптерах React и Vue реактивна                         |
-| `animation`          | `"spring"`         | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy`                                                     |
-| `settleAnimation`    | выкл.              | `"waapi"` — финальная доводка идёт как Web Animation на compositor (заранее насэмплированные spring-кейфреймы); при необходимости автоматически откатывается на rAF |
-| `features`           | все по умолчанию   | `EngineFeature[]` — переопределить/расширить набор composable-фич (см. «Slim core» ниже)                                   |
-| `spring`             | snappy             | `{ stiffness, damping, mass }`                                                                                             |
-| `duration`, `easing` | `220 ms`, ease-out-back | Длительность и кривая анимации `tween`; `easing` — функция `(t: number) => number`                             |
-| `respectReducedMotion` | `true`           | При `prefers-reduced-motion: reduce` sheet сразу встаёт в точку, без анимации                                              |
-| `flickVelocity`      | `0.65 px/ms`       | Порог флика для касания и пера. У мыши порог фиксированный: 0.4 px/ms                                                      |
-| `dragThreshold`      | `18 px`            | Жест касанием или пером короче этого возвращает sheet назад. У мыши порог фиксированный: 12 px                             |
-| `rubberBand`         | `true`             | Мягкое «резиновое» перетягивание в стиле iOS                                                                               |
-| `backdropRange`      | `[0, 1]`           | Диапазон progress, в котором backdrop проявляется                                                                          |
-| `screenRange`        | `[0, 1]`           | Диапазон progress, в котором проявляется контент `screen`/scrim                                                            |
-| `scrimMode`          | `"full"`           | Где лежит scrim: на весь экран (`full`), только до края sheet (`above-sheet`) или выключен (`off`)                         |
-| `scrimPreset`        | нет                | `subtle`, `standard`, `monitoring` или `cinematic` — цвет, размытие и диапазон одной опцией                                |
-| `scrimColor`, `scrimBlur` | из пресета    | Заливка scrim и радиус его размытия `backdrop-filter`                                                                      |
-| `scrimInteractive`   | `false`            | Scrim принимает указатель на себя, а не пропускает его к странице                                                          |
-| `scrimTapToClose`    | `false`            | Тап по scrim закрывает sheet                                                                                               |
-| `focusTrap`          | `false`            | Удерживать Tab-фокус внутри sheet, пока он верхний. Попап, отрисованный вне sheet (выпадающий список, датапикер), пометьте `data-bs-focus-allow` — фокус сможет уходить в него |
-| `initialFocus`       | первое поле        | Элемент / селектор, получающий фокус при открытии; `false` фокусирует контейнер sheet (`tabindex=-1`) — так не открывается клавиатура iOS |
-| `closeOnEscape`      | `true`             | Слушать Escape и закрывать                                                                                                 |
-| `closeOnBack`        | `false`            | Закрывать по кнопке «Назад». Кладёт запись в историю, сохраняя `history.state` роутера; см. `historySettled()` ниже        |
-| `routedTo`           | нет                | URL, который кладётся в историю, пока sheet открыт; «Назад» закрывает sheet и возвращает прежний адрес                     |
-| `closeOnRouteChange` | `false`            | Закрывать при смене URL (`pushState` / `replaceState` / popstate). Вызов History API с тем же адресом не считается          |
-| `lockBodyScroll`     | `true`             | Блокировка прокрутки body, безопасная для iOS (`position: fixed`)                                                          |
-| `stackEffect`        | `false`            | Стек карточек как в iOS: нижние sheet уменьшаются с глубиной                                                               |
-| `inertSiblings`      | `false`            | Помечать `inert` всё вне sheet, пока он верхний (полноценная модалка)                                                      |
-| `persistent`         | `false`            | Запретить закрытие пользователем (backdrop / Escape / «Назад»); программный `close()` работает                             |
-| `disableClose`       | `false`            | Запретить любое закрытие: программное, перетаскивание в закрытую точку, клавиши на handle                                  |
-| `disableDrag`        | `false`            | Отключить жест drag (императивные snap продолжают работать)                                                                |
-| `dragFrom`           | `"handle"`         | Какие области запускают drag: `"handle"`, `"sheet"` (весь sheet) или `"zones"` (только поддеревья `[data-bs-drag]`). Если handle не задан, по умолчанию `"sheet"`. `[data-bs-no-drag]` исключает поддерево в любом режиме. Также `setDragFrom()` / `getDragFrom()` — переключение перемонтирует жест, без перемонтирования компонента |
-| `dragFromContent`    | `true`             | Тянет ли sheet touch-жест на scroll-контейнере; переопределяется для отдельной snap point через `{ id, size, dragFromContent: false }`. Также `setDragFromContent()` |
-| `fitContentToSnap`   | `false`            | Делает весь scroll-контейнер достижимым, а footer видимым на каждой snap point, а не только на самой большой. По умолчанию выключено; см. [Контент достижим на каждой snap point](#контент-достижим-на-каждой-snap-point) |
-| `radius`             | токен по умолчанию | Радиус скругления (`string` — CSS-длина или `number` — px); также `setRadius()`                                            |
-| `maxHeight`          | нет                | Ограничение высоты sheet. `number` (px) или строка (`"92dvh"`, `"50%"`), пересчитывается при смене viewport / ориентации   |
-| `returnFocusTo`      | opener             | Куда вернуть фокус при закрытии — `HTMLElement`, строка-селектор или фабрика `() => HTMLElement`                           |
-| `persistKey`         | нет                | Ключ `localStorage`: sheet запоминает последнюю точку и в следующий раз стартует с неё                                     |
-| `autoCollapseAfter`  | выкл.              | Через сколько миллисекунд покоя sheet возвращается к наименьшей открытой точке                                             |
-| `linkedSheets`       | нет                | Другие движки, которые сворачиваются к наименьшей открытой точке, когда открывается этот; также `setLinkedSheets()`        |
-| `viewTransitions`    | `false`            | Переход между точками через `document.startViewTransition()`, где браузер это умеет                                        |
+**Три слоя.** Сама *шторка*, *бэкдроп*, который затемняет страницу, и
+необязательный *скрим* (`screen`) для содержимого, которое проявляется за
+шторкой: превью карты, размытая подложка.
 
-### Anchored-элементы, docked-бары и сцены scrim
+**Состояние** — один объект: `{ activeId, size, progress, phase, isDragging,
+isAnimating }`. `progress` идёт от 0 на самой маленькой разрешённой точке до
+1 на самой большой. `phase` принимает значения `closed`, `opening`, `open` и
+`closing`.
 
-Закрепляйте UI вокруг sheet — он едет вместе с ним на compositor (ноль JS на
-кадр) и показывается/скрывается по состоянию с настраиваемой анимацией:
+## API
+
+Все опции, методы и события ниже работают одинаково в каждом адаптере.
+Компоненты принимают опции как пропсы (`focus-trap` в шаблонах Vue,
+`focus-trap="true"` у веб-компонента).
+
+### Опции
+
+Размер и положение
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `snapPoints` | обязательна | Список `{ id, size }` |
+| `allowed` | все id | Точки, на которых шторка может остановиться сейчас |
+| `initial` | первая разрешённая | Точка, с которой шторка начинает. Если её размер больше `0`, шторка появляется открытой, без события `open` |
+| `mode` | `"bottom"` | Край: `bottom`, `top`, `left`, `right` или `start` / `end` |
+| `maxHeight` | нет | Предел размера шторки: пиксели или длина CSS, которая пересчитывается при изменении вьюпорта |
+| `radius` | `20px` | Радиус скругления |
+| `fitContentToSnap` | `false` | Вся прокручиваемая область и подвал достижимы на каждой точке, а не только на самой большой. [Подробнее](docs/content-fit.md) |
+
+Движение
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `animation` | `"spring"` | `spring`, `ios-spring`, `material-bounce`, `snappy`, `tween`, `linear` |
+| `spring` | из пресета | `{ stiffness, damping, mass }` |
+| `duration`, `easing` | `220`, ease-out-back | Длительность в мс и кривая `(t) => number` для анимации `tween` |
+| `settleAnimation` | выключена | `"waapi"` выполняет посадку как Web Animation на композиторе |
+| `respectReducedMotion` | `true` | При `prefers-reduced-motion: reduce` шторка сразу встаёт на точку |
+| `viewTransitions` | `false` | Переход между точками через `document.startViewTransition()`, если браузер его умеет |
+
+Жесты
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `dragFrom` | `"handle"` | Откуда можно начать перетаскивание: с ручки (`handle`), со всей шторки (`sheet`) или только из зон `[data-bs-drag]` (`zones`). `[data-bs-no-drag]` исключает поддерево. У шторки без ручки по умолчанию `sheet` |
+| `dragFromContent` | `true` | Тянет ли шторку касание по прокручиваемой области. Можно задать для отдельной точки: `{ id, size, dragFromContent: false }` |
+| `disableDrag` | `false` | Отключает жест; методы продолжают работать |
+| `rubberBand` | `true` | Мягкое сопротивление за крайней точкой |
+| `flickVelocity` | `0.65` px/мс | Скорость, с которой отпускание пальца или пера считается броском. Для мыши порог фиксированный: 0.4 |
+| `dragThreshold` | `18` px | Перетаскивание пальцем или пером короче этого возвращает шторку назад. Для мыши порог фиксированный: 12 |
+
+Закрытие
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `closeOnEscape` | `true` | Escape закрывает верхнюю шторку |
+| `closeOnBack` | `false` | Кнопка «Назад» закрывает шторку и не уводит со страницы |
+| `routedTo` | нет | URL, который показывается, пока шторка открыта; «Назад» закрывает её и возвращает адрес |
+| `closeOnRouteChange` | `false` | Закрыть при смене URL |
+| `persistent` | `false` | Пользователь не может закрыть шторку: ни тапом по бэкдропу, ни Escape, ни «Назад», ни жестом, ни клавишами. `close()` по-прежнему закрывает |
+| `disableClose` | `false` | Шторку не закрывает ничто, включая `close()` |
+
+Фокус и доступность
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `focusTrap` | `false` | Переносит фокус в шторку при открытии, держит Tab внутри, пока она верхняя, и возвращает фокус при закрытии. Попап, который рисуется в другом месте, пометьте `data-bs-focus-allow`, и фокус сможет туда уйти |
+| `initialFocus` | первый фокусируемый | Вместе с `focusTrap`: элемент или селектор, который получит фокус при открытии. Первый фокусируемый элемент — ручка; `false` ставит фокус на саму шторку |
+| `returnFocusTo` | нет | Элемент, селектор или функция: куда отправить фокус при закрытии. Ловушка фокуса и так возвращает его туда, где он был |
+| `inertSiblings` | `false` | Делает всё вне шторки `inert`, пока она верхняя |
+| `lockBodyScroll` | `true` | Блокирует прокрутку страницы, пока шторка открыта |
+
+Бэкдроп и скрим
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `backdropRange` | `[0, 1]` | Отрезок `progress`, на котором проявляется бэкдроп |
+| `backdropOpacity` | `1` | Непрозрачность, которой бэкдроп достигает в конце этого отрезка |
+| `backdropColor` | `rgb(0 0 0 / 0.5)` | Цвет бэкдропа; то же, что токен `--bs-backdrop-color` |
+| `screenRange` | `[0, 1]` | Такой же отрезок для скрима |
+| `scrimMode` | `"full"` | `full` — на весь экран, `above-sheet` — до края шторки, `off` — без слоя |
+| `scrimPreset` | нет | `subtle`, `standard`, `monitoring`, `cinematic`: цвет, размытие и отрезок одной опцией |
+| `scrimColor`, `scrimBlur` | из пресета | Заливка скрима и радиус его размытия `backdrop-filter` |
+| `scrimInteractive` | `false` | Скрим принимает указатель сам, а не пропускает его на страницу |
+| `scrimTapToClose` | `false` | Тап по скриму закрывает шторку |
+
+Остальное
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `stackEffect` | `false` | Уменьшает шторки под верхней, как стопка карточек в iOS |
+| `persistKey` | нет | Ключ `localStorage`: шторка начинает с точки, на которой её оставили |
+| `autoCollapseAfter` | выключена | Через сколько миллисекунд покоя шторка вернётся на самую маленькую открытую точку |
+| `linkedSheets` | нет | Другие движки, которые сворачиваются, когда открывается этот |
+| `features` | все | Список возможностей для [облегчённого ядра](#облегчённое-ядро) |
+
+Компоненты добавляют несколько собственных пропсов:
+
+| Проп | По умолчанию | Что делает |
+| --- | --- | --- |
+| `open`, `onOpenChange` | неуправляемый | Управляемое состояние «открыта». `v-model:open` во Vue, `bind:open` в Svelte, `onOpenChange$` в Qwik, атрибут `open` у веб-компонента |
+| `snap` | неуправляемый | Активная точка привязки как проп: `v-model:snap` во Vue, `bind:snap` в Svelte, `snap` вместе с `onSnap$` в Qwik, атрибут `snap` у веб-компонента. В React и Solid для этого есть ref |
+| `header`, `footer` | нет | Области над прокручиваемой частью и под ней (слоты во Vue, сниппеты в Svelte) |
+| `backdrop` | `true` | Рисовать бэкдроп |
+| `closeOnBackdrop` | `true` | Тап по бэкдропу закрывает шторку |
+| `teleportTo` | нет | Переносит DOM шторки из предка, который её обрезает или трансформирует |
+| `ariaLabel` | `"Bottom sheet"` | Доступное имя шторки |
+| `handleLabel`, `contentLabel` | на английском | Доступные имена ручки и прокручиваемой области, для приложений на другом языке |
+
+### Методы
 
 ```ts
-engine.addAnchor({
-  element: closeBtn,
-  position: 'sheet-top-right', // rides the sheet edge; 9 screen positions too
-  showOn: ['half', 'full'],    // snap ids or a predicate
-  animation: 'pop',            // fade | scale | slide | pop | custom keyframes
-});
+sheet.open();              // закрыта → первая разрешённая открытая точка; открытая остаётся на месте
+sheet.open('half');        // на конкретную точку
+sheet.close();             // → закрытая точка; если её нет, самая маленькая
+sheet.snapTo('full');
+sheet.expand();            // → самая большая разрешённая точка
+sheet.collapse();          // → самая маленькая разрешённая открытая точка
 
-engine.addAnchor({
-  element: tabBar,
-  position: 'dock-bottom',     // full-width bar; the sheet slides under it
-});
+sheet.setAllowed(['half', 'full']);        // сменить набор разрешённых точек
+sheet.setSnapPoints(points);               // заменить точки
+sheet.recompute();                         // перемерить точку 'fit'
+sheet.setMode('right');
+sheet.setPersistent(true);
+sheet.setDisableClose(true);
+sheet.setDisableDrag(true);
+sheet.setRadius('28px');
+sheet.setMaxHeight('92dvh');
+sheet.setBackdropOpacity(0.6);
+sheet.setBackdropColor('rgb(0 0 0 / 0.4)');
 
-engine.setScrimStages({
-  stages: [
-    { for: 'peek', element: teaser },
-    { forRange: [0.5, 1], element: expanded },
-  ],
-  animation: 'fade',
-});
+sheet.state;               // { activeId, size, progress, phase, isDragging, isAnimating }
+sheet.getResolvedSnaps();  // [{ id, size }] в пикселях на этот момент
+sheet.canDismiss();        // false при persistent или disableClose
+sheet.isTop();             // верхняя ли она в стеке
+sheet.destroy();
 ```
 
-[Полная документация по anchors и stages →](docs/anchors.md)
+`open()`, `close()` и `snapTo()` возвращают промис, который завершается,
+когда шторка встала на место. Их можно вызывать в том же тике, в котором
+шторка смонтирована.
+
+Если `setAllowed()` или `setSnapPoints()` убирают активную точку, открытая
+шторка переходит на ближайшую точку, на которой она остаётся открытой.
+
+В компонентах эти методы доступны через ref (`ref.current.open()`), у
+веб-компонента — на самом элементе (`el.open()`), у композабла — на
+объекте, который он возвращает. Всё, чего там нет, достаётся через
+`getEngine()`.
 
 ### События
 
 ```ts
-engine.on('snap', ({ id, size, progress }) => {}); // settled state change
-engine.on('open', ({ id }) => {}); // 0 → >0 (enter starts)
-engine.on('opened', ({ id }) => {}); // enter settled
-engine.on('close', () => {}); // → 0 (exit starts)
-engine.on('closed', () => {}); // exit settled
-engine.on('dragstart', ({ size }) => {});
-engine.on('drag', ({ size, delta }) => {}); // ~60 fps — payload is pooled, don't retain
-engine.on('dragend', ({ size, velocity }) => {});
-engine.on('progress', ({ value, size }) => {}); // ~60 fps
+sheet.on('open', ({ id }) => {});       // шторка начинает появляться
+sheet.on('opened', ({ id }) => {});     // встала на место
+sheet.on('close', () => {});            // начинает уходить
+sheet.on('closed', () => {});           // ушла: размонтировать нужно здесь
+sheet.on('snap', ({ id, size, progress }) => {});   // остановилась на точке
 
-// Cancelable — call cancel() synchronously to veto the transition:
-engine.on('before-snap', ({ id, size, previousId, cancel }) => {});
-engine.on('before-close', ({ reason, cancel }) => {}); // reason: programmatic | backdrop | escape | back
+sheet.on('dragstart', ({ size }) => {});
+sheet.on('drag', ({ size, delta }) => {});          // каждый кадр
+sheet.on('dragend', ({ size, velocity }) => {});
+sheet.on('progress', ({ value, size }) => {});      // каждый кадр любого движения
+
+sheet.on('before-snap', ({ id, previousId, cancel }) => {});
+sheet.on('before-close', ({ reason, cancel }) => {});
 ```
 
-`open` и `close` приходят в начале перехода — вместе с блокировкой прокрутки,
-ловушкой фокуса и записью в истории, — а `opened` и `closed` при посадке.
-Переход, развёрнутый на полпути, объявляется заново (`close`, `open`,
-`opened`), поэтому `open` и `close` строго чередуются, а `opened` / `closed`
-пропускаются, если посадки не было. Размонтировать sheet нужно по `closed`, а
-не по `close`. `engine.state.phase` принимает значения `closed`, `opening`,
-`open`, `closing`.
+Чтобы остановить переход, вызовите `cancel()` синхронно внутри `before-snap`
+или `before-close`; `reason` — это `programmatic`, `backdrop`, `escape` или
+`back`.
 
-### Императивный API
+Блокировка прокрутки, ловушка фокуса и запись в истории включаются на
+`open`. Запись в истории снимается на `close`, блокировка и ловушка — на
+`closed`, когда шторки уже нет. Переход, развёрнутый на полпути, снова
+вызывает `open` или `close`, поэтому эти два события всегда чередуются.
 
-```ts
-engine.snapTo('half');
-engine.open(); // → first allowed snap with resolved size > 0
-engine.close(reason?); // → first snap that resolves to size 0, else first allowed
-engine.expand(); // → largest allowed snap
-engine.collapse(); // → smallest allowed snap with size > 0
-engine.setAllowed(ids, snapId); // dynamic allowlist
-engine.setSnapPoints(points); // re-measure
-engine.recompute(); // re-measure a 'fit' / 'content' snap on demand
-engine.getResolvedSnaps(); // → [{ id, size }] resolved to pixels right now
-engine.setPersistent(bool); // toggle persistence (block dismissal) at runtime
-engine.setDisableClose(bool); // toggle close-blocking at runtime
-engine.setDisableDrag(bool); // toggle the drag gesture at runtime
-engine.setRadius('28px'); // corner radius
-engine.setMaxHeight('92dvh'); // height cap (re-resolved on viewport change)
-engine.canDismiss(); // false when persistent / disableClose
-engine.state.phase; // 'closed' | 'opening' | 'open' | 'closing'
-engine.isTop(); // top of the multi-sheet stack?
-engine.depth(); // open sheets above this one
-engine.destroy(); // remove listeners + cancel animation
-```
+В компонентах события приходят как пропсы `onSnap`, `onOpen`… (React,
+Solid), `@snap`, `@open`… (Vue), `onsnap`… (Svelte), `onSnap$`… (Qwik) и как
+DOM-события у веб-компонента.
 
-Если `setAllowed()` или `setSnapPoints()` убирает активную точку, открытый
-sheet переходит к ближайшей точке, на которой он остаётся открытым, и
-закрывается, только когда открытых точек не осталось. Чтобы выбрать точку
-самому, передайте её вторым аргументом `setAllowed()`.
+### Клавиатура
 
-Ручка работает как клавиатурный слайдер: стрелка, направленная от края
-sheet, увеличивает его (`ArrowUp` для `bottom`, `ArrowDown` для `top`,
-`ArrowRight` для `left`, `ArrowLeft` для `right`), противоположная
-уменьшает, а `Home` / `End` переводят к наименьшей и наибольшей
-разрешённой точке.
+Ручка работает как слайдер. Стрелка, направленная от края шторки, увеличивает
+её (`ArrowUp` для нижней, `ArrowLeft` для правой), противоположная уменьшает,
+`Home` и `End` переводят на самую маленькую и самую большую точку, `Escape`
+закрывает.
 
-С `closeOnBack` или `routedTo` закрытие снимает запись в истории, а
-`history.back()` браузер применяет асинхронно. `await engine.close()`
-завершается после снятия записи, поэтому переходить по маршруту сразу за ним
-безопасно; код, который закрытие не ждёт, может дождаться самой истории:
+### Остальной API
 
-```ts
-import { historySettled } from '@surdeddd/bottom-sheet';
-
-void sheet.close();
-await historySettled();
-router.push('/next');
-```
-
-`initial` запускает sheet **сразу открытым** на любой snap point, размер
-которой разрешается в `> 0` (события `open` / `opened` не срабатывают — перехода
-для анонса нет). Вызывать `open()` / `snapTo()` **синхронно в тике монтирования
-безопасно** — задержка через `requestAnimationFrame` / `nextTick` не нужна, в том
-числе для `fit` / `content` и телепортированных sheet. Sheet, смонтированный
-скрытым (предок с `display:none`), «лечится» и один раз испускает свою
-последовательность открытия при появлении. См.
-[Architecture → Opening at construction](docs/ARCHITECTURE.md).
-
-### Runtime API scrim
-
-Scrim — это затемняющий слой за sheet или вокруг него (`screenComponent`). Все
-свойства scrim можно менять в рантайме — перемонтирование не нужно.
-
-| Метод | Назначение |
+| Тема | Гайд |
 | --- | --- |
-| `setScrimMode('full' \| 'above-sheet' \| 'off')` | Переключает позиционирование в рантайме. `'off'` полностью отключает слой scrim. |
-| `setScrimEnabled(boolean)` | Удобный переключатель — сохраняет/восстанавливает диапазоны opacity. |
-| `setScrimTapToClose(boolean)` | Устанавливает/снимает закрытие по клику на scrim. |
-| `setScrimColor(color \| null)` / `setScrimBlur(blur \| null)` | Живое изменение цвета и blur через backdrop-filter. `null` сбрасывает. |
-| `setScrimInteractive(boolean)` | Переключает `pointer-events` на слое scrim. |
-| `setBackdropRange([s, e])` / `setScreenRange([s, e])` | Отображение диапазона на opacity (progress 0..1 → opacity 0..1). |
-| `setScrim({ ... })` | Пакетное обновление — применяет preset и отдельные поля за один проход с единственным `applySize`. |
-| `setScrimOverlay({ children, position, interactive })` | Вставляет позиционированный плавающий элемент в область scrim. Возвращает функцию снятия. Полезно для мониторинговых UX вида «затемнить всё, кроме этого бейджа». |
-| `getScrimState()` | Read-only снимок `{ mode, enabled }`. Стабильный публичный API для интроспекции без привязки к внутренностям. |
+| Кнопки и панели, закреплённые у края шторки; содержимое скрима для разных состояний | [Anchors and scrim stages](docs/anchors.md) |
+| Изменение скрима на лету | [Theming → the scrim](docs/theming.md#the-scrim) |
+| Лёгкая выезжающая панель без точек привязки | [Overlay](docs/overlay.md) |
+| Шторки, настроенные по маршрутам | [Vanilla → sheet manager](docs/vanilla.md#sheet-manager) |
+| Навигация сразу после закрытия при `closeOnBack` | [Vanilla → waiting for the history](docs/vanilla.md#waiting-for-the-history) |
+| Движение шторки из кода, покадрово | [Recipe: programmatic drag](docs/recipes/programmatic-drag.md) |
+| Свои расширения движка | [Plugins](docs/plugins.md) |
+| Интерфейсы справа налево | [RTL](docs/rtl.md) |
 
-**Пресеты**: `'subtle' | 'standard' | 'monitoring' | 'cinematic'` — задаются опцией конструктора `scrimPreset` или через `setScrim({ preset })`.
+## Стилизация
 
-### Runtime API overlay
+Всё визуальное задано пользовательскими свойствами CSS. Их можно выставить на
+`.bs-root`, на любом предке или на `:root`; до shadow root веб-компонента они
+тоже доходят.
 
-Overlay-движок (`@surdeddd/bottom-sheet/overlay`) — это отдельная выезжающая
-панель, которая повторяет для контента ту же runtime-изменяемость, что и scrim.
+```css
+.bs-root {
+  --bs-surface: #18181b;
+  --bs-radius: 28px;
+  --bs-handle-color: #71717a;
+  --bs-backdrop-color: rgb(0 0 0 / 0.6);
+}
+```
 
-| Метод | Назначение |
-| --- | --- |
-| `setOverlayChildren(node \| fragment \| factory)` | Заменяет содержимое overlay в рантайме. Принимает `Node`, `DocumentFragment` или фабрику `() => Node`. |
-| `clearOverlayChildren()` | Удаляет вставленный контент. |
-| `setOverlay({ children, ... })` | Пакетное обновление — `children` входит в число допустимых полей наряду с позиционированием и переопределениями preset. |
+Движок на каждом кадре пишет `--bs-progress` (от 0 до 1) и `--bs-size`
+(пиксели) на шторку и на `.bs-root`, поэтому всё, что лежит внутри корня,
+например слой `screen` или плавающая кнопка, следует за шторкой без
+JavaScript:
 
-**Пресеты**: `OverlayPreset` — это `'sheet' | 'dialog' | 'sidebar' | 'toast'`;
-доступны как константа-словарь `OVERLAY_PRESETS` и принимаются в `setOverlay({ preset })`.
+```css
+.bs-root .map-preview { filter: blur(calc(var(--bs-progress) * 8px)); }
+.bs-root .fab { bottom: calc(var(--bs-size) + 16px); }
+```
 
-### Sheet manager (реестр по маршрутам)
+Три готовых оформления лежат в отдельных таблицах стилей:
 
 ```ts
-import { createSheetManager } from "@surdeddd/bottom-sheet";
+import '@surdeddd/bottom-sheet/themes/ios';       // а также /material, /vercel
+```
 
-const sheets = createSheetManager<"home" | "marker" | "panorama">({
-  home:   { snapPoints: [...], allowed: ["min", "half", "full"], onOpen: loadHome },
-  marker: { snapPoints: [...], allowed: ["half", "full"],         onOpen: focusMarker, onClose: blur },
+```html
+<div class="bs-theme-ios"><!-- шторка --></div>
+```
+
+[Все токены, темы, порядок наложения и части веб-компонента →](docs/theming.md)
+
+## Доступность
+
+Что встроено и что включается опцией:
+
+- **Ручка — это слайдер.** У неё есть имя, текущее значение и шаги по
+  стрелкам, и она входит в порядок обхода по Tab. Назовите её на своём языке
+  через `handleLabel`; `contentLabel` делает то же для прокручиваемой
+  области.
+- **У шторки есть имя.** `ariaLabel` или `ariaLabelledBy`, указывающий на
+  заголовок. С `focusTrap` шторка получает роль `dialog` и `aria-modal`.
+- **Фокус.** `focusTrap` переносит фокус в шторку, держит Tab внутри и при
+  закрытии возвращает фокус туда, откуда шторку открыли. В стеке фокус держит
+  только верхняя шторка.
+- **Страница за шторкой.** `inertSiblings` убирает всё вне верхней шторки из
+  досягаемости клавиатуры и экранных читалок.
+- **Объявления.** Каждая остановка объявляется через вежливую live-область.
+- **Движение и контраст.** При `prefers-reduced-motion` анимации заменяются
+  мгновенным переходом, при `forced-colors` шторка получает рамку, заметную
+  ручку и системное кольцо фокуса.
+
+Модальной шторке нужны обе опции: `focusTrap` и `inertSiblings`.
+
+## Формы и экранная клавиатура
+
+Нижняя шторка встаёт на экранную клавиатуру, а не уходит под неё, поэтому
+поле, в которое печатают, остаётся на виду. С `focusTrap` фокус при открытии
+попадает на ручку, и клавиатура не поднимается, пока пользователь не коснётся
+поля; `initialFocus="#email"` ставит фокус сразу в поле.
+
+Чтобы шторка с несохранённым вводом не закрылась, отмените переход:
+
+```ts
+sheet.on('before-close', ({ cancel }) => {
+  if (form.isDirty) cancel();
 });
-
-// In your route watcher:
-sheets.transition(prev, next);
-const cfg = sheets.resolve(currentRoute); // typed!
 ```
 
-## Производительность
+Для React Hook Form и Formik это одна строка:
 
-Три осознанных решения держат 60 fps даже на Android среднего уровня:
+```ts
+import { useFormGuard } from '@surdeddd/bottom-sheet/integrations/react-hook-form';
 
-1. **Позиционирование через transform.** `height` sheet выставляется один раз
-   по самой большой snap point; изменения размера применяются через
-   `transform: translate3d(...)`. Всё остаётся на compositor — ноль layout на
-   кадр.
-2. **Sub-stepping spring с единственной записью в DOM.** Жёсткие пружины
-   интегрируются внутри на 240 Гц ради стабильности, но движок пишет в DOM
-   ровно один раз за `requestAnimationFrame`.
-3. **React-снимок только установившегося состояния.** `useSyncExternalStore`
-   обновляется лишь на `snap` / `dragstart` / `dragend`. Пиксели drag и кадры
-   анимации передаются через CSS-переменные (`--bs-progress`, `--bs-size`) и
-   прямые императивные подписки — никаких ре-рендеров React на каждом кадре.
+useFormGuard(sheetRef, form); // не двигается во время отправки, не закрывается с несохранённым вводом
+```
 
-## Slim core и composable-фичи
+## Серверный рендеринг
 
-Стандартный `BottomSheetEngine` поставляется со всеми опциональными
-поведениями. Если нужно только необходимое, импортируйте slim core (~21.4 KB
-gzip против ~25 KB) и подключайте только нужные фичи:
+Каждый адаптер можно импортировать и отрендерить на сервере; движок
+подключается на клиенте. Шторка, которая начинает закрытой, скрыта уже в
+серверной разметке, поэтому до гидратации ничего не мелькает. Next.js, Nuxt,
+SvelteKit, SolidStart, Qwik City и Astro работают без дополнительной
+настройки; детали описаны в гайдах по фреймворкам.
+
+## Облегчённое ядро
+
+Движок по умолчанию включает все необязательные возможности. Если важнее
+размер, возьмите облегчённое ядро и добавьте к нему только нужное:
 
 ```ts
 import { BottomSheetCore } from '@surdeddd/bottom-sheet/core';
 import { routeFeature, contentSwipeFeature } from '@surdeddd/bottom-sheet/features';
 
-const engine = new BottomSheetCore({
+const sheet = new BottomSheetCore({
   element, handle, snapPoints,
   closeOnBack: true,
   features: [routeFeature(), contentSwipeFeature()],
 });
 ```
 
-Опциональные фичи: `routeFeature()` (`closeOnBack` / `routedTo` /
-`closeOnRouteChange`), `visualViewportFeature()` (ограничение под экранную
-клавиатуру), `contentSwipeFeature()`, `persistFeature()`, `autoCollapseFeature()`.
-Всё остальное (жесты, математика snap, самовосстановление при resize, a11y-слайдер,
-focus trap, scroll lock, scrim, стек) — часть ядра. Если задать опцию, фича
-которой не подключена, в dev-режиме будет одно предупреждение, а в production
-опция игнорируется. Собственные фичи реализуют `{ name, install(ctx) }` — тот же
-шов, что используют встроенные.
+| Точка входа | gzip | Что внутри |
+| --- | --- | --- |
+| `@surdeddd/bottom-sheet` | 25.6 KB | Полный движок |
+| `/core` | 21.9 KB | Жесты, точки привязки, фокус, блокировка прокрутки, скрим, стек |
+| `/features` | 4.2 KB | `routeFeature`, `visualViewportFeature`, `contentSwipeFeature`, `contentFitFeature`, `persistFeature`, `autoCollapseFeature` |
+| `/react` `/vue` `/svelte` `/solid` `/qwik` | от 27 до 33 KB | Полный движок вместе с адаптером |
+| `/element` | 33.3 KB | Полный движок, элемент и его стили |
+| `/overlay` | 8.4 KB | Отдельный [оверлей](docs/overlay.md) |
+| `/webgl` | 5.9 KB | Необязательный [рендерер на GPU](docs/webgl.md) для поверхности шторки |
+| `/debug` | 0.9 KB | `attachDebugOverlay(engine)`: панель с состоянием движка в реальном времени |
 
-### WebGL-рендерер (опционально)
-
-```ts
-import { webglRenderer } from '@surdeddd/bottom-sheet/webgl';
-
-const engine = new BottomSheetEngine({
-  element, handle, snapPoints,
-  features: [webglRenderer({ jelly: 0.6 })],
-});
-```
-
-Рисует поверхность sheet — панель, скругления, тень, блик по краю — на GPU. В
-момент начала drag текст sheet переносится в текстуру, так что весь sheet
-изгибается как единая поверхность, а после остановки возвращается обратно в
-DOM. Layout, прокрутка, жесты и дерево доступности из DOM никуда не уходят.
-5.9 KB gzip, и только если вы его импортируете.
-Откатывается на DOM-рендерер — молча и даже посреди сессии, если потребуется, —
-когда WebGL недоступен, при `prefers-reduced-motion` или если браузер сбросил
-GL-контекст.
-
-[Полная документация по WebGL →](docs/webgl.md)
-
-### Debug overlay
-
-```ts
-import { attachDebugOverlay } from '@surdeddd/bottom-sheet/debug';
-
-const detach = attachDebugOverlay(engine);
-```
-
-Фиксированная dev-панель с активной snap point, текущими size/progress,
-флагами drag/animate и списком разрешённых snap — работает исключительно на
-публичных событиях движка и поставляется отдельным entry, так что в
-продакшн-бандлы не попадает.
-
-### Qwik SSR
-
-Пакет объявляет поле `qwik`, указывающее на
-`dist/qwik-lib/index.qwik.mjs`. Приложения на Qwik подхватывают адаптер
-автоматически как vendor root: оптимизатор на стороне потребителя режет его на
-QRL-чанки, а `renderToString` выдаёт возобновляемый (`q:container="paused"`)
-sheet. Дополнительная конфигурация не нужна —
-`import { BottomSheet } from '@surdeddd/bottom-sheet/qwik'` по-прежнему
-работает для CSR, а Qwik City SSR теперь работает из коробки.
-
-## Темизация
-
-Весь внешний вид управляется CSS custom properties. Переопределяйте где угодно:
-
-```css
-.bs-root {
-  --bs-surface: #18181b;
-  --bs-handle-color: #71717a;
-  --bs-radius: 28px;
-  --bs-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6);
-}
-```
-
-Движок записывает в элемент sheet `--bs-progress` (0..1) и `--bs-size` (px) —
-управляйте любой CSS-анимацией от drag без единой строки JS:
-
-```css
-.fab {
-  transform: scale(calc(1 - var(--bs-progress) * 0.3));
-}
-.map-canvas {
-  filter: blur(calc(var(--bs-progress) * 8px));
-}
-.search-input {
-  opacity: calc(1 - var(--bs-progress));
-}
-```
-
-> **z-index принадлежит движку.** Контроллер стека при каждом изменении стека
-> перезаписывает inline-`z-index` у `.bs-sheet`, `.bs-backdrop` и обёрток
-> anchor (база `100`, шаг `10` на уровень глубины), поэтому заданное вами
-> значение будет перезаписано и начнёт конфликтовать со стеком. Чтобы
-> расположить слой sheet относительно UI приложения, переместите контейнер
-> (цель teleport / родителя `.bs-root`) или измените порядок открытия — не
-> стилизуйте `z-index` у элементов, которыми управляет bs. См.
-> [Architecture → z-index & the sheet stack](docs/ARCHITECTURE.md).
-
-**У каждого sheet свой backdrop.** Откройте список, затем поверх него sheet с
-деталями — оба backdrop остаются активными: затемнение усиливается с каждым
-уровнем, а нижний sheet остаётся замаскированным всё время, пока закрывается
-верхний, так что касания не доходят до страницы посреди анимации. Каждый
-backdrop следует за progress собственного sheet, поэтому закрывающийся
-«погребённый» sheet убирает свой scrim. Стек сохраняет порядок, в котором
-sheet начали открываться: sheet, открытый, пока другой ещё анимируется, остаётся
-сверху. Если нужен единый уровень затемнения, передайте `backdrop={false}`
-(`:backdrop="false"` во Vue) тем sheet, которые открываете поверх.
-
-### Контент достижим на каждой snap point
-
-Sheet всегда имеет высоту своей самой большой snap point и двигается через
-transform — именно это держит drag на compositor. Цена: ниже самой большой
-snap point низ scroll-контейнера оказывается под краем экрана ровно на
-`largest snap − current size`. На половинной snap point прокручивать можно, но
-последние строки не появятся, пока sheet не вытянут выше.
-
-`fitContentToSnap` закрывает этот зазор:
-
-```tsx
-<BottomSheet snapPoints={points} fitContentToSnap>
-  <LongList />
-</BottomSheet>
-```
-
-Когда sheet останавливается, движок записывает скрытую величину в
-`--bs-content-inset`, а стили уменьшают `.bs-content` ровно на неё, так что
-scroll-контейнер заканчивается у края экрана: последняя строка, поле в фокусе
-и полоса прокрутки остаются в видимой части, а ползунок рассчитан на то, что
-реально видно. В момент начала движения sheet переключается на контейнер
-полной высоты со спейсером такого же размера в конце списка, поэтому строки
-ниже края уже разложены, когда drag или анимация их открывает. Переключение
-меняет и бокс, и диапазон прокрутки на одну и ту же величину, так что на
-экране ничего не сдвигается. Это один layout при старте движения и один при
-остановке, ни одного на кадр, поэтому движение остаётся чисто transform-овым.
-Пока sheet движется, список, прокрученный до самого конца, удерживается на
-месте на экране, а не уезжает вверх вместе с sheet и не откатывается обратно
-в конце.
-
-У footer та же проблема, и лечится она так же. Он последний в sheet, поэтому
-ниже самой большой snap point он оказывается под краем экрана вместе с концом
-списка. При включённом `fitContentToSnap` уменьшенный контейнер ставит footer
-у низа видимой части sheet в покое, а пока sheet движется, стили поднимают
-`.bs-footer` на `--bs-size − --bs-max-size`, так что он едет по этому краю на
-каждом кадре drag или анимации — опять же без layout. Список заканчивается над
-ним, а не под ним. На snap point, слишком короткой для обоих, footer уходит под
-край экрана, а не закрывает handle. WebGL-рендерер получает ту же раскладку;
-пока sheet движется, его footer закрашивается цветом поверхности, а drag
-переносит список в текстуру, которая следует за позицией прокрутки списка, так
-что список, удерживаемый в конце, остаётся там же.
-
-#### Прокрутка списка на каждой snap point на таче
-
-Сделать конец списка *достижимым* и дать пальцу *прокрутить* до него — две
-разные вещи. По умолчанию свайп, начатый на контенте, тянет sheet, пока он не
-дойдёт до самой большой snap point, и только потом прокручивает список — так
-ведут себя нативные sheet. На мыши или трекпаде колесо прокручивает на любой
-snap point, на таче — нет. Чтобы прокручивать пальцем на половинной snap point,
-отдайте свайпы по контенту списку, а handle (и header) оставьте для движения
-sheet:
-
-```tsx
-<BottomSheet snapPoints={points} fitContentToSnap dragFromContent={false}>
-  <LongList />
-</BottomSheet>
-```
-
-`dragFromContent` можно задать и для отдельной snap point: это сохраняет
-нативное ощущение pull-to-expand на маленьком peek и освобождает список начиная
-с половины:
-
-```ts
-const points = [
-  { id: "peek", size: 120 },
-  { id: "half", size: "50%", dragFromContent: false },
-  { id: "full", size: "90%", dragFromContent: false },
-];
-```
-
-Работает для `bottom`-sheet и ожидает, что scroll-контейнер — растущий
-потомок flex-колонки sheet, как `.bs-content`. Для любого другого контейнера
-атрибут `data-bs-fit-content` на sheet принимает значения `rest` или `moving`,
-а `--bs-content-inset` хранит скрытую величину: в покое уменьшайте контейнер на
-неё, а при движении добавляйте её как отступ в конец содержимого. На slim core
-добавьте `contentFitFeature()` из `@surdeddd/bottom-sheet/features`.
-
-### Scrim, blur и высокий контраст
-
-| Токен                    | По умолчанию | Область                                                  |
-| ------------------------ | ------------ | -------------------------------------------------------- |
-| `--bs-scrim-color`       | transparent  | Заливка слоя scrim (`.bs-screen`)                        |
-| `--bs-scrim-blur`        | `0px`        | `backdrop-filter: blur()`, применяемый к слою scrim      |
-| `--bs-header-min-height` | `0px`        | Минимальная высота области `.bs-header`                  |
-
-`--bs-scrim-blur` включает настоящий blur через `backdrop-filter` на scrim —
-задайте его для эффекта матового стекла (или используйте пресеты scrim
-`monitoring` / `cinematic`, которые задают и цвет, и blur). В режиме Windows
-High Contrast / `forced-colors` таблица стилей содержит блок
-`@media (forced-colors: active)`, чтобы поверхность sheet, handle и кольцо
-фокуса оставались видимыми.
-
-### Отступы и раскладка
-
-Отступы каждой области — это токен: переопределите или обнулите его, чтобы
-контент шёл от края до края. Значения по умолчанию соответствуют встроенному
-виду. Задавайте переменную на хосте / `.bs-root` / `:root`; custom properties
-наследуются через shadow-границу Web Component, поэтому одно и то же
-переопределение работает для всех адаптеров:
-
-| Токен                  | По умолчанию          | Область                 |
-| ---------------------- | --------------------- | ----------------------- |
-| `--bs-content-padding` | `0 16px 16px`         | прокручиваемое тело     |
-| `--bs-handle-padding`  | `8px 16px 4px`        | полоса захвата (сверху) |
-| `--bs-header-padding`  | `0 16px 8px`          | слот header             |
-| `--bs-footer-padding`  | `12px 16px (+ inset)` | слот footer             |
-
-(Значение footer по умолчанию — `12px 16px calc(12px + env(safe-area-inset-bottom))`;
-оно не даёт кнопкам действий оказаться под индикатором «Домой».)
-
-```css
-.bs-root { --bs-content-padding: 0; }               /* full-bleed content */
-.bs-root { --bs-content-padding: 0 24px 24px; }      /* custom insets        */
-bottom-sheet { --bs-handle-padding: 0; }             /* Web Component, from the host */
-```
-
-`maxHeight` (проп или атрибут `max-height` у элемента) ограничивает sheet:
-snap point `'content'` / `'fit'`, превышающая ограничение, останавливается
-вплотную к краю, а тело прокручивается внутри — sheet никогда не отрывается от
-своей опоры, а `--bs-size` всегда равен отрисованной высоте.
-
-## Демо
-
-```bash
-npm run demo
-# http://localhost:5173
-```
-
-Редакторское демо показывает адаптеры, каждый жест, каждый режим
-(`bottom · top · left · right · overlay`) и живые показания движка (активная
-snap point, progress, скорость, FPS). В углу переключатели EN/RU и светлой/тёмной темы.
-
-## Справа налево (RTL)
-
-`left` и `right` — физические края и остаются физическими. Для интерфейсов,
-которые зеркалятся вместе с направлением письма, используйте логические
-режимы — `start` и `end` разрешаются относительно направления, действующего
-для sheet, так что `start` — левый край в английском и правый в арабском:
-
-```ts
-new BottomSheetEngine({ element, handle, mode: 'start', snapPoints });
-```
-
-[Полная документация по RTL →](docs/rtl.md)
+Опция, для которой не подключена возможность, один раз предупреждает в
+режиме разработки и игнорируется.
 
 ## Поддержка браузеров
 
-Базовый уровень: Chrome/Edge 80, Safari 13.1 (iOS 13.4), Firefox 72 — его
-задают целевая сборка ES2020 и API, без которых движок работать не может
-(Pointer Events, CSS custom properties, `ResizeObserver`). Всё остальное, от
-`inert` до `backdrop-filter` и WebGL, проверяется на наличие и деградирует
-мягко.
+Chrome и Edge 80, Safari 13.1 (iOS 13.4), Firefox 72. Эту границу задают
+сборка под ES2020 и API, без которых движок не работает: Pointer Events,
+пользовательские свойства CSS, `ResizeObserver`. Всё остальное, от `inert`
+до `backdrop-filter` и WebGL, определяется на месте и при отсутствии мягко
+отключается. [Таблица поддержки →](docs/browser-support.md)
 
-[Полная матрица поддержки →](docs/browser-support.md)
+## Документация
 
-## Тестирование
+| | |
+| --- | --- |
+| Фреймворки | [React](docs/react.md) · [Vue](docs/vue.md) · [Svelte](docs/svelte.md) · [Solid](docs/solid.md) · [Qwik](docs/qwik.md) · [Preact](docs/preact.md) · [Веб-компонент](docs/web-component.md) · [Без фреймворка](docs/vanilla.md) · [Angular](docs/angular.md) · [Lit](docs/lit.md) · [Astro](docs/astro.md) |
+| Темы | [Стилизация](docs/theming.md) · [Якоря и сцены скрима](docs/anchors.md) · [Содержимое на каждой точке](docs/content-fit.md) · [Оверлей](docs/overlay.md) · [RTL](docs/rtl.md) · [Рендерер WebGL](docs/webgl.md) · [Плагины](docs/plugins.md) |
+| Рецепты | [Десять разобранных примеров](docs/recipes/README.md): панель фильтров, оформление заказа, тред комментариев, навигационная панель, мини-плеер и другие |
+| Примеры | [Запускаемые проекты](examples) для React, Vue, Svelte, Solid, Lit, веб-компонента и движка без фреймворка |
+| Переход с другой библиотеки | [С vaul или react-modal-sheet](docs/MIGRATION.md) |
+| Проект | [Архитектура](docs/ARCHITECTURE.md) · [Стабильность API](docs/api-stability.md) · [Поддержка браузеров](docs/browser-support.md) · [Участие в разработке](CONTRIBUTING.md) |
 
-```bash
-npm test                 # 930+ unit tests via vitest + happy-dom
-npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
-npm run typecheck        # TypeScript --noEmit
-```
+## Для ИИ-ассистентов
 
-CI гоняет все три набора на Node 20.19 / 22 при каждом PR и теге.
+[`llms.txt`](llms.txt) — компактное и полное описание API, написанное для
+чтения моделью: точки входа, все опции, имена методов и событий и ошибки,
+которых стоит избегать. Файл входит в npm-пакет и лежит рядом с этим README.
 
 ## Участие в разработке
 
-1. `npm install`
-2. `npm run dev` — tsup в watch-режиме
-3. `npm run demo` — dev-сервер Vite с живым демо
-4. `npm test` — vitest в watch-режиме
-5. Откройте PR с сфокусированным диффом. Слияние закрыто матрицей CI.
+```bash
+npm install
+npm run demo        # демо-сайт на localhost:5173
+npm test            # юнит-тесты
+npm run e2e         # тесты в браузере
+```
+
+Подробности в [CONTRIBUTING.md](CONTRIBUTING.md). Ошибки и идеи — в
+[issues](https://github.com/Surdeddd/BottomSheet/issues).
 
 ## Лицензия
 
-MIT — см. [LICENSE](LICENSE).
+MIT, см. [LICENSE](LICENSE).

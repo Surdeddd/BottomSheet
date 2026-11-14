@@ -1,93 +1,74 @@
 # Preact
 
-`@surdeddd/bottom-sheet/preact` is a thin re-export of the React adapter.
-It exists so Preact users have a discoverable subpath without having to
-know the React adapter works for them too.
+`@surdeddd/bottom-sheet/preact` is the React adapter. Preact runs it through
+[`preact/compat`](https://preactjs.com/guide/v10/switching-to-preact), which
+provides the React API the adapter imports. The entry re-exports `/react` and
+adds nothing to it, so everything in the [React guide](react.md) applies:
+props, callbacks, the ref and the hook.
 
-## How this works
-
-Preact ships [`preact/compat`](https://preactjs.com/guide/v10/switching-to-preact),
-a drop-in shim that exposes React's API surface (hooks, `forwardRef`,
-`useImperativeHandle`, etc.) on top of Preact. Once your bundler aliases
-`react` → `preact/compat`, the React adapter's internal `import "react"`
-calls resolve to Preact and everything works.
-
-The `/preact` subpath is **the same module** as `/react` — `export *`
-literally, no wrapper, no extra bytes. Pick whichever import path you
-prefer.
+```bash
+npm i @surdeddd/bottom-sheet preact
+```
 
 ## Setup
 
-### 1. Install peers
+The adapter contains `import … from "react"`. Your bundler has to point that
+at `preact/compat`.
 
-```bash
-npm i preact
-# Optional, for SSR:
-npm i -D preact-render-to-string
-```
-
-### 2. Alias `react` to `preact/compat` in your bundler
-
-#### Vite
+With Vite, `@preact/preset-vite` does it for you:
 
 ```ts
-// vite.config.ts
 import { defineConfig } from "vite";
 import preact from "@preact/preset-vite";
 
-export default defineConfig({
-  plugins: [preact()],
-  resolve: {
-    alias: {
-      react: "preact/compat",
-      "react-dom": "preact/compat",
-      "react/jsx-runtime": "preact/jsx-runtime",
-    },
-  },
-});
+export default defineConfig({ plugins: [preact()] });
 ```
 
-The `@preact/preset-vite` plugin sets these aliases automatically — the
-explicit block above is the manual equivalent.
-
-#### webpack
+Without the preset, or in webpack, write the aliases yourself:
 
 ```js
-// webpack.config.js
-module.exports = {
-  resolve: {
-    alias: {
-      react: "preact/compat",
-      "react-dom": "preact/compat",
-      "react/jsx-runtime": "preact/jsx-runtime",
-    },
+resolve: {
+  alias: {
+    react: "preact/compat",
+    "react-dom": "preact/compat",
+    "react/jsx-runtime": "preact/jsx-runtime",
   },
-};
+}
 ```
 
-### 3. Import and render
+## Usage
 
 ```tsx
+import { useState } from "preact/hooks";
 import { BottomSheet } from "@surdeddd/bottom-sheet/preact";
 import "@surdeddd/bottom-sheet/styles";
 
-<BottomSheet
-  snapPoints={[
-    { id: "min", size: 96 },
-    { id: "full", size: "85%" },
-  ]}
-  initial="min"
->
-  <YourContent />
-</BottomSheet>;
+export function Filters() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        snapPoints={[
+          { id: "closed", size: 0 },
+          { id: "open", size: "fit" },
+        ]}
+        focusTrap
+        header={<h2>Filters</h2>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
 ```
 
-## Gotchas
+## Things to know
 
-- Without the `react` → `preact/compat` alias, the import will fail at
-  bundle time because the React adapter still has `import "react"` inside.
-- Preact's `forwardRef` returns a slightly different object shape than
-  React's, but `preact/compat` papers over this — `BottomSheetHandle`
-  refs work identically.
-- SSR via `preact-render-to-string` works the same way as React's
-  `react-dom/server` because the compat shim covers `renderToString`.
+- Without the alias the build fails with an unresolved `react` import.
+- Server rendering works with `preact-render-to-string`, the same way as with
+  `react-dom/server`.

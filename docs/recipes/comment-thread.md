@@ -1,91 +1,80 @@
 # Comment thread
 
-> Twitter/Reddit-style nested replies in a sheet, with a sticky reply input that stays above the keyboard.
+A thread of nested replies in a sheet, with a reply field that stays in view
+at every snap point and above the on-screen keyboard.
 
-```
+```text
 ┌─────────────────────┐
 ├──── handle ─────────┤
+│ 12 comments         │
 │ @alice  · 2h        │
 │   look at this      │
-│   ├ @bob: agreed    │   ← scrolls inside content
+│   ├ @bob: agreed    │   ← scrolls
 │   └ @cara: nope     │
 │ @dave · 1h          │
-│   ...               │
 ├─────────────────────┤
-│ [ reply…       ][▶] │   ← stays above virtual keyboard
+│ [ reply…       ][▶] │   ← footer: always on screen
 └─────────────────────┘
 ```
-
-## Inner-scroll vs. drag
-
-The engine watches `scrollContainer.scrollTop`:
-
-- `scrollTop > 0` → drag goes to the scroller (the user is reading).
-- `scrollTop === 0` and the user pulls down → the engine takes over and
-  drags the sheet.
-
-You don't wire this manually — it's the default for `bs-content`. Just don't
-nest a second scroller.
 
 ## Code
 
 ```tsx
+import { useState } from "react";
 import { BottomSheet } from "@surdeddd/bottom-sheet/react";
 import "@surdeddd/bottom-sheet/styles";
-import { useEffect, useState } from "react";
 
 type Comment = { id: string; author: string; text: string; replies?: Comment[] };
 
 export function ThreadSheet({ comments }: { comments: Comment[] }) {
-  const [kbInset, setKbInset] = useState(0);
-
-  // Keyboard-aware: shrink content to leave room for input above the keyboard.
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => setKbInset(window.innerHeight - vv.height - vv.offsetTop);
-    vv.addEventListener("resize", onResize);
-    vv.addEventListener("scroll", onResize);
-    return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
-  }, []);
+  const [open, setOpen] = useState(false);
 
   return (
-    <BottomSheet
-      snapPoints={[{ id: "half", size: "50%" }, { id: "full", size: "92%" }]}
-      initial="half"
-      animation="spring"
-      focusTrap
-      header={<h2>{comments.length} comments</h2>}
-    >
-      <div style={{ paddingBottom: 64 + kbInset }}>
-        {comments.map((c) => <CommentNode key={c.id} c={c} />)}
-      </div>
+    <>
+      <button onClick={() => setOpen(true)}>{comments.length} comments</button>
 
-      <form
-        onSubmit={(e) => { e.preventDefault(); /* post */ }}
-        style={{
-          position: "sticky",
-          bottom: kbInset, // rises with the keyboard
-          background: "var(--bs-surface, #fff)",
-          padding: 12,
-          display: "flex",
-          gap: 8,
-        }}
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        snapPoints={[
+          { id: "closed", size: 0 },
+          { id: "half", size: "50%", dragFromContent: false },
+          { id: "full", size: "92%", dragFromContent: false },
+        ]}
+        fitContentToSnap
+        focusTrap
+        header={<h2>{comments.length} comments</h2>}
+        footer={<ReplyForm />}
       >
-        <input name="reply" placeholder="reply…" style={{ flex: 1 }} />
-        <button type="submit">Send</button>
-      </form>
-    </BottomSheet>
+        {comments.map(comment => (
+          <CommentNode key={comment.id} comment={comment} />
+        ))}
+      </BottomSheet>
+    </>
   );
 }
 
-function CommentNode({ c }: { c: Comment }) {
+function ReplyForm() {
   return (
-    <div style={{ padding: "8px 16px" }}>
-      <strong>@{c.author}</strong> <span>{c.text}</span>
-      {c.replies && (
+    <form
+      onSubmit={event => event.preventDefault()}
+      style={{ display: "flex", gap: 8 }}
+    >
+      <input name="reply" placeholder="Reply…" style={{ flex: 1 }} />
+      <button type="submit">Send</button>
+    </form>
+  );
+}
+
+function CommentNode({ comment }: { comment: Comment }) {
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <strong>@{comment.author}</strong> <span>{comment.text}</span>
+      {comment.replies && (
         <div style={{ paddingLeft: 16, borderLeft: "2px solid #eee" }}>
-          {c.replies.map((r) => <CommentNode key={r.id} c={r} />)}
+          {comment.replies.map(reply => (
+            <CommentNode key={reply.id} comment={reply} />
+          ))}
         </div>
       )}
     </div>
@@ -93,12 +82,31 @@ function CommentNode({ c }: { c: Comment }) {
 }
 ```
 
-## Gotchas
+## What each option is for
 
-- **iOS visualViewport quirk** — Safari < 16 fires `resize` only after the
-  keyboard fully animates in. Use `scroll` as a fallback (already wired
-  above).
-- **Don't `position: fixed` the input** — fixed elements ignore the sheet's
-  transform; use `sticky` so it rides with the sheet's content frame.
+- **`footer`** puts the reply form below the list. With
+  [`fitContentToSnap`](../content-fit.md) it sits at the bottom of the visible
+  part of the sheet at the half point too, not under the screen edge, and the
+  last comment can be scrolled into view above it.
+- **`dragFromContent: false`** on the open points lets a finger scroll the
+  comments at half height. The handle and the header still move the sheet.
+  Without it, a swipe on the list first pulls the sheet up to its largest
+  point and only then scrolls.
+- **`focusTrap`** moves focus into the sheet when it opens and keeps Tab
+  inside it. Focus goes to the handle, so the phone keyboard stays down until
+  the reader taps the field. To start in the field, add
+  `initialFocus="[name=reply]"`.
+- **The keyboard needs no code.** When the field is focused, the sheet lifts
+  to rest on top of the keyboard and its largest point is capped to the space
+  that is left, so the form stays visible.
 
-See also: [`docs/react.md`](../react.md) · [main README](../../README.md).
+## Things to know
+
+- Keep one scroll container. A second scrolling element inside the content
+  takes the gesture away from the sheet.
+- Do not make the form `position: fixed`. A fixed element ignores the sheet's
+  transform and would stay behind while the sheet moves. The footer is the
+  place for it.
+
+See also: [comment composer](./comment-composer.md) ·
+[content at every snap point](../content-fit.md) · [React guide](../react.md).

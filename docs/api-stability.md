@@ -1,11 +1,65 @@
-# Breaking changes and the stable-surface plan
+# API stability
 
-> **Status:** the package is **0.x** (see `version` in `package.json`). Neither
-> 1.0 nor 2.0 has shipped, and both are still far off. Under 0.x semver, a minor
-> bump may break API — so the curation once drafted for "2.0" landed in
-> **0.14.0** instead, and the version line continues 0.14 → 0.15 → … This
-> document records what changed and what the eventual stable surface is expected
-> to freeze.
+The package is at 0.x. Under semver that means a minor release may change
+behaviour, and several have. This page says what is meant to stay put, what
+1.0 will freeze, and what changed on the way.
+
+## What you can rely on today
+
+Nothing in this list has been renamed or removed since 0.14, and nothing in
+it will be before 1.0:
+
+- The names of the engine's methods: `snapTo`, `open`, `close`, `expand`,
+  `collapse`, `setAllowed`, `setSnapPoints`, `on`, `use`, `destroy`, and the
+  `state` getter.
+- The names of the options. Options are added; none is renamed.
+- The event names and the shape of their payloads.
+- The entry points: `/react`, `/vue`, `/svelte`, `/solid`, `/qwik`, `/preact`,
+  `/element`, `/overlay`, `/core`, `/features`, `/webgl`, `/debug`, `/styles`.
+- The custom element's attribute names and event names.
+- The `--bs-*` custom properties and the `.bs-*` class names.
+
+What 0.x releases do change is behaviour at the edges: what a method does on
+a sheet that is already there, which gestures an option blocks, when an event
+fires. Each such change is listed in the [changelog](../CHANGELOG.md) under
+"Changed", with the old behaviour and the way to keep it.
+
+## The road to 1.0
+
+1.0 is a promise that the list above, and the behaviour behind it, changes
+only with a major version. Three things stand between 0.24 and that promise:
+
+1. **Field time for 0.24.** It changed when lifecycle events fire, what
+   `persistent` blocks and how the backdrop options work. Those were the last
+   known places where the engine and its documentation disagreed; they need a
+   release cycle in real apps before they are frozen.
+2. **A real-device pass for the on-screen keyboard.** Resting on the keyboard
+   is tested against an emulated `visualViewport`. iOS Safari and Android
+   Chrome each need a manual pass, and the result recorded here.
+3. **The two open design questions below**, which would be breaking if
+   answered after 1.0.
+
+Open questions:
+
+- **What a move's promise says.** `snapTo()`, `open()` and `close()` resolve
+  the same way whether the sheet landed, the move was vetoed by `before-snap`,
+  or another move replaced it. A caller that needs to know has to compare
+  `state.activeId` afterwards. The fix is a resolved value, such as
+  `"landed" | "vetoed" | "replaced"`; it is additive for callers that ignore
+  the value and belongs before the freeze.
+- **What a percentage is a percentage of.** `"50%"` and `"full"` are measured
+  against the window. A sheet inside a panel or a split view has no way to
+  say "half of my container". This needs an option, and a decision on its
+  default.
+
+- **The role of a sheet that is not modal.** With `focusTrap` every adapter
+  renders `role="dialog"` and `aria-modal`. Without it, React and Vue render
+  `role="region"`, while Svelte, Solid, Qwik and the custom element keep
+  `role="dialog"`. Both are valid ARIA; they should be the same.
+
+Not planned for 1.0: an Angular package (the [recipe](angular.md) and the
+custom element cover it), compound components, and scaling the page behind
+the sheet.
 
 ## Removed in 0.14.0
 
@@ -124,18 +178,6 @@ git ls-files | grep -E '\.(ts|tsx|js|jsx)$' | xargs sed -i '' \
 Since the removed symbols no longer exist, `tsc` reports every remaining call
 site as an error — the compiler is the migration checklist.
 
-## Not changing
-
-- The engine's public method shape (`snapTo`, `dragTo`, `open`, `close`,
-  `setAllowed`, `setSnapPoints`, `on`, `use`, `destroy`, `state` getter)
-- `EngineOptions` field names (additions allowed; renames are out)
-- The plugin contract (`engine.use(plugin)`)
-- The event map (`SheetEventMap`)
-- Adapter return shapes, aside from React's removed `engine` field
-- Subpath exports for adapters (`/react`, `/vue`, …)
-- The Custom Element's attribute names (`snap-points`, `mode`, `allowed`, …)
-  and dispatched events (`snap`, `open`, `close`, `progress`)
-
 ## Behaviour clarifications (not breaking)
 
 These document existing semantics that were implicit before.
@@ -188,66 +230,62 @@ If `plugin.install()` throws, the engine catches it, drains partial `scope.add`
 cleanups (LIFO), and rethrows via `queueMicrotask` so dev tools surface it on
 the next tick. Sibling plugins still install; the engine stays usable.
 
-## Planned stable contract
+## What 1.0 freezes
 
-The surface a 1.0 release would **freeze**. Once frozen, additions are allowed
-but no rename, removal, signature change, or behaviour change without a major
-cycle. Documented ahead of time so every contributor has one canonical
-reference.
+Once frozen, these take additions but no rename, removal, signature change or
+behaviour change without a major version.
 
 ### Engine
 
-- `class BottomSheetEngine` — constructor `new BottomSheetEngine(opts: EngineOptions)`
-- Public methods (signatures pinned):
-  - `snapTo(id: string, opts?: { signal?: AbortSignal; velocity?: number }): Promise<void>`
-  - `dragTo(size: number): Promise<void>`
-  - `open(): Promise<void>`, `close(): Promise<void>`
-  - `setAllowed(ids: string[]): void`
-  - `setSnapPoints(points: SnapPointDef[], allowed?: string[]): void`
-  - `setLinkedSheets(others: BottomSheetEngine[]): void`
-  - `on<K extends keyof SheetEventMap>(event: K, fn): () => void`
-  - `use(plugin: Plugin): this`
-  - `destroy(): void`
-  - `getAllowedIds(): string[]`
-  - **Drag control**: `setDragFrom`, `getDragFrom`, `setDragFromContent`,
-    `attachDragSurface`
-  - **Scrim**: `setScrimMode`, `setScrimEnabled`, `setScrimTapToClose`,
-    `setScrimColor`, `setScrimBlur`, `setScrimInteractive`, `setBackdropRange`,
-    `setScreenRange`, `setScrim`, `setScrimOverlay`, `getScrimState`
-- Public getters: `state` (returns an `EngineState` snapshot)
+- `new BottomSheetEngine(options)` and `new BottomSheetCore(options)`
+- Moving: `snapTo(id, { velocity?, signal? })`, `open(id?)`, `close(reason?)`,
+  `expand()`, `collapse()`, `dragTo(size, { velocity?, signal? })`
+- Points: `setSnapPoints(points, allowed?)`, `setAllowed(ids, snap?)`,
+  `getAllowedIds()`, `getResolvedSnaps()`, `recompute()`
+- Behaviour: `setMode()`, `getMode()`, `setPersistent()`, `setDisableClose()`,
+  `setDisableDrag()`, `setDragFrom()`, `getDragFrom()`,
+  `setDragFromContent()`, `setRadius()`, `setMaxHeight()`,
+  `setLinkedSheets()`
+- Dim layers: `setBackdropRange()`, `setBackdropOpacity()`,
+  `setBackdropColor()`, `setScreenRange()`, `setScrim()`, `setScrimMode()`,
+  `setScrimEnabled()`, `setScrimTapToClose()`, `setScrimColor()`,
+  `setScrimBlur()`, `setScrimInteractive()`, `setScrimOverlay()`,
+  `getScrimState()`
+- Around the sheet: `addAnchor()`, `setScrimStages()`
+- Reading: `state`, `canDismiss()`, `isTop()`, `depth()`
+- `on(event, listener)`, `use(plugin)`, `destroy()`
 
-### Overlay (`@surdeddd/bottom-sheet/overlay` subpath)
+### Overlay
 
-- `class OverlayEngine` — constructor `new OverlayEngine(opts: OverlayOptions)`
-- Public methods: `open`, `close`, `toggle`, `destroy`, `on`
-- **Setters**: `setBackdropOpacity`, `setBackdropFilter`, `setSwipeToClose`,
-  `setEnterAnimation`, `setExitAnimation`, `setReturnFocus`, `setOverlay`,
-  `setOverlayChildren`, `clearOverlayChildren`
-- **Presets**: `OVERLAY_PRESETS` (`'sheet' | 'dialog' | 'sidebar' | 'toast'`)
+- `new OverlayEngine(options)`; `open()`, `close(reason?)`, `toggle()`,
+  `destroy()`, `on()`, `state`
+- `setOverlay()`, `setBackdropOpacity()`, `setBackdropFilter()`,
+  `setSwipeToClose()`, `setEnterAnimation()`, `setExitAnimation()`,
+  `setReturnFocus()`, `setOverlayChildren()`, `clearOverlayChildren()`
+- `OVERLAY_PRESETS`: `sheet`, `dialog`, `sidebar`, `toast`
 
-### Pinned types
+### Types
 
-`SnapPoint`, `SnapPointDef`, `SnapId<T>`, `SheetMode`, `SheetEventMap`,
-`EngineOptions`, `EngineState`, `Plugin`, `DragFromMode`, `ScrimPreset`,
-`ScrimUpdate`, `ScrimOverlayOptions`, `ScrimOverlayPosition`, `OverlayPreset`,
-`OverlayUpdate`, `OverlayAnimation`, `OverlayCloseReason`,
-`SwipeToCloseConfig`, `OverlayMountTarget`.
+`SnapPoint`, `SnapPointDef`, `SnapId`, `SheetMode`, `SheetEventMap`,
+`CloseReason`, `EngineOptions`, `EngineConfig`, `EngineState`, `SheetPhase`,
+`Plugin`, `EngineFeature`, `ScrimPreset`, `ScrimUpdate`,
+`ScrimOverlayOptions`, `AnchorOptions`, `ScrimStagesOptions`,
+`OverlayOptions`, `OverlayState`, `OverlayUpdate`.
 
-### Adapter pin
+### Adapters
 
-- `useBottomSheet` (React/Vue/Svelte/Solid/Qwik) — return shape stable. Hooks
-  accept `onSnap?: (id) => void` consistently.
-- `BottomSheet` component (React) — props pinned.
-- Custom Element `<bottom-sheet>` (the `defineBottomSheet()` default tag) —
-  attribute names and dispatched events stable.
+- The props, slots, events and exposed methods documented in each adapter's
+  guide.
+- `useBottomSheet()` in React and Vue, `createBottomSheet()` in Svelte: the
+  shape of what they return.
+- `<bottom-sheet>`: attributes, properties, methods, events, slots and parts.
 
-### Internal — not pinned
+### Not frozen
 
-Anything under `src/core/controllers/`, `src/core/primitives/` (other than
-public type re-exports), `src/core/features/`, the engine's private fields, the
-ScrimController shape, AnimationRunner / LifecycleController. Tests reading
-internals through `as unknown as` casts may break on refactor — prefer the
-public introspection APIs (`engine.state`, `engine.getScrimState()`).
+Anything not exported from an entry point: the controllers, the primitives,
+the features' internals and the engine's private fields. The DOM the
+components render is frozen only as far as the documented class names and
+`data-` attributes go.
 
 ## Reporting issues
 

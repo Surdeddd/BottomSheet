@@ -1,138 +1,164 @@
-# @surdeddd/bottom-sheet · Vanilla core
+# Without a framework
 
-Use `BottomSheetEngine` directly when you don't want a framework wrapper —
-e.g. inside Angular zones, Solid signals, Astro islands, or static HTML
-without a build step.
-
-## Install
+`BottomSheetEngine` is the engine every adapter wraps. Use it directly when
+there is no framework, or when you want markup the components do not give you.
 
 ```bash
 npm i @surdeddd/bottom-sheet
 ```
 
-## Usage
+If all you need is a sheet on a page without a build step, the
+[custom element](web-component.md) is less work.
+
+## Markup
+
+```html
+<div class="bs-root">
+  <div class="bs-backdrop"></div>
+  <section class="bs-sheet" data-mode="bottom" role="dialog" aria-label="Filters">
+    <div class="bs-handle" role="slider" tabindex="0" aria-label="Resize sheet"></div>
+    <div class="bs-header"><h2>Filters</h2></div>
+    <div class="bs-content">…</div>
+    <div class="bs-footer"><button>Apply</button></div>
+  </section>
+</div>
+```
+
+The root and the sheet are required: `.bs-root` holds the default tokens,
+`.bs-sheet` is the sheet. The handle, header, footer and backdrop are
+optional; `.bs-content` is the part that scrolls. `data-mode` is written by the
+engine too, but having it in the markup places the sheet correctly before the
+script runs.
+
+## The engine
 
 ```ts
 import { BottomSheetEngine } from "@surdeddd/bottom-sheet";
 import "@surdeddd/bottom-sheet/styles";
 
-const root = document.querySelector(".bs-root")!;
-const sheet = root.querySelector(".bs-sheet") as HTMLElement;
-const handle = root.querySelector(".bs-handle") as HTMLElement;
-const content = root.querySelector(".bs-content") as HTMLElement;
-const backdrop = root.querySelector(".bs-backdrop") as HTMLElement;
+const root = document.querySelector<HTMLElement>(".bs-root")!;
+const backdrop = root.querySelector<HTMLElement>(".bs-backdrop")!;
 
-const engine = new BottomSheetEngine({
-  element: sheet,
-  handle,
-  scrollContainer: content,
+const sheet = new BottomSheetEngine({
+  element: root.querySelector<HTMLElement>(".bs-sheet")!,
+  handle: root.querySelector<HTMLElement>(".bs-handle")!,
+  scrollContainer: root.querySelector<HTMLElement>(".bs-content")!,
   backdrop,
   snapPoints: [
-    { id: "minimized", size: 96 },
-    { id: "half",      size: "45%" },
-    { id: "full",      size: "85%" },
+    { id: "closed", size: 0 },
+    { id: "open", size: "fit" },
   ],
-  initial: "minimized",
-  animation: "spring",
+  initial: "closed",
   focusTrap: true,
-  closeOnEscape: true,
 });
 
-// Settled-state events
-engine.on("snap", ({ id, size }) => console.log("settled", id, size));
+document.querySelector("#filters")!.addEventListener("click", () => sheet.open());
 
-// 60fps progress (subscribe imperatively, do not store in framework state)
-engine.on("progress", ({ value }) => {
-  document.body.style.setProperty("--app-bs-progress", String(value));
+backdrop.addEventListener("click", () => {
+  if (sheet.canDismiss()) void sheet.close("backdrop");
 });
 
-backdrop.addEventListener("click", () => engine.close());
+sheet.on("closed", () => console.log("gone"));
 ```
 
-## Required HTML structure
+The engine fades the backdrop but does not listen to it; the tap-to-close
+handler above is the one the components install.
 
-```html
-<div class="bs-root">
-  <div class="bs-backdrop"></div>
-  <section class="bs-sheet" data-mode="bottom" role="dialog" aria-modal="false">
-    <div class="bs-handle" role="slider" tabindex="0" aria-label="Resize sheet">
-      <h2>Title</h2>
-    </div>
-    <div class="bs-content">
-      <!-- scrollable content -->
-    </div>
-  </section>
-</div>
-```
+The element options, next to the [options every adapter shares](../README.md#options):
 
-The engine writes inline styles + CSS variables (`--bs-size`,
-`--bs-progress`) to the sheet element. The library's stylesheet handles
-positioning, transitions, and fallbacks.
+| Option | What it is |
+| --- | --- |
+| `element` | The sheet. Required |
+| `handle` | The grabber; also the keyboard slider. Without it, the whole sheet starts a drag |
+| `scrollContainer` | The scroll area. A touch on it drags the sheet until the sheet is fully open, then scrolls |
+| `backdrop` | The dim layer; the engine sets its opacity |
+| `scrim` | A second layer for content behind the sheet; fades in with `progress` |
 
-## Lifecycle
+## Methods, events, state
+
+The [README](../README.md#methods) lists them. In short:
 
 ```ts
-engine.snapTo("half");     // animate to a snap, returns Promise
-engine.open();             // → first allowed snap with resolved size > 0
-engine.close(reason?);     // → first snap that resolves to size 0, else first allowed
-engine.expand();           // → largest allowed snap
-engine.collapse();         // → smallest allowed snap with size > 0
-engine.setAllowed(["min", "full"], "full");
-engine.setSnapPoints(newPoints);
-engine.recompute();        // re-measure a 'fit' / 'content' snap on demand
-engine.getResolvedSnaps(); // → [{ id, size }] resolved to pixels right now
-engine.destroy();          // remove all listeners + cancel animations
+await sheet.snapTo("open");
+await sheet.close();
+sheet.setAllowed(["open"]);
+sheet.on("snap", ({ id, size, progress }) => {});
+sheet.state.phase;
+sheet.destroy();
 ```
 
-`open()` / `close()` resolve their target by **resolved size**, not by snap-id
-name: `open()` picks the first allowed snap that currently measures > 0, and
-`close()` picks the first snap that resolves to size 0 (falling back to the
-first allowed). A snap literally named `"closed"` is not required.
+`destroy()` detaches the engine: its listeners, observers, the scroll lock and
+the focus trap all go. Call it when the markup goes away.
 
-## Runtime setters
+`open()` goes to the first allowed point with a size above zero, and `close()`
+to the point of size zero, whatever their ids are. A sheet without a zero
+point has nothing to close to; `close()` then takes it to its smallest point.
 
-Every knob can be flipped after construction — no remount:
+## Following the sheet
 
-```ts
-engine.setPersistent(true);   // block dismissal (backdrop / Escape / back)
-engine.setDisableClose(true); // block all closing, incl. programmatic
-engine.setDisableDrag(true);  // suppress the drag gesture
-engine.setRadius("28px");
-engine.setMaxHeight("92dvh"); // string cap re-resolves on viewport / orientation change
-engine.canDismiss();          // false while persistent / disableClose
+The engine writes `--bs-size` (pixels) and `--bs-progress` (0 to 1) on the
+sheet and on `.bs-root` on every frame, so anything inside the root can follow
+the sheet in CSS:
+
+```css
+.bs-root .fab {
+  bottom: calc(var(--bs-size) + 16px);
+}
 ```
 
-## Cancelable events & focus
+For the rest of the page, copy the value to wherever you need it:
 
 ```ts
-// Veto a transition — call cancel() synchronously:
-engine.on("before-snap", ({ id, previousId, cancel }) => {
-  if (formDirty) cancel();
-});
-engine.on("before-close", ({ reason, cancel }) => {
-  if (reason === "backdrop" && formDirty) cancel();
+sheet.on("progress", ({ value }) => {
+  document.documentElement.style.setProperty("--sheet-progress", String(value));
 });
 ```
 
-Pass `initialFocus: false` to focus the sheet container itself (a
-`tabindex=-1` is added if needed) instead of autofocusing the first field —
-this keeps the iOS software keyboard from popping up when a sheet with an
-`<input>` opens. A selector `string` or an `HTMLElement` targets a specific
-element instead.
+## Waiting for the history
+
+With `closeOnBack` or `routedTo`, closing the sheet goes one step back in the
+history, and the browser does that asynchronously. `await sheet.close()`
+resolves after it. Code that does not await the close can wait for the history
+itself before navigating:
+
+```ts
+import { historySettled } from "@surdeddd/bottom-sheet";
+
+void sheet.close();
+await historySettled();
+router.push("/next");
+```
+
+## Several sheets
+
+Create one engine per sheet. They stack in the order they open: each new one
+goes on top, Escape and the Back button close the top one, and focus returns
+down the stack as they close. `sheet.isTop()` and `sheet.depth()` tell a sheet
+where it is.
 
 ## Sheet manager
 
-For route-driven config registries (e.g. mapping URL routes to per-screen
-sheet configs), use `createSheetManager()`:
+`createSheetManager()` is a small registry for apps where the route decides
+which sheet configuration applies:
 
 ```ts
 import { createSheetManager } from "@surdeddd/bottom-sheet";
 
-const sheets = createSheetManager<"home" | "marker" | "panorama">({
-  home:   { snapPoints: [...], allowed: ["min", "half", "full"] },
-  marker: { snapPoints: [...], allowed: ["half", "full"], onOpen: () => focus() },
+const sheets = createSheetManager<"home" | "place">({
+  home: { snapPoints: homePoints, allowed: ["peek", "half", "full"] },
+  place: { snapPoints: placePoints, allowed: ["half", "full"], onOpen: focusPlace },
 });
 
-const cfg = sheets.resolve(currentRoute);
-sheets.transition(prev, next); // runs onClose(prev) then onOpen(next)
+sheets.transition(previousRoute, nextRoute);
+const config = sheets.resolve(nextRoute);
+if (config?.snapPoints) sheet.setSnapPoints(config.snapPoints, config.allowed);
 ```
+
+`transition()` calls `onClose` of the route you leave and `onOpen` of the one
+you enter. It holds configuration only; applying it to an engine is up to you.
+
+## A smaller engine
+
+`BottomSheetEngine` includes every optional feature.
+[`BottomSheetCore`](../README.md#slim-core) starts without them and takes the
+ones you list.

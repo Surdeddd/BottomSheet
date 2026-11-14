@@ -1,189 +1,219 @@
-# @surdeddd/bottom-sheet · Web Component
+# Custom element
 
-Custom element. Drop into Angular, Solid, Lit, jQuery, plain HTML — anything
-that accepts HTML.
-
-## Install
+`<bottom-sheet>` is a custom element with the engine and its styles inside. It
+works wherever HTML does: Angular, Lit, Astro, a server-rendered page, a plain
+file.
 
 ```bash
 npm i @surdeddd/bottom-sheet
 ```
 
-## Usage
+## A modal sheet
 
 ```html
-<link rel="stylesheet" href="@surdeddd/bottom-sheet/styles" />
 <script type="module">
   import "@surdeddd/bottom-sheet/element";
 </script>
 
-<bottom-sheet
-  snap-points='[{"id":"min","size":96},{"id":"half","size":"45%"},{"id":"full","size":"85%"}]'
-  initial="min"
-  animation="spring"
-  focus-trap="true"
-  close-on-escape="true"
->
-  <h2 slot="header">Search vehicles</h2>
-  <ul>
-    <li>…</li>
-  </ul>
+<button id="filters">Filters</button>
+
+<bottom-sheet snap-points="closed:0,open:fit" focus-trap="true">
+  <h2 slot="header">Filters</h2>
+  <form>…</form>
+  <button slot="footer">Apply</button>
 </bottom-sheet>
+
+<script type="module">
+  const sheet = document.querySelector("bottom-sheet");
+  document.querySelector("#filters").addEventListener("click", () => sheet.open());
+</script>
+```
+
+Importing the module registers `<bottom-sheet>`. The styles live in the
+element's shadow root, so there is no stylesheet to add.
+
+The element also has an `open` attribute, like `<details>`: it is there while
+the sheet is showing, and adding or removing it opens or closes the sheet.
+
+```js
+sheet.toggleAttribute("open", true);
+```
+
+Without a bundler, use the CDN build:
+
+```html
+<script src="https://unpkg.com/@surdeddd/bottom-sheet/dist/element.iife.global.js"></script>
 ```
 
 ## Attributes
 
-| Attribute | Type | Default | Description |
-| --- | --- | --- | --- |
-| `snap-points` | JSON or shorthand | required | `'[{"id":"min","size":96}]'` or `"min:96,half:45%"` |
-| `allowed` | comma list | all ids | `"min,half,full"` |
-| `initial` | string | first allowed | starting snap id |
-| `mode` | enum | `"bottom"` | `bottom \| top \| left \| right`, or logical `start \| end` |
-| `animation` | enum | `"spring"` | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy` |
-| `focus-trap` | bool | `false` | `"true"` to enable |
-| `close-on-escape` | bool | `true` | set `"false"` to disable |
-| `close-on-route-change` | bool | `false` | close when the URL changes |
-| `lock-body-scroll` | bool | `true` | set `"false"` for in-page sheets |
-| `backdrop` | bool | `true` | set `"false"` to omit backdrop |
-| `stack-effect` | bool | `false` | iOS card-stack scaling of back sheets |
-| `persistent` | bool | `false` | block dismissal; programmatic `close()` still works |
-| `disable-close` | bool | `false` | block all closing |
-| `disable-drag` | bool | `false` | suppress the drag gesture |
-| `drag-from` | `handle` \| `sheet` \| `zones` | `handle` | which regions start a drag; `zones` limits it to `[data-bs-drag]` subtrees |
-| `drag-from-content` | bool | `true` | whether a touch gesture on the scroll container drags the sheet |
-| `fit-content-to-snap` | bool | `false` | keep the whole scroll container reachable and the footer on screen at every snap point; read when the engine is built |
-| `radius` | length / px | — | corner radius |
-| `max-height` | length / px | — | height cap; a string is re-resolved on viewport changes |
-| `snap` | string | — | active snap id — set it to snap imperatively; at creation it wins over `initial` |
-| `backdrop-color` / `scrim-color` | color | — | scrim fill color |
-| `return-focus-to` | selector | opener | focus target on dismiss |
-| `stylesheet` | url | — | inject a stylesheet into the shadow root |
-| `sheet-label` | string | `"Bottom sheet"` | accessible name of the dialog |
+| Attribute | Default | What it does |
+| --- | --- | --- |
+| `snap-points` | one `full` point | `"min:96,half:45%,full:90%"`, or the JSON form `'[{"id":"min","size":96}]'` |
+| `allowed` | all ids | Comma list of the points the sheet may rest at |
+| `initial` | first allowed | The point to start at |
+| `snap` | none | The active point. Set it to move the sheet. At creation it wins over `initial` |
+| `open` | reflects the sheet | Present while the sheet is showing. `open="false"` at creation starts it closed |
+| `mode` | `bottom` | `bottom`, `top`, `left`, `right`, `start`, `end` |
+| `animation` | `spring` | `spring`, `ios-spring`, `material-bounce`, `snappy`, `tween`, `linear` |
+| `focus-trap` | `false` | `"true"` keeps Tab inside the sheet |
+| `close-on-escape` | `true` | `"false"` to switch off |
+| `close-on-route-change` | `false` | Close when the URL changes |
+| `lock-body-scroll` | `true` | `"false"` for a sheet that leaves the page scrollable |
+| `backdrop` | `true` | `"false"` to leave the backdrop out |
+| `backdrop-color` | stylesheet | Colour of the backdrop |
+| `scrim-color` | none | Fill of the scrim layer |
+| `persistent` | `false` | The user cannot dismiss the sheet; `close()` still works |
+| `disable-close` | `false` | Nothing closes the sheet |
+| `disable-drag` | `false` | Switch the gesture off |
+| `drag-from` | `handle` | `handle`, `sheet`, or `zones` for `[data-bs-drag]` subtrees only |
+| `drag-from-content` | `true` | Whether a touch on the scroll area drags the sheet |
+| `fit-content-to-snap` | `false` | [Keep the whole scroll area reachable](content-fit.md) at every point |
+| `stack-effect` | `false` | Scale the sheets behind the top one |
+| `radius` | `20px` | Corner radius |
+| `max-height` | none | Cap on the sheet's size |
+| `return-focus-to` | the opener | Selector of the element to focus on close |
+| `sheet-label` | `"Bottom sheet"` | Accessible name of the sheet |
+| `handle-label`, `content-label` | English | Accessible names of the handle and the scroll area |
+| `stylesheet` | none | URL of a stylesheet to load into the shadow root |
+| `options` | none | Any other [engine option](../README.md#options), as JSON |
 
-### Live attributes (no re-init)
+`mode`, `snap`, `open`, `radius`, `max-height`, `backdrop-color`,
+`scrim-color`, `persistent`, `disable-close`, `disable-drag`, `drag-from`,
+`drag-from-content`, `handle-label` and `content-label` are applied to the
+running sheet. Changing any other attribute rebuilds the engine; the sheet
+stays at its current point if that point still exists.
 
-`mode`, `radius`, `max-height`, `backdrop-color`, `scrim-color`, `snap`,
-`persistent`, `disable-close`, `disable-drag`, `drag-from` and
-`drag-from-content` apply in place — changing them mutates the running engine
-without tearing it down. Any other observed attribute triggers a
-re-init. The active snap survives DOM moves and structural re-inits: if the
-current snap id still exists in the new `snap-points`, the element re-opens at
-it instead of the `initial` attribute.
+### Every other option
+
+The attributes cover the common options. The rest go through `options`:
+
+```html
+<bottom-sheet
+  snap-points="closed:0,open:fit"
+  options='{"closeOnBack":true,"inertSiblings":true,"scrimPreset":"cinematic"}'
+></bottom-sheet>
+```
+
+For values JSON cannot hold, such as an `easing` function, set the property:
+
+```js
+sheet.options = { easing: t => t * t, autoCollapseAfter: 8000 };
+```
+
+An attribute wins over the same key in `options`.
 
 ## Slots
 
-| Slot | Purpose |
+| Slot | What goes in it |
 | --- | --- |
-| `header` | Header content |
-| (default) | Scrollable content |
-| `footer` | Footer content, pinned below the scroll area. Below the largest snap it sits under the screen edge unless `fit-content-to-snap` is set |
-| `leftButton` / `rightButton` | Docked above the sheet |
-| `screen` | Background fading by progress |
-| `anchor` | Anchored elements riding the sheet (see below) |
-
-## Anchored elements
-
-Any light-DOM child with `slot="anchor"` becomes an anchor — it is projected
-into a fixed wrapper that rides the sheet edge. The element itself stays a
-light-DOM child of `<bottom-sheet>`, so your page's CSS keeps styling it:
-
-```html
-<bottom-sheet snap-points="min:96,full:85%">
-  <button
-    slot="anchor"
-    data-position="sheet-top-right"
-    data-show-on="full"
-    data-animation="pop"
-  >
-    ✕
-  </button>
-  <nav slot="anchor" data-position="dock-bottom">…tab bar…</nav>
-  <p>content…</p>
-</bottom-sheet>
-```
-
-Supported data attributes: `data-position` (12 positions plus
-`dock-bottom | dock-top`), `data-show-on` (comma list of snap ids),
-`data-animation` (`fade | scale | slide | pop | none`), `data-inset`,
-`data-fade-range="0.4,1"`, `data-interactive="false"`. The element-level
-`addAnchor()` / `setScrimStages()` methods mirror the
-[engine API](anchors.md).
+| default | The scroll area |
+| `header`, `footer` | Regions above and below the scroll area. An empty one is hidden |
+| `leftButton`, `rightButton` | Buttons that float above the sheet's leading edge |
+| `screen` | Content of the scrim layer; fades in with `progress` |
+| `anchor` | An [anchored element](#anchored-elements) |
 
 ## Events
 
-The element dispatches DOM `CustomEvent`s — listen with `addEventListener`:
-
 ```js
-const sheet = document.querySelector("bottom-sheet");
-sheet.addEventListener("snap",     (e) => console.log(e.detail.id, e.detail.size));
-sheet.addEventListener("open",     (e) => console.log("opening", e.detail.id));
-sheet.addEventListener("opened",   (e) => console.log("open settled", e.detail.id));
-sheet.addEventListener("close",    ()  => console.log("closing"));
-sheet.addEventListener("closed",   ()  => console.log("close settled"));
-sheet.addEventListener("progress", (e) => console.log(e.detail.value));
-sheet.addEventListener("drag-start", (e) => console.log(e.detail.size));
-sheet.addEventListener("drag",       (e) => console.log(e.detail.size, e.detail.delta));
-sheet.addEventListener("drag-end",   (e) => console.log(e.detail.velocity));
+sheet.addEventListener("snap", event => console.log(event.detail.id));
+sheet.addEventListener("closed", () => sheet.remove());
 ```
 
-Full event set: `snap`, `before-snap`, `open`, `opened`, `close`, `closed`,
-`before-close`, `progress`, `drag-start`, `drag`, `drag-end`.
+| Event | `detail` | When |
+| --- | --- | --- |
+| `snap` | `{ id, size, progress }` | The sheet settled on a point |
+| `open`, `opened` | `{ id }` | It starts to appear; it has landed |
+| `close`, `closed` | none | It starts to leave; it is gone |
+| `before-snap` | `{ id, size, previousId }` | Before a move. Cancelable |
+| `before-close` | `{ reason }` | Before a close. Cancelable |
+| `drag-start`, `drag-end` | `{ size }`, `{ size, velocity }` | A drag begins and ends |
+| `drag`, `progress` | `{ size, delta }`, `{ value, size }` | Every frame of a drag; every frame of any motion |
 
-### Cancelable events
-
-`before-snap` and `before-close` are cancelable — call `e.preventDefault()` to
-veto the transition (the element translates that into the engine's synchronous
-`cancel()`):
+Stop a move with `preventDefault()`:
 
 ```js
-sheet.addEventListener("before-close", (e) => {
-  if (formDirty) e.preventDefault(); // keep the sheet open
+sheet.addEventListener("before-close", event => {
+  if (form.dirty) event.preventDefault();
 });
 ```
 
-## Imperative API
+## Methods and properties
 
 ```js
-const sheet = document.querySelector("bottom-sheet");
-await sheet.snapTo("full");
 await sheet.open();
-await sheet.close();          // close(reason?)
-await sheet.expand();         // largest allowed snap
-await sheet.collapse();       // smallest allowed snap > 0
-sheet.setAllowed(["min", "full"], "full");
+await sheet.close();
+await sheet.snapTo("full");
+await sheet.expand();
+await sheet.collapse();
+
+sheet.setAllowed(["half", "full"]);
+sheet.setMode("right");
 sheet.setRadius("28px");
 sheet.setMaxHeight("92dvh");
-sheet.recompute();            // re-measure a 'fit' / 'content' snap
-sheet.isTop();                // top of the multi-sheet stack?
-sheet.depth();                // open sheets above this one
-sheet.canDismiss();           // false when persistent / disable-close
-sheet.snap = "half";          // property setter — snaps imperatively
-const { activeId, progress } = sheet.sheetState ?? {};
-const engine = sheet.getEngine(); // full engine for anything else
+sheet.recompute();
+
+sheet.snap = "half";
+sheet.snap;
+sheet.sheetState;
+sheet.isTop();
+sheet.depth();
+sheet.canDismiss();
+sheet.getEngine();
 ```
 
-## Custom tag name
+`sheetState` is the engine's `{ activeId, size, progress, phase, isDragging,
+isAnimating }`. `getEngine()` returns the engine for everything else.
 
-```js
-import { defineBottomSheet } from "@surdeddd/bottom-sheet/element";
-defineBottomSheet("my-sheet"); // registers as <my-sheet>
-```
+In TypeScript, `TypedBottomSheetElement<"half" | "full">` types the element
+and its snap ids.
 
-## Stylesheet handoff
+## Anchored elements
 
-The element's Shadow DOM blocks page CSS. Pass an external stylesheet via
-the `stylesheet` attribute:
+A child with `slot="anchor"` rides the sheet's edge or stays fixed to the
+screen. It remains your element in your DOM, so your CSS styles it:
 
 ```html
-<bottom-sheet stylesheet="/styles.css" snap-points="…">…</bottom-sheet>
+<bottom-sheet snap-points="min:96,full:90%">
+  <button slot="anchor" data-position="sheet-top-right" data-show-on="full" data-animation="pop">
+    Close
+  </button>
+  <nav slot="anchor" data-position="dock-bottom">…</nav>
+  <p>…</p>
+</bottom-sheet>
 ```
 
-Or use `::part()` to pierce styling:
+`data-position`, `data-show-on` (comma list of snap ids), `data-animation`
+(`fade`, `scale`, `slide`, `pop`, `none`), `data-inset`,
+`data-fade-range="0.4,1"` and `data-interactive="false"` take the same values
+as the [`addAnchor()` options](anchors.md).
+
+## Styling
+
+Custom properties cross the shadow boundary, so the tokens work as they do
+everywhere else:
 
 ```css
-bottom-sheet::part(sheet)  { background: #18181b; }
+bottom-sheet {
+  --bs-surface: #18181b;
+  --bs-radius: 28px;
+}
+```
+
+For anything a token does not cover, style the parts:
+
+```css
+bottom-sheet::part(sheet) { box-shadow: 0 -8px 40px rgb(0 0 0 / 0.4); }
 bottom-sheet::part(handle) { padding: 16px; }
 ```
 
-Available parts: `backdrop`, `screen`, `sheet`, `handle`, `header`, `content`,
-`footer`, `left-button`, `right-button`.
+The parts are `sheet`, `handle`, `header`, `content`, `footer`, `backdrop`,
+`screen`, `left-button` and `right-button`. [All tokens →](theming.md)
+
+## Another tag name
+
+```js
+import { defineBottomSheet } from "@surdeddd/bottom-sheet/element";
+
+defineBottomSheet("app-sheet");
+```

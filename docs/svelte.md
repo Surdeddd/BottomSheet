@@ -1,17 +1,139 @@
-# @surdeddd/bottom-sheet · Svelte 5
+# Svelte 5
 
-Svelte 5 adapter. Ships `createBottomSheet()` — a rune-friendly controller
-factory you wire up via `$effect` and `bind:this`. The helper itself is plain
-TypeScript so it works under any Svelte 5 toolchain (Vite, SvelteKit, Astro)
-without extra build configuration.
-
-## Install
+`@surdeddd/bottom-sheet/svelte` has a `<BottomSheet>` component and a
+`createBottomSheet()` controller for when you want to write the markup
+yourself. Svelte 5, with runes.
 
 ```bash
-npm i @surdeddd/bottom-sheet svelte
+npm i @surdeddd/bottom-sheet
 ```
 
-## Usage
+## A modal sheet
+
+```svelte
+<script lang="ts">
+  import { BottomSheet } from "@surdeddd/bottom-sheet/svelte";
+  import "@surdeddd/bottom-sheet/styles";
+
+  let open = $state(false);
+</script>
+
+<button onclick={() => (open = true)}>Filters</button>
+
+<BottomSheet
+  bind:open
+  snapPoints={[
+    { id: "closed", size: 0 },
+    { id: "open", size: "fit" },
+  ]}
+  focusTrap
+>
+  {#snippet header()}<h2>Filters</h2>{/snippet}
+  {#snippet children()}<FilterForm />{/snippet}
+  {#snippet footer()}<button onclick={() => (open = false)}>Apply</button>{/snippet}
+</BottomSheet>
+```
+
+`bind:open` needs a snap point of size `0`; that point is the closed state.
+When `open` starts `false` the sheet starts there, and is hidden in the server
+markup. A backdrop tap, Escape, the Back button and a drag down all set `open`
+to `false`.
+
+## A sheet that stays on screen
+
+```svelte
+<script lang="ts">
+  import { BottomSheet } from "@surdeddd/bottom-sheet/svelte";
+
+  let snap = $state("peek");
+</script>
+
+<BottomSheet
+  bind:snap
+  snapPoints={[
+    { id: "peek", size: 96 },
+    { id: "half", size: "45dvh" },
+    { id: "full", size: "90%" },
+  ]}
+>
+  {#snippet header()}<h2>Nearby</h2>{/snippet}
+  {#snippet children()}<PlaceList onpick={() => (snap = "full")} />{/snippet}
+</BottomSheet>
+```
+
+`bind:snap` is the point the sheet rests at. Set it to move the sheet; it is
+updated when the sheet settles somewhere else. Without `initial`, the sheet
+starts at `snap`.
+
+## Props
+
+Every [engine option](../README.md#options) is a prop. The component adds:
+
+| Prop | Default | What it does |
+| --- | --- | --- |
+| `open` | uncontrolled | Whether the sheet is showing. Bindable |
+| `snap` | uncontrolled | The active snap point. Bindable |
+| `backdrop` | `true` | Render the backdrop |
+| `closeOnBackdrop` | `true` | A tap on the backdrop closes the sheet |
+| `teleportTo` | none | Element, selector or `"body"` to move the sheet's DOM to, out of a clipping or transformed ancestor. `teleport={false}` switches it off |
+| `ariaLabel` | `"Bottom sheet"` | Accessible name |
+| `handleLabel`, `contentLabel` | English | Accessible names of the handle and the scroll area |
+
+### Snippets
+
+| Snippet | What goes in it |
+| --- | --- |
+| `children` | The scroll area |
+| `header`, `footer` | Regions above and below the scroll area. Both receive the state |
+| `leftButton`, `rightButton` | Buttons that float above the sheet's leading edge |
+| `screen` | Content of the scrim layer; fades in with `progress` |
+
+### Callbacks
+
+| Prop | Receives | When |
+| --- | --- | --- |
+| `onsnap` | `id` | The sheet settled on a point |
+| `onopen`, `onopened` | `id` | It starts to appear; it has landed |
+| `onclose`, `onclosed` | nothing | It starts to leave; it is gone. Unmount in `onclosed` |
+| `onbeforesnap` | `{ id, size, previousId, cancel }` | Before a move. `cancel()` stops it |
+| `onbeforeclose` | `{ reason, cancel }` | Before a close. `reason` is `programmatic`, `backdrop`, `escape` or `back` |
+| `ondragstart`, `ondragend` | `{ size }`, `{ size, velocity }` | A drag begins and ends |
+| `ondrag`, `onprogress` | `{ size, delta }`, `{ value, size }` | Every frame of a drag; every frame of any motion |
+| `onchange` | `EngineState` | The state changed |
+
+`cancel()` must be called synchronously, inside the callback. `ondrag` and
+`onprogress` are subscribed only if they are present when the component
+mounts.
+
+### Props you can change after mount
+
+`open`, `snap`, `snapPoints`, `allowed`, `mode`, `radius`, `maxHeight`,
+`persistent`, `disableClose`, `disableDrag`, `dragFrom`, `dragFromContent`,
+`backdropColor` and `backdropOpacity` are applied to the running sheet.
+
+The remaining options, such as `animation` or `focusTrap`, are read once. To
+change one of them, wrap the component in a `{#key}` block.
+
+## Methods
+
+```svelte
+<script lang="ts">
+  let sheet: ReturnType<typeof BottomSheet>;
+</script>
+
+<BottomSheet bind:this={sheet} {snapPoints} />
+<button onclick={() => sheet.expand()}>Expand</button>
+```
+
+The instance has `snapTo`, `open`, `close`, `expand`, `collapse`,
+`setAllowed`, `setSnapPoints`, `recompute`, `isTop`, `depth`, `canDismiss`,
+`setRadius`, `setMaxHeight`, `setScrim`, `setScrimOverlay`, `addAnchor`,
+`setScrimStages`, `getState` and `getEngine`.
+
+## The controller
+
+`createBottomSheet()` gives you the methods and leaves the markup to you. It
+does not touch the DOM until you call `attach()`:
 
 ```svelte
 <script lang="ts">
@@ -23,20 +145,17 @@ npm i @surdeddd/bottom-sheet svelte
   let contentEl: HTMLElement | undefined = $state();
   let backdropEl: HTMLElement | undefined = $state();
 
-  const ctrl = createBottomSheet({
+  const sheet = createBottomSheet({
     snapPoints: [
-      { id: "min",  size: 96 },
-      { id: "half", size: "45%" },
-      { id: "full", size: "85%" },
+      { id: "peek", size: 96 },
+      { id: "full", size: "90%" },
     ],
-    initial: "min",
-    animation: "spring",
-    focusTrap: true,
+    initial: "peek",
   });
 
   $effect(() => {
     if (!sheetEl) return;
-    return ctrl.attach({
+    return sheet.attach({
       element: sheetEl,
       handle: handleEl,
       scrollContainer: contentEl,
@@ -44,155 +163,38 @@ npm i @surdeddd/bottom-sheet svelte
     });
   });
 
-  // React to settled snaps
-  let activeId = $state(ctrl.state().activeId);
-  $effect(() => {
-    return ctrl.on("snap", ({ id }) => (activeId = id));
-  });
+  let active = $state("peek");
+  $effect(() => sheet.on("snap", ({ id }) => (active = id)));
 </script>
 
 <div class="bs-root">
   <div class="bs-backdrop" bind:this={backdropEl}></div>
-  <section class="bs-sheet" bind:this={sheetEl} data-mode="bottom">
-    <div class="bs-handle" bind:this={handleEl}>
-      <h2>Search</h2>
-    </div>
-    <div class="bs-content" bind:this={contentEl}>
-      <YourList />
-    </div>
+  <section class="bs-sheet" data-mode="bottom" aria-label="Places" bind:this={sheetEl}>
+    <div class="bs-handle" role="slider" tabindex="0" aria-label="Resize sheet" bind:this={handleEl}></div>
+    <div class="bs-content" bind:this={contentEl}>…</div>
   </section>
 </div>
-
-<button onclick={() => ctrl.snapTo("full")}>Open</button>
-<p>Active: {activeId}</p>
 ```
 
-## Controller API
+`attach()` returns the teardown, which is why the effect returns it. The
+controller has the same methods as the component, plus `state()`, `on()` and
+`destroy()`.
 
-```ts
-type SvelteBottomSheetController = {
-  attach(refs: {
-    element: HTMLElement;
-    handle?: HTMLElement;
-    scrollContainer?: HTMLElement;
-    backdrop?: HTMLElement;
-    scrim?: HTMLElement;
-  }): () => void;                                            // returns teardown
+The controller keeps the options it was created with. To change the sheet
+afterwards, call its methods: `setAllowed()`, `setSnapPoints()`, or anything
+on `getEngine()`.
 
-  state(): EngineState;                                      // snapshot
-  on(event, fn): () => void;                                 // unsubscribe — full SheetEventMap
+## SvelteKit and server rendering
 
-  snapTo(id: string): Promise<void>;
-  open(id?: string): Promise<void>;
-  close(): Promise<void>;
-  expand(): Promise<void>;                                   // largest allowed snap
-  collapse(): Promise<void>;                                 // smallest allowed snap > 0
-  isTop(): boolean;
-  depth(): number;
-  setAllowed(ids: string[], snap?: string): void;
-  setSnapPoints(points: EngineOptions["snapPoints"], allowed?: string[]): void;
-  setScrim(opts: ScrimUpdate): void;
-  setScrimOverlay(opts: ScrimOverlayOptions): () => void;
-  addAnchor(opts: AnchorOptions): () => void;
-  setScrimStages(opts: ScrimStagesOptions | null): () => void;
-  recompute(): void;                                         // re-measure a 'fit' / 'content' snap
-  getEngine(): BottomSheetEngine | null;
-  destroy(): void;
-};
-```
+The adapter can be imported and rendered on the server. The engine attaches in
+`onMount`. A sheet that starts closed is rendered with `data-bs-rest="closed"`,
+which hides it until then.
 
-The controller's `on()` exposes the full engine event set (`snap`,
-`before-snap`, `open`, `opened`, `close`, `closed`, `before-close`,
-`dragstart`, `dragend`, `drag`, `progress`) — `before-snap` / `before-close`
-carry a synchronous `cancel()`.
+## Things to know
 
-## SvelteKit / SSR
-
-`createBottomSheet()` does not touch the DOM. The engine attaches only when
-you call `ctrl.attach()` from inside `$effect` (which never runs on the
-server). SSR pages render the static HTML shell; gestures activate on the
-client after hydration.
-
-## One-shot construction
-
-`createBottomSheet(opts)` snapshots `opts` at construction time. Reactive
-changes to `opts.snapPoints` / `opts.allowed` / `opts.mode` from the calling
-component DO NOT propagate to the engine — by design, to avoid silent
-reactivity bugs when callers pass non-reactive object literals.
-
-For runtime updates, use the controller methods:
-
-```svelte
-<script lang="ts">
-  let formDirty = $state(false);
-  const ctrl = createBottomSheet({ snapPoints, initial: "min" });
-
-  // Apply runtime allow-list changes:
-  $effect(() => {
-    ctrl.setAllowed(formDirty ? ["full"] : ["min", "full"]);
-  });
-
-  // Subscribe to engine events:
-  $effect(() => {
-    const off = ctrl.on("before-snap", e => {
-      if (formDirty && e.id === "closed") e.cancel();
-    });
-    return off;
-  });
-</script>
-```
-
-Engine recreation (changing `mode`, `animation`, `focusTrap`) requires
-calling `ctrl.destroy()` and constructing a fresh controller — the
-controller's `attach()` re-uses the constructor-time `opts` snapshot.
-
-## `<BottomSheet>` component
-
-A ready-made `<BottomSheet>` SFC is also exported for the common case — it
-renders the full DOM (backdrop, scrim, handle, header/footer, button slots)
-and wires the engine for you. Snippets fill the regions; callback props and
-`bind:` surface the engine events and state.
-
-```svelte
-<script lang="ts">
-  import { BottomSheet } from "@surdeddd/bottom-sheet/svelte";
-  import "@surdeddd/bottom-sheet/styles";
-
-  let open = $state(false);
-  let snap = $state("min");
-</script>
-
-<BottomSheet
-  snapPoints={[{ id: "min", size: 96 }, { id: "full", size: "85%" }]}
-  bind:open
-  bind:snap
-  focusTrap
-  onsnap={(id) => console.log("settled", id)}
-  onbeforeclose={(e) => { if (formDirty) e.cancel(); }}
->
-  {#snippet header()}<h2>Search</h2>{/snippet}
-  {#snippet children()}<YourList />{/snippet}
-  {#snippet footer()}<button>Done</button>{/snippet}
-</BottomSheet>
-```
-
-Snippet props: `header` / `footer` (receive the state), `children`,
-`leftButton` / `rightButton`, `screen`. Callback props:
-`onsnap`, `onbeforesnap`, `onopen`, `onopened`, `onclose`, `onclosed`,
-`onbeforeclose`, `ondragstart`, `ondragend`, `ondrag`, `onprogress`,
-`onchange`. `bind:open` and `bind:snap` are two-way; `persistent`,
-`disableClose`, `disableDrag`, `dragFrom`, `dragFromContent`, `radius`, `maxHeight`, `backdropColor`,
-`backdropOpacity`, `snapPoints` and `allowed` are reactive. `onbeforesnap` /
-`onbeforeclose` cancel synchronously; `ondrag` / `onprogress` only subscribe
-when the handler is supplied at mount.
-
-Teleport is **opt-in** (`teleport` defaults to `false`) — set `teleport` and
-optionally `teleportTo` to relocate the sheet DOM via the engine.
-
-## Controller vs. component
-
-The controller (`createBottomSheet`) is for full DOM control — you own the
-markup and wire refs via `$effect` + `bind:this`. The `<BottomSheet>`
-component is the batteries-included path. Both share the same engine; pick the
-controller when you need a custom DOM shape or to embed the sheet in an
-existing layout, the component otherwise.
+- **Do not set `z-index` on `.bs-sheet`, `.bs-backdrop` or anchors.** The
+  engine writes it on every change of the stack. See
+  [Theming → stacking](theming.md#stacking).
+- **Anchors and scrim stages** have no props on this component. Add them
+  through `addAnchor()` and `setScrimStages()`; see
+  [Anchors and scrim stages](anchors.md).

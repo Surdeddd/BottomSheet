@@ -1,50 +1,45 @@
-# @surdeddd/bottom-sheet · Lit (recipe)
+# Lit
 
-The library already ships a Web Component (`<bottom-sheet>`) — Lit users
-can drop it directly into templates without a wrapper.
+Lit needs no adapter. The package's [custom element](web-component.md) goes
+straight into a template, and Lit's bindings cover its attributes, properties
+and events.
 
 ```ts
 import { LitElement, html } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import "@surdeddd/bottom-sheet/element";
-import styles from "@surdeddd/bottom-sheet/styles?inline";
 
-@customElement("my-app")
-export class MyApp extends LitElement {
+@customElement("filter-panel")
+export class FilterPanel extends LitElement {
+  @state() private active = "closed";
+  @query("bottom-sheet") private sheet!: HTMLElement & { open(): Promise<void> };
+
   render() {
     return html`
-      <link rel="stylesheet" href="@surdeddd/bottom-sheet/styles" />
+      <button @click=${() => this.sheet.open()}>Filters (${this.active})</button>
+
       <bottom-sheet
-        snap-points='[{"id":"min","size":96},{"id":"half","size":"45%"},{"id":"full","size":"85%"}]'
-        initial="min"
-        animation="spring"
+        snap-points="closed:0,open:fit"
         focus-trap="true"
-        @snap=${(e: CustomEvent) => console.log("snap", e.detail.id)}
+        .options=${{ closeOnBack: true }}
+        @snap=${(event: CustomEvent<{ id: string }>) => (this.active = event.detail.id)}
       >
-        <h2 slot="header">Search</h2>
-        <ul>
-          <li>Item 1</li>
-          <li>Item 2</li>
-        </ul>
+        <h2 slot="header">Filters</h2>
+        <slot></slot>
       </bottom-sheet>
     `;
   }
 }
 ```
 
-## Notes
-
-- The `<bottom-sheet>` element auto-registers on import. To use a custom tag
-  name, import `defineBottomSheet` directly:
-
-  ```ts
-  import { defineBottomSheet } from "@surdeddd/bottom-sheet/element";
-  defineBottomSheet("my-sheet");
-  ```
-
-- Lit's `@event` syntax binds directly to the element's `CustomEvent`s
-  (`snap`, `before-snap`, `open`, `opened`, `close`, `closed`, `before-close`,
-  `progress`, `drag`, `drag-start`, `drag-end`). `before-snap` / `before-close`
-  are cancelable — call `e.preventDefault()` in the handler to veto.
-- The component uses Shadow DOM. Style via `::part(sheet)`, `::part(handle)`,
-  etc. Or pass `stylesheet="…"` for full control.
+- **No stylesheet.** The element carries its styles in its own shadow root.
+  Theme it with the `--bs-*` custom properties, which cross shadow boundaries,
+  or with `::part()`. See [Theming](theming.md).
+- **Attributes, properties, events.** `snap-points="…"` sets an attribute,
+  `.options=${…}` sets a property (the way to pass options that are not
+  strings), `@snap=${…}` listens to an event. The
+  [element guide](web-component.md) lists all three.
+- **Cancelable events.** `before-snap` and `before-close` are stopped with
+  `event.preventDefault()`.
+- **Another tag name.** `defineBottomSheet("app-sheet")` registers the element
+  under a name of your choice.

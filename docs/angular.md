@@ -1,25 +1,81 @@
-# @surdeddd/bottom-sheet · Angular (recipe)
+# Angular
 
-There is no first-party Angular adapter yet — but the vanilla core integrates
-cleanly with Angular 17+ standalone components in ~30 lines. The critical
-concern is `NgZone`: drag events fire ~60 fps and would otherwise trigger
-change detection on every frame.
+There is no Angular package. There are two ways to use the sheet, and both are
+short.
 
-## Recipe
+## The custom element
+
+The [custom element](web-component.md) works in an Angular template once the
+component allows unknown elements:
+
+```ts
+import { Component, CUSTOM_ELEMENTS_SCHEMA, signal } from "@angular/core";
+import "@surdeddd/bottom-sheet/element";
+
+@Component({
+  selector: "app-filters",
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `
+    <button (click)="$any(sheet).open()">Filters</button>
+
+    <bottom-sheet
+      #sheet
+      snap-points="closed:0,open:fit"
+      focus-trap="true"
+      (snap)="active.set($any($event).detail.id)"
+    >
+      <h2 slot="header">Filters</h2>
+      <ng-content />
+    </bottom-sheet>
+  `,
+})
+export class FiltersComponent {
+  readonly active = signal("closed");
+}
+```
+
+The element carries its own styles, and `(snap)`, `(opened)`, `(closed)` and
+the rest are ordinary DOM events. `$any()` is there because the template sees
+the element as a plain `HTMLElement`.
+
+Do not bind the per-frame events, `drag` and `progress`, in a template: each
+one would run change detection.
+
+In an app that still runs on zone.js, the element registers its pointer
+listeners inside the Angular zone, so a drag asks for change detection on
+every move. With `OnPush` components that costs little. If it shows up in a
+profile, use the engine directly, as below, or switch the app to zoneless
+change detection, which is the default from Angular 21.
+
+With server rendering, the import must not run on the server. Load it in the
+browser only:
+
+```ts
+import { afterNextRender } from "@angular/core";
+
+constructor() {
+  afterNextRender(() => import("@surdeddd/bottom-sheet/element"));
+}
+```
+
+## The engine in a component
+
+For markup of your own, create the engine in a component. The one rule is to
+create it outside the Angular zone: a drag fires on every frame, and inside
+the zone each frame would run change detection.
 
 ```ts
 import {
   Component,
   ElementRef,
-  Inject,
   NgZone,
-  PLATFORM_ID,
+  OnDestroy,
+  afterNextRender,
+  inject,
   signal,
-  ViewChild,
-  type AfterViewInit,
-  type OnDestroy,
+  viewChild,
 } from "@angular/core";
-import { isPlatformBrowser } from "@angular/common";
 import { BottomSheetEngine, type EngineState } from "@surdeddd/bottom-sheet";
 
 @Component({
@@ -28,100 +84,69 @@ import { BottomSheetEngine, type EngineState } from "@surdeddd/bottom-sheet";
   template: `
     <div class="bs-root">
       <div class="bs-backdrop" #backdrop></div>
-      <section class="bs-sheet" #sheet data-mode="bottom" role="dialog">
-        <div class="bs-handle" #handle role="slider" tabindex="0">
-          <ng-content select="[bsHeader]"></ng-content>
-        </div>
-        <div class="bs-content" #content>
-          <ng-content></ng-content>
-        </div>
+      <section class="bs-sheet" #sheet data-mode="bottom" aria-label="Places">
+        <div class="bs-handle" #handle role="slider" tabindex="0" aria-label="Resize sheet"></div>
+        <div class="bs-content" #content><ng-content /></div>
       </section>
     </div>
   `,
-  styleUrls: ["@surdeddd/bottom-sheet/styles"],
 })
-export class BottomSheetComponent implements AfterViewInit, OnDestroy {
-  @ViewChild("sheet")    sheetEl!: ElementRef<HTMLElement>;
-  @ViewChild("handle")   handleEl!: ElementRef<HTMLElement>;
-  @ViewChild("content")  contentEl!: ElementRef<HTMLElement>;
-  @ViewChild("backdrop") backdropEl!: ElementRef<HTMLElement>;
-
-  readonly state = signal<EngineState>({
-    size: 0, activeId: "", isDragging: false, isAnimating: false, progress: 0,
-  });
+export class BottomSheetComponent implements OnDestroy {
+  private readonly zone = inject(NgZone);
+  private readonly sheet = viewChild.required<ElementRef<HTMLElement>>("sheet");
+  private readonly handle = viewChild.required<ElementRef<HTMLElement>>("handle");
+  private readonly content = viewChild.required<ElementRef<HTMLElement>>("content");
+  private readonly backdrop = viewChild.required<ElementRef<HTMLElement>>("backdrop");
 
   private engine: BottomSheetEngine | null = null;
+  readonly state = signal<EngineState | null>(null);
 
-  constructor(
-    private zone: NgZone,
-    @Inject(PLATFORM_ID) private platformId: object,
-  ) {}
-
-  ngAfterViewInit() {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    // CRITICAL: instantiate outside zone — drag fires 60fps, never re-enter zone there
-    this.zone.runOutsideAngular(() => {
-      this.engine = new BottomSheetEngine({
-        element:         this.sheetEl.nativeElement,
-        handle:          this.handleEl.nativeElement,
-        scrollContainer: this.contentEl.nativeElement,
-        backdrop:        this.backdropEl.nativeElement,
-        snapPoints: [
-          { id: "min",  size: 96 },
-          { id: "half", size: "45%" },
-          { id: "full", size: "85%" },
-        ],
-        initial: "min",
-        animation: "spring",
+  constructor() {
+    afterNextRender(() => {
+      this.zone.runOutsideAngular(() => {
+        const engine = new BottomSheetEngine({
+          element: this.sheet().nativeElement,
+          handle: this.handle().nativeElement,
+          scrollContainer: this.content().nativeElement,
+          backdrop: this.backdrop().nativeElement,
+          snapPoints: [
+            { id: "peek", size: 96 },
+            { id: "half", size: "45dvh" },
+            { id: "full", size: "90%" },
+          ],
+          initial: "peek",
+        });
+        const sync = () => this.zone.run(() => this.state.set({ ...engine.state }));
+        engine.on("snap", sync);
+        engine.on("dragstart", sync);
+        engine.on("dragend", sync);
+        sync();
+        this.engine = engine;
       });
-
-      // Re-enter zone ONLY on settled events (so signals tick at most 3x per gesture)
-      const sync = () => this.zone.run(() => this.state.set(this.engine!.state));
-      this.engine.on("snap",      sync);
-      this.engine.on("dragstart", sync);
-      this.engine.on("dragend",   sync);
-
-      // 60fps progress stays out of zone — don't write signals here
-      // Use direct DOM updates if you need progress-driven UI:
-      // this.engine.on("progress", ({ value }) => this.someEl.style.opacity = String(value));
     });
+  }
+
+  snapTo(id: string) {
+    return this.engine?.snapTo(id);
   }
 
   ngOnDestroy() {
     this.engine?.destroy();
-    this.engine = null;
   }
-
-  snapTo(id: string) { return this.engine?.snapTo(id); }
-  open()  { return this.engine?.open(); }
-  close() { return this.engine?.close(); }
 }
 ```
 
-Use it in your templates:
+`afterNextRender` runs in the browser only, so the component is safe to render
+on the server. The signal is written when the sheet settles and when a drag
+starts or ends, never during the motion.
 
-```html
-<app-bottom-sheet>
-  <h2 bsHeader>Search</h2>
-  <ul>
-    <li *ngFor="let item of items">{{ item.title }}</li>
-  </ul>
-</app-bottom-sheet>
+Add the stylesheet once, in `angular.json`:
+
+```json
+"styles": ["node_modules/@surdeddd/bottom-sheet/dist/styles.css", "src/styles.css"]
 ```
 
-## Why no first-party adapter (yet)?
-
-Angular's build pipeline (Ivy partial compilation, decorator metadata) needs
-its own packaging story (`ng-packagr` or careful `tsup` config). Until the
-project is ready to ship Angular package metadata, the recipe above is the
-recommended integration. PRs welcome.
-
-## Notes
-
-- `runOutsideAngular` around the engine init is the load-bearing line. Without
-  it, every drag pixel triggers change detection on the entire app.
-- `isPlatformBrowser` guards SSR — Angular Universal would otherwise crash on
-  `document` access.
-- Use `signal<EngineState>` for reactive template bindings. The signal ticks
-  only on settled events, so the rest of the app pays nothing during drag.
+The example uses signal queries and `afterNextRender`. On an Angular version
+without them, use `@ViewChild` with `ngAfterViewInit`, and guard the body with
+`isPlatformBrowser`. In a zoneless app `runOutsideAngular` does nothing and
+can stay.

@@ -1,59 +1,51 @@
 # @surdeddd/bottom-sheet
 
-Русская версия: [README.ru.md](https://github.com/Surdeddd/BottomSheet/blob/main/README.ru.md)
+Bottom sheet, drawer and modal sheet for the web. One gesture engine with snap
+points, spring physics and keyboard accessibility, and the same engine behind
+adapters for **React, Vue 3, Svelte 5, Solid, Qwik, Preact** and a
+`<bottom-sheet>` **custom element** that works in Angular, Lit, Astro or plain
+HTML.
 
-> Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
-
-![bundle](https://img.shields.io/badge/core-%E2%89%A425.2%20KB%20gzip%20budget-1a1614?style=flat-square)
-![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.5%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-930%2B%20unit-2ea44f?style=flat-square)
-![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
+[![npm](https://img.shields.io/npm/v/@surdeddd/bottom-sheet?style=flat-square&color=1a1614)](https://www.npmjs.com/package/@surdeddd/bottom-sheet)
+[![downloads](https://img.shields.io/npm/dm/@surdeddd/bottom-sheet?style=flat-square&color=1a1614)](https://www.npmjs.com/package/@surdeddd/bottom-sheet)
+![core size](https://img.shields.io/badge/core-25.6%20KB%20gzip-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-1000%2B%20unit%20%C2%B7%20340%20e2e%20per%20engine-2ea44f?style=flat-square)
+![types](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
-A framework-agnostic bottom-sheet primitive. Spring physics, Pointer Events,
-GPU-only motion, full keyboard a11y, hardware-back interception, multi-sheet
-stacking — and the exact same engine behind every adapter.
-
-## 🚀 [Live demo → bottom-sheet-demo-ashy.vercel.app](https://bottom-sheet-demo-ashy.vercel.app)
-
-📚 [API reference (typedoc) → surdeddd.github.io/BottomSheet](https://surdeddd.github.io/BottomSheet/)
+**[Live demo](https://bottom-sheet-demo-ashy.vercel.app)** ·
+**[API reference](https://surdeddd.github.io/BottomSheet/)** ·
+[Changelog](CHANGELOG.md) ·
+[Русская версия](https://github.com/Surdeddd/BottomSheet/blob/main/README.ru.md)
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/sheet-dark.png" />
-    <img src="docs/screenshots/sheet-light.png" alt="bottom sheet at a mid snap point over a dimmed page" width="420" />
+    <img src="docs/screenshots/sheet-light.png" alt="A bottom sheet at its middle snap point over a dimmed page" width="380" />
   </picture>
+  <img src="https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/gifs/01-drag-to-close.gif" alt="Dragging the sheet between snap points and flicking it closed" width="300" />
 </p>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/gifs/01-drag-to-close.gif" alt="drag to close — spring physics" width="380" />
-</p>
+## Why this one
 
-<p align="center">
-  <img src="docs/assets/architecture.svg" alt="One engine core feeding eight adapters — React, Preact, Vue 3, Svelte, Solid, Qwik, Web Component and Vanilla — plus a standalone /overlay subpath" width="720" />
-</p>
-
-## What it does
-
-Every item below is verifiable in this repo's `src/`:
-
-- **8 build targets** — React, Preact, Vue 3, Svelte 5, Solid, Qwik, Web
-  Component (Lit-compatible `<bottom-sheet>`) and the vanilla core, plus an
-  `/overlay` subpath (standalone slide-up panel).
-- **4 axes** — `bottom`, `top`, `left`, `right` (via `mode`).
-- **Spring physics with velocity carry**, plus pointer-type-aware tuning
-  (separate touch / mouse / pen drag thresholds).
-- **Hardware-back interception** on Android — opt-in via `closeOnBack`.
-- **`env(safe-area-inset-*)`-aware padding** so action rows clear the home
-  indicator.
-- **WCAG 2.1 AA keyboard slider** — Arrow/Home/End/Esc stepping, focus trap
-  with restore.
-- **Multi-sheet stacking** plus a typed sheet-manager registry.
-- **Cancelable `before-snap` / `before-close`** — veto a transition
-  synchronously.
-- Backed by 930+ unit tests and ~330 Playwright e2e tests on each of
-  three browser engines (`mobile-chrome` / `mobile-safari` /
-  `firefox`).
+- **One engine, every framework.** The component you use in React behaves
+  exactly like the one in Vue, Svelte, Solid, Qwik or the custom element,
+  because they are thin adapters over the same core.
+- **Snap points in any unit.** Pixels, percentages, `fit` (the content's own
+  height) or any CSS length such as `50dvh` or `clamp(200px, 60%, 800px)`.
+- **Four edges.** `bottom`, `top`, `left`, `right`, plus `start` / `end` that
+  follow the writing direction.
+- **Feels native.** Spring physics with velocity carry, rubber-band over-drag,
+  separate thresholds for touch and mouse, motion on the compositor only.
+- **Accessible.** Keyboard slider on the handle, focus trap with restore,
+  `inert` for everything behind a modal sheet, reduced motion, forced colors.
+- **Knows about the phone.** Rests on top of the on-screen keyboard, respects
+  safe-area insets, closes on the Back button, locks page scroll the iOS-safe
+  way.
+- **Stacks.** Several sheets open at once, each with its own backdrop and focus
+  scope.
+- **Small and tree-shakable.** 25.6 KB gzip for the full engine, 21.9 KB for the
+  slim core, no runtime dependencies.
 
 ## Install
 
@@ -61,667 +53,618 @@ Every item below is verifiable in this repo's `src/`:
 npm i @surdeddd/bottom-sheet
 ```
 
-React / Vue / Svelte are listed as **optional peer deps** — install only
-the framework you use, the bundle pays only for that adapter.
+Frameworks are optional peer dependencies: you install only the one you use.
 
 ## Quick start
 
-### React
+### A modal sheet opened by a button
 
 ```tsx
+import { useState } from 'react';
 import { BottomSheet } from '@surdeddd/bottom-sheet/react';
 import '@surdeddd/bottom-sheet/styles';
 
-<BottomSheet
-  snapPoints={[
-    { id: 'minimized', size: 96 },
-    { id: 'half', size: '45dvh' },
-    { id: 'full', size: '85%' },
-  ]}
-  initial='minimized'
-  animation='spring'
-  spring={{ stiffness: 260, damping: 28 }}
-  focusTrap
-  closeOnEscape
-  header={<h2>Search vehicles</h2>}
->
-  <YourList />
-</BottomSheet>;
+export function Filters() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        snapPoints={[
+          { id: 'closed', size: 0 },
+          { id: 'open', size: 'fit' },
+        ]}
+        focusTrap
+        header={<h2>Filters</h2>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
 ```
 
-[Full React docs →](docs/react.md)
+`open` needs one snap point of size `0`: that is the closed state. A tap on the
+backdrop, Escape and a drag down all close the sheet and report it through
+`onOpenChange`.
 
-### Vue 3
+### A sheet that stays on screen
+
+The maps pattern: a strip at the bottom that the user pulls up.
+
+```tsx
+<BottomSheet
+  snapPoints={[
+    { id: 'peek', size: 96 },
+    { id: 'half', size: '45dvh' },
+    { id: 'full', size: '90%' },
+  ]}
+  initial="peek"
+  header={<h2>Nearby</h2>}
+>
+  <PlaceList />
+</BottomSheet>
+```
+
+### Other frameworks
+
+<details>
+<summary><b>Vue 3</b></summary>
 
 ```vue
-<script setup>
-  import { BottomSheet } from '@surdeddd/bottom-sheet/vue';
-  import '@surdeddd/bottom-sheet/styles';
+<script setup lang="ts">
+import { ref } from 'vue';
+import { BottomSheet } from '@surdeddd/bottom-sheet/vue';
+import '@surdeddd/bottom-sheet/styles';
+
+const open = ref(false);
+const points = [
+  { id: 'closed', size: 0 },
+  { id: 'open', size: 'fit' },
+];
 </script>
 
 <template>
-  <BottomSheet
-    :snap-points="snaps"
-    initial="minimized"
-    focus-trap
-    @snap="onSnap"
-  >
-    <template #header><h2>Search</h2></template>
-    <YourList />
+  <button @click="open = true">Filters</button>
+  <BottomSheet v-model:open="open" :snap-points="points" focus-trap>
+    <template #header><h2>Filters</h2></template>
+    <FilterForm />
   </BottomSheet>
 </template>
 ```
 
-[Full Vue docs →](docs/vue.md)
+[Vue guide →](docs/vue.md)
 
-### Svelte 5
+</details>
+
+<details>
+<summary><b>Svelte 5</b></summary>
 
 ```svelte
 <script lang="ts">
-  import { createBottomSheet } from "@surdeddd/bottom-sheet/svelte";
-  import "@surdeddd/bottom-sheet/styles";
+  import { BottomSheet } from '@surdeddd/bottom-sheet/svelte';
+  import '@surdeddd/bottom-sheet/styles';
 
-  let sheetEl: HTMLElement | undefined = $state();
-  let handleEl: HTMLElement | undefined = $state();
-  let contentEl: HTMLElement | undefined = $state();
-
-  const ctrl = createBottomSheet({
-    snapPoints: [{ id: "min", size: 96 }, { id: "full", size: "85%" }],
-    initial: "min",
-  });
-
-  $effect(() => {
-    if (!sheetEl) return;
-    return ctrl.attach({ element: sheetEl, handle: handleEl, scrollContainer: contentEl });
-  });
+  let open = $state(false);
 </script>
 
-<section class="bs-sheet" bind:this={sheetEl} data-mode="bottom">
-  <div class="bs-handle" bind:this={handleEl}><h2>Search</h2></div>
-  <div class="bs-content" bind:this={contentEl}><!-- list --></div>
-</section>
+<button onclick={() => (open = true)}>Filters</button>
+
+<BottomSheet
+  bind:open
+  snapPoints={[{ id: 'closed', size: 0 }, { id: 'open', size: 'fit' }]}
+  focusTrap
+>
+  {#snippet header()}<h2>Filters</h2>{/snippet}
+  {#snippet children()}<FilterForm />{/snippet}
+</BottomSheet>
 ```
 
-[Full Svelte docs →](docs/svelte.md)
+[Svelte guide →](docs/svelte.md)
 
-### Web Component (any framework)
+</details>
+
+<details>
+<summary><b>Solid</b></summary>
+
+```tsx
+import { createSignal } from 'solid-js';
+import { BottomSheet } from '@surdeddd/bottom-sheet/solid';
+import '@surdeddd/bottom-sheet/styles';
+
+export function Filters() {
+  const [open, setOpen] = createSignal(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+      <BottomSheet
+        open={open()}
+        onOpenChange={setOpen}
+        snapPoints={[{ id: 'closed', size: 0 }, { id: 'open', size: 'fit' }]}
+        focusTrap
+        header={<h2>Filters</h2>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
+```
+
+[Solid guide →](docs/solid.md)
+
+</details>
+
+<details>
+<summary><b>Qwik</b></summary>
+
+```tsx
+import { component$, useSignal } from '@builder.io/qwik';
+import { BottomSheet } from '@surdeddd/bottom-sheet/qwik';
+import '@surdeddd/bottom-sheet/styles';
+
+export const Filters = component$(() => {
+  const open = useSignal(false);
+  return (
+    <>
+      <button onClick$={() => (open.value = true)}>Filters</button>
+      <BottomSheet
+        open={open.value}
+        onOpenChange$={next => (open.value = next)}
+        snapPoints={[{ id: 'closed', size: 0 }, { id: 'open', size: 'fit' }]}
+        focusTrap
+      >
+        <h2 q:slot="header">Filters</h2>
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+});
+```
+
+[Qwik guide →](docs/qwik.md)
+
+</details>
+
+<details>
+<summary><b>Custom element</b> (Angular, Lit, Astro, plain HTML)</summary>
 
 ```html
-<link rel="stylesheet" href="/styles.css" />
-<script type="module" src="/element.js"></script>
+<script type="module">
+  import '@surdeddd/bottom-sheet/element';
+</script>
 
-<bottom-sheet
-  snap-points='[{"id":"min","size":96},{"id":"full","size":"85%"}]'
-  initial="min"
-  animation="spring"
-  focus-trap="true"
->
-  <h2 slot="header">Search</h2>
-  <ul>
-    ...
-  </ul>
+<button onclick="document.querySelector('bottom-sheet').open()">Filters</button>
+
+<bottom-sheet snap-points="closed:0,open:fit" focus-trap="true">
+  <h2 slot="header">Filters</h2>
+  <form>…</form>
 </bottom-sheet>
 ```
 
-[Full Web-Component docs →](docs/web-component.md)
-
-### CDN — no bundler, no install
-
-Drop-in usage from a static HTML page. The IIFE bundle registers
-`<bottom-sheet>` as a side effect — no JS glue required.
+The element carries its own styles in its shadow root; no stylesheet is needed.
+Without a bundler, load it from a CDN:
 
 ```html
-<!-- CDN, no bundler -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/@surdeddd/bottom-sheet/dist/styles.css"
-/>
 <script src="https://unpkg.com/@surdeddd/bottom-sheet/dist/element.iife.global.js"></script>
-<bottom-sheet
-  snap-points='[{"id":"min","size":96},{"id":"full","size":"85%"}]'
-  initial="min"
->
-  <h2 slot="header">Title</h2>
-  <p>Content</p>
-</bottom-sheet>
 ```
 
-### Vanilla core (no framework)
+[Custom element guide →](docs/web-component.md)
+
+</details>
+
+<details>
+<summary><b>No framework</b></summary>
+
+```html
+<div class="bs-root">
+  <div class="bs-backdrop"></div>
+  <section class="bs-sheet" data-mode="bottom" role="dialog" aria-label="Filters">
+    <div class="bs-handle" role="slider" tabindex="0" aria-label="Resize sheet"></div>
+    <div class="bs-content">…</div>
+  </section>
+</div>
+```
 
 ```ts
 import { BottomSheetEngine } from '@surdeddd/bottom-sheet';
 import '@surdeddd/bottom-sheet/styles';
 
-const engine = new BottomSheetEngine({
-  element: document.querySelector('.bs-sheet'),
-  handle: document.querySelector('.bs-handle'),
-  scrollContainer: document.querySelector('.bs-content'),
-  backdrop: document.querySelector('.bs-backdrop'),
+const root = document.querySelector('.bs-root')!;
+const sheet = new BottomSheetEngine({
+  element: root.querySelector('.bs-sheet')!,
+  handle: root.querySelector('.bs-handle')!,
+  scrollContainer: root.querySelector('.bs-content')!,
+  backdrop: root.querySelector('.bs-backdrop')!,
   snapPoints: [
-    { id: 'min', size: 96 },
-    { id: 'full', size: '85%' },
+    { id: 'closed', size: 0 },
+    { id: 'open', size: 'fit' },
   ],
-  animation: 'spring',
+  initial: 'closed',
 });
-engine.snapTo('full');
+
+document.querySelector('#filters')!.addEventListener('click', () => sheet.open());
 ```
 
-[Full vanilla docs →](docs/vanilla.md)
+[Vanilla guide →](docs/vanilla.md)
 
-## API at a glance
+</details>
 
-### Snap points
+Preact: `@surdeddd/bottom-sheet/preact` is the React adapter running on
+`preact/compat` ([guide](docs/preact.md)). Angular, Lit and Astro use the
+custom element or the engine: [Angular](docs/angular.md), [Lit](docs/lit.md),
+[Astro](docs/astro.md).
+
+## Concepts
+
+**Snap points** are the sizes the sheet can rest at. Each has an `id` you refer
+to and a `size`:
 
 ```ts
 type SnapPoint =
-  | number // pixels
-  | `${number}%` // percent of viewport along the axis
-  | 'fit' // natural height of the whole sheet (handle + header + content + footer)
-  | 'content' // alias of 'fit'
-  | 'full' // 100 % of axis
-  | string; // any CSS length — "50dvh", "clamp(200px, 60%, 800px)"
+  | number                 // pixels
+  | `${number}%`           // share of the viewport along the sheet's axis
+  | 'fit' | 'content'      // the sheet's own height: handle, header, content, footer
+  | 'full'                 // the whole axis
+  | string;                // any CSS length: "50dvh", "clamp(200px, 60%, 800px)"
 ```
 
-### Engine options
+A point of size `0` is the **closed** state. A sheet without one cannot be
+closed, only collapsed to its smallest point.
 
-| Option               | Default       | What it does                                                                                                               |
-| -------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `snapPoints`         | required      | Ordered list of `{ id, size }`                                                                                             |
-| `allowed`            | all ids       | Subset the sheet may settle on right now                                                                                   |
-| `initial`            | first allowed | Snap id to start at                                                                                                        |
-| `mode`               | `"bottom"`    | `bottom`, `top`, `left`, `right`, or logical `start` / `end`; reactive in React and Vue adapters                           |
-| `animation`          | `"spring"`    | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy`                                                     |
-| `settleAnimation`    | off           | `"waapi"` — settle runs as a compositor-driven Web Animation (pre-sampled spring keyframes); falls back to rAF automatically |
-| `features`           | all defaults  | `EngineFeature[]` — override/extend the composable feature set (see Slim core below)                                       |
-| `spring`             | snappy        | `{ stiffness, damping, mass }`                                                                                             |
-| `duration`, `easing` | `220 ms`, ease-out-back | Length and curve of the `tween` animation; `easing` is `(t: number) => number`                                   |
-| `respectReducedMotion` | `true`      | Jump straight to the snap under `prefers-reduced-motion: reduce`                                                           |
-| `flickVelocity`      | `0.65 px/ms`  | Flick threshold for touch and pen. A mouse flicks at a fixed 0.4 px/ms                                                     |
-| `dragThreshold`      | `18 px`       | A touch or pen drag shorter than this snaps back. A mouse uses a fixed 12 px                                               |
-| `rubberBand`         | `true`        | iOS-style soft over-drag                                                                                                   |
-| `backdropRange`      | `[0, 1]`      | Progress range over which backdrop fades                                                                                   |
-| `screenRange`        | `[0, 1]`      | Progress range over which the `screen`/scrim content fades                                                                 |
-| `scrimMode`          | `"full"`      | Where the scrim sits: the `full` screen, `above-sheet` (it stops at the sheet's edge) or `off`                             |
-| `scrimPreset`        | none          | `subtle`, `standard`, `monitoring` or `cinematic` — colour, blur and range in one option                                   |
-| `scrimColor`, `scrimBlur` | preset   | Scrim fill and the radius of its `backdrop-filter` blur                                                                    |
-| `scrimInteractive`   | `false`       | The scrim takes pointer input instead of letting it through to the page                                                    |
-| `scrimTapToClose`    | `false`       | A tap on the scrim closes the sheet                                                                                        |
-| `focusTrap`          | `false`       | Trap Tab focus inside the sheet while it is the top one. Mark a popup rendered outside the sheet (dropdown, date picker) with `data-bs-focus-allow` and focus may go there |
-| `initialFocus`       | first field   | Element / selector to focus on open; `false` focuses the sheet container (`tabindex=-1`) instead — avoids the iOS keyboard |
-| `closeOnEscape`      | `true`        | Listen for Escape and close                                                                                                |
-| `closeOnBack`        | `false`       | Close on the Back button. Pushes a history entry that keeps the router's `history.state`; see `historySettled()` below     |
-| `routedTo`           | none          | URL pushed while the sheet is open; Back closes the sheet and restores the address                                         |
-| `closeOnRouteChange` | `false`       | Close when the URL changes (`pushState` / `replaceState` / popstate). A History API call that keeps the URL does not count |
-| `lockBodyScroll`     | `true`        | iOS-safe body lock (`position: fixed`)                                                                                     |
-| `stackEffect`        | `false`       | iOS card-stack: back sheets scale down per depth                                                                           |
-| `inertSiblings`      | `false`       | Mark everything outside the sheet `inert` while it is the top one (full modal)                                             |
-| `persistent`         | `false`       | Block dismissal (backdrop / Escape / back); programmatic `close()` still works                                             |
-| `disableClose`       | `false`       | Block all closing: programmatic, drag to the closed snap, the handle's keys                                                |
-| `disableDrag`        | `false`       | Suppress the drag gesture (imperative snaps still work)                                                                    |
-| `dragFrom`           | `"handle"`    | Which regions start a drag: `"handle"`, `"sheet"` (whole sheet), or `"zones"` (only `[data-bs-drag]` subtrees). Defaults to `"sheet"` when no handle is given. `[data-bs-no-drag]` opts a subtree out in every mode. Also `setDragFrom()` / `getDragFrom()` — switching remounts the gesture, no component remount |
-| `dragFromContent`    | `true`        | Whether a touch gesture on the scroll container drags the sheet; override per snap point with `{ id, size, dragFromContent: false }`. Also `setDragFromContent()` |
-| `fitContentToSnap`   | `false`       | Keeps the whole scroll container reachable and the footer on screen at every snap point, not only the largest. Off by default; see [Content reachable at every snap](#content-reachable-at-every-snap) |
-| `radius`             | token default | Corner radius (`string` CSS length or `number` px); also `setRadius()`                                                     |
-| `maxHeight`          | none          | Cap the sheet height. `number` (px) or a string (`"92dvh"`, `"50%"`) re-resolved on viewport / orientation changes         |
-| `returnFocusTo`      | opener        | Focus target on dismiss — an `HTMLElement`, a selector `string`, or a `() => HTMLElement` factory                          |
-| `persistKey`         | none          | `localStorage` key: the sheet remembers its last snap and starts there next time                                           |
-| `autoCollapseAfter`  | off           | Milliseconds of rest after which the sheet returns to its smallest open snap                                               |
-| `linkedSheets`       | none          | Other engines that collapse to their smallest open snap when this one opens; also `setLinkedSheets()`                      |
-| `viewTransitions`    | `false`       | Move between snaps through `document.startViewTransition()` where the browser has it                                       |
+**Three layers** make up a sheet: the *sheet* itself, the *backdrop* that dims
+the page, and an optional *scrim* (`screen`) for content that fades in behind
+the sheet, such as a map preview or a blurred overlay.
 
-### Anchored elements, docked bars & scrim stages
+**State** is one object: `{ activeId, size, progress, phase, isDragging,
+isAnimating }`. `progress` runs from 0 at the smallest allowed point to 1 at the
+largest. `phase` is `closed`, `opening`, `open` or `closing`.
 
-Pin UI around the sheet — it rides the motion on the compositor (zero JS per
-frame) and shows/hides per state with configurable animations:
+## API
+
+Every option, method and event below works the same in every adapter. Component
+adapters take options as props (`focus-trap` in Vue templates, `focus-trap="true"`
+on the custom element).
+
+### Options
+
+Sizing and position
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `snapPoints` | required | List of `{ id, size }` |
+| `allowed` | all ids | The points the sheet may rest at right now |
+| `initial` | first allowed | The point to start at. A point larger than `0` starts the sheet open, with no `open` event |
+| `mode` | `"bottom"` | Edge: `bottom`, `top`, `left`, `right`, or `start` / `end` |
+| `maxHeight` | none | Cap on the sheet's size: pixels, or a CSS length resolved again when the viewport changes |
+| `radius` | `20px` | Corner radius |
+| `fitContentToSnap` | `false` | Keep the whole scroll area and the footer reachable at every point, not only the largest. [Details](docs/content-fit.md) |
+
+Motion
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `animation` | `"spring"` | `spring`, `ios-spring`, `material-bounce`, `snappy`, `tween`, `linear` |
+| `spring` | preset | `{ stiffness, damping, mass }` |
+| `duration`, `easing` | `220`, ease-out-back | Length in ms and curve `(t) => number` of the `tween` animation |
+| `settleAnimation` | off | `"waapi"` runs the settle as a compositor-driven Web Animation |
+| `respectReducedMotion` | `true` | Jump straight to the point under `prefers-reduced-motion: reduce` |
+| `viewTransitions` | `false` | Move between points through `document.startViewTransition()` where the browser has it |
+
+Gestures
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `dragFrom` | `"handle"` | Where a drag may start: the `handle`, the whole `sheet`, or `zones` (`[data-bs-drag]` subtrees only). `[data-bs-no-drag]` opts a subtree out. A sheet without a handle defaults to `sheet` |
+| `dragFromContent` | `true` | Whether a touch on the scroll area drags the sheet. Can be set per point: `{ id, size, dragFromContent: false }` |
+| `disableDrag` | `false` | Turn the gesture off; methods still work |
+| `rubberBand` | `true` | Soft over-drag past the last point |
+| `flickVelocity` | `0.65` px/ms | Speed at which a touch or pen release counts as a flick. A mouse uses a fixed 0.4 |
+| `dragThreshold` | `18` px | A touch or pen drag shorter than this snaps back. A mouse uses a fixed 12 |
+
+Closing
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `closeOnEscape` | `true` | Escape closes the top sheet |
+| `closeOnBack` | `false` | The Back button closes the sheet instead of leaving the page |
+| `routedTo` | none | URL shown while the sheet is open; Back closes it and restores the address |
+| `closeOnRouteChange` | `false` | Close when the URL changes |
+| `persistent` | `false` | The user cannot dismiss the sheet: no backdrop tap, Escape, Back, drag or key closes it. `close()` still does |
+| `disableClose` | `false` | Nothing closes the sheet, `close()` included |
+
+Focus and accessibility
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `focusTrap` | `false` | Move focus into the sheet when it opens, keep Tab inside it while it is the top one, and give focus back when it closes. Mark a popup rendered elsewhere with `data-bs-focus-allow` to let focus go there |
+| `initialFocus` | first focusable | With `focusTrap`: the element or selector that gets focus on open. The first focusable element is the handle; `false` focuses the sheet itself |
+| `returnFocusTo` | none | Element, selector or function: where to send focus on close. A focus trap already returns it to where it was |
+| `inertSiblings` | `false` | Make everything outside the sheet `inert` while it is the top one |
+| `lockBodyScroll` | `true` | Lock page scroll while the sheet is open |
+
+Backdrop and scrim
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `backdropRange` | `[0, 1]` | The stretch of `progress` over which the backdrop fades in |
+| `backdropOpacity` | `1` | The opacity the backdrop reaches at the end of that stretch |
+| `backdropColor` | `rgb(0 0 0 / 0.5)` | Colour of the backdrop; the same as the `--bs-backdrop-color` token |
+| `screenRange` | `[0, 1]` | The same stretch for the scrim |
+| `scrimMode` | `"full"` | `full` screen, `above-sheet` (stops at the sheet's edge) or `off` |
+| `scrimPreset` | none | `subtle`, `standard`, `monitoring`, `cinematic`: colour, blur and range in one |
+| `scrimColor`, `scrimBlur` | preset | Scrim fill and the radius of its `backdrop-filter` blur |
+| `scrimInteractive` | `false` | The scrim takes pointer input instead of letting it through |
+| `scrimTapToClose` | `false` | A tap on the scrim closes the sheet |
+
+More
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `stackEffect` | `false` | Scale the sheets behind the top one, like the iOS card stack |
+| `persistKey` | none | `localStorage` key: the sheet starts where it was left |
+| `autoCollapseAfter` | off | Milliseconds of rest after which the sheet returns to its smallest open point |
+| `linkedSheets` | none | Other engines that collapse when this one opens |
+| `features` | all | Feature list for the [slim core](#slim-core) |
+
+Component adapters add a few props of their own:
+
+| Prop | Default | What it does |
+| --- | --- | --- |
+| `open`, `onOpenChange` | uncontrolled | Controlled open state. `v-model:open` in Vue, `bind:open` in Svelte, `onOpenChange$` in Qwik, the `open` attribute on the element |
+| `snap` | uncontrolled | The active snap point, as a prop: `v-model:snap` in Vue, `bind:snap` in Svelte, `snap` with `onSnap$` in Qwik, the `snap` attribute on the element. React and Solid use the ref |
+| `header`, `footer` | none | Regions above and below the scroll area (slots in Vue, snippets in Svelte) |
+| `backdrop` | `true` | Render the backdrop |
+| `closeOnBackdrop` | `true` | A tap on the backdrop closes the sheet |
+| `teleportTo` | none | Move the sheet's DOM out of a clipping or transformed ancestor |
+| `ariaLabel` | `"Bottom sheet"` | Accessible name of the sheet |
+| `handleLabel`, `contentLabel` | English | Accessible names of the handle and the scroll area, for apps in another language |
+
+### Methods
 
 ```ts
-engine.addAnchor({
-  element: closeBtn,
-  position: 'sheet-top-right', // rides the sheet edge; 9 screen positions too
-  showOn: ['half', 'full'],    // snap ids or a predicate
-  animation: 'pop',            // fade | scale | slide | pop | custom keyframes
-});
+sheet.open();              // closed → the first allowed open point; an open sheet stays put
+sheet.open('half');        // to a specific point
+sheet.close();             // → the closed point; without one, the smallest point
+sheet.snapTo('full');
+sheet.expand();            // → the largest allowed point
+sheet.collapse();          // → the smallest allowed open point
 
-engine.addAnchor({
-  element: tabBar,
-  position: 'dock-bottom',     // full-width bar; the sheet slides under it
-});
+sheet.setAllowed(['half', 'full']);        // change where it may rest
+sheet.setSnapPoints(points);               // replace the points
+sheet.recompute();                         // re-measure a 'fit' point
+sheet.setMode('right');
+sheet.setPersistent(true);
+sheet.setDisableClose(true);
+sheet.setDisableDrag(true);
+sheet.setRadius('28px');
+sheet.setMaxHeight('92dvh');
+sheet.setBackdropOpacity(0.6);
+sheet.setBackdropColor('rgb(0 0 0 / 0.4)');
 
-engine.setScrimStages({
-  stages: [
-    { for: 'peek', element: teaser },
-    { forRange: [0.5, 1], element: expanded },
-  ],
-  animation: 'fade',
-});
+sheet.state;               // { activeId, size, progress, phase, isDragging, isAnimating }
+sheet.getResolvedSnaps();  // [{ id, size }] in pixels right now
+sheet.canDismiss();        // false while persistent or disableClose
+sheet.isTop();             // is it the top sheet of the stack?
+sheet.destroy();
 ```
 
-[Full anchors & stages docs →](docs/anchors.md)
+`open()`, `close()` and `snapTo()` return a promise that resolves when the
+sheet has landed. They are safe to call in the tick the sheet is mounted.
+
+When `setAllowed()` or `setSnapPoints()` takes the active point away, an open
+sheet moves to the nearest point that keeps it open.
+
+In components these are on the ref (`ref.current.open()`), on the element
+(`el.open()`), or on the object the composable returns. Anything missing there
+is one call away through `getEngine()`.
 
 ### Events
 
 ```ts
-engine.on('snap', ({ id, size, progress }) => {}); // settled state change
-engine.on('open', ({ id }) => {}); // 0 → >0 (enter starts)
-engine.on('opened', ({ id }) => {}); // enter settled
-engine.on('close', () => {}); // → 0 (exit starts)
-engine.on('closed', () => {}); // exit settled
-engine.on('dragstart', ({ size }) => {});
-engine.on('drag', ({ size, delta }) => {}); // ~60 fps — payload is pooled, don't retain
-engine.on('dragend', ({ size, velocity }) => {});
-engine.on('progress', ({ value, size }) => {}); // ~60 fps
+sheet.on('open', ({ id }) => {});       // the sheet starts to appear
+sheet.on('opened', ({ id }) => {});     // it has landed
+sheet.on('close', () => {});            // it starts to leave
+sheet.on('closed', () => {});           // it is gone: unmount here
+sheet.on('snap', ({ id, size, progress }) => {});   // it settled on a point
 
-// Cancelable — call cancel() synchronously to veto the transition:
-engine.on('before-snap', ({ id, size, previousId, cancel }) => {});
-engine.on('before-close', ({ reason, cancel }) => {}); // reason: programmatic | backdrop | escape | back
+sheet.on('dragstart', ({ size }) => {});
+sheet.on('drag', ({ size, delta }) => {});          // every frame
+sheet.on('dragend', ({ size, velocity }) => {});
+sheet.on('progress', ({ value, size }) => {});      // every frame of any motion
+
+sheet.on('before-snap', ({ id, previousId, cancel }) => {});
+sheet.on('before-close', ({ reason, cancel }) => {});
 ```
 
-`open` and `close` fire when the transition starts — together with the scroll
-lock, the focus trap and the history entry — and `opened` / `closed` when it
-lands. A transition reversed half-way announces itself again (`close`, `open`,
-`opened`), so `open` and `close` strictly alternate, while `opened` / `closed`
-are skipped when there was no landing. Unmount the sheet on `closed`, not on
-`close`. `engine.state.phase` is `closed`, `opening`, `open` or `closing`.
+Call `cancel()` synchronously inside `before-snap` or `before-close` to stop
+the move; `reason` is `programmatic`, `backdrop`, `escape` or `back`.
 
-### Imperative
+The scroll lock, the focus trap and the history entry go on at `open`. The
+history entry comes off at `close`; the lock and the trap at `closed`, when
+the sheet is gone. A move reversed half-way fires `open` or `close` again, so
+the two always alternate.
 
-```ts
-engine.snapTo('half');
-engine.open(); // → first allowed snap with resolved size > 0
-engine.close(reason?); // → first snap that resolves to size 0, else first allowed
-engine.expand(); // → largest allowed snap
-engine.collapse(); // → smallest allowed snap with size > 0
-engine.setAllowed(ids, snapId); // dynamic allowlist
-engine.setSnapPoints(points); // re-measure
-engine.recompute(); // re-measure a 'fit' / 'content' snap on demand
-engine.getResolvedSnaps(); // → [{ id, size }] resolved to pixels right now
-engine.setPersistent(bool); // toggle persistence (block dismissal) at runtime
-engine.setDisableClose(bool); // toggle close-blocking at runtime
-engine.setDisableDrag(bool); // toggle the drag gesture at runtime
-engine.setRadius('28px'); // corner radius
-engine.setMaxHeight('92dvh'); // height cap (re-resolved on viewport change)
-engine.canDismiss(); // false when persistent / disableClose
-engine.state.phase; // 'closed' | 'opening' | 'open' | 'closing'
-engine.isTop(); // top of the multi-sheet stack?
-engine.depth(); // open sheets above this one
-engine.destroy(); // remove listeners + cancel animation
-```
+Components expose these as `onSnap`, `onOpen`… props (React, Solid),
+`@snap`, `@open`… (Vue), `onsnap`… (Svelte), `onSnap$`… (Qwik) and DOM events
+on the custom element.
 
-When `setAllowed()` or `setSnapPoints()` takes the active snap away, an open
-sheet moves to the nearest point that keeps it open; it closes only when no
-open point is left. Pass the snap you want as the second argument of
-`setAllowed()` to choose it yourself.
+### The keyboard
 
-The handle is a keyboard slider: the arrow that points away from the sheet's
-edge grows it (`ArrowUp` for `bottom`, `ArrowDown` for `top`, `ArrowRight`
-for `left`, `ArrowLeft` for `right`), the opposite one shrinks it, and
-`Home` / `End` jump to the smallest and largest allowed snap.
+The handle is a slider. The arrow that points away from the sheet's edge grows
+it (`ArrowUp` for a bottom sheet, `ArrowLeft` for a right one), the opposite one
+shrinks it, `Home` and `End` jump to the smallest and largest point, `Escape`
+closes.
 
-With `closeOnBack` or `routedTo`, closing pops a history entry, and the
-browser applies `history.back()` asynchronously. `await engine.close()`
-resolves after the pop, so navigating right after it is safe; code that does
-not await the close can wait for the history itself:
+### More of the API
 
-```ts
-import { historySettled } from '@surdeddd/bottom-sheet';
-
-void sheet.close();
-await historySettled();
-router.push('/next');
-```
-
-`initial` starts the sheet **born open** at any snap whose size resolves `> 0`
-(no `open` / `opened` event fires — there is no transition to announce). Calling
-`open()` / `snapTo()` **synchronously in the mount tick is safe** — no
-`requestAnimationFrame` / `nextTick` delay is needed, including `fit` / `content`
-and teleported sheets. A sheet mounted hidden (`display:none` ancestor) heals
-and emits its open sequence once on reveal. See
-[Architecture → Opening at construction](docs/ARCHITECTURE.md).
-
-### Scrim runtime API
-
-The scrim is the dim layer behind/around the sheet (`screenComponent`). All
-scrim properties can be mutated at runtime — no remount needed.
-
-| Method | Purpose |
+| Topic | Guide |
 | --- | --- |
-| `setScrimMode('full' \| 'above-sheet' \| 'off')` | Switch positioning at runtime. `'off'` fully disables the scrim layer. |
-| `setScrimEnabled(boolean)` | Convenience switch — stashes/restores opacity ranges. |
-| `setScrimTapToClose(boolean)` | Install/teardown click-to-close on the scrim. |
-| `setScrimColor(color \| null)` / `setScrimBlur(blur \| null)` | Live color & backdrop-filter blur. `null` clears. |
-| `setScrimInteractive(boolean)` | Toggle `pointer-events` on the scrim layer. |
-| `setBackdropRange([s, e])` / `setScreenRange([s, e])` | Opacity-range mapping (progress 0..1 → opacity 0..1). |
-| `setScrim({ ... })` | Batch — applies preset + individual fields in one pass with a single `applySize`. |
-| `setScrimOverlay({ children, position, interactive })` | Inject a positioned floating element into the scrim area. Returns a teardown. Useful for monitoring-style "dim everything except this badge" UX. |
-| `getScrimState()` | Read-only `{ mode, enabled }` snapshot. Stable public API for introspection without coupling to internals. |
+| Buttons and bars pinned to the sheet's edge, scrim content per state | [Anchors and scrim stages](docs/anchors.md) |
+| Changing the scrim at runtime | [Theming → the scrim](docs/theming.md#the-scrim) |
+| A lighter slide-up panel without snap points | [Overlay](docs/overlay.md) |
+| Sheets configured per route | [Vanilla → sheet manager](docs/vanilla.md#sheet-manager) |
+| Navigating right after a close with `closeOnBack` | [Vanilla → waiting for the history](docs/vanilla.md#waiting-for-the-history) |
+| Moving the sheet from code, frame by frame | [Recipe: programmatic drag](docs/recipes/programmatic-drag.md) |
+| Your own engine extensions | [Plugins](docs/plugins.md) |
+| Right-to-left interfaces | [RTL](docs/rtl.md) |
 
-**Presets**: `'subtle' | 'standard' | 'monitoring' | 'cinematic'` — use via `scrimPreset` constructor option or `setScrim({ preset })`.
+## Styling
 
-### Overlay runtime API
+Everything visual is a CSS custom property. Set them on `.bs-root`, on a parent,
+or on `:root`; they reach into the custom element's shadow root too.
 
-The overlay engine (`@surdeddd/bottom-sheet/overlay`) is a standalone slide-up
-panel that mirrors the scrim's runtime-mutability story for content.
+```css
+.bs-root {
+  --bs-surface: #18181b;
+  --bs-radius: 28px;
+  --bs-handle-color: #71717a;
+  --bs-backdrop-color: rgb(0 0 0 / 0.6);
+}
+```
 
-| Method | Purpose |
-| --- | --- |
-| `setOverlayChildren(node \| fragment \| factory)` | Replace overlay contents at runtime. Pass a `Node`, a `DocumentFragment`, or a `() => Node` factory. |
-| `clearOverlayChildren()` | Remove any injected content. |
-| `setOverlay({ children, ... })` | Batch update — `children` is one of the accepted fields alongside positioning/preset overrides. |
+The engine writes `--bs-progress` (0 to 1) and `--bs-size` (pixels) on the
+sheet and on `.bs-root` on every frame, so anything inside the root, such as
+the `screen` layer or a floating button, follows the sheet without JavaScript:
 
-**Presets**: `OverlayPreset` is `'sheet' | 'dialog' | 'sidebar' | 'toast'` —
-exposed as the `OVERLAY_PRESETS` const map and accepted by `setOverlay({ preset })`.
+```css
+.bs-root .map-preview { filter: blur(calc(var(--bs-progress) * 8px)); }
+.bs-root .fab { bottom: calc(var(--bs-size) + 16px); }
+```
 
-### Sheet manager (route-based registry)
+Three ready-made looks ship as extra stylesheets:
 
 ```ts
-import { createSheetManager } from "@surdeddd/bottom-sheet";
+import '@surdeddd/bottom-sheet/themes/ios';       // also /material, /vercel
+```
 
-const sheets = createSheetManager<"home" | "marker" | "panorama">({
-  home:   { snapPoints: [...], allowed: ["min", "half", "full"], onOpen: loadHome },
-  marker: { snapPoints: [...], allowed: ["half", "full"],         onOpen: focusMarker, onClose: blur },
+```html
+<div class="bs-theme-ios"><!-- the sheet --></div>
+```
+
+[All tokens, themes, stacking and the custom element's parts →](docs/theming.md)
+
+## Accessibility
+
+What is built in, and what you switch on:
+
+- **The handle is a slider.** It has a label, a current value and arrow-key
+  steps, and it is in the tab order. Name it in your language with
+  `handleLabel`; `contentLabel` does the same for the scroll area.
+- **The sheet has a name.** `ariaLabel`, or `ariaLabelledBy` pointing at a
+  heading. With `focusTrap` it is a `dialog` with `aria-modal`.
+- **Focus.** `focusTrap` moves focus into the sheet, keeps Tab inside it and
+  returns focus to the opener on close. In a stack, only the top sheet traps.
+- **The page behind.** `inertSiblings` takes everything outside the top sheet
+  out of reach of the keyboard and of screen readers.
+- **Announcements.** Each settle is announced through a polite live region.
+- **Motion and contrast.** `prefers-reduced-motion` turns animations into
+  jumps, and `forced-colors` gets a border, a visible handle and a system
+  focus ring.
+
+A modal sheet should have `focusTrap` and `inertSiblings` both on.
+
+## Forms and the on-screen keyboard
+
+A bottom sheet rests on top of the phone keyboard, not under it, so a field
+being typed in stays visible. With `focusTrap`, focus goes to the handle when
+the sheet opens, so the keyboard stays down until the user taps a field;
+`initialFocus="#email"` starts in a field instead.
+
+To stop a sheet with unsaved input from closing, veto the move:
+
+```ts
+sheet.on('before-close', ({ cancel }) => {
+  if (form.isDirty) cancel();
 });
-
-// In your route watcher:
-sheets.transition(prev, next);
-const cfg = sheets.resolve(currentRoute); // typed!
 ```
 
-## Performance
+For React Hook Form and Formik this is one line:
 
-Three deliberate choices keep things 60 fps even on mid-range Android:
+```ts
+import { useFormGuard } from '@surdeddd/bottom-sheet/integrations/react-hook-form';
 
-1. **Transform-based positioning.** The sheet's `height` is set once to the
-   largest snap; size changes apply via `transform: translate3d(...)`. Stays
-   on the compositor — zero layout per frame.
-2. **Spring sub-stepping with single DOM write.** Stiff springs integrate at
-   240 Hz internally for stability, but the engine writes to the DOM exactly
-   once per `requestAnimationFrame`.
-3. **Settled-state-only React snapshot.** `useSyncExternalStore` refreshes
-   only on `snap` / `dragstart` / `dragend`. Drag pixels and animation frames
-   propagate via CSS variables (`--bs-progress`, `--bs-size`) and direct
-   imperative subscriptions — no React re-renders on every frame.
+useFormGuard(sheetRef, form); // stays put while submitting, stays open while dirty
+```
 
-## Slim core & composable features
+## Server rendering
 
-The default `BottomSheetEngine` ships every optional behavior preinstalled.
-If you only need the essentials, import the slim core (~21.4 KB gzip vs
-~25 KB) and register just the features you use:
+Every adapter can be imported and rendered on the server; the engine attaches
+on the client. A sheet that starts closed is hidden in the server markup, so
+nothing flashes before hydration. Next.js, Nuxt, SvelteKit, SolidStart, Qwik
+City and Astro work without extra setup; the per-framework guides cover the
+details.
+
+## Slim core
+
+The default engine includes every optional behaviour. If size matters more,
+start from the slim core and add the features you use:
 
 ```ts
 import { BottomSheetCore } from '@surdeddd/bottom-sheet/core';
 import { routeFeature, contentSwipeFeature } from '@surdeddd/bottom-sheet/features';
 
-const engine = new BottomSheetCore({
+const sheet = new BottomSheetCore({
   element, handle, snapPoints,
   closeOnBack: true,
   features: [routeFeature(), contentSwipeFeature()],
 });
 ```
 
-Optional features: `routeFeature()` (`closeOnBack` / `routedTo` /
-`closeOnRouteChange`), `visualViewportFeature()` (soft-keyboard clamp),
-`contentSwipeFeature()`, `persistFeature()`, `autoCollapseFeature()`.
-Everything else (gestures, snap math, resize self-heal, a11y slider, focus
-trap, scroll lock, scrim, stacking) is core. Setting an option whose feature
-is missing dev-warns once and is ignored in production. Custom features
-implement `{ name, install(ctx) }` — the same seam the built-ins use.
+| Entry | gzip | What is in it |
+| --- | --- | --- |
+| `@surdeddd/bottom-sheet` | 25.6 KB | The full engine |
+| `/core` | 21.9 KB | Gestures, snap points, focus, scroll lock, scrim, stacking |
+| `/features` | 4.2 KB | `routeFeature`, `visualViewportFeature`, `contentSwipeFeature`, `contentFitFeature`, `persistFeature`, `autoCollapseFeature` |
+| `/react` `/vue` `/svelte` `/solid` `/qwik` | 27 to 33 KB | The full engine plus the adapter |
+| `/element` | 33.3 KB | The full engine, the element and its styles |
+| `/overlay` | 8.4 KB | The standalone [overlay](docs/overlay.md) |
+| `/webgl` | 5.9 KB | Optional [GPU renderer](docs/webgl.md) for the sheet surface |
+| `/debug` | 0.9 KB | `attachDebugOverlay(engine)`: a live panel of the engine's state |
 
-### WebGL renderer (opt-in)
-
-```ts
-import { webglRenderer } from '@surdeddd/bottom-sheet/webgl';
-
-const engine = new BottomSheetEngine({
-  element, handle, snapPoints,
-  features: [webglRenderer({ jelly: 0.6 })],
-});
-```
-
-Paints the sheet surface — panel, radii, shadow, edge sheen — on the GPU. The
-moment a drag starts, the sheet's text is lifted into a texture so the whole
-sheet bends as one surface, and handed straight back to the DOM once it
-settles. Layout, scrolling, gestures and the accessibility tree never leave the
-DOM. 5.9 KB gzip, and only if you import it.
-Falls back to the DOM renderer, silently and mid-session if it has to, when
-there is no WebGL, under `prefers-reduced-motion`, or when the browser drops
-the GL context.
-
-[Full WebGL docs →](docs/webgl.md)
-
-### Debug overlay
-
-```ts
-import { attachDebugOverlay } from '@surdeddd/bottom-sheet/debug';
-
-const detach = attachDebugOverlay(engine);
-```
-
-A fixed dev panel showing the active snap, live size/progress, drag/animate
-flags and the resolved snap list — driven purely by public engine events,
-shipped as its own entry so it costs nothing in app bundles.
-
-### Qwik SSR
-
-The package declares a `qwik` field pointing at
-`dist/qwik-lib/index.qwik.mjs`. Qwik apps pick the adapter up automatically
-as a vendor root: the consumer optimizer segments it into QRL chunks and
-`renderToString` emits a resumable (`q:container="paused"`) sheet. No extra
-configuration — `import { BottomSheet } from '@surdeddd/bottom-sheet/qwik'`
-keeps working for CSR, and Qwik City SSR now works out of the box.
-
-## Theming
-
-All visuals are driven by CSS custom properties. Override anywhere:
-
-```css
-.bs-root {
-  --bs-surface: #18181b;
-  --bs-handle-color: #71717a;
-  --bs-radius: 28px;
-  --bs-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6);
-}
-```
-
-The engine writes `--bs-progress` (0..1) and `--bs-size` (px) to the sheet
-element — drive any CSS animation from drag without touching JS:
-
-```css
-.fab {
-  transform: scale(calc(1 - var(--bs-progress) * 0.3));
-}
-.map-canvas {
-  filter: blur(calc(var(--bs-progress) * 8px));
-}
-.search-input {
-  opacity: calc(1 - var(--bs-progress));
-}
-```
-
-> **z-index is engine-owned.** The stack controller rewrites inline `z-index` on
-> `.bs-sheet`, `.bs-backdrop` and anchor wrappers on every stack change (base
-> `100`, step `10` per depth), so a value you set is overwritten and races the
-> stack. To position the sheet layer against app UI, move the container
-> (teleport target / `.bs-root` parent) or change the open order — don't style
-> `z-index` on bs-managed elements. See
-> [Architecture → z-index & the sheet stack](docs/ARCHITECTURE.md).
-
-**Every sheet owns its backdrop.** Open a list, then a detail sheet over it,
-and both backdrops stay live: the dimming deepens with each level, and the
-sheet underneath stays masked for the whole time the one above it closes, so
-taps never reach the page mid-animation. Each backdrop follows its own sheet's
-progress, so a buried sheet that closes clears its own scrim. The stack keeps
-the order sheets started opening in — a sheet opened while another is still
-animating stays on top. If you want a single dim level, pass `backdrop={false}`
-(`:backdrop="false"` in Vue) to the sheets you open on top.
-
-### Content reachable at every snap
-
-The sheet is always as tall as its largest snap point and is moved with a
-transform; that is what keeps a drag on the compositor. The cost is that below
-the largest snap the bottom of the scroll container sits under the screen edge,
-by exactly `largest snap − current size`. At a half snap you can scroll, but the
-last rows never come into view until the sheet is pulled up.
-
-`fitContentToSnap` closes that gap:
-
-```tsx
-<BottomSheet snapPoints={points} fitContentToSnap>
-  <LongList />
-</BottomSheet>
-```
-
-When the sheet settles, the engine writes the hidden amount to
-`--bs-content-inset` and the stylesheet shrinks `.bs-content` by exactly that
-much, so the scroll container ends at the edge of the screen: the last row, a
-focused field and the scrollbar all stay in the visible part, and the thumb is
-sized for what you can actually see. The moment the sheet starts to move, it
-switches to the full-height container with a spacer of the same size at the end
-of the list, so the rows below the edge are already laid out when a drag or an
-animation reveals them. The switch changes the box and the scroll range by the
-same amount, so nothing on screen moves. That is one layout when motion starts
-and one when it settles, none per frame, so the motion stays transform-only.
-While the sheet moves, a list that was scrolled to its very end is held in place
-on screen instead of riding up with the sheet and dropping back at the end.
-
-The footer has the same problem and gets the same cure. It is the last thing in
-the sheet, so below the largest snap it sits under the screen edge along with
-the end of the list. With `fitContentToSnap` on, the shrunken container puts the
-footer at the bottom of the visible part of the sheet at rest, and while the
-sheet moves the stylesheet lifts `.bs-footer` by `--bs-size − --bs-max-size`, so
-it rides that edge on every frame of a drag or an animation, still without a
-layout. The list ends above it, not under it. On a snap too short to hold both,
-the footer slides under the screen edge instead of covering the handle. The
-WebGL renderer gets the same layout; while the sheet moves its footer paints
-the surface colour, and a drag lifts the list into a texture that follows the
-list's scroll position, so a list held at its end stays put there as well.
-
-#### Scrolling the list at every snap on touch
-
-Making the end of the list *reachable* and letting a finger *scroll* to it are
-two separate things. By default a swipe that starts on the content drags the
-sheet until it reaches its largest snap, and only then scrolls the list — the
-native sheet behaviour. On a mouse or trackpad the wheel scrolls at any snap
-regardless; on touch it does not. To scroll at a half snap with a finger, hand
-content swipes to the list and keep the handle (and header) for moving the
-sheet:
-
-```tsx
-<BottomSheet snapPoints={points} fitContentToSnap dragFromContent={false}>
-  <LongList />
-</BottomSheet>
-```
-
-`dragFromContent` can also be set per snap point, which keeps the native
-pull-to-expand feel at a small peek and frees the list from half upwards:
-
-```ts
-const points = [
-  { id: "peek", size: 120 },
-  { id: "half", size: "50%", dragFromContent: false },
-  { id: "full", size: "90%", dragFromContent: false },
-];
-```
-
-It applies to `bottom` sheets and expects the scroll container to be the growing
-child of the sheet's flex column, the way `.bs-content` is. For any other
-container, `data-bs-fit-content` on the sheet reads `rest` or `moving` and
-`--bs-content-inset` holds the hidden amount: shrink the container by it at
-rest, or pad the end of its content by it while moving. On the slim core add
-`contentFitFeature()` from `@surdeddd/bottom-sheet/features`.
-
-### Scrim, blur & high contrast
-
-| Token                    | Default     | Region                                               |
-| ------------------------ | ----------- | ---------------------------------------------------- |
-| `--bs-scrim-color`       | transparent | Fill of the scrim layer (`.bs-screen`)               |
-| `--bs-scrim-blur`        | `0px`       | `backdrop-filter: blur()` applied to the scrim layer |
-| `--bs-header-min-height` | `0px`       | Minimum height of the `.bs-header` region            |
-
-`--bs-scrim-blur` drives a real `backdrop-filter` blur on the scrim — set it
-for a frosted backdrop (or use the `monitoring` / `cinematic` scrim presets,
-which set both color and blur). Under Windows High Contrast / `forced-colors`
-the stylesheet ships a `@media (forced-colors: active)` block so the sheet
-surface, handle and focus ring stay visible.
-
-### Padding & layout
-
-Every region's padding is a token — override or zero it to go edge-to-edge.
-Defaults match the built-in look. Set the variable on the host / `.bs-root` /
-`:root`; custom properties inherit through the Web Component's shadow boundary,
-so the same override works for every adapter:
-
-| Token                  | Default               | Region              |
-| ---------------------- | --------------------- | ------------------- |
-| `--bs-content-padding` | `0 16px 16px`         | scrollable body     |
-| `--bs-handle-padding`  | `8px 16px 4px`        | grabber strip (top) |
-| `--bs-header-padding`  | `0 16px 8px`          | header slot         |
-| `--bs-footer-padding`  | `12px 16px (+ inset)` | footer slot         |
-
-(The footer default is `12px 16px calc(12px + env(safe-area-inset-bottom))` — it
-keeps action buttons clear of the home indicator.)
-
-```css
-.bs-root { --bs-content-padding: 0; }               /* full-bleed content */
-.bs-root { --bs-content-padding: 0 24px 24px; }      /* custom insets        */
-bottom-sheet { --bs-handle-padding: 0; }             /* Web Component, from the host */
-```
-
-A `maxHeight` (prop, or `max-height` attribute on the element) caps the sheet:
-a `'content'` / `'fit'` snap taller than the cap settles flush against the edge
-and the body scrolls internally — the sheet never lifts off its anchor and
-`--bs-size` always equals the rendered height.
-
-## Demo
-
-```bash
-npm run demo
-# http://localhost:5173
-```
-
-The editorial demo showcases the adapters, every gesture, every mode
-(`bottom · top · left · right · overlay`), and live engine readouts (active
-snap, progress, velocity, FPS). EN/RU and light/dark toggles in the corner.
-
-## Right-to-left
-
-`left` and `right` are physical edges and stay physical. For interfaces that
-flip with the writing direction, use the logical modes — `start` and `end`
-resolve against the direction that applies to the sheet, so `start` is the left
-edge in English and the right edge in Arabic:
-
-```ts
-new BottomSheetEngine({ element, handle, mode: 'start', snapPoints });
-```
-
-[Full RTL docs →](docs/rtl.md)
+An option whose feature is missing warns once in development and is ignored.
 
 ## Browser support
 
-Baseline: Chrome/Edge 80, Safari 13.1 (iOS 13.4), Firefox 72 — set by the
-ES2020 build target and the APIs the engine cannot work without (Pointer
-Events, CSS custom properties, `ResizeObserver`). Everything else, from
-`inert` to `backdrop-filter` to WebGL, is capability-checked and degrades.
+Chrome and Edge 80, Safari 13.1 (iOS 13.4), Firefox 72. That floor comes from
+the ES2020 build and from the APIs the engine cannot do without: Pointer
+Events, CSS custom properties, `ResizeObserver`. Everything else, from `inert`
+to `backdrop-filter` to WebGL, is detected and degrades.
+[Support matrix →](docs/browser-support.md)
 
-[Full support matrix →](docs/browser-support.md)
+## Documentation
 
-## Testing
+| | |
+| --- | --- |
+| Frameworks | [React](docs/react.md) · [Vue](docs/vue.md) · [Svelte](docs/svelte.md) · [Solid](docs/solid.md) · [Qwik](docs/qwik.md) · [Preact](docs/preact.md) · [Custom element](docs/web-component.md) · [Vanilla](docs/vanilla.md) · [Angular](docs/angular.md) · [Lit](docs/lit.md) · [Astro](docs/astro.md) |
+| Topics | [Theming](docs/theming.md) · [Anchors and scrim stages](docs/anchors.md) · [Content at every snap](docs/content-fit.md) · [Overlay](docs/overlay.md) · [RTL](docs/rtl.md) · [WebGL renderer](docs/webgl.md) · [Plugins](docs/plugins.md) |
+| Recipes | [Ten worked examples](docs/recipes/README.md): filter panel, checkout, comment thread, navigation drawer, mini player and more |
+| Examples | [Runnable projects](examples) for React, Vue, Svelte, Solid, Lit, the custom element and vanilla |
+| Coming from another library | [From vaul or react-modal-sheet](docs/MIGRATION.md) |
+| Project | [Architecture](docs/ARCHITECTURE.md) · [API stability](docs/api-stability.md) · [Browser support](docs/browser-support.md) · [Contributing](CONTRIBUTING.md) |
 
-```bash
-npm test                 # 930+ unit tests via vitest + happy-dom
-npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
-npm run typecheck        # TypeScript --noEmit
-```
+## For AI coding assistants
 
-CI runs all three across Node 20.19 / 22 on every PR and tag.
+[`llms.txt`](llms.txt) is a compact, complete description of the API written to
+be read by a model: entry points, every option, the method and event names, and
+the mistakes to avoid. It ships inside the npm package, next to this README.
 
 ## Contributing
 
-1. `npm install`
-2. `npm run dev` — tsup watch mode
-3. `npm run demo` — Vite dev server with live demo
-4. `npm test` — vitest watch
-5. Open a PR with a focused diff. The CI matrix gates merging.
+```bash
+npm install
+npm run demo        # the demo site on localhost:5173
+npm test            # unit tests
+npm run e2e         # browser tests
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Bugs and ideas go to
+[issues](https://github.com/Surdeddd/BottomSheet/issues).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).

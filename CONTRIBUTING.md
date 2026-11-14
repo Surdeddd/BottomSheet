@@ -1,6 +1,6 @@
 # Contributing to @surdeddd/bottom-sheet
 
-Thanks for considering a contribution. This is a headless library — every change ripples across 8 framework adapters, so the bar is high. Below is everything you need to ship a clean PR.
+Thanks for considering a contribution. One engine sits behind seven adapters, so a change to it shows up in all of them, and the tests are there to catch that. This page has what you need to get a pull request through.
 
 ## Quick start
 
@@ -10,9 +10,9 @@ cd bottom-sheet
 nvm use               # Node >= 20.19 — pinned in .nvmrc (dev toolchain requirement)
 npm install
 npm run build         # dist/ for SSR tests
-npm test              # 930+ unit tests via vitest + happy-dom
-npm run e2e           # Playwright e2e (mobile-chrome project; ~330 tests per browser)
-npm run demo          # http://localhost:5173 — interactive playground
+npm test              # unit tests: vitest + happy-dom
+npm run e2e           # browser tests: Playwright, Chromium
+npm run demo          # http://localhost:5173, the demo site
 ```
 
 The published package's `engines.node` stays at `>=20` for consumers; the
@@ -41,8 +41,9 @@ tests/
 └── e2e/               # Playwright (mobile-chrome / mobile-safari / firefox)
 
 demo/                  # vite-served playground (live on bottom-sheet-demo-ashy.vercel.app)
-docs/                  # per-framework guides + 10 recipes + MIGRATION.md
-examples/              # minimal Vite apps for each adapter (StackBlitz-ready)
+docs/                  # a guide per framework, topic guides, recipes
+examples/              # a minimal Vite app per adapter
+llms.txt               # the API in one file, for AI assistants; ships in the package
 ```
 
 Plugins are a runtime pattern (`engine.use(plugin)`), not a source folder —
@@ -72,21 +73,29 @@ Open an issue, get alignment, then PR.
 ```bash
 npm run typecheck     # tsc --noEmit
 npm test              # vitest
-npm run e2e           # Playwright
-npm run docs:check    # validate doc npm-script refs + internal links (CI-gated)
-npm run size          # size-limit — fails CI on regression
+npm run build         # dist/, which some tests and the size check read
+npm run e2e           # Playwright, Chromium
+npm run check:types   # the documented examples, compiled against dist/
+npm run docs:check    # every link, anchor and npm script named in the docs
+npm run size          # gzip budget of every entry
 npm run sync:css      # if you edited src/styles/bottom-sheet.css
-npm run build         # verify dist artifacts
+```
+
+CI also runs the browser tests on WebKit and Firefox:
+
+```bash
+npx playwright test --project=mobile-safari --project=firefox
 ```
 
 A `.husky/pre-commit` hook runs typecheck + vitest + sync:css drift-guard automatically.
 
 ## Conventions
 
-- **Comments**: WHY only. Don't explain WHAT — identifiers should do that. Don't reference review findings or PR numbers in code (rot fast).
-- **Breaking changes** in adapters: add a JSDoc deprecation notice for one minor before removing.
+- **Comments**: the source has none. A name says what a thing is; the reason for a decision goes into the commit message and, when it is about design, into `docs/ARCHITECTURE.md`. Pragmas such as `// @vitest-environment node` are fine.
+- **Behaviour changes**: say so in `CHANGELOG.md` under "Changed", with the old behaviour and how to keep it. Deprecate before you remove: one minor release with a development-mode warning.
+- **Documentation**: a new option goes into the table in `README.md`, its Russian twin `README.ru.md`, and `llms.txt`. `src/core/primitives/option-keys.ts` lists every option; a test fails if one is missing there.
 - **Engine guarantees**: cycle-nonce / destroyed-guard / SSR-safety patterns are non-negotiable. Read `src/core/BottomSheetEngine.ts` before modifying gesture or animation paths.
-- **Tests**: new public API needs at least one unit test. Engine-level changes also need an e2e if they touch gesture or animation timing.
+- **Tests**: write the failing test first. New public API needs a unit test; anything that touches gestures, layout or timing also needs a browser test. `demo/fixtures/features.html` mounts an engine with any options you pass, and `tests/e2e/features*.spec.ts` show how to drive it, so a new option rarely needs a fixture of its own.
 - **Bundle**: every entry has a gzip budget in the `size-limit` array in `package.json`, and that array is the only place the numbers live. `npm run size` gates CI on any regression past them; a change that needs more room moves the budget by the measured growth and says so in the changelog.
 
 ## Publishing a release

@@ -21,7 +21,7 @@ new BottomSheetEngine({
 ```
 
 The subpath is only pulled into your bundle if you import it: the main entry
-does not reference it. Measured cost when you do: **5.8 KB gzip**.
+does not reference it. Measured cost when you do: **5.9 KB gzip**.
 
 ## What it draws, and what it does not
 

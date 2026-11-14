@@ -16,7 +16,7 @@
 
 ## Why auto-expand on focus
 
-The minimized bar is just bait — users tap it expecting to type. Snapping to `full` on focus removes a manual step. The engine's `visualViewport` integration then keeps the send button above the soft keyboard automatically.
+The minimized bar is just bait — users tap it expecting to type. Snapping to `full` on focus removes a manual step. The sheet then rests on top of the on-screen keyboard by itself, which keeps the send button in view.
 
 ## Code
 
@@ -74,7 +74,7 @@ export function CommentComposer({ onSubmit }: { onSubmit: (text: string) => void
 ## Gotchas
 
 - **`closeOnEscape={false}` is intentional** — iOS Safari's keyboard "Done" fires Esc-equivalent; we want that to dismiss the keyboard only.
-- **`visualViewport` auto-clamp** — engine re-clamps `full` so the send button sits above the soft keyboard. Manual verification only (iOS 17+ Safari, Android 14 Chrome) — automated tests don't fire native keyboards.
+- **The keyboard needs no code** — the sheet lifts to rest on top of the on-screen keyboard and caps `full` to the space that is left, so the send button stays visible. Automated tests cannot raise a native keyboard, so check this one on a phone.
 - **Don't `position: fixed` the form** — fixed elements escape the sheet's transform during drag and tear visually.
 
 See also: [`docs/react.md`](../react.md) · [comment thread](./comment-thread.md) for inner-scroll variant · [main README](../../README.md).

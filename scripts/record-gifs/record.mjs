@@ -12,8 +12,9 @@ const OUT_DIR = join(ROOT, "docs", "gifs");
 
 const URL = process.env.DEMO_URL || "https://bottom-sheet-demo-ashy.vercel.app";
 const VIEWPORT = { width: 1280, height: 860 };
-const FPS = 16;
-const GIF_WIDTH = 380;
+const FPS = Number(process.env.GIF_FPS ?? 10);
+const GIF_WIDTH = Number(process.env.GIF_WIDTH ?? 300);
+const GIF_COLORS = Number(process.env.GIF_COLORS ?? 64);
 const WARMUP_MS = 1500;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -77,18 +78,17 @@ const SCENARIOS = [
     name: "01-drag-to-close",
     async run(page) {
       await api(page, "snap", "minimized");
+      await sleep(700);
+      await dragHandle(page, ".bs-handle", -420, 36, 14);
       await sleep(900);
-      await dragHandle(page, ".bs-handle", -440, 44, 14);
-      await sleep(1300);
+      await scrollContent(page, 280, 7, 60);
+      await sleep(500);
+      await scrollContent(page, -280, 7, 60);
       await sleep(400);
-      await scrollContent(page, 320, 8, 70);
-      await sleep(900);
-      await scrollContent(page, -320, 8, 70);
+      await dragHandle(page, ".bs-handle", 220, 24, 14);
       await sleep(800);
-      await dragHandle(page, ".bs-handle", 220, 28, 14);
+      await dragHandle(page, ".bs-handle", 420, 12, 5);
       await sleep(1100);
-      await dragHandle(page, ".bs-handle", 520, 16, 4);
-      await sleep(1500);
     },
   },
 ];
@@ -117,7 +117,7 @@ async function videoToGif(videoPath, gifPath, cropBox, trimStart) {
     "-i",
     videoPath,
     "-vf",
-    `${filterBase},palettegen=stats_mode=diff`,
+    `${filterBase},palettegen=max_colors=${GIF_COLORS}:stats_mode=diff`,
     palette,
   ]);
   await ffmpeg([
@@ -185,7 +185,7 @@ async function main() {
     await sleep(WARMUP_MS);
     const trimStart = (Date.now() - recordingStartedAt) / 1000;
 
-    const wrapBox = await page.locator(".device-wrap").boundingBox();
+    const wrapBox = await page.locator(".device-bezel").boundingBox();
     await sc.run(page);
     await sleep(400);
     const video = await page.video();
@@ -196,7 +196,7 @@ async function main() {
 
     let crop = null;
     if (wrapBox) {
-      const pad = 8;
+      const pad = 12;
       crop = {
         x: Math.max(0, Math.round(wrapBox.x - pad)),
         y: Math.max(0, Math.round(wrapBox.y - pad)),
