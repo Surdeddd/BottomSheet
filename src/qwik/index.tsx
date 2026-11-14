@@ -18,6 +18,10 @@ import {
   type TeleportTarget,
 } from "../core/features/teleport";
 import { guessPhysicalMode } from "../core/primitives/logical-mode";
+import {
+  pickEngineOptions,
+  type EngineConfig,
+} from "../core/primitives/option-keys";
 import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
@@ -28,35 +32,22 @@ import type {
   SheetMode,
 } from "../core/types";
 
-export type BottomSheetProps<TId extends string = string> = {
+type Serialisable = Omit<
+  Partial<EngineConfig>,
+  "snapPoints" | "allowed" | "initial" | "easing" | "linkedSheets" | "features"
+>;
+
+export type BottomSheetProps<TId extends string = string> = Serialisable & {
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
-  mode?: SheetMode;
-  animation?: EngineOptions["animation"];
-  spring?: { stiffness?: number; damping?: number; mass?: number };
-  focusTrap?: boolean;
-  closeOnEscape?: boolean;
-  closeOnBack?: boolean;
-  lockBodyScroll?: boolean;
-  rubberBand?: boolean;
-  backdropRange?: [number, number];
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
-  persistent?: boolean;
-  disableClose?: boolean;
-  disableDrag?: boolean;
-  dragFrom?: EngineOptions["dragFrom"];
-  dragFromContent?: boolean;
-  fitContentToSnap?: boolean;
-  closeOnRouteChange?: boolean;
-  stackEffect?: boolean;
   teleport?: boolean;
   teleportTo?: TeleportTarget;
-  returnFocusTo?: EngineOptions["returnFocusTo"];
   ariaLabel?: string;
-  radius?: string | number;
-  maxHeight?: string | number;
+  handleLabel?: string;
+  contentLabel?: string;
 
   onSnap$?: QRL<(id: TId) => void>;
   onOpen$?: QRL<(id: TId) => void>;
@@ -116,35 +107,14 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
     }
 
     const engineOpts: EngineOptions = {
+      ...pickEngineOptions(props as unknown as Record<string, unknown>),
       element: sheetRef.value,
       handle: handleRef.value,
       scrollContainer: contentRef.value,
       backdrop: props.backdrop !== false ? backdropRef.value : undefined,
       scrim: scrimRef.value,
       mode: props.mode ?? "bottom",
-
       snapPoints: props.snapPoints as unknown as SnapPointDef[],
-      allowed: props.allowed as unknown as string[] | undefined,
-      initial: props.initial,
-      animation: props.animation,
-      spring: props.spring,
-      focusTrap: props.focusTrap,
-      closeOnEscape: props.closeOnEscape,
-      closeOnBack: props.closeOnBack,
-      lockBodyScroll: props.lockBodyScroll,
-      rubberBand: props.rubberBand,
-      backdropRange: props.backdropRange,
-      persistent: props.persistent,
-      disableClose: props.disableClose,
-      disableDrag: props.disableDrag,
-      dragFrom: props.dragFrom,
-      dragFromContent: props.dragFromContent,
-      fitContentToSnap: props.fitContentToSnap,
-      closeOnRouteChange: props.closeOnRouteChange,
-      stackEffect: props.stackEffect,
-      returnFocusTo: props.returnFocusTo,
-      radius: props.radius,
-      maxHeight: props.maxHeight,
     };
 
     const teleportTarget =
@@ -315,12 +285,18 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
           ref={handleRef}
           role="slider"
           tabIndex={0}
-          aria-label="Resize sheet"
+          aria-label={props.handleLabel ?? "Resize sheet"}
         />
         <div class="bs-header" ref={headerRef}>
           <Slot name="header" />
         </div>
-        <div class="bs-content" ref={contentRef}>
+        <div
+          class="bs-content"
+          ref={contentRef}
+          tabIndex={0}
+          role="region"
+          aria-label={props.contentLabel ?? "Sheet content"}
+        >
           <Slot />
         </div>
         <div class="bs-footer" ref={footerRef}>

@@ -23,6 +23,25 @@ describe("@surdeddd/bottom-sheet/qwik — QRL lifecycle props (compile-time cont
     expect(marker).toBe(true);
   });
 
+  it("declares the engine options that can be serialised, and the labels", () => {
+    type _passed = Assert<
+      Has<"duration"> &
+        Has<"respectReducedMotion"> &
+        Has<"scrimPreset"> &
+        Has<"scrimTapToClose"> &
+        Has<"initialFocus"> &
+        Has<"routedTo"> &
+        Has<"inertSiblings"> &
+        Has<"persistKey"> &
+        Has<"autoCollapseAfter"> &
+        Has<"viewTransitions"> &
+        Has<"handleLabel"> &
+        Has<"contentLabel">
+    >;
+    const marker: _passed = true;
+    expect(marker).toBe(true);
+  });
+
   it("does NOT declare onDrag$/onProgress$ (per-frame QRL) or before-snap$/before-close$ (async QRL vs sync cancel)", () => {
     type _excluded = Assert<
       Missing<"onDrag$"> &

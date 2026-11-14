@@ -20,6 +20,8 @@ type Props = Omit<UseBottomSheetVueOptions<TId>, "onSnap"> & {
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
+  handleLabel?: string;
+  contentLabel?: string;
   open?: boolean;
   snap?: TId;
   teleport?: boolean;
@@ -34,6 +36,8 @@ const props = withDefaults(defineProps<Props>(), {
   backdrop: true,
   closeOnBackdrop: true,
   ariaLabel: "Bottom sheet",
+  handleLabel: "Resize sheet",
+  contentLabel: "Sheet content",
   teleport: true,
   teleportTo: "body",
   open: undefined,
@@ -392,7 +396,7 @@ defineExpose({
           role="slider"
           tabindex="0"
           :aria-orientation="isVerticalAxis ? 'vertical' : 'horizontal'"
-          aria-label="Resize sheet"
+          :aria-label="handleLabel"
         />
         <div v-if="$slots.header" class="bs-header">
           <slot name="header" :state="state" />
@@ -402,7 +406,7 @@ defineExpose({
           class="bs-content"
           tabindex="0"
           role="region"
-          aria-label="Sheet content"
+          :aria-label="contentLabel"
         >
           <slot />
         </div>

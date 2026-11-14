@@ -66,6 +66,28 @@ test.describe("Solid adapter props", () => {
     expect(await radius()).toBe("28px");
   });
 
+  test("engine options the adapter does not name itself reach the engine", async ({
+    page,
+  }) => {
+    const scrim = await page.evaluate(
+      () => document.querySelector<HTMLElement>(".bs-screen")!.style.background,
+    );
+    expect(scrim).toContain("rgba(0, 0, 0, 0.7)");
+  });
+
+  test("the handle and the content take their accessible names from props", async ({
+    page,
+  }) => {
+    await expect(page.locator(".bs-handle")).toHaveAttribute(
+      "aria-label",
+      "Resize the panel",
+    );
+    await expect(page.locator(".bs-content")).toHaveAttribute(
+      "aria-label",
+      "Panel content",
+    );
+  });
+
   test("the header is created once", async ({ page }) => {
     expect(await page.evaluate(() => window.bsSolid.headerMounts())).toBe(1);
     await expect(page.locator('[data-testid="solid-header"]')).toHaveCount(1);

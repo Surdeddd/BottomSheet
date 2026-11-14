@@ -1,4 +1,8 @@
 import { devWarn } from "../core/primitives/dev-warn";
+import {
+  pickEngineOptions,
+  type EngineConfig,
+} from "../core/primitives/option-keys";
 import type { EngineOptions, SnapPointDef } from "../core/types";
 import type {
   AnchorOptions,
@@ -31,6 +35,9 @@ export const ATTR_RETURN_FOCUS_TO = "return-focus-to";
 export const ATTR_BACKDROP_COLOR = "backdrop-color";
 export const ATTR_SCRIM_COLOR = "scrim-color";
 export const ATTR_SNAP = "snap";
+export const ATTR_OPTIONS = "options";
+export const ATTR_HANDLE_LABEL = "handle-label";
+export const ATTR_CONTENT_LABEL = "content-label";
 
 export const LIVE_ATTRS: ReadonlySet<string> = new Set([
   ATTR_MODE,
@@ -44,6 +51,8 @@ export const LIVE_ATTRS: ReadonlySet<string> = new Set([
   ATTR_DISABLE_DRAG,
   ATTR_DRAG_FROM,
   ATTR_DRAG_FROM_CONTENT,
+  ATTR_HANDLE_LABEL,
+  ATTR_CONTENT_LABEL,
 ]);
 
 export const OBSERVED_ATTRS: ReadonlyArray<string> = [
@@ -71,7 +80,25 @@ export const OBSERVED_ATTRS: ReadonlyArray<string> = [
   ATTR_BACKDROP_COLOR,
   ATTR_SCRIM_COLOR,
   ATTR_SNAP,
+  ATTR_OPTIONS,
+  ATTR_HANDLE_LABEL,
+  ATTR_CONTENT_LABEL,
 ];
+
+export const parseOptions = (raw: string | null): Partial<EngineConfig> => {
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return pickEngineOptions(parsed as Record<string, unknown>);
+    }
+  } catch {
+  }
+  devWarn(
+    `[BottomSheet] options="${raw}" is not a JSON object — ignored.`,
+  );
+  return {};
+};
 
 const isValidSnapPoint = (p: unknown): p is SnapPointDef =>
   !!p &&

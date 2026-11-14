@@ -18,6 +18,10 @@ import {
   type TeleportTarget,
 } from "../core/features/teleport";
 import { guessPhysicalMode } from "../core/primitives/logical-mode";
+import {
+  pickEngineOptions,
+  type EngineConfig,
+} from "../core/primitives/option-keys";
 import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
@@ -28,41 +32,20 @@ import type {
   SheetMode,
 } from "../core/types";
 
-export type BottomSheetProps<TId extends string = string> = {
+export type BottomSheetProps<TId extends string = string> = Omit<
+  Partial<EngineConfig>,
+  "snapPoints" | "allowed" | "initial"
+> & {
   snapPoints: SnapPointDef<TId>[] | ReadonlyArray<SnapPointDef<TId>>;
   allowed?: TId[] | ReadonlyArray<TId>;
   initial?: TId;
-  mode?: SheetMode;
-  animation?:
-    | "spring"
-    | "tween"
-    | "ios-spring"
-    | "material-bounce"
-    | "linear"
-    | "snappy";
-  spring?: { stiffness?: number; damping?: number; mass?: number };
-  focusTrap?: boolean;
-  closeOnEscape?: boolean;
-  closeOnBack?: boolean;
-  lockBodyScroll?: boolean;
-  rubberBand?: boolean;
-  backdropRange?: [number, number];
-  radius?: string | number;
-  maxHeight?: string | number;
-  persistent?: boolean;
-  disableClose?: boolean;
-  disableDrag?: boolean;
-  dragFrom?: EngineOptions["dragFrom"];
-  dragFromContent?: boolean;
-  fitContentToSnap?: boolean;
-  closeOnRouteChange?: boolean;
-  stackEffect?: boolean;
   teleport?: boolean;
   teleportTo?: TeleportTarget;
-  returnFocusTo?: EngineOptions["returnFocusTo"];
   backdrop?: boolean;
   closeOnBackdrop?: boolean;
   ariaLabel?: string;
+  handleLabel?: string;
+  contentLabel?: string;
   onSnap?: (id: TId) => void;
   onBeforeSnap?: (payload: SheetEventMap["before-snap"]) => void;
   onBeforeClose?: (payload: SheetEventMap["before-close"]) => void;
@@ -120,6 +103,7 @@ export const BottomSheet = <TId extends string = string>(
     if (!sheetEl) return;
 
     const engineOpts: EngineOptions = {
+      ...pickEngineOptions(props as unknown as Record<string, unknown>),
       element: sheetEl,
       handle: handleEl,
       scrollContainer: contentEl,
@@ -127,27 +111,6 @@ export const BottomSheet = <TId extends string = string>(
       scrim: scrimEl,
       mode: props.mode ?? "bottom",
       snapPoints: props.snapPoints as unknown as SnapPointDef[],
-      allowed: props.allowed as unknown as string[] | undefined,
-      initial: props.initial,
-      animation: props.animation,
-      spring: props.spring,
-      focusTrap: props.focusTrap,
-      closeOnEscape: props.closeOnEscape,
-      closeOnBack: props.closeOnBack,
-      lockBodyScroll: props.lockBodyScroll,
-      rubberBand: props.rubberBand,
-      backdropRange: props.backdropRange,
-      radius: props.radius,
-      maxHeight: props.maxHeight,
-      persistent: props.persistent,
-      disableClose: props.disableClose,
-      disableDrag: props.disableDrag,
-      dragFrom: props.dragFrom,
-      dragFromContent: props.dragFromContent,
-      fitContentToSnap: props.fitContentToSnap,
-      closeOnRouteChange: props.closeOnRouteChange,
-      stackEffect: props.stackEffect,
-      returnFocusTo: props.returnFocusTo,
     };
 
     const teleportTarget =
@@ -344,7 +307,7 @@ export const BottomSheet = <TId extends string = string>(
           ref={el => (handleEl = el)}
           role="slider"
           tabIndex={0}
-          aria-label="Resize sheet"
+          aria-label={props.handleLabel ?? "Resize sheet"}
         />
         <Show when={header()}>
           <div class="bs-header">{header()}</div>
@@ -354,7 +317,7 @@ export const BottomSheet = <TId extends string = string>(
           ref={el => (contentEl = el)}
           tabIndex={0}
           role="region"
-          aria-label="Sheet content"
+          aria-label={props.contentLabel ?? "Sheet content"}
         >
           {props.children}
         </div>

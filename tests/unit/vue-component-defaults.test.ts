@@ -129,6 +129,22 @@ describe("Vue <BottomSheet> engine defaults", () => {
     app.unmount();
   });
 
+  it("names the handle and the content from props", async () => {
+    const { app, host } = mount({
+      initial: "half",
+      handleLabel: "Изменить размер",
+      contentLabel: "Содержимое",
+    });
+    await flush();
+    expect(host.querySelector(".bs-handle")!.getAttribute("aria-label")).toBe(
+      "Изменить размер",
+    );
+    expect(host.querySelector(".bs-content")!.getAttribute("aria-label")).toBe(
+      "Содержимое",
+    );
+    app.unmount();
+  });
+
   it("locks the page and closes on Escape without being asked to", async () => {
     const { app, vm } = mount({
       initial: "half",

@@ -12,46 +12,38 @@
     EngineState,
     PhysicalSheetMode,
     SnapPointDef,
-    SheetMode,
     ScrimUpdate,
     ScrimOverlayOptions,
     EngineOptions,
     SheetEventMap,
   } from "../core/types";
 
-  type Props = {
+  type Props = Omit<
+    Partial<EngineOptions>,
+    | "element"
+    | "handle"
+    | "scrollContainer"
+    | "backdrop"
+    | "scrim"
+    | "screenComponent"
+    | "snapPoints"
+    | "allowed"
+    | "initial"
+  > & {
     snapPoints: SnapPointDef<TId>[];
     allowed?: TId[];
     initial?: TId;
-    mode?: SheetMode;
-    animation?: "spring" | "tween";
-    spring?: { stiffness?: number; damping?: number; mass?: number };
-    focusTrap?: boolean;
-    closeOnEscape?: boolean;
-    closeOnBack?: boolean;
-    lockBodyScroll?: boolean;
-    rubberBand?: boolean;
-    backdropRange?: [number, number];
     backdrop?: boolean;
     closeOnBackdrop?: boolean;
-    persistent?: boolean;
-    disableClose?: boolean;
-    disableDrag?: boolean;
-    dragFrom?: EngineOptions["dragFrom"];
-    dragFromContent?: boolean;
-    fitContentToSnap?: boolean;
-    closeOnRouteChange?: boolean;
-    stackEffect?: boolean;
     teleport?: boolean;
     teleportTo?: TeleportTarget;
-    radius?: string | number;
-    maxHeight?: string | number;
     backdropColor?: string;
     backdropOpacity?: number;
     open?: boolean;
     snap?: TId;
-    returnFocusTo?: HTMLElement | string | (() => HTMLElement | null);
     ariaLabel?: string;
+    handleLabel?: string;
+    contentLabel?: string;
     header?: Snippet<[EngineState & { activeId: TId }]>;
     footer?: Snippet<[EngineState & { activeId: TId }]>;
     leftButton?: Snippet;
@@ -105,6 +97,8 @@
     snap = $bindable(),
     returnFocusTo,
     ariaLabel = "Bottom sheet",
+    handleLabel = "Resize sheet",
+    contentLabel = "Sheet content",
     header,
     footer,
     leftButton,
@@ -123,6 +117,7 @@
     ondrag,
     onprogress,
     onchange,
+    ...engineRest
   }: Props = $props();
 
   let sheetEl: HTMLElement | undefined = $state();
@@ -162,6 +157,7 @@
       );
     }
     engine = new BottomSheetEngine({
+      ...engineRest,
       element: sheetEl,
       handle: handleEl,
       scrollContainer: contentEl,
@@ -381,7 +377,7 @@
       bind:this={handleEl}
       role="slider"
       tabindex="0"
-      aria-label="Resize sheet"
+      aria-label={handleLabel}
       aria-orientation={isVerticalAxis ? "vertical" : "horizontal"}
       aria-valuemin="0"
       aria-valuemax="0"
@@ -389,7 +385,7 @@
     ></div>
     {#if header}<div class="bs-header">{@render header(viewState)}</div>{/if}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-    <div class="bs-content" bind:this={contentEl} tabindex="0" role="region" aria-label="Sheet content">
+    <div class="bs-content" bind:this={contentEl} tabindex="0" role="region" aria-label={contentLabel}>
       {#if children}{@render children()}{/if}
     </div>
     {#if footer}<div class="bs-footer">{@render footer(viewState)}</div>{/if}

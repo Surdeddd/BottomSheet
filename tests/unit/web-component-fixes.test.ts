@@ -42,6 +42,81 @@ beforeEach(() => {
   });
 });
 
+describe("<bottom-sheet> options", () => {
+  it("takes any engine option from the options attribute", () => {
+    const sibling = document.createElement("main");
+    document.body.appendChild(sibling);
+    const el = create({
+      "snap-points": POINTS,
+      initial: "half",
+      options: JSON.stringify({ scrimPreset: "cinematic", inertSiblings: true }),
+    });
+    document.body.appendChild(el);
+    expect(inShadow(el, ".bs-screen").style.background).toContain(
+      "rgba(0, 0, 0, 0.7)",
+    );
+    expect(sibling.hasAttribute("inert")).toBe(true);
+    el.remove();
+  });
+
+  it("takes functions and nodes through the options property", async () => {
+    const target = document.createElement("button");
+    document.body.appendChild(target);
+    const el = create({ "snap-points": POINTS, initial: "half" }) as SheetElement & {
+      options: Record<string, unknown>;
+    };
+    el.options = { returnFocusTo: () => target, focusTrap: true };
+    document.body.appendChild(el);
+    await el.getEngine()!.close();
+    expect(document.activeElement).toBe(target);
+    el.remove();
+  });
+
+  it("lets an attribute win over the same key in options", () => {
+    const el = create({
+      "snap-points": POINTS,
+      initial: "half",
+      persistent: "false",
+      options: JSON.stringify({ persistent: true, disableDrag: true }),
+    });
+    document.body.appendChild(el);
+    expect(el.getEngine()!.canDismiss()).toBe(true);
+    el.remove();
+  });
+
+  it("ignores options that are not valid JSON", () => {
+    const el = create({
+      "snap-points": POINTS,
+      initial: "half",
+      options: "{nope",
+    });
+    expect(() => document.body.appendChild(el)).not.toThrow();
+    expect(el.getEngine()!.state.activeId).toBe("half");
+    el.remove();
+  });
+
+  it("names the handle and the content from attributes, also later", () => {
+    const el = create({
+      "snap-points": POINTS,
+      initial: "half",
+      "handle-label": "Изменить размер",
+      "content-label": "Содержимое",
+    });
+    document.body.appendChild(el);
+    expect(inShadow(el, ".bs-handle").getAttribute("aria-label")).toBe(
+      "Изменить размер",
+    );
+    expect(inShadow(el, ".bs-content").getAttribute("aria-label")).toBe(
+      "Содержимое",
+    );
+    const engine = el.getEngine();
+    el.setAttribute("handle-label", "Resize");
+    expect(inShadow(el, ".bs-handle").getAttribute("aria-label")).toBe("Resize");
+    expect(el.getEngine()).toBe(engine);
+    el.remove();
+  });
+});
+
 describe("<bottom-sheet> attributes", () => {
   it("starts on the snap named by the snap attribute", () => {
     const el = create({ "snap-points": POINTS, initial: "closed", snap: "half" });

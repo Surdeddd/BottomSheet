@@ -36,20 +36,18 @@ const reset = (): void => {
   }
 };
 
-describe("adapters with an explicit prop list declare and forward fitContentToSnap", () => {
+describe("adapters forward fitContentToSnap with every other engine option", () => {
   it.each([
-    ["svelte component", "svelte/BottomSheet.svelte"],
-    ["solid", "solid/index.tsx"],
-    ["qwik", "qwik/index.tsx"],
-  ])("%s", (_name, file) => {
-    const text = src(file);
-    expect(text).toMatch(/fitContentToSnap\?: boolean/);
-    expect(text.match(/fitContentToSnap/g)!.length).toBeGreaterThanOrEqual(2);
+    ["svelte component", "svelte/BottomSheet.svelte", /\.\.\.engineRest,/],
+    ["solid", "solid/index.tsx", /pickEngineOptions\(/],
+    ["qwik", "qwik/index.tsx", /pickEngineOptions\(/],
+  ])("%s", (_name, file, forwards) => {
+    expect(src(file)).toMatch(forwards);
   });
 
-  it("svelte's public declaration lists it", () => {
+  it("svelte's public declaration takes every engine option", () => {
     expect(src("svelte/index.d.ts.template")).toMatch(
-      /fitContentToSnap\?: boolean/,
+      /BottomSheetProps<TId extends string = string> = Omit<\s*Partial<EngineOptions>/,
     );
   });
 

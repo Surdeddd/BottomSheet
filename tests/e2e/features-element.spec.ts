@@ -255,6 +255,87 @@ test.describe("<bottom-sheet> attributes", () => {
     expect(await page.evaluate(() => document.activeElement?.id)).toBe("after");
   });
 
+  test("options carries every engine option the attributes do not cover", async ({
+    page,
+  }) => {
+    await mountEl(
+      page,
+      markup(
+        `options='{"inertSiblings":true,"scrimPreset":"cinematic","initialFocus":"#el-field","focusTrap":true}'`,
+        '<input id="el-field" aria-label="field" /><p>content</p>',
+      ),
+    );
+    expect(await partStyle(page, "screen", "background-color")).toBe(
+      "rgba(0, 0, 0, 0.7)",
+    );
+    expect(await page.evaluate(() => document.activeElement?.id)).toBe(
+      "el-field",
+    );
+    const inert = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("[inert]"), node => node.id),
+    );
+    expect(inert).toEqual(expect.arrayContaining(["app", "sibling"]));
+    expect(inert).not.toContain("element-mount");
+
+    await page.evaluate(() => void window.elementLab.el().close());
+    await elSettled(page);
+    expect(
+      await page.evaluate(() => document.querySelectorAll("[inert]").length),
+    ).toBe(0);
+  });
+
+  test("the options property takes functions, and an attribute wins over it", async ({
+    page,
+  }) => {
+    await page.evaluate(() => {
+      const el = document.createElement("bottom-sheet") as HTMLElement & {
+        options: Record<string, unknown>;
+        getEngine: () => { canDismiss: () => boolean; close: () => Promise<void> };
+      };
+      el.setAttribute("snap-points", "closed:0,open:240");
+      el.setAttribute("initial", "open");
+      el.setAttribute("animation", "tween");
+      el.setAttribute("persistent", "false");
+      el.options = {
+        persistent: true,
+        returnFocusTo: () => document.getElementById("after"),
+      };
+      el.id = "prop-sheet";
+      document.getElementById("element-mount")!.append(el);
+    });
+    const result = await page.evaluate(async () => {
+      const el = document.getElementById("prop-sheet") as HTMLElement & {
+        getEngine: () => { canDismiss: () => boolean; close: () => Promise<void> };
+      };
+      const dismissible = el.getEngine().canDismiss();
+      await el.getEngine().close();
+      const focused = document.activeElement?.id;
+      el.remove();
+      return { dismissible, focused };
+    });
+    expect(result).toEqual({ dismissible: true, focused: "after" });
+  });
+
+  test("handle-label and content-label name the parts, also on a live sheet", async ({
+    page,
+  }) => {
+    await mountEl(
+      page,
+      markup('handle-label="Изменить размер" content-label="Содержимое"'),
+    );
+    const names = () =>
+      page.evaluate(() => ({
+        handle: window.elementLab.part("handle").getAttribute("aria-label"),
+        content: window.elementLab.part("content").getAttribute("aria-label"),
+      }));
+    expect(await names()).toEqual({
+      handle: "Изменить размер",
+      content: "Содержимое",
+    });
+    await setAttr(page, "handle-label", "Resize");
+    expect((await names()).handle).toBe("Resize");
+  });
+
   test("stylesheet links a sheet into the shadow root", async ({ page }) => {
     await mountEl(page, markup('stylesheet="/fixtures/missing.css"'));
     expect(

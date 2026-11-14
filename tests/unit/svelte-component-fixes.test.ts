@@ -115,6 +115,53 @@ beforeEach(() => {
   });
 });
 
+describe("Svelte <BottomSheet> engine options", () => {
+  it("passes options it does not name itself through to the engine", async () => {
+    const sibling = document.createElement("main");
+    document.body.appendChild(sibling);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const props = makeProps(
+      baseProps({
+        initial: "full",
+        duration: 0,
+        inertSiblings: true,
+        scrimPreset: "cinematic",
+      }),
+    );
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    expect(sibling.hasAttribute("inert")).toBe(true);
+    expect(
+      target.querySelector<HTMLElement>(".bs-screen")!.style.background,
+    ).toContain("rgba(0, 0, 0, 0.7)");
+    unmount(instance);
+  });
+
+  it("names the handle and the content from props", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const props = makeProps(
+      baseProps({
+        initial: "full",
+        handleLabel: "Изменить размер",
+        contentLabel: "Содержимое",
+      }),
+    );
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    expect(
+      target.querySelector(".bs-handle")!.getAttribute("aria-label"),
+    ).toBe("Изменить размер");
+    expect(
+      target.querySelector(".bs-content")!.getAttribute("aria-label"),
+    ).toBe("Содержимое");
+    unmount(instance);
+  });
+});
+
 describe("Svelte <BottomSheet> fixes", () => {
   it("follows open when it is reversed before the sheet has landed", async () => {
     const target = document.createElement("div");

@@ -5,6 +5,10 @@ import type {
   EngineOptions,
   EngineState,
 } from "../core/types";
+import {
+  pickEngineOptions,
+  type EngineConfig,
+} from "../core/primitives/option-keys";
 import type { AnchorOptions } from "../core/features/sheet-anchors";
 import type { ScrimStagesOptions } from "../core/features/scrim-stages";
 import { baseStyles } from "./baseStyles";
@@ -16,6 +20,10 @@ import {
   ATTR_BACKDROP_COLOR,
   ATTR_CLOSE_ON_ESCAPE,
   ATTR_CLOSE_ON_ROUTE_CHANGE,
+  ATTR_CONTENT_LABEL,
+  ATTR_HANDLE_LABEL,
+  ATTR_OPTIONS,
+  parseOptions,
   ATTR_DISABLE_CLOSE,
   ATTR_DISABLE_DRAG,
   ATTR_DRAG_FROM,
@@ -64,6 +72,20 @@ export class BottomSheetElement extends BaseHTMLElement {
   private declarativeAnchors: Array<{ el: HTMLElement; detach: () => void }> =
     [];
   private lastActiveId: string | null = null;
+  private extraOptions: Partial<EngineConfig> = {};
+
+  get options(): Partial<EngineConfig> {
+    return this.extraOptions;
+  }
+
+  set options(value: Partial<EngineConfig> | null | undefined) {
+    this.extraOptions = value
+      ? pickEngineOptions(value as Record<string, unknown>)
+      : {};
+    if (!this.engine) return;
+    this.teardownEngine();
+    this.initEngine();
+  }
 
   constructor() {
     super();
@@ -92,6 +114,11 @@ export class BottomSheetElement extends BaseHTMLElement {
   }
 
   connectedCallback(): void {
+    if (Object.prototype.hasOwnProperty.call(this, "options")) {
+      const early = (this as { options?: Partial<EngineConfig> }).options;
+      delete (this as { options?: Partial<EngineConfig> }).options;
+      this.options = early;
+    }
     if (!this.stylesheetLinked) {
       this.stylesheetLinked = true;
       const stylesheet = this.getAttribute(ATTR_STYLESHEET);
@@ -162,6 +189,10 @@ export class BottomSheetElement extends BaseHTMLElement {
           void this.engine.snapTo(value);
         }
         break;
+      case ATTR_HANDLE_LABEL:
+      case ATTR_CONTENT_LABEL:
+        this.writeLabels();
+        break;
     }
   }
 
@@ -186,6 +217,17 @@ export class BottomSheetElement extends BaseHTMLElement {
     this.engine = null;
   }
 
+  private writeLabels(): void {
+    this.refs.handle.setAttribute(
+      "aria-label",
+      this.getAttribute(ATTR_HANDLE_LABEL) ?? "Resize sheet",
+    );
+    this.refs.content.setAttribute(
+      "aria-label",
+      this.getAttribute(ATTR_CONTENT_LABEL) ?? "Sheet content",
+    );
+  }
+
   private writeMode(mode: string): void {
     this.refs.sheet.setAttribute("data-mode", mode);
     this.refs.leftButton.setAttribute("data-mode", mode);
@@ -195,10 +237,24 @@ export class BottomSheetElement extends BaseHTMLElement {
   private initEngine(): void {
     const { sheet, handle, content, backdrop, announcer } = this.refs;
 
-    const mode = parseMode(this.getAttribute(ATTR_MODE));
-    this.writeMode(guessPhysicalMode(mode));
+    const extra: Partial<EngineConfig> = {
+      ...this.extraOptions,
+      ...parseOptions(this.getAttribute(ATTR_OPTIONS)),
+    };
+    const given = <T>(name: string, read: (raw: string) => T): T | undefined => {
+      const raw = this.getAttribute(name);
+      return raw === null ? undefined : read(raw);
+    };
+    const isTrue = (raw: string): boolean => raw === "true";
+    const notFalse = (raw: string): boolean => raw !== "false";
 
-    const focusTrap = this.getAttribute(ATTR_FOCUS_TRAP) === "true";
+    const mode =
+      given(ATTR_MODE, parseMode) ?? extra.mode ?? parseMode(null);
+    this.writeMode(guessPhysicalMode(mode));
+    this.writeLabels();
+
+    const focusTrap =
+      given(ATTR_FOCUS_TRAP, isTrue) ?? extra.focusTrap ?? false;
 
     if (focusTrap) {
       sheet.setAttribute("aria-modal", "true");
@@ -220,7 +276,10 @@ export class BottomSheetElement extends BaseHTMLElement {
       backdrop.addEventListener("click", this.backdropClickHandler);
     }
 
-    const snapPoints = parseSnapPoints(this.getAttribute(ATTR_SNAP_POINTS));
+    const snapPoints =
+      given(ATTR_SNAP_POINTS, parseSnapPoints) ??
+      extra.snapPoints ??
+      parseSnapPoints(null);
     const known = (id: string | null): id is string =>
       id !== null && snapPoints.some(p => p.id === id);
     const snapAttr = this.getAttribute(ATTR_SNAP);
@@ -228,9 +287,10 @@ export class BottomSheetElement extends BaseHTMLElement {
       ? this.lastActiveId
       : known(snapAttr)
         ? snapAttr
-        : (this.getAttribute(ATTR_INITIAL) ?? undefined);
+        : (this.getAttribute(ATTR_INITIAL) ?? extra.initial);
 
     const opts: EngineOptions = {
+      ...extra,
       element: sheet,
       handle,
       scrollContainer: content,
@@ -238,29 +298,28 @@ export class BottomSheetElement extends BaseHTMLElement {
       scrim: this.refs.screen,
       mode,
       snapPoints,
-      allowed: parseList(this.getAttribute(ATTR_ALLOWED)),
+      allowed: given(ATTR_ALLOWED, parseList) ?? extra.allowed,
       initial,
-      animation: parseAnimation(this.getAttribute(ATTR_ANIMATION)),
+      animation: given(ATTR_ANIMATION, parseAnimation) ?? extra.animation,
       focusTrap,
-      closeOnEscape: this.getAttribute(ATTR_CLOSE_ON_ESCAPE) !== "false",
-      lockBodyScroll: this.getAttribute(ATTR_LOCK_BODY_SCROLL) !== "false",
-      stackEffect: this.getAttribute(ATTR_STACK_EFFECT) === "true",
-      persistent: this.getAttribute(ATTR_PERSISTENT) === "true",
-      disableClose: this.getAttribute(ATTR_DISABLE_CLOSE) === "true",
-      disableDrag: this.getAttribute(ATTR_DISABLE_DRAG) === "true",
-      dragFrom: parseDragFrom(this.getAttribute(ATTR_DRAG_FROM)),
+      closeOnEscape: given(ATTR_CLOSE_ON_ESCAPE, notFalse) ?? extra.closeOnEscape,
+      lockBodyScroll:
+        given(ATTR_LOCK_BODY_SCROLL, notFalse) ?? extra.lockBodyScroll,
+      stackEffect: given(ATTR_STACK_EFFECT, isTrue) ?? extra.stackEffect,
+      persistent: given(ATTR_PERSISTENT, isTrue) ?? extra.persistent,
+      disableClose: given(ATTR_DISABLE_CLOSE, isTrue) ?? extra.disableClose,
+      disableDrag: given(ATTR_DISABLE_DRAG, isTrue) ?? extra.disableDrag,
+      dragFrom: given(ATTR_DRAG_FROM, parseDragFrom) ?? extra.dragFrom,
       dragFromContent:
-        this.getAttribute(ATTR_DRAG_FROM_CONTENT) === null
-          ? undefined
-          : this.getAttribute(ATTR_DRAG_FROM_CONTENT) !== "false",
+        given(ATTR_DRAG_FROM_CONTENT, notFalse) ?? extra.dragFromContent,
       fitContentToSnap:
-        this.hasAttribute(ATTR_FIT_CONTENT_TO_SNAP) &&
-        this.getAttribute(ATTR_FIT_CONTENT_TO_SNAP) !== "false",
+        given(ATTR_FIT_CONTENT_TO_SNAP, notFalse) ?? extra.fitContentToSnap,
       closeOnRouteChange:
-        this.getAttribute(ATTR_CLOSE_ON_ROUTE_CHANGE) === "true",
-      radius: parseDimension(this.getAttribute(ATTR_RADIUS)),
-      maxHeight: parseDimension(this.getAttribute(ATTR_MAX_HEIGHT)),
-      returnFocusTo: this.getAttribute(ATTR_RETURN_FOCUS_TO) ?? undefined,
+        given(ATTR_CLOSE_ON_ROUTE_CHANGE, isTrue) ?? extra.closeOnRouteChange,
+      radius: given(ATTR_RADIUS, parseDimension) ?? extra.radius,
+      maxHeight: given(ATTR_MAX_HEIGHT, parseDimension) ?? extra.maxHeight,
+      returnFocusTo:
+        this.getAttribute(ATTR_RETURN_FOCUS_TO) ?? extra.returnFocusTo,
     };
 
     this.engine = new BottomSheetEngine(opts);

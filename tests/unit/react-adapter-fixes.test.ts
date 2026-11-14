@@ -68,6 +68,28 @@ describe("React <BottomSheet> fixes", () => {
     await act(async () => root.unmount());
   });
 
+  it("names the handle and the content from props", async () => {
+    await act(async () => {
+      root.render(
+        jsx(BottomSheet, {
+          snapPoints: points,
+          initial: "half",
+          animation: "tween",
+          duration: 0,
+          handleLabel: "Изменить размер",
+          contentLabel: "Содержимое",
+        }),
+      );
+    });
+    expect(
+      document.querySelector(".bs-handle")!.getAttribute("aria-label"),
+    ).toBe("Изменить размер");
+    expect(
+      document.querySelector(".bs-content")!.getAttribute("aria-label"),
+    ).toBe("Содержимое");
+    await act(async () => root.unmount());
+  });
+
   it("passes a changed dragFromContent on to the engine", async () => {
     const ref = createRef<BottomSheetHandle>();
     const render = (dragFromContent: boolean) =>

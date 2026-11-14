@@ -32,6 +32,9 @@ render(
       initial="half"
       animation="tween"
       lockBodyScroll={false}
+      scrimPreset="cinematic"
+      handleLabel="Resize the panel"
+      contentLabel="Panel content"
       persistent={persistent()}
       mode={mode()}
       radius={radius()}

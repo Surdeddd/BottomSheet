@@ -81,6 +81,8 @@ export type BottomSheetProps = EngineOptionsForProps & {
   onProgress?: (payload: SheetEventMap["progress"]) => void;
   ariaLabel?: string;
   ariaLabelledBy?: string;
+  handleLabel?: string;
+  contentLabel?: string;
   noSSR?: boolean;
 };
 
@@ -147,6 +149,8 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       onProgress,
       ariaLabel = "Bottom sheet",
       ariaLabelledBy,
+      handleLabel = "Resize sheet",
+      contentLabel = "Sheet content",
       noSSR: _noSSR,
       ...engineOpts
     } = props;
@@ -365,7 +369,7 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             className="bs-handle"
             role="slider"
             tabIndex={0}
-            aria-label="Resize sheet"
+            aria-label={handleLabel}
           />
           {header != null && header !== false && (
             <div className="bs-header">
@@ -377,7 +381,7 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             className="bs-content"
             tabIndex={0}
             role="region"
-            aria-label="Sheet content"
+            aria-label={contentLabel}
           >
             {children}
           </div>
