@@ -56,6 +56,7 @@ export function autoCollapseFeature(): EngineFeature {
         ms: ctx.options.autoCollapseAfter,
         isDestroyed: ctx.isDestroyed,
         isDragging: ctx.isDragging,
+        isAnimating: ctx.isAnimating,
         getAllowedIds: ctx.getAllowedIds,
         getActiveId: ctx.getActiveId,
         resolveSnap: ctx.resolveSnap,

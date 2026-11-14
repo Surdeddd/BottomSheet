@@ -347,10 +347,11 @@ describe("BottomSheetEngine — autoCollapseAfter", () => {
     });
     await engine.snapTo("full");
     (engine as any).gesture.isDragging_ = true;
-    await vi.advanceTimersByTimeAsync(250);
-    await vi.runAllTimersAsync();
+    await vi.advanceTimersByTimeAsync(1000);
     expect(engine.state.activeId).toBe("full");
     (engine as any).gesture.isDragging_ = false;
+    await vi.advanceTimersByTimeAsync(250);
+    expect(engine.state.activeId).toBe("min");
     engine.destroy();
   });
 

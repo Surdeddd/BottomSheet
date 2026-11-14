@@ -11,6 +11,7 @@ export type AutoCollapseDeps = {
   ms: number | undefined;
   isDestroyed: () => boolean;
   isDragging: () => boolean;
+  isAnimating: () => boolean;
   getAllowedIds: () => string[];
   getActiveId: () => string;
   resolveSnap: (id: string) => { id: string; size: number } | null;
@@ -35,7 +36,10 @@ export function installAutoCollapse(deps: AutoCollapseDeps): () => void {
 
   const fire = (): void => {
     if (deps.isDestroyed()) return;
-    if (deps.isDragging()) return;
+    if (deps.isDragging() || deps.isAnimating()) {
+      reset();
+      return;
+    }
     const active = deps.resolveSnap(deps.getActiveId());
     if (!active || active.size === 0) return;
     let target: { id: string; size: number } | null = null;
