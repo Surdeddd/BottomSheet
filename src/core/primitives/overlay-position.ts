@@ -34,6 +34,14 @@ export function resolveSheetAnchoredStyle(
   }
 }
 
+export function resetOverlayPosition(ws: CSSStyleDeclaration): void {
+  ws.top = "";
+  ws.bottom = "";
+  ws.left = "";
+  ws.right = "";
+  ws.transform = "";
+}
+
 export function applyOverlayPosition(
   ws: CSSStyleDeclaration,
   mode: PhysicalSheetMode,

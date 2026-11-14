@@ -1,6 +1,16 @@
+import { devWarn } from "./dev-warn";
 import type { SheetMode, SnapPoint } from "../types";
 
 let probe: HTMLElement | null = null;
+const rejected = new Set<string>();
+
+const warnRejected = (value: string): void => {
+  if (rejected.has(value)) return;
+  rejected.add(value);
+  devWarn(
+    `[BottomSheet] snap size "${value}" is not a CSS length the browser accepts — it resolves to 0.`,
+  );
+};
 const PROBE_ATTR = "data-bs-probe";
 
 const ensureProbe = (axis: "vertical" | "horizontal"): HTMLElement | null => {
@@ -61,13 +71,16 @@ export const resolveSnap = (
   if (!el) return 0;
   if (axis === "vertical") {
     el.style.height = point;
+    if (el.style.height === "") warnRejected(point);
     return Math.max(0, el.getBoundingClientRect().height);
   }
   el.style.width = point;
+  if (el.style.width === "") warnRejected(point);
   return Math.max(0, el.getBoundingClientRect().width);
 };
 
 export const __resetCssLengthProbeForTests = (): void => {
   if (probe?.parentNode) probe.parentNode.removeChild(probe);
   probe = null;
+  rejected.clear();
 };

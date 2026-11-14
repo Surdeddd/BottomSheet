@@ -62,10 +62,11 @@ describe("React useBottomSheet — teleportTo", () => {
     });
     const sheet = document.querySelector(".bs-sheet")!;
     const backdrop = document.querySelector(".bs-backdrop")!;
-    expect(sheet.parentElement).toBe(document.body);
-    expect(backdrop.parentElement).toBe(document.body);
-
-    expect(sheet.closest(".bs-root")).toBeNull();
+    const wrapper = sheet.parentElement!;
+    expect(wrapper.parentElement).toBe(document.body);
+    expect(wrapper.classList.contains("bs-root")).toBe(true);
+    expect(wrapper.hasAttribute("data-bs-teleported")).toBe(true);
+    expect(backdrop.parentElement).toBe(wrapper);
     await act(async () => {
       root.unmount();
     });
@@ -81,6 +82,7 @@ describe("React useBottomSheet — teleportTo", () => {
     });
     expect(document.querySelector(".bs-sheet")).toBeNull();
     expect(document.querySelector(".bs-backdrop")).toBeNull();
+    expect(document.querySelector("[data-bs-teleported]")).toBeNull();
   });
 
   it("leaves elements in place when teleportTo is not set", async () => {

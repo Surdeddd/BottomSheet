@@ -19,7 +19,7 @@ const makeHarness = (
   let destroyed = false;
 
   const deps: ScrimStagesDeps = {
-    mode: "bottom",
+    getMode: () => "bottom",
     host,
     getState: () => ({ ...state }),
     on: (event, fn) => {
@@ -70,7 +70,7 @@ describe("installScrimStages (fake bus)", () => {
     const h = makeHarness({ activeId: "peek", size: 120, progress: 0.2 });
     const teaser = document.createElement("div");
     const promo = document.createElement("div");
-    const detach = installScrimStages(h.deps, {
+    const { detach: detach } = installScrimStages(h.deps, {
       stages: [
         { for: "peek", element: teaser, animation: "none" },
         { for: "full", element: promo, animation: "none" },
@@ -97,7 +97,7 @@ describe("installScrimStages (fake bus)", () => {
       progress: 0.3,
     });
     const low = document.createElement("div");
-    const detachRange = installScrimStages(withRange.deps, {
+    const { detach: detachRange } = installScrimStages(withRange.deps, {
       stages: [{ forRange: [0, 0.5], element: low, animation: "none" }],
     });
     expect(withRange.subscribed("progress")).toBe(true);
@@ -116,7 +116,7 @@ describe("installScrimStages (fake bus)", () => {
 
     const idOnly = makeHarness({ activeId: "peek", size: 120, progress: 0.2 });
     const card = document.createElement("div");
-    const detachId = installScrimStages(idOnly.deps, {
+    const { detach: detachId } = installScrimStages(idOnly.deps, {
       stages: [{ for: "peek", element: card, animation: "none" }],
     });
     expect(idOnly.subscribed("progress")).toBe(false);
@@ -127,7 +127,7 @@ describe("installScrimStages (fake bus)", () => {
     const h = makeHarness({ activeId: "peek", size: 120, progress: 0.2 });
     const byId = document.createElement("div");
     const byRange = document.createElement("div");
-    const detach = installScrimStages(h.deps, {
+    const { detach: detach } = installScrimStages(h.deps, {
       stages: [
         { for: "peek", element: byId, animation: "none" },
         { forRange: [0, 0.5], element: byRange, animation: "none" },
@@ -144,7 +144,7 @@ describe("installScrimStages (fake bus)", () => {
     const h = makeHarness({ activeId: "closed", size: 0, progress: 0 });
     const closedStage = document.createElement("div");
     const rangeStage = document.createElement("div");
-    const detach = installScrimStages(h.deps, {
+    const { detach: detach } = installScrimStages(h.deps, {
       stages: [
         { for: "closed", element: closedStage, animation: "none" },
         { forRange: [0, 0.5], element: rangeStage, animation: "none" },
@@ -167,7 +167,7 @@ describe("installScrimStages (fake bus)", () => {
     const h = makeHarness({ activeId: "peek", size: 120, progress: 0.2 });
     const a = document.createElement("div");
     const b = document.createElement("div");
-    const detach = installScrimStages(h.deps, {
+    const { detach: detach } = installScrimStages(h.deps, {
       stages: [
         { for: "peek", element: a, animation: "none" },
         { for: "full", element: b, animation: "none" },

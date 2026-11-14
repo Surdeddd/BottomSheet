@@ -14,6 +14,7 @@ import { SnapResolver } from "./primitives/snap-resolver";
 import { notifyLinkedSheets } from "./features/linked-sheets";
 import { installResizeObserver } from "./features/resize-observer";
 import { installFitObserver } from "./features/fit-observer";
+import { homeRootOf } from "./features/teleport";
 import {
   createMaxHeightController,
   type MaxHeightController,
@@ -125,6 +126,7 @@ export class BottomSheetCore {
   private detachSheetGesture: (() => void) | null = null;
   private detachSliderKeyboard: (() => void) | null = null;
   private rootEl: HTMLElement | null = null;
+  private homeRoot: HTMLElement | null = null;
   private destroyed = false;
   private restClosed = false;
   private currentViewTransition: {
@@ -168,6 +170,7 @@ export class BottomSheetCore {
   private anchorHost: HTMLElement | null = null;
   private stackZ = 100;
   private detachScrimStages: (() => void) | null = null;
+  private placeScrimStages: (() => void) | null = null;
   private stackEffectEnabled = false;
   private stackEffectPrimed = false;
   private fitDeps!: FitMeasurementDeps;
@@ -279,6 +282,7 @@ export class BottomSheetCore {
     this.auditDuplicateSnapIds(this.snapPointsRaw);
 
     this.rootEl = this.element.closest<HTMLElement>(".bs-root");
+    this.homeRoot = homeRootOf(this.rootEl);
     this.maxHeightDeps = {
       element: this.element,
       mode: this.mode,
@@ -342,6 +346,7 @@ export class BottomSheetCore {
 
     this.teardowns.add(
       installFitObserver({
+        element: this.element,
         handle: this.handle,
         scrollContainer: this.scrollContainer,
         hasFitSnap: () =>
@@ -674,8 +679,8 @@ export class BottomSheetCore {
     if (this.phase === "closing") {
       this.phase = "closed";
       this.setRestClosed(true);
-      sheetStack.update();
       this.lifecycle.release();
+      sheetStack.update();
       this.post("closed", undefined);
     }
   }
@@ -927,10 +932,13 @@ export class BottomSheetCore {
     this.detachSliderKeyboard?.();
     this.mountSliderKeyboard();
     this.mountSheetGesture();
+    for (const anchor of this.anchors) anchor.reposition();
+    this.placeScrimStages?.();
+    if (this.stackEffectPrimed) {
+      this.element.style.transformOrigin = nowVertical ? "50% 100%" : "0% 50%";
+    }
 
     this.recompute();
-    const active = this.snaps.findById(this.activeId);
-    if (active) this.applySize(active.size);
     this.updateAriaSlider();
   }
 
@@ -1040,7 +1048,7 @@ export class BottomSheetCore {
     }
     const handle = attachAnchor(
       {
-        mode: this.mode,
+        getMode: () => this.mode,
         host: this.anchorHost,
         getState: () => ({
           activeId: this.activeId,
@@ -1076,9 +1084,9 @@ export class BottomSheetCore {
       );
       return () => {};
     }
-    const detachInstalled = installScrimStages(
+    const stages = installScrimStages(
       {
-        mode: this.mode,
+        getMode: () => this.mode,
         host,
         getState: () => ({
           activeId: this.activeId,
@@ -1091,10 +1099,14 @@ export class BottomSheetCore {
       opts,
     );
     const detach = (): void => {
-      if (this.detachScrimStages === detach) this.detachScrimStages = null;
-      detachInstalled();
+      if (this.detachScrimStages === detach) {
+        this.detachScrimStages = null;
+        this.placeScrimStages = null;
+      }
+      stages.detach();
     };
     this.detachScrimStages = detach;
+    this.placeScrimStages = stages.reposition;
     this.teardowns.add(() => this.detachScrimStages?.());
     return detach;
   }
@@ -1165,10 +1177,16 @@ export class BottomSheetCore {
       this.backdrop.style.opacity = "";
       this.backdrop.style.pointerEvents = "";
     }
-    for (const host of [this.anchorHost, this.scrimParent, this.rootEl]) {
+    for (const host of [
+      this.anchorHost,
+      this.scrimParent,
+      this.rootEl,
+      this.homeRoot,
+    ]) {
       if (!host) continue;
       host.style.removeProperty("--bs-size");
       host.style.removeProperty("--bs-progress");
+      host.style.removeProperty("--bs-z-sheet");
     }
     if (this.screenComponent) {
       this.screenComponent.style.opacity = "";
@@ -1217,10 +1235,12 @@ export class BottomSheetCore {
     if (typeof document === "undefined") return;
     if (!this.lifecycle.focusTrapEnabled) return;
     if (this.element.getAttribute("aria-labelledby")) return;
-    const scope = this.handle ?? this.element;
+    const HEADING = "h1,h2,h3,h4,h5,h6";
+    const header = this.element.querySelector<HTMLElement>(".bs-header");
     const titled =
-      scope.querySelector<HTMLElement>("[data-bs-title]") ??
-      scope.querySelector<HTMLElement>("h1,h2,h3,h4,h5,h6");
+      this.element.querySelector<HTMLElement>("[data-bs-title]") ??
+      this.handle.querySelector<HTMLElement>(HEADING) ??
+      header?.querySelector<HTMLElement>(HEADING);
     if (!titled) return;
     if (!titled.id) {
       titled.id = nextInstanceId("bs-title");
@@ -1273,10 +1293,14 @@ export class BottomSheetCore {
         this.stackZ = z;
         this.element.style.zIndex = String(z);
         if (this.backdrop) this.backdrop.style.zIndex = String(z - 1);
+        this.rootEl?.style.setProperty("--bs-z-sheet", String(z));
+        this.homeRoot?.style.setProperty("--bs-z-sheet", String(z));
         for (const anchor of this.anchors) anchor.syncZ(z + 1);
       },
       setIsTop: isTop => {
+        if (isTop === this.isTopSheet) return;
         this.isTopSheet = isTop;
+        this.lifecycle.syncTop();
       },
       isOpen: () => this.phase !== "closed",
       setDepth: depth => this.applyStackDepth(depth),
@@ -1634,6 +1658,7 @@ export class BottomSheetCore {
       ) {
         this.rootEl.style.setProperty("--bs-size", `${clamped}px`);
       }
+      this.homeRoot?.style.setProperty("--bs-size", `${clamped}px`);
     }
     const progress = this.computeProgress(clamped);
     const progressChanged = this.progressWriteSentinel.shouldWrite(
@@ -1648,6 +1673,7 @@ export class BottomSheetCore {
       if (this.rootEl && this.rootEl !== this.anchorHost) {
         this.rootEl.style.setProperty("--bs-progress", String(progress));
       }
+      this.homeRoot?.style.setProperty("--bs-progress", String(progress));
     }
 
     this.scrim.applyOpacity(progress, progressChanged);

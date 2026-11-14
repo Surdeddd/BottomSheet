@@ -66,7 +66,7 @@ describe("BottomSheetEngine — scrim option (preferred name)", () => {
     expect(wrapper!.parentElement).toBe(root);
     expect(scrim.querySelector(".bs-scrim-overlay")).toBeNull();
     expect(wrapper!.contains(btn)).toBe(true);
-    expect(wrapper!.style.position).toBe("absolute");
+    expect(wrapper!.style.position).toBe("fixed");
     expect(wrapper!.style.top).toBe("16px");
     expect(wrapper!.style.right).toBe("16px");
 
@@ -243,7 +243,7 @@ describe("BottomSheetEngine — sheet-anchored overlay positions × all modes", 
       expect(ws.left).toBe(c.left ?? "");
       expect(ws.right).toBe(c.right ?? "");
       expect(ws.transform).toBe(c.transform ?? "");
-      expect(ws.position).toBe("absolute");
+      expect(ws.position).toBe("fixed");
       expect(ws.pointerEvents).toBe("auto");
 
       teardown();

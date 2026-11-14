@@ -13,6 +13,8 @@ const sheet = document.createElement("section");
 sheet.className = "bs-sheet";
 sheet.dataset.mode = "bottom";
 sheet.setAttribute("role", "dialog");
+const surface = new URLSearchParams(location.search).get("surface");
+if (surface) sheet.style.background = surface;
 
 const handle = document.createElement("div");
 handle.className = "bs-handle";

@@ -1,5 +1,8 @@
 import type { ScrimOverlayPosition, SheetEventMap, PhysicalSheetMode } from "../types";
-import { applyOverlayPosition } from "../primitives/overlay-position";
+import {
+  applyOverlayPosition,
+  resetOverlayPosition,
+} from "../primitives/overlay-position";
 import {
   runAnchorTransition,
   type AnchorAnimationSpec,
@@ -26,7 +29,7 @@ export type ScrimStagesOptions = {
 };
 
 export type ScrimStagesDeps = {
-  mode: PhysicalSheetMode;
+  getMode: () => PhysicalSheetMode;
   host: HTMLElement;
   getState: () => { activeId: string; size: number; progress: number };
   on: <K extends keyof SheetEventMap>(
@@ -55,28 +58,41 @@ const matchesRange = (def: ScrimStageDef, progress: number): boolean => {
   return progress >= from && progress <= to;
 };
 
+export type ScrimStagesHandle = {
+  detach: () => void;
+  reposition: () => void;
+};
+
 export function installScrimStages(
   deps: ScrimStagesDeps,
   opts: ScrimStagesOptions,
-): () => void {
+): ScrimStagesHandle {
   const doc = deps.host.ownerDocument;
   const entries: StageEntry[] = opts.stages.map(def => {
     const wrapper = doc.createElement("div");
     wrapper.className = "bs-scrim-stage";
     const ws = wrapper.style;
-    ws.position = "absolute";
-    applyOverlayPosition(
-      ws,
-      deps.mode,
-      def.position ?? opts.position ?? "center",
-      def.inset ?? opts.inset ?? "16px",
-    );
+    ws.position = "fixed";
     ws.visibility = "hidden";
     ws.pointerEvents = "none";
     wrapper.appendChild(def.element);
     deps.host.appendChild(wrapper);
     return { def, wrapper, inFlight: null };
   });
+
+  const place = (): void => {
+    for (const entry of entries) {
+      const ws = entry.wrapper.style;
+      resetOverlayPosition(ws);
+      applyOverlayPosition(
+        ws,
+        deps.getMode(),
+        entry.def.position ?? opts.position ?? "center",
+        entry.def.inset ?? opts.inset ?? "16px",
+      );
+    }
+  };
+  place();
 
   let active: StageEntry | null = null;
 
@@ -148,15 +164,18 @@ export function installScrimStages(
   }
   update(false);
 
-  return () => {
-    offs.forEach(off => off());
-    for (const entry of entries) {
-      entry.inFlight?.cancel();
-      entry.inFlight = null;
-      if (entry.wrapper.parentNode) {
-        entry.wrapper.parentNode.removeChild(entry.wrapper);
+  return {
+    reposition: place,
+    detach: () => {
+      offs.forEach(off => off());
+      for (const entry of entries) {
+        entry.inFlight?.cancel();
+        entry.inFlight = null;
+        if (entry.wrapper.parentNode) {
+          entry.wrapper.parentNode.removeChild(entry.wrapper);
+        }
       }
-    }
-    active = null;
+      active = null;
+    },
   };
 }

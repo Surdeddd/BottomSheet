@@ -1,5 +1,8 @@
 import type { ScrimOverlayPosition, SheetEventMap, PhysicalSheetMode } from "../types";
-import { applyOverlayPosition } from "../primitives/overlay-position";
+import {
+  applyOverlayPosition,
+  resetOverlayPosition,
+} from "../primitives/overlay-position";
 import {
   runAnchorTransition,
   type AnchorAnimationSpec,
@@ -25,7 +28,7 @@ export type AnchorOptions = {
 };
 
 export type AnchorDeps = {
-  mode: PhysicalSheetMode;
+  getMode: () => PhysicalSheetMode;
   host: HTMLElement;
   getState: () => AnchorState;
   on: <K extends keyof SheetEventMap>(
@@ -39,6 +42,7 @@ export type AnchorHandle = {
   wrapper: HTMLElement;
   detach: () => void;
   syncZ: (z: number) => void;
+  reposition: () => void;
 };
 
 export function attachAnchor(deps: AnchorDeps, opts: AnchorOptions): AnchorHandle {
@@ -50,17 +54,18 @@ export function attachAnchor(deps: AnchorDeps, opts: AnchorOptions): AnchorHandl
   const isDock = position === "dock-bottom" || position === "dock-top";
   const ws = wrapper.style;
   ws.position = "fixed";
-  if (isDock) {
+  const place = (): void => {
+    resetOverlayPosition(ws);
+    if (!isDock) {
+      applyOverlayPosition(ws, deps.getMode(), position, opts.inset ?? "16px");
+      return;
+    }
     ws.left = "0";
     ws.right = "0";
-    if (position === "dock-bottom") {
-      ws.bottom = "0";
-    } else {
-      ws.top = "0";
-    }
-  } else {
-    applyOverlayPosition(ws, deps.mode, position, opts.inset ?? "16px");
-  }
+    if (position === "dock-bottom") ws.bottom = "0";
+    else ws.top = "0";
+  };
+  place();
   if (opts.fadeRange) {
     const [r0, r1] = opts.fadeRange;
     const span = Math.max(r1 - r0, 0.0001);
@@ -127,5 +132,6 @@ export function attachAnchor(deps: AnchorDeps, opts: AnchorOptions): AnchorHandl
     syncZ: (z: number) => {
       wrapper.style.zIndex = String(z);
     },
+    reposition: place,
   };
 }

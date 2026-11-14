@@ -1934,7 +1934,7 @@ describe("scrim runtime mode + enabled + overlay slot", () => {
     const wrapper = root.querySelector(".bs-scrim-overlay") as HTMLElement;
     expect(wrapper).not.toBeNull();
     expect(wrapper.parentElement).toBe(root);
-    expect(wrapper.style.position).toBe("absolute");
+    expect(wrapper.style.position).toBe("fixed");
     expect(wrapper.style.top).toBe("16px");
     expect(wrapper.style.right).toBe("16px");
     expect(wrapper.style.pointerEvents).toBe("auto");

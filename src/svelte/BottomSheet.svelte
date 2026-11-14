@@ -153,6 +153,14 @@
 
   onMount(() => {
     if (!sheetEl) return;
+    const teleportTarget =
+      teleport === false ? null : resolveTeleportTarget(teleportTo);
+    if (teleportTarget) {
+      restoreTeleport = teleportElements(
+        [backdropEl, screenEl, sheetEl],
+        teleportTarget,
+      );
+    }
     engine = new BottomSheetEngine({
       element: sheetEl,
       handle: handleEl,
@@ -183,14 +191,6 @@
       maxHeight,
       returnFocusTo,
     });
-    const teleportTarget =
-      teleport === false ? null : resolveTeleportTarget(teleportTo);
-    if (teleportTarget) {
-      restoreTeleport = teleportElements(
-        [backdropEl, screenEl, sheetEl],
-        teleportTarget,
-      );
-    }
     const sync = () => {
       if (!engine) return;
       viewState = { ...engine.state } as EngineState & { activeId: TId };

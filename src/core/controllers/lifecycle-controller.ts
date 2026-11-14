@@ -68,9 +68,14 @@ export class LifecycleController {
         isActive: this.isTop,
       });
     }
-    if (this.inertSiblingsEnabled && this.shouldApplyInertSiblings()) {
-      this.inertSiblings.apply();
-    }
+    this.syncTop();
+  }
+
+  syncTop(): void {
+    if (!this.installed || !this.inertSiblingsEnabled) return;
+    if (!this.shouldApplyInertSiblings()) return;
+    if (this.isTop?.() ?? true) this.inertSiblings.apply();
+    else this.inertSiblings.remove();
   }
 
   setReturnFocus(

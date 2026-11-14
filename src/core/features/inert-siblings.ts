@@ -3,35 +3,43 @@ export type InertSiblingsHandle = {
   remove: () => void;
 };
 
+const OWN_ROOTS = ".bs-root, .ovl-root";
+const LAYER_CLASSES = [
+  "bs-backdrop",
+  "bs-screen",
+  "bs-root",
+  "ovl-backdrop",
+  "ovl-root",
+];
+
+const isLayer = (el: Element): boolean =>
+  LAYER_CLASSES.some(name => el.classList.contains(name));
+
 export function createInertSiblings(
   rootProvider: () => HTMLElement,
 ): InertSiblingsHandle {
   const tracked: HTMLElement[] = [];
+  const remove = (): void => {
+    for (const el of tracked) el.removeAttribute("inert");
+    tracked.length = 0;
+  };
   return {
     apply() {
       if (typeof document === "undefined") return;
-      let top = rootProvider();
-      while (top.parentElement && top.parentElement !== document.body) {
-        top = top.parentElement;
-      }
-      const parent = top.parentElement ?? document.body;
-      for (const child of Array.from(parent.children)) {
-        if (child === top) continue;
-        if (child.hasAttribute("inert")) continue;
-        if (
-          child.classList.contains("bs-backdrop") ||
-          child.classList.contains("bs-screen") ||
-          child.classList.contains("bs-root")
-        ) {
-          continue;
+      remove();
+      const surface = rootProvider();
+      let node: HTMLElement | null =
+        surface.closest<HTMLElement>(OWN_ROOTS) ?? surface;
+      while (node && node !== document.body && node.parentElement) {
+        for (const sibling of Array.from(node.parentElement.children)) {
+          if (sibling === node) continue;
+          if (sibling.hasAttribute("inert") || isLayer(sibling)) continue;
+          sibling.setAttribute("inert", "");
+          tracked.push(sibling as HTMLElement);
         }
-        child.setAttribute("inert", "");
-        tracked.push(child as HTMLElement);
+        node = node.parentElement;
       }
     },
-    remove() {
-      for (const el of tracked) el.removeAttribute("inert");
-      tracked.length = 0;
-    },
+    remove,
   };
 }

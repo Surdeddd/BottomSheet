@@ -133,6 +133,13 @@ export function useBottomSheet<TId extends string = string>(
       backdropOpacity,
       ...engineOpts
     } = opts;
+    const target = teleport === false ? null : resolveTeleportTarget(teleportTo);
+    if (target) {
+      restoreTeleport = teleportElements(
+        [backdropRef.value, screenRef.value, sheetRef.value],
+        target,
+      );
+    }
     engine = new BottomSheetEngine({
       ...(engineOpts as Omit<
         EngineOptions,
@@ -146,14 +153,6 @@ export function useBottomSheet<TId extends string = string>(
     });
     physicalMode.value = engine.getMode();
     sync();
-
-    const target = teleport === false ? null : resolveTeleportTarget(teleportTo);
-    if (target) {
-      restoreTeleport = teleportElements(
-        [backdropRef.value, screenRef.value, sheetRef.value],
-        target,
-      );
-    }
     if (backdropColor !== undefined) engine.setScrimColor(backdropColor);
     if (backdropOpacity !== undefined) {
       engine.setBackdropRange([0, backdropOpacity]);

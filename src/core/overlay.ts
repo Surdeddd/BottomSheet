@@ -735,7 +735,9 @@ export class OverlayEngine {
         if (this.backdrop) this.backdrop.style.zIndex = String(z - 1);
       },
       setIsTop: isTop => {
+        const changed = this.isTop !== isTop;
         this.isTop = isTop;
+        if (changed) this.lifecycle?.syncTop();
         if (this.backdrop) {
           this.backdrop.style.display = isTop ? "" : "none";
         }

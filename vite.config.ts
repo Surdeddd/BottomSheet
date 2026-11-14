@@ -69,6 +69,7 @@ export default defineConfig({
         webglFit: resolve(__dirname, "demo/fixtures/webgl-fit.html"),
         history: resolve(__dirname, "demo/fixtures/history.html"),
         solidProps: resolve(__dirname, "demo/fixtures/solid-props.html"),
+        teleport: resolve(__dirname, "demo/fixtures/teleport.html"),
       },
     },
   },

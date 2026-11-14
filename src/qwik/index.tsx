@@ -147,10 +147,6 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       maxHeight: props.maxHeight,
     };
 
-    const engine = new BottomSheetEngine(engineOpts);
-    engineStore.engine = noSerialize(engine);
-    physicalMode.value = engine.getMode();
-
     const teleportTarget =
       props.teleport === false ? null : resolveTeleportTarget(props.teleportTo);
     const restoreTeleport = teleportTarget
@@ -159,6 +155,10 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
           teleportTarget,
         )
       : null;
+
+    const engine = new BottomSheetEngine(engineOpts);
+    engineStore.engine = noSerialize(engine);
+    physicalMode.value = engine.getMode();
 
     const sync = () => {
       const s = engine.state;

@@ -36,12 +36,38 @@ const prefersReducedMotion = (): boolean =>
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const parseColor = (value: string): [number, number, number, number] => {
-  const m = value.match(/rgba?\(([^)]+)\)/);
-  if (!m) return [1, 1, 1, 1];
-  const parts = m[1]!.split(",").map(p => parseFloat(p.trim()));
-  const [r = 255, g = 255, b = 255, a = 1] = parts;
-  return [r / 255, g / 255, b / 255, a];
+type Rgba = [number, number, number, number];
+
+const WHITE: Rgba = [1, 1, 1, 1];
+const SENTINEL = "#010203";
+let colorProbe: CanvasRenderingContext2D | null | undefined;
+
+const readColor = (value: string): Rgba => {
+  if (colorProbe === undefined) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    colorProbe = canvas.getContext("2d", { willReadFrequently: true });
+  }
+  const probe = colorProbe;
+  if (!probe) return WHITE;
+  probe.fillStyle = SENTINEL;
+  probe.fillStyle = value;
+  if (probe.fillStyle === SENTINEL) return WHITE;
+  probe.clearRect(0, 0, 1, 1);
+  probe.fillRect(0, 0, 1, 1);
+  const [r = 255, g = 255, b = 255, a = 255] = probe.getImageData(0, 0, 1, 1).data;
+  return [r / 255, g / 255, b / 255, a / 255];
+};
+
+const parseColor = (value: string): Rgba => {
+  const legacy = value.match(/^rgba?\(([^()]+)\)$/);
+  if (legacy && legacy[1]!.includes(",")) {
+    const parts = legacy[1]!.split(",").map(p => parseFloat(p.trim()));
+    const [r = 255, g = 255, b = 255, a = 1] = parts;
+    return [r / 255, g / 255, b / 255, a];
+  }
+  return readColor(value);
 };
 
 const parseRadius = (value: string): number => {
@@ -148,9 +174,17 @@ export const webglRenderer = (
 
     const parent = element.parentElement ?? document.body;
     parent.insertBefore(handle.canvas, element);
-    const elementZ = getComputedStyle(element).zIndex;
-    handle.canvas.style.zIndex =
-      elementZ && elementZ !== "auto" ? String(Number(elementZ) - 1) : "0";
+    let canvasZ = "";
+    const followStack = (): void => {
+      if (!handle) return;
+      const elementZ = getComputedStyle(element).zIndex;
+      const next =
+        elementZ && elementZ !== "auto" ? String(Number(elementZ) - 1) : "0";
+      if (next === canvasZ) return;
+      canvasZ = next;
+      handle.canvas.style.zIndex = next;
+    };
+    followStack();
 
     suppressDomPaint();
 
@@ -298,6 +332,7 @@ export const webglRenderer = (
     });
 
     const geometryObserver = new MutationObserver(() => {
+      followStack();
       if (!ctx.isDragging()) paint();
       wake();
     });

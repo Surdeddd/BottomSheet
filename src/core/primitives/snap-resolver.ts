@@ -55,6 +55,7 @@ export class SnapResolver {
   setMode(mode: SheetMode): void {
     if (mode === this.mode) return;
     this.mode = mode;
+    this.notified = false;
     this.recompute();
   }
 

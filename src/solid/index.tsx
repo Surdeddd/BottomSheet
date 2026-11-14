@@ -150,10 +150,6 @@ export const BottomSheet = <TId extends string = string>(
       returnFocusTo: props.returnFocusTo,
     };
 
-    engine = new BottomSheetEngine(engineOpts);
-    setPhysicalMode(engine.getMode());
-    props.engineRef?.(engine);
-
     const teleportTarget =
       props.teleport === false ? null : resolveTeleportTarget(props.teleportTo);
     if (teleportTarget) {
@@ -162,6 +158,10 @@ export const BottomSheet = <TId extends string = string>(
         teleportTarget,
       );
     }
+
+    engine = new BottomSheetEngine(engineOpts);
+    setPhysicalMode(engine.getMode());
+    props.engineRef?.(engine);
 
     const sync = (): void => {
       if (!engine) return;

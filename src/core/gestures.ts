@@ -197,10 +197,15 @@ export const installGestures = (
     callbacks.onCancel?.();
   };
 
+  const onLostCapture = (e: PointerEvent) => {
+    if (e.target === handle) onPointerCancel(e);
+  };
+
   handle.addEventListener("pointerdown", onPointerDown);
   handle.addEventListener("pointermove", onPointerMove);
   handle.addEventListener("pointerup", finishGesture);
   handle.addEventListener("pointercancel", onPointerCancel);
+  handle.addEventListener("lostpointercapture", onLostCapture);
   const managesTouchAction = options.manageTouchAction !== false;
   const prevTouchAction = handle.style.touchAction;
   if (managesTouchAction) {
@@ -212,6 +217,7 @@ export const installGestures = (
     handle.removeEventListener("pointermove", onPointerMove);
     handle.removeEventListener("pointerup", finishGesture);
     handle.removeEventListener("pointercancel", onPointerCancel);
+    handle.removeEventListener("lostpointercapture", onLostCapture);
     if (managesTouchAction) handle.style.touchAction = prevTouchAction;
     if (activePointerId !== null && handle.hasPointerCapture(activePointerId)) {
       handle.releasePointerCapture(activePointerId);

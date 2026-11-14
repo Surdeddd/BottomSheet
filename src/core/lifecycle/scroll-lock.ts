@@ -6,6 +6,7 @@ type SavedStyles = {
   top: string;
   width: string;
   paddingRight: string;
+  scrollX: number;
   scrollY: number;
 };
 
@@ -24,6 +25,7 @@ export const lockBodyScroll = (): (() => void) => {
       top: body.style.top,
       width: body.style.width,
       paddingRight: body.style.paddingRight,
+      scrollX: window.scrollX,
       scrollY: window.scrollY,
     };
     state.saved = saved;
@@ -52,7 +54,11 @@ export const lockBodyScroll = (): (() => void) => {
       body.style.top = saved.top;
       body.style.width = saved.width;
       body.style.paddingRight = saved.paddingRight;
-      window.scrollTo(0, saved.scrollY);
+      window.scrollTo({
+        top: saved.scrollY,
+        left: saved.scrollX,
+        behavior: "instant",
+      });
       state.saved = null;
     }
   };

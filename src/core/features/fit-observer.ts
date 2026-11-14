@@ -1,4 +1,5 @@
 export type FitObserverDeps = {
+  element: HTMLElement;
   handle: HTMLElement;
   scrollContainer: HTMLElement | undefined;
   hasFitSnap: () => boolean;
@@ -21,6 +22,17 @@ const contentTargets = (scroller: HTMLElement | undefined): Element[] => {
   return out;
 };
 
+const chromeTargets = (deps: FitObserverDeps): Element[] => {
+  const out: Element[] = [];
+  for (const child of Array.from(deps.element.children)) {
+    if (child !== deps.scrollContainer) out.push(child);
+  }
+  if (deps.handle !== deps.element && !out.includes(deps.handle)) {
+    out.push(deps.handle);
+  }
+  return out;
+};
+
 export function installFitObserver(deps: FitObserverDeps): () => void {
   if (typeof ResizeObserver === "undefined") return () => {};
   if (!deps.hasFitSnap()) return () => {};
@@ -34,7 +46,6 @@ export function installFitObserver(deps: FitObserverDeps): () => void {
     });
   };
   const ro = new ResizeObserver(schedule);
-  ro.observe(deps.handle);
   const scroller = deps.scrollContainer;
   const observed = new Set<Element>();
   const slots = new Set<HTMLSlotElement>();
@@ -51,7 +62,7 @@ export function installFitObserver(deps: FitObserverDeps): () => void {
   };
   const resync = (): void => {
     trackSlots();
-    const targets = contentTargets(scroller);
+    const targets = [...chromeTargets(deps), ...contentTargets(scroller)];
     for (const el of observed) {
       if (!targets.includes(el)) {
         ro.unobserve(el);
@@ -66,13 +77,12 @@ export function installFitObserver(deps: FitObserverDeps): () => void {
     }
     schedule();
   };
+  resync();
   let mo: MutationObserver | undefined;
-  if (scroller) {
-    resync();
-    if (typeof MutationObserver !== "undefined") {
-      mo = new MutationObserver(resync);
-      mo.observe(scroller, { childList: true });
-    }
+  if (typeof MutationObserver !== "undefined") {
+    mo = new MutationObserver(resync);
+    mo.observe(deps.element, { childList: true });
+    if (scroller) mo.observe(scroller, { childList: true });
   }
   return () => {
     ro.disconnect();

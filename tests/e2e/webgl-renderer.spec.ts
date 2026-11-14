@@ -366,6 +366,45 @@ test.describe("WebGL renderer", () => {
     expect(Math.abs(r!.drawnTop - r!.top)).toBeLessThan(0.5);
   });
 
+  test("paints a surface whose colour is not written as rgb()", async ({
+    page,
+  }) => {
+    await page.goto(
+      `${FIXTURE}?surface=${encodeURIComponent("oklch(0.62 0.19 145)")}`,
+    );
+    await page.waitForSelector(SHEET);
+    const unsupported = await page.getAttribute("#status", "data-unsupported");
+    test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
+    await page.waitForTimeout(400);
+
+    const box = await page.locator(SHEET).boundingBox();
+    if (!box) throw new Error("no sheet box");
+    const shot = (await page.screenshot()).toString("base64");
+    const pixel = await page.evaluate(
+      async ({ data, x, y }) => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${data}`;
+        await img.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        const scale = img.width / window.innerWidth;
+        const [r = 0, g = 0, b = 0] = ctx.getImageData(
+          Math.round(x * scale),
+          Math.round(y * scale),
+          1,
+          1,
+        ).data;
+        return { r, g, b };
+      },
+      { data: shot, x: box.x + 5, y: box.y + 70 },
+    );
+    expect(pixel.g).toBeGreaterThan(pixel.r + 40);
+    expect(pixel.g).toBeGreaterThan(pixel.b + 40);
+  });
+
   test("the sheet keeps its accessibility contract under the renderer", async ({
     page,
   }) => {

@@ -95,6 +95,10 @@ export function createBottomSheet<TId extends string = string>(
     if (engine) engine.destroy();
     const { onSnap, teleportTo, backdropColor, backdropOpacity, ...engineOpts } =
       opts;
+    const target = resolveTeleportTarget(teleportTo);
+    const restoreTeleport = target
+      ? teleportElements([refs.backdrop, refs.scrim, refs.element], target)
+      : null;
     const created = new BottomSheetEngine({
       ...(engineOpts as Omit<
         EngineOptions,
@@ -103,11 +107,6 @@ export function createBottomSheet<TId extends string = string>(
       ...refs,
     });
     engine = created;
-
-    const target = resolveTeleportTarget(teleportTo);
-    const restoreTeleport = target
-      ? teleportElements([refs.backdrop, refs.scrim, refs.element], target)
-      : null;
     if (backdropColor !== undefined) created.setScrimColor(backdropColor);
     if (backdropOpacity !== undefined) {
       created.setBackdropRange([0, backdropOpacity]);

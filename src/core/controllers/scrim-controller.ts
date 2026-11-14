@@ -15,7 +15,10 @@ import {
 } from "../primitives/hot-path-thresholds";
 import { WriteSentinel } from "../primitives/opacity-dedup";
 import { devWarn } from "../primitives/dev-warn";
-import { applyOverlayPosition } from "../primitives/overlay-position";
+import {
+  applyOverlayPosition,
+  resetOverlayPosition,
+} from "../primitives/overlay-position";
 
 const VALID_CSS_LENGTH = /^-?\d+(?:\.\d+)?(?:px|em|rem|%)$/;
 const DEFAULT_SCRIM_DIM = "rgba(0, 0, 0, 0.4)";
@@ -68,6 +71,7 @@ export class ScrimController {
   detachScrimTap: (() => void) | null = null;
 
   private scrimOverlayTeardown: (() => void) | null = null;
+  private placeOverlay: (() => void) | null = null;
 
   private backdropOpacitySentinel = new WriteSentinel();
   private screenOpacitySentinel = new WriteSentinel();
@@ -215,6 +219,8 @@ export class ScrimController {
     if (this.isDestroyed() || mode === this.mode) return;
     this.mode = mode;
     this.invalidateOpacityCache();
+    if (this.scrimMode === "above-sheet") this.applyAboveSheetInset();
+    this.placeOverlay?.();
   }
 
   setScrimMode(
@@ -373,8 +379,12 @@ export class ScrimController {
     const wrapper = screen.ownerDocument.createElement("div");
     wrapper.className = "bs-scrim-overlay";
     const ws = wrapper.style;
-    ws.position = "absolute";
-    applyOverlayPosition(ws, this.mode, position, inset);
+    ws.position = "fixed";
+    const place = (): void => {
+      resetOverlayPosition(ws);
+      applyOverlayPosition(ws, this.mode, position, inset);
+    };
+    place();
     if (interactive) {
       ws.pointerEvents = "auto";
     }
@@ -389,9 +399,11 @@ export class ScrimController {
       return () => {};
     }
     host.appendChild(wrapper);
+    this.placeOverlay = place;
 
     const teardown = (): void => {
       if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+      if (this.placeOverlay === place) this.placeOverlay = null;
       if (this.scrimOverlayTeardown === teardown) {
         this.scrimOverlayTeardown = null;
       }

@@ -127,6 +127,13 @@ export function useBottomSheet<TId extends string = string>(
       EngineOptions,
       "element" | "handle" | "scrollContainer" | "backdrop" | "scrim"
     >;
+    const target = resolveTeleportTarget(optsRef.current.teleportTo);
+    const restoreTeleport = target
+      ? teleportElements(
+          [backdropRef.current, screenRef.current, sheetRef.current],
+          target,
+        )
+      : null;
     const engine = new BottomSheetEngine({
       ...current,
       element: sheetRef.current,
@@ -142,14 +149,6 @@ export function useBottomSheet<TId extends string = string>(
         entry.fn as (payload: SheetEventMap[typeof entry.event]) => void,
       );
     }
-
-    const target = resolveTeleportTarget(optsRef.current.teleportTo);
-    const restoreTeleport = target
-      ? teleportElements(
-          [backdropRef.current, screenRef.current, sheetRef.current],
-          target,
-        )
-      : null;
 
     if (optsRef.current.backdropColor !== undefined) {
       engine.setScrimColor(optsRef.current.backdropColor);
