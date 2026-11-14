@@ -42,6 +42,19 @@ const focusables = (root: HTMLElement): HTMLElement[] =>
       !el.matches("[aria-hidden='true']"),
   );
 
+const findDeep = (root: Element, selector: string): HTMLElement | null => {
+  const direct = root.querySelector<HTMLElement>(selector);
+  if (direct || typeof HTMLSlotElement === "undefined") return direct;
+  for (const slot of Array.from(root.querySelectorAll("slot"))) {
+    for (const assigned of (slot as HTMLSlotElement).assignedElements()) {
+      if (assigned.matches(selector)) return assigned as HTMLElement;
+      const inner = findDeep(assigned, selector);
+      if (inner) return inner;
+    }
+  }
+  return null;
+};
+
 const FOCUS_ALLOW_ATTR = "data-bs-focus-allow";
 
 const composedParent = (node: Node): Node | null => {
@@ -100,11 +113,13 @@ export const installFocusTrap = (
     }
     const initial =
       typeof spec === "string"
-        ? container.querySelector<HTMLElement>(spec)
+        ? findDeep(container, spec)
         : spec ?? focusables(container)[0] ?? container;
     initial?.focus({ preventScroll: true });
   };
   if (!containsComposed(container, deepActiveElement())) focusInitial();
+
+  let backwards = false;
 
   const handleKey = (e: KeyboardEvent) => {
     if (!isActive()) return;
@@ -113,6 +128,10 @@ export const installFocusTrap = (
       return;
     }
     if (e.key !== "Tab") return;
+    backwards = e.shiftKey;
+    setTimeout(() => {
+      backwards = false;
+    }, 0);
     const list = focusables(container);
     if (list.length === 0) {
       e.preventDefault();
@@ -135,7 +154,8 @@ export const installFocusTrap = (
     const target = (e.composedPath()[0] ?? e.target) as Node | null;
     if (!target || containsComposed(container, target)) return;
     if (isAllowedOutside(target)) return;
-    focusables(container)[0]?.focus({ preventScroll: true });
+    const list = focusables(container);
+    list[backwards ? list.length - 1 : 0]?.focus({ preventScroll: true });
   };
 
   document.addEventListener("keydown", handleKey, true);

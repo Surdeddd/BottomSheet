@@ -44,6 +44,24 @@ describe("installFocusTrap", () => {
     release();
   });
 
+  it("finds initialFocus among slotted content of a shadow root", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: "open" });
+    const sheet = document.createElement("section");
+    sheet.appendChild(document.createElement("slot"));
+    shadow.appendChild(sheet);
+    const wrapper = document.createElement("form");
+    const field = document.createElement("input");
+    field.id = "slotted";
+    wrapper.appendChild(field);
+    host.appendChild(wrapper);
+
+    const release = installFocusTrap(sheet, { initialFocus: "#slotted" });
+    expect(document.activeElement).toBe(field);
+    release();
+  });
+
   it("calls onEscape on Escape key", () => {
     let escaped = false;
     const release = installFocusTrap(container, {
@@ -57,6 +75,48 @@ describe("installFocusTrap", () => {
   it("returns a function (no-op safe)", () => {
     const release = installFocusTrap(container);
     expect(typeof release).toBe("function");
+    release();
+  });
+
+  it("brings focus that escaped forwards back to the first element", () => {
+    const release = installFocusTrap(container);
+    (container.querySelector("#second") as HTMLElement).focus();
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", bubbles: true }),
+    );
+    outsideButton.focus();
+    expect((document.activeElement as HTMLElement).id).toBe("first");
+    release();
+  });
+
+  it("brings focus that escaped backwards back to the last element", () => {
+    const release = installFocusTrap(container);
+    (container.querySelector("#second") as HTMLElement).focus();
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    outsideButton.focus();
+    expect((document.activeElement as HTMLElement).id).toBe("third");
+    release();
+  });
+
+  it("forgets the direction once the Tab press is over", async () => {
+    const release = installFocusTrap(container);
+    (container.querySelector("#second") as HTMLElement).focus();
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    await new Promise(resolve => setTimeout(resolve, 20));
+    outsideButton.focus();
+    expect((document.activeElement as HTMLElement).id).toBe("first");
     release();
   });
 
