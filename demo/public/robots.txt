@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /fixtures/
+Disallow: /bench/
+
+Sitemap: https://bottom-sheet-demo-ashy.vercel.app/sitemap.xml

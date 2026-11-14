@@ -1,0 +1,330 @@
+# @surdeddd/bottom-sheet
+
+> A bottom sheet, drawer and modal sheet for the web. One gesture engine with snap points, spring physics and keyboard accessibility, and the same engine behind adapters for React, Vue 3, Svelte 5, Solid, Qwik and Preact and behind a `<bottom-sheet>` custom element for Angular, Lit, Astro and plain HTML. MIT, TypeScript, no runtime dependencies.
+
+Install: `npm i @surdeddd/bottom-sheet`. Frameworks are optional peer dependencies.
+
+This file is a complete reference written for AI coding assistants. Every name below is real; do not invent options, props or events that are not listed here.
+
+## Entry points
+
+| Import | What it gives |
+| --- | --- |
+| `@surdeddd/bottom-sheet` | `BottomSheetEngine`, `BottomSheetCore`, `createSheetManager`, `historySettled`, types |
+| `@surdeddd/bottom-sheet/react` | `BottomSheet`, `useBottomSheet`, `Overlay`, `useOverlay`, `BottomSheetFromConfig` |
+| `@surdeddd/bottom-sheet/preact` | The React entry, for use with `preact/compat` |
+| `@surdeddd/bottom-sheet/vue` | `BottomSheet`, `useBottomSheet` |
+| `@surdeddd/bottom-sheet/svelte` | `BottomSheet`, `createBottomSheet` |
+| `@surdeddd/bottom-sheet/solid` | `BottomSheet` |
+| `@surdeddd/bottom-sheet/qwik` | `BottomSheet` |
+| `@surdeddd/bottom-sheet/element` | Registers `<bottom-sheet>`; `BottomSheetElement`, `defineBottomSheet` |
+| `@surdeddd/bottom-sheet/overlay` | `OverlayEngine`: a two-state slide-in panel without snap points |
+| `@surdeddd/bottom-sheet/core` | `BottomSheetCore`: the engine without optional features |
+| `@surdeddd/bottom-sheet/features` | `routeFeature`, `visualViewportFeature`, `contentSwipeFeature`, `contentFitFeature`, `persistFeature`, `autoCollapseFeature` |
+| `@surdeddd/bottom-sheet/webgl` | `webglRenderer`: optional GPU renderer |
+| `@surdeddd/bottom-sheet/debug` | `attachDebugOverlay(engine)` |
+| `@surdeddd/bottom-sheet/integrations/react-hook-form` | `useFormGuard(sheetRef, form)` |
+| `@surdeddd/bottom-sheet/integrations/formik` | `useFormikGuard(sheetRef, formikRef)` |
+| `@surdeddd/bottom-sheet/styles` | The stylesheet. Required by everything except the custom element |
+| `@surdeddd/bottom-sheet/themes/ios`, `/themes/material`, `/themes/vercel` | Optional themes; classes `bs-theme-ios`, `bs-theme-material`, `bs-theme-vercel` on an ancestor |
+
+## The canonical example
+
+A modal sheet opened by a button, in React:
+
+```tsx
+import { useState } from "react";
+import { BottomSheet } from "@surdeddd/bottom-sheet/react";
+import "@surdeddd/bottom-sheet/styles";
+
+export function Filters() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Filters</button>
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        snapPoints={[
+          { id: "closed", size: 0 },
+          { id: "open", size: "fit" },
+        ]}
+        focusTrap
+        inertSiblings
+        header={<h2>Filters</h2>}
+      >
+        <FilterForm />
+      </BottomSheet>
+    </>
+  );
+}
+```
+
+A sheet that stays on screen (the maps pattern) has no closed point and no `open` prop:
+
+```tsx
+<BottomSheet
+  snapPoints={[
+    { id: "peek", size: 96 },
+    { id: "half", size: "45dvh" },
+    { id: "full", size: "90%" },
+  ]}
+  initial="peek"
+>
+  <PlaceList />
+</BottomSheet>
+```
+
+## Rules that prevent the usual mistakes
+
+1. Snap points are objects, `{ id, size }`, and everything refers to them by `id`. `size` is a number of pixels, `"50%"`, `"fit"` (the content's own height), `"full"`, or any CSS length such as `"50dvh"`.
+2. A sheet can close only if it has a snap point of size `0`. The `open` prop, `v-model:open`, `bind:open` and `close()` all depend on it. By convention its id is `"closed"`.
+3. Import `@surdeddd/bottom-sheet/styles` once. Without it the sheet is unstyled and unpositioned. The custom element does not need it.
+4. Do not set `z-index` on `.bs-sheet`, `.bs-backdrop` or anchors. The engine writes it. Use `teleportTo` to place the sheet in another stacking context.
+5. `cancel()` in `before-snap` and `before-close` must be called synchronously. An async handler cannot veto.
+6. Unmount a sheet in `closed`, not in `close`. `close` fires when the exit starts.
+7. A modal sheet wants `focusTrap` and `inertSiblings`. Both are off by default.
+8. To let a finger scroll the content at a half point, set `fitContentToSnap` and `dragFromContent: false` (globally or per snap point). By default a swipe on the content drags the sheet until it is fully open.
+9. `backdropRange` is a range of progress, not of opacity. `backdropOpacity` is the opacity.
+10. `--bs-progress` and `--bs-size` are set on the sheet and on `.bs-root`. Elements outside `.bs-root` cannot read them; use the `progress` event there.
+11. `persistent` stops the user from closing the sheet; `close()` still works. `disableClose` stops `close()` too.
+12. In the Next.js App Router the component file needs `"use client"`.
+13. Options other than the ones listed as reactive are read once at mount. Change them by remounting with a new `key`.
+
+## Engine options
+
+Shared by `new BottomSheetEngine(options)` and every adapter (as props).
+
+Elements, engine only: `element` (required), `handle`, `scrollContainer`, `backdrop`, `scrim`.
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `snapPoints` | `{ id: string; size: SnapPoint; dragFromContent?: boolean }[]` | required | The sizes the sheet can rest at |
+| `allowed` | `string[]` | all ids | Ids the sheet may rest at now |
+| `initial` | `string` | first allowed | Id to start at |
+| `mode` | `"bottom" \| "top" \| "left" \| "right" \| "start" \| "end"` | `"bottom"` | Edge |
+| `maxHeight` | `number \| string` | none | Cap on the size |
+| `radius` | `number \| string` | `20px` | Corner radius |
+| `fitContentToSnap` | `boolean` | `false` | Keep the scroll area and footer reachable at every point |
+| `animation` | `"spring" \| "ios-spring" \| "material-bounce" \| "snappy" \| "tween" \| "linear"` | `"spring"` | Motion preset |
+| `spring` | `{ stiffness?, damping?, mass? }` | preset | Spring parameters |
+| `duration` | `number` | `220` | Tween length, ms |
+| `easing` | `(t: number) => number` | ease-out-back | Tween curve |
+| `settleAnimation` | `"waapi"` | off | Run the settle as a Web Animation |
+| `respectReducedMotion` | `boolean` | `true` | Jump under `prefers-reduced-motion` |
+| `viewTransitions` | `boolean` | `false` | Use `document.startViewTransition()` |
+| `dragFrom` | `"handle" \| "sheet" \| "zones"` | `"handle"` | Where a drag may start. `zones` = `[data-bs-drag]` subtrees. `[data-bs-no-drag]` opts out |
+| `dragFromContent` | `boolean` | `true` | A touch on the scroll area drags the sheet |
+| `disableDrag` | `boolean` | `false` | No gesture |
+| `rubberBand` | `boolean` | `true` | Soft over-drag |
+| `flickVelocity` | `number` | `0.65` | px/ms for a touch flick |
+| `dragThreshold` | `number` | `18` | px before a touch drag counts |
+| `closeOnEscape` | `boolean` | `true` | Escape closes the top sheet |
+| `closeOnBack` | `boolean` | `false` | The Back button closes the sheet |
+| `routedTo` | `string` | none | URL shown while open |
+| `closeOnRouteChange` | `boolean` | `false` | Close when the URL changes |
+| `persistent` | `boolean` | `false` | The user cannot dismiss |
+| `disableClose` | `boolean` | `false` | Nothing closes |
+| `focusTrap` | `boolean` | `false` | Trap and restore focus |
+| `initialFocus` | `string \| HTMLElement \| false` | first focusable | With `focusTrap`: what gets focus on open |
+| `returnFocusTo` | `string \| HTMLElement \| (() => HTMLElement \| null)` | none | Where focus goes on close |
+| `inertSiblings` | `boolean` | `false` | Make the rest of the page `inert` |
+| `lockBodyScroll` | `boolean` | `true` | Lock page scroll while open |
+| `backdropRange` | `[number, number]` | `[0, 1]` | Progress range over which the backdrop fades in |
+| `backdropOpacity` | `number` | `1` | Opacity the backdrop reaches |
+| `backdropColor` | `string` | stylesheet | Colour of the backdrop |
+| `screenRange` | `[number, number]` | `[0, 1]` | Progress range for the scrim layer |
+| `scrimMode` | `"full" \| "above-sheet" \| "off"` | `"full"` | Extent of the scrim layer |
+| `scrimPreset` | `"subtle" \| "standard" \| "monitoring" \| "cinematic"` | none | Colour, blur and range together |
+| `scrimColor` | `string` | none | Scrim fill |
+| `scrimBlur` | `string` | none | Scrim blur radius, e.g. `"8px"` |
+| `scrimInteractive` | `boolean` | `false` | Scrim takes pointer input |
+| `scrimTapToClose` | `boolean` | `false` | Tap on the scrim closes |
+| `stackEffect` | `boolean` | `false` | Scale the sheets under the top one |
+| `persistKey` | `string` | none | `localStorage` key for the last point |
+| `autoCollapseAfter` | `number` | off | ms of rest before collapsing |
+| `linkedSheets` | `BottomSheetEngine[]` | none | Engines that collapse when this one opens |
+| `features` | `EngineFeature[]` | all | Features for `BottomSheetCore` |
+
+## Engine methods
+
+```ts
+sheet.open(id?): Promise<void>      // to the first allowed open point; no-op on an open sheet without id
+sheet.close(reason?): Promise<void> // to the point of size 0; without one, the smallest point
+sheet.snapTo(id, { velocity?, signal? }?): Promise<void>
+sheet.expand(): Promise<void>       // largest allowed point
+sheet.collapse(): Promise<void>     // smallest allowed open point
+sheet.dragTo(sizePx, { velocity?, signal? }?): Promise<void>
+
+sheet.setAllowed(ids, snapTo?)
+sheet.setSnapPoints(points, allowed?)
+sheet.recompute()                   // re-measure "fit"
+sheet.getAllowedIds(); sheet.getResolvedSnaps()
+
+sheet.setMode(mode); sheet.getMode()
+sheet.setPersistent(bool); sheet.setDisableClose(bool); sheet.setDisableDrag(bool)
+sheet.setDragFrom(mode); sheet.setDragFromContent(bool)
+sheet.setRadius(value); sheet.setMaxHeight(value)
+
+sheet.setBackdropRange([from, to]); sheet.setBackdropOpacity(n); sheet.setBackdropColor(color | null)
+sheet.setScreenRange([from, to]); sheet.setScrimMode(mode); sheet.setScrimEnabled(bool)
+sheet.setScrimColor(color | null); sheet.setScrimBlur(blur | null)
+sheet.setScrimInteractive(bool); sheet.setScrimTapToClose(bool)
+sheet.setScrim({ preset?, color?, blur?, range?, mode?, interactive?, tapToClose?, enabled? })
+sheet.setScrimOverlay({ children, position?, inset?, interactive? }): () => void
+sheet.addAnchor({ element, position?, inset?, showOn?, fadeRange?, interactive?, animation? }): () => void
+sheet.setScrimStages({ stages } | null): () => void
+
+sheet.state        // { activeId, size, progress, phase, isDragging, isAnimating }
+sheet.canDismiss(); sheet.isTop(); sheet.depth()
+sheet.on(event, listener): () => void
+sheet.use(plugin); sheet.destroy()
+```
+
+`phase` is `"closed" | "opening" | "open" | "closing"`. `progress` is 0 at the smallest allowed point and 1 at the largest.
+
+## Events
+
+| Event | Payload | When |
+| --- | --- | --- |
+| `open` | `{ id }` | The sheet starts to appear |
+| `opened` | `{ id }` | It has landed |
+| `close` | none | It starts to leave |
+| `closed` | none | It is gone |
+| `snap` | `{ id, size, progress }` | It settled on a point |
+| `before-snap` | `{ id, size, previousId, cancel }` | Before a move; `cancel()` vetoes |
+| `before-close` | `{ reason, cancel }` | Before a close; `reason`: `"programmatic" \| "backdrop" \| "escape" \| "back"` |
+| `dragstart` | `{ size }` | A drag begins |
+| `drag` | `{ size, delta }` | Every frame of a drag |
+| `dragend` | `{ size, velocity }` | A drag ends |
+| `progress` | `{ value, size }` | Every frame of any motion |
+
+## Adapters
+
+All components take every engine option as a prop, plus: `backdrop` (default `true`), `closeOnBackdrop` (default `true`), `teleportTo`, `ariaLabel` (default `"Bottom sheet"`), `handleLabel`, `contentLabel`.
+
+### React (`/react`)
+
+- Controlled open: `open`, `onOpenChange`.
+- Regions: `header`, `footer` (node or `(state) => node`), `leftButton`, `rightButton`, `screen`, `children`.
+- Callbacks: `onSnap(id)`, `onOpen(id)`, `onOpened(id)`, `onClose()`, `onClosed()`, `onBeforeSnap(e)`, `onBeforeClose(e)`, `onDragStart(e)`, `onDragEnd(e)`, `onDrag(e)`, `onProgress(e)`, `onChange(state)`.
+- Other props: `className` and `style` (on the sheet element), `ariaLabelledBy`, `anchors`, `scrimStages`, `noSSR`.
+- Ref (`BottomSheetHandle`): `snapTo`, `open`, `close`, `expand`, `collapse`, `setAllowed`, `setSnapPoints`, `recompute`, `isTop`, `depth`, `setScrim`, `setScrimOverlay`, `addAnchor`, `setScrimStages`, `on`, `getEngine`, `state`.
+- Reactive props: `open`, `snapPoints`, `allowed`, `mode`, `radius`, `maxHeight`, `persistent`, `disableClose`, `disableDrag`, `dragFrom`, `dragFromContent`, `backdropColor`, `backdropOpacity`.
+- Headless: `useBottomSheet(options)` returns `sheetRef`, `handleRef`, `contentRef`, `backdropRef`, `screenRef`, `state` and the methods. You render `.bs-root > .bs-backdrop + .bs-sheet > .bs-handle + .bs-content`.
+
+### Vue 3 (`/vue`)
+
+- Props in kebab-case in templates: `:snap-points`, `focus-trap`.
+- `v-model:open`, `v-model:snap`.
+- Slots: default, `header`, `footer` (both get `{ state }`), `button-left`, `button-right`, `screen`, `anchor-<id>`.
+- Events: `@snap`, `@open`, `@opened`, `@close`, `@closed`, `@before-snap`, `@before-close`, `@drag-start`, `@drag-end`, `@drag`, `@progress`, `@change`.
+- `teleport` defaults to `true` and `teleport-to` to `"body"`.
+- Template ref exposes the methods and `state`.
+- Headless: `useBottomSheet(options)`.
+
+### Svelte 5 (`/svelte`)
+
+- `bind:open`, `bind:snap`.
+- Snippets: `children`, `header`, `footer`, `leftButton`, `rightButton`, `screen`.
+- Callbacks, lower case: `onsnap`, `onopen`, `onopened`, `onclose`, `onclosed`, `onbeforesnap`, `onbeforeclose`, `ondragstart`, `ondragend`, `ondrag`, `onprogress`, `onchange`.
+- `bind:this` exposes the methods and `getState()`, `getEngine()`.
+- Headless: `createBottomSheet(options)` with `attach({ element, handle, scrollContainer, backdrop })` inside `$effect`.
+
+### Solid (`/solid`)
+
+- Controlled open: `open`, `onOpenChange`.
+- `header`, `footer`, `leftButton`, `rightButton`, `screen` are JSX props.
+- Callbacks as in React. `engineRef={engine => …}` gives the engine.
+
+### Qwik (`/qwik`)
+
+- Controlled: `open` with `onOpenChange$`, `snap` with `onSnap$`. There is no ref.
+- Slots: default, `q:slot="header"`, `"footer"`, `"leftButton"`, `"rightButton"`, `"screen"`.
+- Callbacks: `onSnap$`, `onOpen$`, `onOpened$`, `onClose$`, `onClosed$`, `onDragStart$`, `onDragEnd$`, `onChange$`.
+- There is no `onBeforeSnap$`, `onBeforeClose$`, `onDrag$` or `onProgress$`, and no `easing`, `linkedSheets` or `features` props.
+
+### Custom element (`/element`)
+
+```html
+<bottom-sheet snap-points="closed:0,half:50%,full:90%" focus-trap="true">
+  <h2 slot="header">Title</h2>
+  <p>Content</p>
+  <button slot="footer">Done</button>
+</bottom-sheet>
+```
+
+- Attributes: `snap-points` (shorthand `id:size,…` or JSON), `allowed`, `initial`, `snap`, `open`, `mode`, `animation`, `focus-trap`, `close-on-escape`, `close-on-route-change`, `lock-body-scroll`, `backdrop`, `backdrop-color`, `scrim-color`, `persistent`, `disable-close`, `disable-drag`, `drag-from`, `drag-from-content`, `fit-content-to-snap`, `stack-effect`, `radius`, `max-height`, `return-focus-to`, `sheet-label`, `handle-label`, `content-label`, `stylesheet`, `options` (JSON of any other engine option).
+- Boolean attributes take the strings `"true"` and `"false"`.
+- Property `options` for values JSON cannot hold.
+- Methods: `open()`, `close()`, `snapTo(id)`, `expand()`, `collapse()`, `setAllowed()`, `setMode()`, `setRadius()`, `setMaxHeight()`, `recompute()`, `isTop()`, `depth()`, `canDismiss()`, `addAnchor()`, `setScrimStages()`, `getEngine()`. Properties: `snap`, `sheetState`.
+- Events (`CustomEvent`, payload in `detail`): `snap`, `open`, `opened`, `close`, `closed`, `before-snap`, `before-close`, `drag-start`, `drag`, `drag-end`, `progress`. Veto `before-snap` and `before-close` with `event.preventDefault()`.
+- Slots: default, `header`, `footer`, `leftButton`, `rightButton`, `screen`, `anchor`.
+- Parts: `sheet`, `handle`, `header`, `content`, `footer`, `backdrop`, `screen`, `left-button`, `right-button`.
+- Angular: add `CUSTOM_ELEMENTS_SCHEMA`. Astro: import the module from a client `<script>`, not from the frontmatter.
+
+### Without a framework
+
+```ts
+import { BottomSheetEngine } from "@surdeddd/bottom-sheet";
+import "@surdeddd/bottom-sheet/styles";
+
+const sheet = new BottomSheetEngine({
+  element: document.querySelector(".bs-sheet"),
+  handle: document.querySelector(".bs-handle"),
+  scrollContainer: document.querySelector(".bs-content"),
+  backdrop: document.querySelector(".bs-backdrop"),
+  snapPoints: [{ id: "closed", size: 0 }, { id: "open", size: "fit" }],
+  initial: "closed",
+});
+```
+
+Markup: `div.bs-root > div.bs-backdrop + section.bs-sheet[data-mode="bottom"] > div.bs-handle[role="slider"][tabindex="0"] + div.bs-header? + div.bs-content + div.bs-footer?`. The engine does not listen to the backdrop: add `backdrop.addEventListener("click", () => sheet.canDismiss() && sheet.close("backdrop"))`.
+
+## Styling
+
+CSS custom properties, set on `.bs-root`, an ancestor or `:root`; they cross the custom element's shadow boundary.
+
+`--bs-surface`, `--bs-surface-border`, `--bs-radius`, `--bs-shadow`, `--bs-handle-color`, `--bs-handle-width`, `--bs-handle-height`, `--bs-handle-padding`, `--bs-header-padding`, `--bs-header-min-height`, `--bs-content-padding`, `--bs-footer-padding`, `--bs-backdrop-color`, `--bs-scrim-color`, `--bs-scrim-blur`.
+
+Written by the engine, read-only: `--bs-size` (px), `--bs-progress` (0 to 1), `--bs-keyboard-inset` (px).
+
+Class names: `bs-root`, `bs-backdrop`, `bs-screen`, `bs-sheet`, `bs-handle`, `bs-header`, `bs-content`, `bs-footer`, `bs-button-slot`.
+
+## Behaviour worth knowing
+
+- The handle is a keyboard slider: the arrow pointing away from the sheet's edge grows it, the opposite one shrinks it, `Home` and `End` go to the smallest and largest point, `Escape` closes.
+- Sheets stack. Each open sheet goes on top; Escape, Back and the focus trap act on the top one.
+- A bottom sheet rests on top of the on-screen keyboard.
+- Every adapter renders on the server. A sheet that starts closed is hidden in the server markup.
+- `open` and `close` fire when a transition starts, `opened` and `closed` when it lands.
+
+## Documentation
+
+- [README](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/README.md): overview, option tables, methods, events
+- [React](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/react.md)
+- [Vue](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/vue.md)
+- [Svelte](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/svelte.md)
+- [Solid](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/solid.md)
+- [Qwik](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/qwik.md)
+- [Preact](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/preact.md)
+- [Custom element](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/web-component.md)
+- [Without a framework](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/vanilla.md)
+- [Angular](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/angular.md), [Lit](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/lit.md), [Astro](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/astro.md)
+- [Theming](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/theming.md): tokens, themes, backdrop, scrim, stacking
+- [Content at every snap point](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/content-fit.md): `fitContentToSnap`
+- [Anchors and scrim stages](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/anchors.md)
+- [Overlay](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/overlay.md)
+- [Recipes](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/recipes/README.md): ten worked examples
+- [Migrating from vaul or react-modal-sheet](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/MIGRATION.md)
+- [Changelog](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/CHANGELOG.md)
+
+## Optional
+
+- [Architecture](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/ARCHITECTURE.md)
+- [API stability](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/api-stability.md)
+- [WebGL renderer](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/webgl.md)
+- [Plugins](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/plugins.md)
+- [RTL](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/rtl.md)
+- [Browser support](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/browser-support.md)
+- [Live demo](https://bottom-sheet-demo-ashy.vercel.app)

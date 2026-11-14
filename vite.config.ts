@@ -1,13 +1,27 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+import { readFileSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import vue from "@vitejs/plugin-vue";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import solid from "vite-plugin-solid";
 import { resolve } from "node:path";
 
+const publishFromRoot = (fileName: string): Plugin => ({
+  name: `publish-${fileName}`,
+  apply: "build",
+  generateBundle() {
+    this.emitFile({
+      type: "asset",
+      fileName,
+      source: readFileSync(resolve(__dirname, fileName), "utf8"),
+    });
+  },
+});
+
 export default defineConfig({
   root: resolve(__dirname, "demo"),
   plugins: [
+    publishFromRoot("llms.txt"),
     solid({
       include: [
         "**/solid-demo.tsx",

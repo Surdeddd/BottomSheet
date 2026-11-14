@@ -1,7 +1,7 @@
 {
   "name": "@surdeddd/bottom-sheet",
   "version": "0.23.4",
-  "description": "Universal, headless bottom sheet — framework-agnostic core with React, Vue 3, Svelte, Solid, Qwik, Preact, Lit and Custom Element adapters. Pointer Events, snap points, momentum, a11y, SSR-safe.",
+  "description": "Bottom sheet, drawer and modal sheet with snap points, spring physics and touch gestures. One engine for React, Vue 3, Svelte 5, Solid, Qwik, Preact and a <bottom-sheet> web component. Accessible, SSR-safe, no dependencies.",
   "type": "module",
   "license": "MIT",
   "author": "Surdeddd",
@@ -9,28 +9,45 @@
     "type": "git",
     "url": "git+https://github.com/Surdeddd/BottomSheet.git"
   },
-  "homepage": "https://github.com/Surdeddd/BottomSheet#readme",
+  "homepage": "https://bottom-sheet-demo-ashy.vercel.app",
   "bugs": {
     "url": "https://github.com/Surdeddd/BottomSheet/issues"
   },
   "keywords": [
     "bottom-sheet",
-    "modal",
+    "bottomsheet",
+    "sheet",
     "drawer",
-    "headless",
-    "framework-agnostic",
+    "modal",
+    "modal-sheet",
+    "action-sheet",
+    "slide-up-panel",
+    "swipeable",
+    "draggable",
+    "snap-points",
+    "gesture",
+    "touch",
+    "mobile",
+    "spring",
     "react",
+    "react-component",
     "vue",
+    "vue3",
     "svelte",
+    "svelte5",
     "solid-js",
     "qwik",
     "preact",
     "lit",
+    "angular",
     "web-component",
+    "custom-element",
+    "headless",
+    "framework-agnostic",
+    "typescript",
     "ssr",
     "a11y",
-    "snap-points",
-    "gesture",
+    "accessibility",
     "pointer-events"
   ],
   "sideEffects": [
@@ -45,6 +62,8 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/element.iife.global.js",
+  "jsdelivr": "./dist/element.iife.global.js",
   "qwik": "./dist/qwik-lib/index.qwik.mjs",
   "exports": {
     ".": {
@@ -329,6 +348,7 @@
     "dist",
     "!dist/**/*.map",
     "README.md",
+    "llms.txt",
     "LICENSE"
   ],
   "scripts": {

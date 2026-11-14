@@ -1,0 +1,39 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "@surdeddd/bottom-sheet",
+  "description": "Bottom sheet, drawer and modal sheet for the web: one gesture engine with snap points and spring physics, with adapters for React, Vue 3, Svelte 5, Solid, Qwik and Preact and a <bottom-sheet> custom element.",
+  "folders": [],
+  "excludeFolders": [
+    "src",
+    "tests",
+    "demo",
+    "scripts",
+    "dist",
+    "patches",
+    "memory-bank",
+    "docs/api",
+    "docs/assets",
+    "docs/gifs",
+    "docs/screenshots"
+  ],
+  "excludeFiles": [
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "README.ru.md",
+    "ARCHITECTURE.md",
+    "webgl-renderer-design.md",
+    "api-stability.md"
+  ],
+  "rules": [
+    "Snap points are objects { id, size }; refer to them by id, never by index",
+    "A sheet that can close needs a snap point of size 0; the open prop, v-model:open and bind:open depend on it",
+    "Import '@surdeddd/bottom-sheet/styles' once; the <bottom-sheet> custom element does not need it",
+    "Do not set z-index on .bs-sheet, .bs-backdrop or anchors; use teleportTo to change the stacking context",
+    "Call cancel() synchronously inside before-snap and before-close handlers",
+    "Unmount a sheet on the closed event, not on close",
+    "A modal sheet needs both focusTrap and inertSiblings",
+    "backdropRange is a range of progress; backdropOpacity is the opacity",
+    "To scroll content with a finger at a half snap point, set fitContentToSnap and dragFromContent: false"
+  ]
+}
