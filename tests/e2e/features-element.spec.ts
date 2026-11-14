@@ -144,6 +144,23 @@ test.describe("<bottom-sheet> attributes", () => {
     );
   });
 
+  test("backdrop-color paints the backdrop and scrim-color the scrim", async ({
+    page,
+  }) => {
+    await mountEl(page, markup('backdrop-color="rgb(10, 20, 30)"'));
+    expect(await partStyle(page, "backdrop", "background-color")).toBe(
+      "rgb(10, 20, 30)",
+    );
+    expect(await partStyle(page, "screen", "background-color")).toBe(
+      "rgba(0, 0, 0, 0)",
+    );
+
+    await setAttr(page, "backdrop-color", "rgb(40, 50, 60)");
+    expect(await partStyle(page, "backdrop", "background-color")).toBe(
+      "rgb(40, 50, 60)",
+    );
+  });
+
   test("the snap attribute and property move the sheet", async ({ page }) => {
     await mountEl(page, markup());
     await setAttr(page, "snap", "half");

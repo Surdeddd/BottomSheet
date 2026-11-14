@@ -162,6 +162,8 @@ export class BottomSheetElement extends BaseHTMLElement {
         break;
       }
       case ATTR_BACKDROP_COLOR:
+        this.engine.setBackdropColor(value);
+        break;
       case ATTR_SCRIM_COLOR:
         this.engine.setScrimColor(value);
         break;
@@ -336,6 +338,9 @@ export class BottomSheetElement extends BaseHTMLElement {
       maxHeight: given(ATTR_MAX_HEIGHT, parseDimension) ?? extra.maxHeight,
       returnFocusTo:
         this.getAttribute(ATTR_RETURN_FOCUS_TO) ?? extra.returnFocusTo,
+      backdropColor:
+        this.getAttribute(ATTR_BACKDROP_COLOR) ?? extra.backdropColor,
+      scrimColor: this.getAttribute(ATTR_SCRIM_COLOR) ?? extra.scrimColor,
     };
 
     this.engine = new BottomSheetEngine(opts);
@@ -344,11 +349,6 @@ export class BottomSheetElement extends BaseHTMLElement {
     this.reflectOpen(this.engine.state.phase !== "closed");
     this.writeMode(this.engine.getMode());
     sheet.setAttribute("data-active", this.engine.state.activeId);
-
-    const scrimColor =
-      this.getAttribute(ATTR_SCRIM_COLOR) ??
-      this.getAttribute(ATTR_BACKDROP_COLOR);
-    if (scrimColor !== null) this.engine.setScrimColor(scrimColor);
 
     const anchors = (Array.from(this.children) as HTMLElement[]).filter(
       child => child.getAttribute("slot") === "anchor",

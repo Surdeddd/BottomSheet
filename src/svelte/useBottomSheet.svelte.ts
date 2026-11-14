@@ -94,8 +94,7 @@ export function createBottomSheet<TId extends string = string>(
 
   const attach = (refs: SvelteAttachRefs) => {
     if (engine) engine.destroy();
-    const { onSnap, teleportTo, backdropColor, backdropOpacity, ...engineOpts } =
-      opts;
+    const { onSnap, teleportTo, ...engineOpts } = opts;
     const target = resolveTeleportTarget(teleportTo);
     const restoreTeleport = target
       ? teleportElements([refs.backdrop, refs.scrim, refs.element], target)
@@ -108,10 +107,6 @@ export function createBottomSheet<TId extends string = string>(
       ...refs,
     });
     engine = created;
-    if (backdropColor !== undefined) created.setScrimColor(backdropColor);
-    if (backdropOpacity !== undefined) {
-      created.setBackdropRange([0, backdropOpacity]);
-    }
 
     if (onSnap) {
       created.on("snap", payload => onSnap(payload.id as TId));

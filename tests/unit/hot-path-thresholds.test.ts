@@ -220,7 +220,7 @@ describe("Hot-path threshold regressions", () => {
       vi.unstubAllGlobals();
     };
 
-    const build = (initial: string) => {
+    const build = (initial: string, extra: Record<string, unknown> = {}) => {
       const { sheet, handle } = makeDom();
       const backdrop = document.createElement("div");
       const scrim = document.createElement("div");
@@ -241,6 +241,7 @@ describe("Hot-path threshold regressions", () => {
         duration: 320,
         easing: easeOutCubic,
         respectReducedMotion: false,
+        ...extra,
       });
       const drop = (): void => {
         engine.destroy();
@@ -271,6 +272,42 @@ describe("Hot-path threshold regressions", () => {
       expect(backdrop.style.opacity).toBe("1");
       expect(scrim.style.opacity).toBe("1");
       drop();
+    });
+
+    const steady = (t: number): number => t;
+
+    it("a dimmed-down backdrop ends on its exact opacity whatever the last step is", async () => {
+      const wrong: string[] = [];
+      for (let duration = 1000; duration < 1016; duration++) {
+        const { engine, backdrop, drop } = build("half", {
+          backdropOpacity: 0.5,
+          easing: steady,
+          duration,
+        });
+        await runFrames(() => engine.snapTo("open"), 80);
+        if (backdrop.style.opacity !== "0.5") {
+          wrong.push(`${duration}ms: ${backdrop.style.opacity}`);
+        }
+        drop();
+      }
+      expect(wrong).toEqual([]);
+    });
+
+    it("a fade spread wider than the sheet's travel ends on its exact opacity", async () => {
+      const wrong: string[] = [];
+      for (let duration = 1000; duration < 1016; duration++) {
+        const { engine, backdrop, drop } = build("half", {
+          backdropRange: [0, 2],
+          easing: steady,
+          duration,
+        });
+        await runFrames(() => engine.snapTo("open"), 80);
+        if (backdrop.style.opacity !== "0.5") {
+          wrong.push(`${duration}ms: ${backdrop.style.opacity}`);
+        }
+        drop();
+      }
+      expect(wrong).toEqual([]);
     });
 
     it("a snap between two open points leaves the exact progress", async () => {

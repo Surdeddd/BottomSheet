@@ -246,6 +246,66 @@ describe("Svelte <BottomSheet> fixes", () => {
     unmount(instance);
   });
 
+  it("paints the backdrop with backdropColor, not the scrim layer", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const props = makeProps(
+      baseProps({
+        initial: "full",
+        duration: 0,
+        backdropColor: "rgba(0, 0, 0, 0.2)",
+      }),
+    );
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    const colour = (): string =>
+      target
+        .querySelector<HTMLElement>(".bs-backdrop")!
+        .style.getPropertyValue("--bs-backdrop-color");
+    expect(colour()).toBe("rgba(0, 0, 0, 0.2)");
+    expect(
+      target.querySelector<HTMLElement>(".bs-screen")!.style.background,
+    ).toBe("");
+
+    props.backdropColor = "transparent";
+    flushSync();
+    await wait(40);
+    expect(colour()).toBe("transparent");
+    unmount(instance);
+  });
+
+  it("treats backdropOpacity as the opacity the backdrop reaches", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const props = makeProps({
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "half", size: 200 },
+        { id: "full", size: 400 },
+      ],
+      initial: "half",
+      teleport: false,
+      animation: "tween",
+      duration: 0,
+      backdropOpacity: 0.5,
+    });
+    const instance = mount(Cmp, { target, props });
+    flushSync();
+    await wait(40);
+    const shown = (): number =>
+      parseFloat(
+        target.querySelector<HTMLElement>(".bs-backdrop")!.style.opacity,
+      );
+    expect(shown()).toBeCloseTo(0.25, 3);
+
+    props.backdropOpacity = 0.2;
+    flushSync();
+    await wait(40);
+    expect(shown()).toBeCloseTo(0.1, 3);
+    unmount(instance);
+  });
+
   it("hands the drag payloads to ondragstart and ondragend", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

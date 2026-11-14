@@ -129,6 +129,65 @@ describe("React <BottomSheet> fixes", () => {
     await act(async () => root.unmount());
   });
 
+  it("paints the backdrop with backdropColor, not the scrim layer", async () => {
+    const render = (backdropColor: string) =>
+      act(async () => {
+        root.render(
+          jsx(BottomSheet, {
+            backdropColor,
+            snapPoints: points,
+            initial: "half",
+            animation: "tween",
+            duration: 0,
+          }),
+        );
+      });
+    const colour = (): string =>
+      container
+        .querySelector<HTMLElement>(".bs-backdrop")!
+        .style.getPropertyValue("--bs-backdrop-color");
+
+    await render("rgba(0, 0, 0, 0.2)");
+    await act(async () => wait(20));
+    expect(colour()).toBe("rgba(0, 0, 0, 0.2)");
+    expect(
+      container.querySelector<HTMLElement>(".bs-screen")!.style.background,
+    ).toBe("");
+
+    await render("transparent");
+    await act(async () => wait(20));
+    expect(colour()).toBe("transparent");
+    await act(async () => root.unmount());
+  });
+
+  it("treats backdropOpacity as the opacity the backdrop reaches", async () => {
+    const render = (backdropOpacity: number) =>
+      act(async () => {
+        root.render(
+          jsx(BottomSheet, {
+            backdropOpacity,
+            snapPoints: points,
+            initial: "half",
+            animation: "tween",
+            duration: 0,
+          }),
+        );
+      });
+    const shown = (): number =>
+      parseFloat(
+        container.querySelector<HTMLElement>(".bs-backdrop")!.style.opacity,
+      );
+
+    await render(0.5);
+    await act(async () => wait(20));
+    expect(shown()).toBeCloseTo(0.25, 3);
+
+    await render(0.2);
+    await act(async () => wait(20));
+    expect(shown()).toBeCloseTo(0.1, 3);
+    await act(async () => root.unmount());
+  });
+
   it("opens at mount when open starts true", async () => {
     const ref = createRef<BottomSheetHandle>();
     await act(async () => {

@@ -95,6 +95,8 @@ export function resolveEngineOptions(
       scrimPreset: opts.scrimPreset,
       screenRange: opts.screenRange,
       backdropRange: opts.backdropRange,
+      backdropOpacity: opts.backdropOpacity,
+      backdropColor: opts.backdropColor,
     },
     animation: {
       animation: opts.animation,

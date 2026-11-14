@@ -170,6 +170,67 @@ describe("Vue <BottomSheet> engine defaults", () => {
   });
 });
 
+describe("Vue <BottomSheet> backdrop", () => {
+  it("paints the backdrop with backdropColor, not the scrim layer", async () => {
+    const tint = vue.ref("rgba(0, 0, 0, 0.2)");
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const app = vue.createApp({
+      setup: () => () =>
+        vue.h(Cmp as never, {
+          snapPoints: points,
+          teleport: false,
+          initial: "half",
+          animation: "tween",
+          duration: 0,
+          backdropColor: tint.value,
+        }),
+    });
+    app.mount(host);
+    await flush();
+    const colour = (): string =>
+      host
+        .querySelector<HTMLElement>(".bs-backdrop")!
+        .style.getPropertyValue("--bs-backdrop-color");
+    expect(colour()).toBe("rgba(0, 0, 0, 0.2)");
+    expect(host.querySelector<HTMLElement>(".bs-screen")!.style.background).toBe(
+      "",
+    );
+
+    tint.value = "transparent";
+    await flush();
+    expect(colour()).toBe("transparent");
+    app.unmount();
+  });
+
+  it("treats backdropOpacity as the opacity the backdrop reaches", async () => {
+    const opacity = vue.ref(0.5);
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const app = vue.createApp({
+      setup: () => () =>
+        vue.h(Cmp as never, {
+          snapPoints: points,
+          teleport: false,
+          initial: "half",
+          animation: "tween",
+          duration: 0,
+          backdropOpacity: opacity.value,
+        }),
+    });
+    app.mount(host);
+    await flush();
+    const shown = (): number =>
+      parseFloat(host.querySelector<HTMLElement>(".bs-backdrop")!.style.opacity);
+    expect(shown()).toBeCloseTo(0.25, 3);
+
+    opacity.value = 0.2;
+    await flush();
+    expect(shown()).toBeCloseTo(0.1, 3);
+    app.unmount();
+  });
+});
+
 describe("Vue <BottomSheet> controlled open", () => {
   const reversed = [
     { id: "full", size: 600 },

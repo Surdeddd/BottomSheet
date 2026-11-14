@@ -150,13 +150,6 @@ export function useBottomSheet<TId extends string = string>(
       );
     }
 
-    if (optsRef.current.backdropColor !== undefined) {
-      engine.setScrimColor(optsRef.current.backdropColor);
-    }
-    if (optsRef.current.backdropOpacity !== undefined) {
-      engine.setBackdropRange([0, optsRef.current.backdropOpacity]);
-    }
-
     cachedSnapshotRef.current = { ...engine.state };
     setMounted(n => n + 1);
 

@@ -58,14 +58,14 @@ export function useEnginePropSync(
   useEffect(() => {
     if (!engineRef.current) return;
     if (opts.backdropColor !== undefined) {
-      engineRef.current.setScrimColor(opts.backdropColor);
+      engineRef.current.setBackdropColor(opts.backdropColor);
     }
   }, [opts.backdropColor]);
 
   useEffect(() => {
     if (!engineRef.current) return;
     if (opts.backdropOpacity !== undefined) {
-      engineRef.current.setBackdropRange([0, opts.backdropOpacity]);
+      engineRef.current.setBackdropOpacity(opts.backdropOpacity);
     }
   }, [opts.backdropOpacity]);
 

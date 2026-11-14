@@ -43,7 +43,14 @@ export type ScrimControllerOptions = {
   scrimPreset?: keyof typeof SCRIM_PRESETS;
   screenRange?: [number, number];
   backdropRange?: [number, number];
+  backdropOpacity?: number;
+  backdropColor?: string;
 };
+
+const BACKDROP_COLOR_VAR = "--bs-backdrop-color";
+
+const unit = (value: number): number =>
+  Number.isFinite(value) ? Math.min(Math.max(value, 0), 1) : 1;
 
 export class ScrimController {
   private screenComponent: HTMLElement | undefined;
@@ -60,6 +67,7 @@ export class ScrimController {
   scrimMode: "full" | "above-sheet" | "off";
   backdropRange: [number, number];
   screenRange: [number, number];
+  private backdropPeak: number;
 
   scrimEnabled = true;
   private savedScrimRanges: {
@@ -97,6 +105,8 @@ export class ScrimController {
     const preset = opts.scrimPreset ? SCRIM_PRESETS[opts.scrimPreset] : null;
     this.backdropRange = opts.backdropRange ?? preset?.range ?? [0, 1];
     this.screenRange = opts.screenRange ?? preset?.range ?? [0, 1];
+    this.backdropPeak = unit(opts.backdropOpacity ?? 1);
+    this.setBackdropColor(opts.backdropColor);
     this.scrimTapToCloseEnabled = opts.scrimTapToClose ?? false;
 
     const explicitColor = opts.scrimColor ?? preset?.color;
@@ -137,6 +147,7 @@ export class ScrimController {
     epsilon: number = OPACITY_WRITE_EPSILON,
   ): void {
     if (
+      epsilon > 0 &&
       !progressChanged &&
       this.backdropOpacitySentinel.value !== -1 &&
       this.screenOpacitySentinel.value !== -1
@@ -146,15 +157,13 @@ export class ScrimController {
     if (this.backdrop) {
       const [s, e] = this.backdropRange;
       const range = Math.max(e - s, RANGE_DIVISION_EPSILON);
-      const backdropOpacity = Math.min(
-        Math.max((progress - s) / range, 0),
-        1,
-      );
+      const along = Math.min(Math.max((progress - s) / range, 0), 1);
+      const backdropOpacity = along * this.backdropPeak;
       if (this.backdropOpacitySentinel.shouldWrite(backdropOpacity, epsilon)) {
         this.backdrop.style.opacity = String(backdropOpacity);
       }
       const nextPointer: "auto" | "none" =
-        backdropOpacity > POINTER_EVENTS_OPACITY_THRESHOLD ? "auto" : "none";
+        along > POINTER_EVENTS_OPACITY_THRESHOLD ? "auto" : "none";
       if (nextPointer !== this.lastBackdropPointer) {
         this.backdrop.style.pointerEvents = nextPointer;
         this.lastBackdropPointer = nextPointer;
@@ -183,6 +192,19 @@ export class ScrimController {
   setBackdropRange(range: [number, number], applySize: () => void): void {
     if (this.isDestroyed()) return;
     this.backdropRange = range;
+    this.invalidateOpacityCache();
+    applySize();
+  }
+
+  setBackdropColor(color: string | undefined | null): void {
+    if (this.isDestroyed() || !this.backdrop) return;
+    if (color) this.backdrop.style.setProperty(BACKDROP_COLOR_VAR, color);
+    else this.backdrop.style.removeProperty(BACKDROP_COLOR_VAR);
+  }
+
+  setBackdropOpacity(value: number, applySize: () => void): void {
+    if (this.isDestroyed()) return;
+    this.backdropPeak = unit(value);
     this.invalidateOpacityCache();
     applySize();
   }
@@ -426,6 +448,7 @@ export class ScrimController {
     if (this.backdrop) {
       this.backdrop.style.opacity = "";
       this.backdrop.style.pointerEvents = "";
+      this.backdrop.style.removeProperty(BACKDROP_COLOR_VAR);
     }
     this.invalidateOpacityCache();
     this.lastBackdropPointer = "";

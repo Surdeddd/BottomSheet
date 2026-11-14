@@ -108,6 +108,8 @@ const {
   recompute,
   setScrimColor,
   setBackdropRange,
+  setBackdropOpacity,
+  setBackdropColor,
   setRadius,
   setMaxHeight,
   expand,
@@ -210,7 +212,7 @@ watch(
   () => props.backdropColor,
   next => {
     if (next === undefined) return;
-    setScrimColor(next);
+    setBackdropColor(next);
   },
 );
 
@@ -218,7 +220,7 @@ watch(
   () => props.backdropOpacity,
   next => {
     if (next === undefined) return;
-    setBackdropRange([0, next]);
+    setBackdropOpacity(next);
   },
 );
 
@@ -371,6 +373,8 @@ defineExpose({
   recompute,
   setScrimColor,
   setBackdropRange,
+  setBackdropOpacity,
+  setBackdropColor,
   setRadius,
   setMaxHeight,
   expand,

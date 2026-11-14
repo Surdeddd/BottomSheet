@@ -97,6 +97,119 @@ describe("reactive setters — setBackdropRange", () => {
   });
 });
 
+describe("the colour of the backdrop", () => {
+  beforeEach(() => resetGlobals());
+
+  const build = (extra: Record<string, unknown> = {}) => {
+    const { sheet, handle, backdrop } = makeDom();
+    const screen = makeScreen();
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      backdrop,
+      screenComponent: screen,
+      snapPoints: [{ id: "min", size: 100 }],
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+      ...extra,
+    });
+    const colour = (): string =>
+      backdrop.style.getPropertyValue("--bs-backdrop-color");
+    return { engine, screen, colour };
+  };
+
+  it("goes to the backdrop and leaves the scrim layer alone", () => {
+    const { engine, screen, colour } = build({
+      backdropColor: "rgba(0, 0, 0, 0.2)",
+    });
+    expect(colour()).toBe("rgba(0, 0, 0, 0.2)");
+    expect(screen.style.background).toBe("");
+    engine.destroy();
+  });
+
+  it("changes and clears on a live sheet", () => {
+    const { engine, colour } = build();
+    expect(colour()).toBe("");
+    engine.setBackdropColor("transparent");
+    expect(colour()).toBe("transparent");
+    engine.setBackdropColor(null);
+    expect(colour()).toBe("");
+    engine.destroy();
+  });
+
+  it("is taken back when the sheet is destroyed", () => {
+    const { engine, colour } = build({ backdropColor: "red" });
+    engine.destroy();
+    expect(colour()).toBe("");
+  });
+});
+
+describe("the opacity the backdrop reaches", () => {
+  beforeEach(() => resetGlobals());
+
+  const build = (extra: Record<string, unknown> = {}) => {
+    const { sheet, handle, backdrop } = makeDom();
+    const engine = new BottomSheetEngine({
+      element: sheet,
+      handle,
+      backdrop,
+      snapPoints: [
+        { id: "min", size: 0 },
+        { id: "full", size: 1000 },
+      ],
+      initial: "min",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+      ...extra,
+    });
+    return { engine, backdrop };
+  };
+
+  it("scales the whole fade when given as an option", () => {
+    const { engine, backdrop } = build({ backdropOpacity: 0.4 });
+    setSize(engine, 500);
+    expect(parseFloat(backdrop.style.opacity)).toBeCloseTo(0.2, 3);
+    setSize(engine, 1000);
+    expect(parseFloat(backdrop.style.opacity)).toBeCloseTo(0.4, 3);
+    engine.destroy();
+  });
+
+  it("changes on a sheet at rest", () => {
+    const { engine, backdrop } = build();
+    setSize(engine, 1000);
+    expect(parseFloat(backdrop.style.opacity)).toBe(1);
+    engine.setBackdropOpacity(0.25);
+    expect(parseFloat(backdrop.style.opacity)).toBeCloseTo(0.25, 3);
+    engine.setBackdropOpacity(4);
+    expect(parseFloat(backdrop.style.opacity)).toBe(1);
+    engine.destroy();
+  });
+
+  it("leaves the fade's place on the way alone", () => {
+    const { engine, backdrop } = build({
+      backdropOpacity: 0.5,
+      backdropRange: [0.5, 1],
+    });
+    setSize(engine, 400);
+    expect(parseFloat(backdrop.style.opacity || "0")).toBe(0);
+    setSize(engine, 750);
+    expect(parseFloat(backdrop.style.opacity)).toBeCloseTo(0.25, 3);
+    engine.destroy();
+  });
+
+  it("keeps a backdrop nobody can see catching taps", () => {
+    const { engine, backdrop } = build({ backdropOpacity: 0 });
+    setSize(engine, 1000);
+    expect(parseFloat(backdrop.style.opacity)).toBe(0);
+    expect(backdrop.style.pointerEvents).toBe("auto");
+    setSize(engine, 0);
+    expect(backdrop.style.pointerEvents).toBe("none");
+    engine.destroy();
+  });
+});
+
 describe("reactive setters — setRadius", () => {
   beforeEach(() => resetGlobals());
 

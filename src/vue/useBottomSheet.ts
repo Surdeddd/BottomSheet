@@ -69,6 +69,8 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   recompute: () => void;
   setScrimColor: (color: string | undefined | null) => void;
   setBackdropRange: (range: [number, number]) => void;
+  setBackdropOpacity: (value: number) => void;
+  setBackdropColor: (color: string | undefined | null) => void;
   setRadius: (r: string | number) => void;
   setMaxHeight: (h: string | number) => void;
   expand: () => Promise<void>;
@@ -128,14 +130,7 @@ export function useBottomSheet<TId extends string = string>(
 
   onMounted(() => {
     if (!sheetRef.value) return;
-    const {
-      onSnap,
-      teleport,
-      teleportTo,
-      backdropColor,
-      backdropOpacity,
-      ...engineOpts
-    } = opts;
+    const { onSnap, teleport, teleportTo, ...engineOpts } = opts;
     const target = teleport === false ? null : resolveTeleportTarget(teleportTo);
     if (target) {
       restoreTeleport = teleportElements(
@@ -156,10 +151,6 @@ export function useBottomSheet<TId extends string = string>(
     });
     physicalMode.value = engine.getMode();
     sync();
-    if (backdropColor !== undefined) engine.setScrimColor(backdropColor);
-    if (backdropOpacity !== undefined) {
-      engine.setBackdropRange([0, backdropOpacity]);
-    }
 
     engine.on("snap", payload => {
       sync();
@@ -220,6 +211,9 @@ export function useBottomSheet<TId extends string = string>(
       engine?.setScrimColor(color),
     setBackdropRange: (range: [number, number]) =>
       engine?.setBackdropRange(range),
+    setBackdropOpacity: (value: number) => engine?.setBackdropOpacity(value),
+    setBackdropColor: (color: string | undefined | null) =>
+      engine?.setBackdropColor(color),
     setRadius: (r: string | number) => engine?.setRadius(r),
     setMaxHeight: (h: string | number) => engine?.setMaxHeight(h),
     expand: () => engine?.expand() ?? Promise.resolve(),

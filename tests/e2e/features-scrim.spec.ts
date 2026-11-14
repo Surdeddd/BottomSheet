@@ -102,6 +102,47 @@ test.describe("backdrop", () => {
     await page.evaluate(() => window.lab.engine().setBackdropRange([0, 0.5]));
     expect((await layer(page, "#backdrop-0")).opacity).toBe(1);
   });
+
+  test("backdropOpacity is the opacity the backdrop reaches, not where it gets there", async ({
+    page,
+  }) => {
+    await mount(page, { initial: "half", backdropOpacity: 0.5 });
+    const half = await layer(page, "#backdrop-0");
+    expect(half.opacity).toBeCloseTo(0.3, 2);
+    expect(half.pointerEvents).toBe("auto");
+
+    await snapTo(page, "full");
+    expect((await layer(page, "#backdrop-0")).opacity).toBe(0.5);
+
+    await page.evaluate(() => window.lab.engine().setBackdropOpacity(0.2));
+    expect((await layer(page, "#backdrop-0")).opacity).toBe(0.2);
+  });
+
+  test("backdropColor paints the backdrop and leaves the scrim layer clear", async ({
+    page,
+  }) => {
+    await mount(page, { initial: "half", backdropColor: "rgb(10, 20, 30)" });
+    expect((await layer(page, "#backdrop-0")).background).toBe(
+      "rgb(10, 20, 30)",
+    );
+    expect((await layer(page, "#scrim-0")).background).toBe("rgba(0, 0, 0, 0)");
+
+    await page.evaluate(() =>
+      window.lab.engine().setBackdropColor("rgb(40, 50, 60)"),
+    );
+    expect((await layer(page, "#backdrop-0")).background).toBe(
+      "rgb(40, 50, 60)",
+    );
+  });
+
+  test("a backdrop with no opacity still keeps taps off the page", async ({
+    page,
+  }) => {
+    await mount(page, { initial: "half", backdropOpacity: 0 });
+    const hidden = await layer(page, "#backdrop-0");
+    expect(hidden.opacity).toBe(0);
+    expect(hidden.pointerEvents).toBe("auto");
+  });
 });
 
 test.describe("scrim", () => {

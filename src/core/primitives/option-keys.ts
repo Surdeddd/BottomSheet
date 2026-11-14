@@ -15,6 +15,8 @@ export const ENGINE_OPTION_KEYS = [
   "fitContentToSnap",
   "rubberBand",
   "backdropRange",
+  "backdropOpacity",
+  "backdropColor",
   "screenRange",
   "scrimMode",
   "scrimColor",

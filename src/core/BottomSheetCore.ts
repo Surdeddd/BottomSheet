@@ -1033,6 +1033,14 @@ export class BottomSheetCore {
     this.scrim.setBackdropRange(range, () => this.applySize(this.size));
   }
 
+  setBackdropOpacity(value: number): void {
+    this.scrim.setBackdropOpacity(value, () => this.applySize(this.size));
+  }
+
+  setBackdropColor(color: string | undefined | null): void {
+    this.scrim.setBackdropColor(color);
+  }
+
   setScreenRange(range: [number, number]): void {
     this.scrim.setScreenRange(range, () => this.applySize(this.size));
   }

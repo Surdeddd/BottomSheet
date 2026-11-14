@@ -199,6 +199,8 @@
       radius,
       maxHeight,
       returnFocusTo,
+      backdropColor,
+      backdropOpacity,
     });
     const sync = () => {
       if (!engine) return;
@@ -210,9 +212,6 @@
     if (snap !== undefined && snap !== engine.state.activeId) {
       snap = engine.state.activeId as TId;
     }
-    if (backdropColor !== undefined) engine.setScrimColor(backdropColor);
-    if (backdropOpacity !== undefined)
-      engine.setBackdropRange([0, backdropOpacity]);
     engine.on("snap", payload => {
       sync();
       snap = payload.id as TId;
@@ -339,11 +338,11 @@
     if (maxHeight !== undefined) engine?.setMaxHeight(maxHeight);
   });
   $effect(() => {
-    if (backdropColor !== undefined) engine?.setScrimColor(backdropColor);
+    if (backdropColor !== undefined) engine?.setBackdropColor(backdropColor);
   });
   $effect(() => {
     if (backdropOpacity !== undefined)
-      engine?.setBackdropRange([0, backdropOpacity]);
+      engine?.setBackdropOpacity(backdropOpacity);
   });
   $effect(() => {
     if (snap === undefined) return;

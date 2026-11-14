@@ -57,6 +57,8 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   recompute: () => void;
   setScrimColor: (color: string | undefined | null) => void;
   setBackdropRange: (range: [number, number]) => void;
+  setBackdropOpacity: (value: number) => void;
+  setBackdropColor: (color: string | undefined | null) => void;
   setRadius: (r: string | number) => void;
   setMaxHeight: (h: string | number) => void;
   expand: () => Promise<void>;
@@ -102,6 +104,8 @@ export type BottomSheetProps<TId extends string = string> = Omit<
     backdrop?: boolean;
     closeOnBackdrop?: boolean;
     ariaLabel?: string;
+    handleLabel?: string;
+    contentLabel?: string;
     open?: boolean;
     snap?: TId;
     teleport?: boolean;

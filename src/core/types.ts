@@ -153,6 +153,8 @@ export type EngineOptions = {
   fitContentToSnap?: boolean;
   rubberBand?: boolean;
   backdropRange?: [number, number];
+  backdropOpacity?: number;
+  backdropColor?: string;
   screenRange?: [number, number];
   scrimMode?: "full" | "above-sheet" | "off";
   scrimColor?: string;
