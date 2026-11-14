@@ -1017,9 +1017,10 @@ html:not(.has-stage) .asm-item {
   position:relative;
   width:360px;
   height:clamp(560px,calc(100vh - 120px),720px);
+  --bezel-pad:16px;
+  --screen-radius:42px;
   background:var(--ink);
   border-radius:56px;
-  padding:16px;
   box-shadow:0 1px #fffaf00f inset,0 60px 80px -30px #1a161473,0 0 0 1px var(--ink-2);
   transform:translateZ(0);
   contain:layout paint;
@@ -1053,12 +1054,13 @@ html:not(.has-stage) .asm-item {
   pointer-events:none
 }
 .device-frame {
-  position:relative;
-  width:100%;
-  height:100%;
-  border-radius:42px;
+  position:absolute;
+  inset:var(--bezel-pad);
+  border-radius:var(--screen-radius);
   overflow:hidden;
-  clip-path:inset(0 round 42px);
+  clip-path:inset(0 round var(--screen-radius));
+  -webkit-mask-image:linear-gradient(#000,#000);
+  mask-image:linear-gradient(#000,#000);
   background:linear-gradient(180deg,#1f2933,#0e1418)
 }
 .device-screen {
@@ -1075,7 +1077,7 @@ html:not(.has-stage) .asm-item {
   bottom:0;
   left:0;
   overflow:hidden;
-  border-radius:42px;
+  border-radius:var(--screen-radius);
   contain:paint
 }
 .device-frame .bs-sheet,.device-frame .bs-backdrop {
@@ -2050,11 +2052,9 @@ html:not(.has-stage) .asm-item {
     max-width:100%
   }
   .device-bezel {
-    border-radius:40px;
-    padding:12px
-  }
-  .device-frame {
-    border-radius:30px
+    --bezel-pad:12px;
+    --screen-radius:30px;
+    border-radius:40px
   }
   .topbar {
     top:8px;
