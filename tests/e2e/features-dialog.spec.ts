@@ -326,11 +326,16 @@ test.describe("events", () => {
   });
 
   test("progress runs from 0 to 1 across the allowed range", async ({ page }) => {
-    await mount(page, { initial: "closed", duration: 200 });
+    await mount(page, {
+      initial: "closed",
+      animation: "linear",
+      duration: 600,
+    });
     await page.evaluate(() => window.lab.clear());
     await snapTo(page, "full");
     const values = await page.evaluate(() => window.lab.progress());
     expect(values.length).toBeGreaterThan(3);
+    expect(values).toEqual([...values].sort((a, b) => a - b));
     expect(Math.min(...values)).toBeGreaterThanOrEqual(0);
     expect(values[values.length - 1]).toBe(1);
     expect((await state(page)).progress).toBe(1);
