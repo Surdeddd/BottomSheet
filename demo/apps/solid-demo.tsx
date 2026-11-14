@@ -88,7 +88,8 @@ const SolidSheet = (props: {
           tabIndex={0}
           aria-label="Resize sheet"
           ref={handleEl!}
-        >
+        />
+        <div class="bs-header">
           <div class="sheet-header">
             <h2>Active routes</h2>
             <span class="hint">SOLID · SIGNALS</span>

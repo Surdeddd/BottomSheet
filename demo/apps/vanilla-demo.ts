@@ -36,23 +36,28 @@ export const mountVanillaDemo = (
   handle.setAttribute("aria-label", "Resize sheet");
 
   const header = document.createElement("div");
-  header.className = "sheet-header";
+  header.className = "bs-header";
+  const heading = document.createElement("div");
+  heading.className = "sheet-header";
   const h2 = document.createElement("h2");
   h2.textContent = "Active routes";
   const hint = document.createElement("span");
   hint.className = "hint";
   hint.textContent = "VANILLA · ENGINE";
-  header.append(h2, hint);
-  handle.append(header);
+  heading.append(h2, hint);
+  header.append(heading);
 
   const content = document.createElement("div");
   content.className = "bs-content";
   content.setAttribute("tabindex", "0");
   content.setAttribute("role", "region");
   content.setAttribute("aria-label", "Sheet content");
-  for (const [title, sub] of demoRows) content.append(buildItem(title, sub));
+  const list = document.createElement("div");
+  list.className = "sheet-list";
+  for (const [title, sub] of demoRows) list.append(buildItem(title, sub));
+  content.append(list);
 
-  sheet.append(handle, content);
+  sheet.append(handle, header, content);
   root.append(backdrop, scrim, sheet);
   shell.append(root);
 
