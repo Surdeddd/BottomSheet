@@ -14,13 +14,19 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import {
+  OVERLAY_AUTO_CLOSE_MS,
+  OVERLAY_ITEMS,
+  OVERLAY_OPEN_DELAY_MS,
+} from "./overlay-demo";
 
 export type { DemoController } from "./shared";
 
 const ReactOverlay: FC<{
+  settings: DemoSettings;
   registerSnap: (fn: (id: string) => void) => void;
   registerPoll: (read: () => any) => void;
-}> = ({ registerSnap, registerPoll }) => {
+}> = ({ settings, registerSnap, registerPoll }) => {
   const ref = useRef<OverlayHandle>(null);
   const [open, setOpen] = useState(false);
 
@@ -37,10 +43,10 @@ const ReactOverlay: FC<{
   const userInteracted = useRef(false);
   useEffect(() => {
     let tClose: ReturnType<typeof setTimeout> | null = null;
-    const tOpen = setTimeout(() => setOpen(true), 400);
+    const tOpen = setTimeout(() => setOpen(true), OVERLAY_OPEN_DELAY_MS);
     tClose = setTimeout(() => {
       if (!userInteracted.current) setOpen(false);
-    }, 3900);
+    }, OVERLAY_AUTO_CLOSE_MS);
     return () => {
       clearTimeout(tOpen);
       if (tClose) clearTimeout(tClose);
@@ -65,82 +71,30 @@ const ReactOverlay: FC<{
       }}
       edge="bottom"
       duration={320}
-      focusTrap
-      closeOnEscape
+      focusTrap={settings.focusTrap}
+      closeOnEscape={settings.closeOnEscape}
       lockBodyScroll={false}
+      ariaLabelledBy="ovl-demo-title"
     >
-      <div style={{ padding: "24px 20px" }}>
-        <h2
-          style={{
-            fontFamily: "Fraunces, serif",
-            fontSize: 22,
-            fontWeight: 400,
-            margin: 0,
-            color: "#1a1614",
-          }}
-        >
-          Account
-        </h2>
-        <p
-          style={{
-            fontFamily: "Fraunces, serif",
-            fontStyle: "italic",
-            fontSize: 13,
-            margin: "4px 0 16px",
-            color: "#8b827a",
-          }}
-        >
-          marina@studio.ru · freelance
-        </p>
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
-          {[
-            "Profile settings",
-            "Notifications",
-            { label: "Sign out", danger: true },
-          ].map((item, i) => {
-            const isObj = typeof item === "object";
-            const label = isObj ? item.label : item;
-            return (
-              <li
-                key={i}
-                style={{
-                  padding: "12px 14px",
-                  background: "#ece2d0",
-                  borderRadius: 10,
-                  fontFamily: "Hanken Grotesk, sans-serif",
-                  fontSize: 14,
-                  color: isObj ? "#dc3522" : "#1a1614",
-                  cursor: "pointer",
-                }}
+      <div className="ovl-demo">
+        <h2 id="ovl-demo-title">Account</h2>
+        <p className="ovl-demo-sub">marina@studio.ru · freelance</p>
+        <ul className="ovl-demo-list">
+          {OVERLAY_ITEMS.map(item => (
+            <li key={item.label}>
+              <button
+                type="button"
+                className={item.danger ? "is-danger" : undefined}
               >
-                {label}
-              </li>
-            );
-          })}
+                {item.label}
+              </button>
+            </li>
+          ))}
         </ul>
         <button
+          type="button"
+          className="ovl-demo-cancel"
           onClick={() => setOpen(false)}
-          style={{
-            marginTop: 16,
-            width: "100%",
-            padding: "10px 12px",
-            fontFamily: "Hanken Grotesk, sans-serif",
-            fontSize: 13,
-            background: "transparent",
-            border: "1px solid rgba(26, 22, 20, 0.32)",
-            borderRadius: 8,
-            cursor: "pointer",
-            color: "#1a1614",
-          }}
         >
           Cancel
         </button>
@@ -226,6 +180,7 @@ export const mountReactDemo = (
   root.render(
     isOverlay ? (
       <ReactOverlay
+        settings={settings}
         registerSnap={fn => {
           snapFn = fn;
         }}

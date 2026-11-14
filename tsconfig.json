@@ -43,6 +43,9 @@
       ],
       "@surdeddd/bottom-sheet/webgl": [
         "./src/webgl/index.ts"
+      ],
+      "@surdeddd/bottom-sheet/overlay": [
+        "./src/core/overlay.ts"
       ]
     }
   },

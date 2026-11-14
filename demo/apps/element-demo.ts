@@ -25,7 +25,6 @@ export const mountElementDemo = (
   sheet.setAttribute("focus-trap", String(settings.focusTrap));
   sheet.setAttribute("close-on-escape", String(settings.closeOnEscape));
   sheet.setAttribute("lock-body-scroll", "false");
-  sheet.setAttribute("stylesheet", "/style.css");
 
   const header = document.createElement("div");
   header.slot = "header";

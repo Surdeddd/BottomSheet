@@ -9,6 +9,7 @@ import {
   genVanilla,
   genVue,
 } from "./codegen/adapters";
+import { genOverlayEngine, genOverlayReact } from "./codegen/overlay";
 import type { GenOptions, SnapPoint } from "./codegen/shared";
 
 export type { AdapterKey } from "./types";
@@ -56,6 +57,11 @@ export function genCode(
   snaps: SnapPoint[],
   opts: GenOptions = {},
 ): string {
+  if (settings.mode === "overlay") {
+    return adapter === "react"
+      ? genOverlayReact(settings)
+      : genOverlayEngine(settings);
+  }
   const fn = generators[adapter] ?? genReact;
   return fn(settings, snaps, opts);
 }

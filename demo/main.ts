@@ -6,11 +6,18 @@ import { mountVanillaDemo } from "./apps/vanilla-demo";
 import { mountSvelteDemo } from "./apps/svelte-demo";
 import { mountSolidDemo } from "./apps/solid-demo";
 import { mountLitDemo } from "./apps/lit-demo";
+import { mountOverlayDemo } from "./apps/overlay-demo";
 
 import { snapPoints as resolveSnapPoints } from "./apps/shared";
 import { decode, encode, writeHash } from "./lib/permalink";
 import { $, type AdapterKey, type Settings } from "./lib/types";
-import { applyLang, getLang, t, wireLangToggle } from "./lib/i18n";
+import {
+  applyLang,
+  getLang,
+  setLangVars,
+  t,
+  wireLangToggle,
+} from "./lib/i18n";
 import {
   applyTheme,
   applyThemePreset,
@@ -31,7 +38,13 @@ import { startViewTransition } from "./lib/view-transition";
 import { wireScrimControls } from "./lib/scrim-controls";
 import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
 import { wireDragSurface } from "./lib/drag-surface";
-import { initHero3D, STAGE_MEDIA, type Hero3DHandle } from "./lib/hero-3d";
+import {
+  canRenderStage,
+  initHero3D,
+  STAGE_MEDIA,
+  type Hero3DHandle,
+  type StageLayout,
+} from "./lib/hero-3d";
 import { initMotionFx } from "./lib/motion-fx";
 import { initFeatureViz } from "./lib/feature-viz";
 import { initDetails } from "./lib/details";
@@ -89,6 +102,29 @@ const ro = {
   flHaptic: $<HTMLElement>("#fl-haptic"),
 };
 
+let pageTouched = false;
+const markPageTouched = (): void => {
+  pageTouched = true;
+};
+window.addEventListener("pointerdown", markPageTouched, {
+  once: true,
+  capture: true,
+});
+window.addEventListener("keydown", markPageTouched, {
+  once: true,
+  capture: true,
+});
+
+const releaseLoadFocus = (): void => {
+  if (pageTouched) return;
+  if (!$<HTMLElement>("#device-frame").contains(document.activeElement)) return;
+  let active: Element | null = document.activeElement;
+  while (active?.shadowRoot?.activeElement) {
+    active = active.shadowRoot.activeElement;
+  }
+  if (active instanceof HTMLElement) active.blur();
+};
+
 const syncHash = (): void => {
   writeHash(encode(settings, activeAdapter));
 };
@@ -109,7 +145,10 @@ const mountAdapter = (key: AdapterKey): void => {
 
     const host = document.querySelector<HTMLElement>(`#screen-${key}`)!;
     while (host.firstChild) host.removeChild(host.firstChild);
-    activeController = mounters[key](host, settings);
+    activeController =
+      settings.mode === "overlay" && key !== "react"
+        ? mountOverlayDemo(host, settings, key)
+        : mounters[key](host, settings);
 
     activeController.onUpdate(state => {
       ro.active.textContent = state.activeId || "—";
@@ -134,6 +173,7 @@ const mountAdapter = (key: AdapterKey): void => {
     whenEngineReady(
       () => activeController?.getEngine?.() ?? null,
       () => {
+        releaseLoadFocus();
         scrimControlsSync?.();
         floatingUiSync?.();
         dragSurfaceSync?.();
@@ -225,10 +265,21 @@ const updateChipsForMode = (): void => {
   }
 };
 
-wireChipRow("mode-chips", btn => {
-  settings.mode = btn.dataset.mode as Settings["mode"];
+const syncModeUi = (): void => {
   $<HTMLElement>("#cap-mode").textContent = settings.mode;
   $<HTMLElement>("#device-frame").dataset.mode = settings.mode;
+  document
+    .querySelectorAll<HTMLButtonElement>("#mode-chips .chip")
+    .forEach(b => {
+      const active = b.dataset.mode === settings.mode;
+      b.classList.toggle("is-active", active);
+      b.setAttribute("aria-pressed", String(active));
+    });
+};
+
+wireChipRow("mode-chips", btn => {
+  settings.mode = btn.dataset.mode as Settings["mode"];
+  syncModeUi();
   updateChipsForMode();
   mountAdapter(activeAdapter);
 });
@@ -352,6 +403,7 @@ document
 const snipTag = document.querySelector<HTMLElement>("#snip-tag");
 if (snipTag) snipTag.textContent = activeAdapter;
 
+syncModeUi();
 updateChipsForMode();
 
 mountAdapter(activeAdapter);
@@ -360,49 +412,79 @@ initScrollProgress();
 initCountUp();
 initHeroParallax();
 
-const heroStage = $<HTMLElement>("#hero-3d");
+const stageParts = {
+  stage: $<HTMLElement>("#hero-3d"),
+  heroAnchor: $<HTMLElement>("#hero-anchor"),
+  buildAnchor: $<HTMLElement>("#assembly-stage"),
+};
 const stageQuery =
   typeof matchMedia === "function" ? matchMedia(STAGE_MEDIA) : null;
 let stageHandle: Hero3DHandle | null = null;
-let stagePending = false;
+let stageToken = 0;
+let stageWatch: IntersectionObserver | null = null;
 
-const dropHeroStage = (): void => {
-  stageHandle?.destroy();
-  stageHandle = null;
-  heroStage.classList.remove("is-live", "is-pinned");
-  heroStage.style.removeProperty("opacity");
+const markStage = (present: boolean): void => {
+  document.documentElement.classList.toggle("has-stage", present);
+  document.documentElement.classList.toggle("no-stage", !present);
 };
 
-const syncHeroStage = (): void => {
-  if (stageQuery && !stageQuery.matches) {
-    dropHeroStage();
-    return;
-  }
-  if (stageHandle || stagePending) return;
-  stagePending = true;
-  void initHero3D(heroStage).then(handle => {
-    stagePending = false;
-    if (stageQuery && !stageQuery.matches) {
+const dropStage = (): void => {
+  stageToken++;
+  stageWatch?.disconnect();
+  stageWatch = null;
+  stageHandle?.destroy();
+  stageHandle = null;
+};
+
+const mountStage = (layout: StageLayout): void => {
+  const token = ++stageToken;
+  void initHero3D({ layout, ...stageParts }).then(handle => {
+    if (token !== stageToken) {
       handle?.destroy();
       return;
     }
     stageHandle = handle;
-    if (handle) heroStage.classList.add("is-live");
+    markStage(!!handle);
   });
 };
 
-syncHeroStage();
-stageQuery?.addEventListener("change", syncHeroStage);
+const syncStage = (): void => {
+  dropStage();
+  const expected = canRenderStage();
+  markStage(expected);
+  if (!expected) return;
+  if (!stageQuery || stageQuery.matches) {
+    mountStage("pinned");
+    return;
+  }
+  stageWatch = new IntersectionObserver(
+    entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      stageWatch?.disconnect();
+      stageWatch = null;
+      mountStage("inline");
+    },
+    { rootMargin: "80% 0px" },
+  );
+  stageWatch.observe(stageParts.buildAnchor);
+};
+
+syncStage();
+stageQuery?.addEventListener("change", syncStage);
 initMotionFx();
 initFeatureViz();
 initDetails();
 
 void (async () => {
-  const slot = document.getElementById("footer-version");
-  if (!slot) return;
   try {
     const pkg = (await import("../package.json")) as { version?: string };
-    if (pkg.version) slot.textContent = `v${pkg.version}`;
+    if (!pkg.version) return;
+    const slot = document.getElementById("footer-version");
+    if (slot) slot.textContent = `v${pkg.version}`;
+    setLangVars({
+      version: pkg.version,
+      issue: (pkg.version.split(".")[1] ?? "").padStart(2, "0"),
+    });
   } catch {
   }
 })();

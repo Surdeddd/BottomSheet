@@ -52,17 +52,9 @@ export const snapPoints = (mode: DemoSettings["mode"]): SnapPointDef[] => {
   if (mode === "left" || mode === "right") {
     return [
       { id: "closed", size: 0 },
-      { id: "minimized", size: 60 },
+      { id: "minimized", size: 88 },
       { id: "half", size: 180 },
       { id: "full", size: 300 },
-    ];
-  }
-  if (mode === "top") {
-    return [
-      { id: "closed", size: 0 },
-      { id: "minimized", size: 80 },
-      { id: "half", size: 280 },
-      { id: "full", size: 580 },
     ];
   }
   return [

@@ -54,12 +54,14 @@ export const getThemePreset = (): ThemePreset => currentPreset;
 export const applyThemePreset = (preset: ThemePreset): void => {
   currentPreset = preset;
   localStorage.setItem("bs-demo-theme-preset", preset);
-  document.querySelectorAll<HTMLElement>(".bs-root").forEach(root => {
-    root.classList.forEach(cls => {
-      if (cls.startsWith("bs-theme-")) root.classList.remove(cls);
+  document
+    .querySelectorAll<HTMLElement>(".bs-root, bottom-sheet")
+    .forEach(root => {
+      root.classList.forEach(cls => {
+        if (cls.startsWith("bs-theme-")) root.classList.remove(cls);
+      });
+      if (preset !== "default") root.classList.add(`bs-theme-${preset}`);
     });
-    if (preset !== "default") root.classList.add(`bs-theme-${preset}`);
-  });
   document
     .querySelectorAll<HTMLButtonElement>("#theme-chips .chip")
     .forEach(b => {

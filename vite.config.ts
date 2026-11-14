@@ -32,6 +32,7 @@ export default defineConfig({
         "src/web-component/index.ts",
       ),
       "@surdeddd/bottom-sheet/webgl": resolve(__dirname, "src/webgl/index.ts"),
+      "@surdeddd/bottom-sheet/overlay": resolve(__dirname, "src/core/overlay.ts"),
       "@surdeddd/bottom-sheet/styles": resolve(
         __dirname,
         "src/styles/bottom-sheet.css",

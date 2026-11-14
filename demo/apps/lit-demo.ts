@@ -35,7 +35,6 @@ class LitDemoSheet extends LitElement {
         focus-trap=${String(this.settings.focusTrap)}
         close-on-escape=${String(this.settings.closeOnEscape)}
         lock-body-scroll="false"
-        stylesheet="/style.css"
       >
         <div slot="header" class="sheet-header">
           <h2>Active routes</h2>

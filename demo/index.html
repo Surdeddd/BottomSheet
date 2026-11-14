@@ -8,6 +8,10 @@
     />
     <meta name="theme-color" content="#1a1614" />
     <title>@surdeddd/bottom-sheet — universal sheet engine</title>
+    <meta
+      name="description"
+      content="A universal bottom sheet engine: one framework-agnostic core, seven adapters, native-feel gestures. Live playground for every adapter."
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -46,11 +50,13 @@
     </div>
 
     <main id="main-content">
+    <div class="stage-track">
+    <div class="hero-stage" id="hero-3d" aria-hidden="true"></div>
     <header class="hero">
-      <div class="hero-stage" id="hero-3d" aria-hidden="true"></div>
+      <div class="hero-anchor" id="hero-anchor" aria-hidden="true"></div>
       <div class="hero-meta">
         <span class="kicker" data-i18n="hero.kicker.left"
-          >Issue Nº 01 · Apr 2026 · MIT</span
+          >Issue Nº 24 · v0.24.0 · MIT</span
         >
         <span class="kicker" data-i18n="hero.kicker.right"
           >Filed under: gestures · physics · a11y</span
@@ -66,7 +72,7 @@
       </p>
       <div class="hero-stats">
         <div class="stat">
-          <span class="stat-num">21<span class="stat-unit">KB gzip</span></span>
+          <span class="stat-num">25<span class="stat-unit">KB gzip</span></span>
           <span class="stat-label" data-i18n="stat.core">core / esm</span>
         </div>
         <div class="stat">
@@ -78,9 +84,9 @@
           <span class="stat-label" data-i18n="stat.modes">modes</span>
         </div>
         <div class="stat">
-          <span class="stat-num">500<span class="stat-unit">+200</span></span>
+          <span class="stat-num">860<span class="stat-unit">+190</span></span>
           <span class="stat-label" data-i18n="stat.tests"
-            >tests · unit + e2e</span
+            >unit + e2e tests</span
           >
         </div>
         <div class="stat">
@@ -100,7 +106,7 @@
           Five layers, one gesture
         </h2>
         <p class="assembly-lede" data-i18n="asm.lede">
-          Every layer below is a real node the engine owns — nothing here is a
+          Every layer is a real node the engine owns — nothing here is a
           picture of a sheet.
         </p>
         <p class="assembly-hint mono" data-i18n="asm.hint">
@@ -149,7 +155,11 @@
           </li>
         </ol>
       </div>
+      <div class="assembly-rail" aria-hidden="true">
+        <div class="assembly-stage" id="assembly-stage"></div>
+      </div>
     </section>
+    </div>
 
     <section class="adapter-row" aria-label="Adapter selector">
       <button class="adapter is-active" data-adapter="react">
@@ -187,6 +197,13 @@
         <span class="adapter-name">Vanilla</span>
         <span class="adapter-meta">engine · no framework</span>
       </button>
+      <div class="adapter-note">
+        <span class="adapter-no">+</span>
+        <span class="adapter-name">Preact · Qwik</span>
+        <span class="adapter-meta" data-i18n="adapters.more"
+          >same engine, no live tab here</span
+        >
+      </div>
     </section>
 
     <div class="sec-cap">
@@ -471,7 +488,7 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
     </section>
 
     <div class="sec-cap">
-      <span data-i18n="sec.controls">§ 02 — playground</span>
+      <span data-i18n="sec.controls">§ 03 — playground</span>
     </div>
 
     <section class="controls">
@@ -598,7 +615,7 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
     </section>
 
     <div class="sec-cap">
-      <span data-i18n="sec.advanced">§ 03 — advanced</span>
+      <span data-i18n="sec.advanced">§ 04 — advanced</span>
     </div>
 
     <section class="advanced">
@@ -784,8 +801,9 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <span class="feature-no mono">F.09</span>
           <h3 class="feature-title" data-i18n="f09.title">Multi-sheet stack</h3>
           <p class="feature-body" data-i18n-html="f09.body">
-            Open a sheet from another sheet. Z-index orchestrated, backdrops
-            de-duped, only the topmost owns Escape.
+            Open a sheet from another sheet. Z-index, the focus trap,
+            <code>inert</code> and Escape follow the stack: only the top sheet
+            owns them.
           </p>
           <div class="feature-spec mono">sheetStack singleton</div>
         </article>
@@ -816,9 +834,9 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <span class="feature-no mono">F.12</span>
           <h3 class="feature-title" data-i18n="f12.title">Tested</h3>
           <p class="feature-body" data-i18n-html="f12.body">
-            500+ unit tests (vitest + happy-dom) covering snap math, spring,
-            gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize.
-            ~200 e2e via Playwright on Chromium, WebKit and Firefox. All green.
+            860+ unit tests (vitest + happy-dom) on snap math, spring, gestures,
+            the phase machine, history, focus trap and scroll lock. ~190 e2e
+            tests on each of Chromium, WebKit and Firefox.
           </p>
           <div class="feature-spec mono">npm test · npx playwright test</div>
         </article>
@@ -849,11 +867,11 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <span class="feature-no mono">F.15</span>
           <h3 class="feature-title" data-i18n="f15.title">Pay for what you use</h3>
           <p class="feature-body" data-i18n-html="f15.body">
-            <code>/core</code> is the engine alone at ~18&nbsp;KB. Route,
+            <code>/core</code> is the engine alone at ~21&nbsp;KB. Route,
             persist, auto-collapse and the rest are opt-in
             <code>EngineFeature</code>s you register per instance.
           </p>
-          <div class="feature-spec mono">core 18 KB · features 2.4 KB</div>
+          <div class="feature-spec mono">core 21.4 KB · features 4.1 KB</div>
         </article>
 
         <article class="feature" data-viz="probe">
@@ -864,7 +882,7 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
             progress and flags from public events only — and ships zero bytes
             into every other bundle.
           </p>
-          <div class="feature-spec mono">/debug · 937 B</div>
+          <div class="feature-spec mono">/debug · 944 B</div>
         </article>
       </div>
     </section>
@@ -903,7 +921,7 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
         <span>·</span>
         <span>Distilled from a fleet-monitoring app, rebuilt headless</span>
         <span>·</span>
-        <span class="mono" id="footer-version">v0.13.0</span>
+        <span class="mono" id="footer-version">v0.24.0</span>
       </div>
     </footer>
     </main>

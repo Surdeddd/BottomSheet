@@ -88,6 +88,8 @@ The sheet stack, the scroll-lock counter, the focus-trap stack and the history c
 
 Measured against 0.23.4, the core entry grew by 2.6 KB gzip, to 25.0 KB; the framework adapters by 2.9–3.1 KB and the custom element by 3.0 KB; the slim core by 1.8 KB, `/overlay` by 1.3 KB, `/features` by 1.0 KB and `/webgl` by 173 B. Most of it is the transition logic in the engine and the history coordinator. Each budget that moved sits 30 B above the largest reading; `/webgl` stayed inside its budget.
 
+The demo carried a stale hand copy of the library stylesheet, which is where its own visual bugs came from: sheet titles sat flush against the screen edge in the React, Vue and Svelte tabs, the custom-element and Lit sheets were white with an unreadable title in the dark theme and 32px wider than the screen, and a light-themed page on a dark-mode system painted the sheet black under black text. It imports `src/styles/bottom-sheet.css` now. Overlay mode works in every adapter tab instead of React only, the `top`, `left` and `right` peeks no longer cut the title, and the hero phone is a lit 3D model whose five layers dock one by one as the anatomy section scrolls, on phones too.
+
 ## [0.23.4]
 
 ### Fixed

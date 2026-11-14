@@ -3,7 +3,8 @@ import { startViewTransition } from "./view-transition";
 
 const DICT: Record<Lang, Record<string, string>> = {
   en: {
-    "hero.kicker.left": "Issue Nº 01 · Apr 2026 · MIT",
+    "hero.kicker.left": "Issue Nº {issue} · v{version} · MIT",
+    "adapters.more": "same engine, no live tab here",
     "hero.kicker.right": "Filed under: gestures · physics · a11y",
     "hero.lede":
       "A <em>universal</em> sheet engine. One framework-agnostic core, seven adapters, native-feel gestures.",
@@ -13,7 +14,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.advanced": "§ 04 — advanced",
     "asm.title": "Five layers, one gesture",
     "asm.lede":
-      "Scroll and the sheet assembles from its own parts. Every layer is a real node the engine owns — nothing here is a picture of a sheet.",
+      "Every layer is a real node the engine owns — nothing here is a picture of a sheet.",
     "asm.hint": "↓ scroll to build it",
     "asm.l1": "Backdrop",
     "asm.l1.note": "opacity tracks progress",
@@ -31,7 +32,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "stat.core": "core / esm",
     "stat.adapters": "adapters",
     "stat.modes": "modes",
-    "stat.tests": "tests · unit + e2e",
+    "stat.tests": "unit + e2e tests",
     "stat.deps": "runtime deps",
     "live.title": "Live state",
     "live.active": "snap.active",
@@ -102,7 +103,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "Use <code>useBottomSheet()</code> for full JSX control, or grab the ready-made <code>&lt;BottomSheet&gt;</code>. Three layers, your call.",
     "f09.title": "Multi-sheet stack",
     "f09.body":
-      "Open a sheet from another sheet. Z-index orchestrated, backdrops de-duped, only the topmost owns Escape.",
+      "Open a sheet from another sheet. Z-index, the focus trap, <code>inert</code> and Escape follow the stack: only the top sheet owns them.",
     "f10.title": "SSR-safe",
     "f10.body":
       "Zero <code>window</code> at import. <code>useSyncExternalStore</code> with cached snapshot. Optional <code>noSSR</code> prop kills hydration mismatches in Next.js.",
@@ -111,7 +112,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — typed registry mapping route keys to configs. <code>onOpen</code>/<code>onClose</code> hooks, framework-agnostic.",
     "f12.title": "Tested",
     "f12.body":
-      "500+ unit tests (vitest + happy-dom) covering snap math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. ~200 e2e via Playwright on Chromium, WebKit and Firefox. All green.",
+      "860+ unit tests (vitest + happy-dom) on snap math, spring, gestures, the phase machine, history, focus trap and scroll lock. ~190 e2e tests on each of Chromium, WebKit and Firefox.",
     "f13.title": "Drag zones",
     "f13.body":
       "<code>dragFrom</code>: handle, whole sheet, or opt-in <code>[data-bs-drag]</code> islands. <code>[data-bs-no-drag]</code> excludes a subtree, so carousels keep their own gesture.",
@@ -120,7 +121,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "Elements ride the sheet edge on the compositor via <code>--bs-size</code>. Scrim stages swap content per state; docked bars let the sheet slide under them.",
     "f15.title": "Pay for what you use",
     "f15.body":
-      "<code>/core</code> is the engine alone at ~18&nbsp;KB. Route, persist, auto-collapse and the rest are opt-in <code>EngineFeature</code>s you register per instance.",
+      "<code>/core</code> is the engine alone at ~21 KB. Route, persist, auto-collapse and the rest are opt-in <code>EngineFeature</code>s you register per instance.",
     "f16.title": "Debuggable",
     "f16.body":
       "<code>attachDebugOverlay(engine)</code> prints live snap, size, progress and flags from public events only — and ships zero bytes into every other bundle.",
@@ -139,7 +140,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "adv.float.dock": "docked tab bar (sheet slides under)",
   },
   ru: {
-    "hero.kicker.left": "Выпуск № 01 · Апр 2026 · MIT",
+    "hero.kicker.left": "Выпуск № {issue} · v{version} · MIT",
+    "adapters.more": "тот же движок, без вкладки в демо",
     "hero.kicker.right": "Раздел: жесты · физика · доступность",
     "hero.lede":
       "<em>Универсальный</em> движок шторки. Одно ядро без привязки к фреймворку, семь адаптеров, нативные жесты.",
@@ -149,7 +151,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "sec.advanced": "§ 04 — расширенное",
     "asm.title": "Пять слоёв, один жест",
     "asm.lede":
-      "Прокрути — и лист соберётся из своих частей. Каждый слой — реальный узел, которым владеет движок, а не картинка листа.",
+      "Каждый слой — реальный узел, которым владеет движок, а не картинка листа.",
     "asm.hint": "↓ прокрути, чтобы собрать",
     "asm.l1": "Подложка",
     "asm.l1.note": "прозрачность идёт за прогрессом",
@@ -167,7 +169,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "stat.core": "ядро / esm",
     "stat.adapters": "адаптеры",
     "stat.modes": "режимы",
-    "stat.tests": "тесты · unit + e2e",
+    "stat.tests": "тесты unit + e2e",
     "stat.deps": "зависимости",
     "live.title": "Состояние",
     "live.active": "snap.активный",
@@ -238,7 +240,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>useBottomSheet()</code> для полного контроля над JSX или готовый <code>&lt;BottomSheet&gt;</code>. Три слоя — выбор за вами.",
     "f09.title": "Стек из нескольких шторок",
     "f09.body":
-      "Открывайте шторку из шторки. Z-index согласован, бэкдропы не дублируются, Esc обрабатывает только верхняя.",
+      "Открывайте шторку из шторки. Z-index, ловушка фокуса, <code>inert</code> и Esc идут за стеком: ими владеет только верхняя.",
     "f10.title": "Безопасно для SSR",
     "f10.body":
       "Никакого <code>window</code> при импорте. <code>useSyncExternalStore</code> с кэшированным снапшотом. Опция <code>noSSR</code> устраняет рассинхрон гидратации в Next.js.",
@@ -247,7 +249,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — типизированный реестр ключ маршрута → конфиг. Хуки <code>onOpen</code>/<code>onClose</code>, без привязки к фреймворку.",
     "f12.title": "Покрытие тестами",
     "f12.body":
-      "500+ unit-тестов (vitest + happy-dom) на snap-math, spring, gestures, focus trap, scroll lock, manager, vh→dvh, viewport resize. ~200 e2e через Playwright на Chromium, WebKit и Firefox. Все зелёные.",
+      "860+ unit-тестов (vitest + happy-dom): snap-математика, пружина, жесты, машина фаз, история, ловушка фокуса, блокировка прокрутки. ~190 e2e-тестов на каждом из Chromium, WebKit и Firefox.",
     "f13.title": "Зоны перетаскивания",
     "f13.body":
       "<code>dragFrom</code>: ручка, весь лист или только острова <code>[data-bs-drag]</code>. <code>[data-bs-no-drag]</code> исключает поддерево — карусель сохраняет свой жест.",
@@ -256,7 +258,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "Элементы едут по краю листа на композиторе через <code>--bs-size</code>. Сцены затемнения меняют контент по состоянию; докнутые панели пропускают лист под собой.",
     "f15.title": "Платишь за то, что берёшь",
     "f15.body":
-      "<code>/core</code> — только движок, ~18&nbsp;КБ. Роутинг, persist, авто-сворачивание и прочее — опциональные <code>EngineFeature</code>, подключаемые на инстанс.",
+      "<code>/core</code> — только движок, ~21 КБ. Роутинг, persist, авто-сворачивание и прочее — опциональные <code>EngineFeature</code>, подключаемые на инстанс.",
     "f16.title": "Отлаживаемый",
     "f16.body":
       "<code>attachDebugOverlay(engine)</code> показывает живой снап, размер, прогресс и флаги — только из публичных событий, и ноль байт в остальных бандлах.",
@@ -307,9 +309,22 @@ const renderInlineMarkup = (el: HTMLElement, html: string): void => {
 
 let currentLang: Lang = detectLang();
 
+const vars: Record<string, string> = {};
+
+const fill = (text: string): string | null => {
+  let missing = false;
+  const out = text.replace(/\{(\w+)\}/g, (_, key: string) => {
+    const value = vars[key];
+    if (value === undefined) missing = true;
+    return value ?? "";
+  });
+  return missing ? null : out;
+};
+
 export const getLang = (): Lang => currentLang;
 
-export const t = (key: string): string => DICT[currentLang][key] ?? key;
+export const t = (key: string): string =>
+  fill(DICT[currentLang][key] ?? key) ?? key;
 
 export const applyLang = (lang: Lang): void => {
   currentLang = lang;
@@ -318,7 +333,8 @@ export const applyLang = (lang: Lang): void => {
   const dict = DICT[lang];
   document.querySelectorAll<HTMLElement>("[data-i18n]").forEach(el => {
     const key = el.dataset.i18n!;
-    if (dict[key]) el.textContent = dict[key];
+    const text = dict[key] ? fill(dict[key]) : null;
+    if (text !== null) el.textContent = text;
   });
   document.querySelectorAll<HTMLElement>("[data-i18n-html]").forEach(el => {
     const key = el.dataset.i18nHtml!;
@@ -337,6 +353,11 @@ export const applyLang = (lang: Lang): void => {
       "aria-label",
       `EN · RU. Language: ${lang === "en" ? "English" : "Russian"}. Click to switch.`,
     );
+};
+
+export const setLangVars = (next: Record<string, string>): void => {
+  Object.assign(vars, next);
+  applyLang(currentLang);
 };
 
 let langToggleWired = false;

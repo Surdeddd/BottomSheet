@@ -61,7 +61,7 @@ export const initCursor = (): FxHandle => {
   if (reduced() || !finePointer()) return { destroy: () => {} };
 
   const ring = document.createElement("div");
-  ring.className = "cursor-ring";
+  ring.className = "cursor-ring is-idle";
   ring.setAttribute("aria-hidden", "true");
   document.body.appendChild(ring);
 
@@ -74,6 +74,11 @@ export const initCursor = (): FxHandle => {
   const onMove = (e: PointerEvent): void => {
     tx = e.clientX;
     ty = e.clientY;
+    if (ring.classList.contains("is-idle")) {
+      x = tx;
+      y = ty;
+      ring.classList.remove("is-idle");
+    }
     const interactive = (e.target as Element | null)?.closest(
       "a, button, input, label, [role='slider']",
     );
@@ -268,7 +273,7 @@ export const initSequences = (): FxHandle => {
   if (reduced()) return { destroy: () => {} };
   const groups: [string, string][] = [
     [".readouts", ".readout"],
-    [".adapter-row", ".adapter"],
+    [".adapter-row", ".adapter, .adapter-note"],
     [".controls", ".control-group"],
     [".advanced-grid", ".advanced-card"],
     [".footer", ".footer-links a"],

@@ -22,9 +22,9 @@ test.describe("computed styles — the geometry pixels miss", () => {
   });
 
   test("the sheet keeps its painted contract", async ({ page }) => {
-    await prop(page, SHEET, "border-top-left-radius").toBe("20px");
-    await prop(page, SHEET, "border-top-right-radius").toBe("20px");
-    await prop(page, SHEET, "background-color").toBe("rgb(255, 255, 255)");
+    await prop(page, SHEET, "border-top-left-radius").toBe("22px");
+    await prop(page, SHEET, "border-top-right-radius").toBe("22px");
+    await prop(page, SHEET, "background-color").toBe("rgb(255, 250, 240)");
     await prop(page, SHEET, "position").toBe("absolute");
     await prop(page, SHEET, "overflow").toBe("hidden");
     await prop(page, SHEET, "display").toBe("flex");
@@ -81,5 +81,42 @@ test.describe("computed styles — the geometry pixels miss", () => {
 
     expect(closed.shadow).toBe("none");
     expect(closed.visibility).toBe("hidden");
+  });
+
+  test("the header clears the side handle in left and right modes", async ({
+    page,
+  }) => {
+    const sheet = (mode: string) =>
+      `.device-screen[data-screen="react"] .bs-sheet[data-mode="${mode}"]`;
+    const inset = (mode: string) =>
+      page.evaluate(sel => {
+        const el = document.querySelector(sel) as HTMLElement;
+        const handle = el.querySelector(".bs-handle")!.getBoundingClientRect();
+        const title = el
+          .querySelector(".bs-header h2")!
+          .getBoundingClientRect();
+        return {
+          handleLeft: handle.left,
+          handleRight: handle.right,
+          titleLeft: title.left,
+          titleRight: title.right,
+        };
+      }, sheet(mode));
+
+    await page.click('#mode-chips .chip[data-mode="right"]');
+    await page.waitForSelector(sheet("right"));
+    await prop(page, `${sheet("right")} .bs-header`, "padding-left").toBe(
+      "36px",
+    );
+    const right = await inset("right");
+    expect(right.titleLeft).toBeGreaterThanOrEqual(right.handleRight);
+
+    await page.click('#mode-chips .chip[data-mode="left"]');
+    await page.waitForSelector(sheet("left"));
+    await prop(page, `${sheet("left")} .bs-header`, "padding-right").toBe(
+      "36px",
+    );
+    const left = await inset("left");
+    expect(left.titleRight).toBeLessThanOrEqual(left.handleLeft);
   });
 });
