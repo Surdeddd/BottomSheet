@@ -143,7 +143,10 @@ describe("Hot-path threshold regressions", () => {
   });
 
   describe("--bs-progress write dedup (OPACITY_WRITE_EPSILON)", () => {
-    it(`skips --bs-progress CSSOM write when delta is below ${OPACITY_WRITE_EPSILON}`, async () => {
+    const progressWrites = (spy: { mock: { calls: unknown[][] } }): number =>
+      spy.mock.calls.filter(c => c[0] === "--bs-progress").length;
+
+    const build = () => {
       const { sheet, handle } = makeDom();
       const engine = new BottomSheetEngine({
         element: sheet,
@@ -157,32 +160,126 @@ describe("Hot-path threshold regressions", () => {
         duration: 0,
         respectReducedMotion: false,
       });
+      return { sheet, handle, engine };
+    };
 
+    it(`skips a --bs-progress write for a drag step below ${OPACITY_WRITE_EPSILON}`, () => {
+      const { sheet, handle, engine } = build();
+      const move = (type: string, clientY: number): void => {
+        handle.dispatchEvent(
+          new PointerEvent(type, { clientY, pointerId: 1, button: 0 }),
+        );
+      };
+
+      move("pointerdown", 900);
+      move("pointermove", 400);
       const setProperty = vi.spyOn(sheet.style, "setProperty");
 
-      await engine.dragTo(600);
+      move("pointermove", 399);
+      expect(progressWrites(setProperty)).toBe(0);
 
-      const progressWritesBaseline = setProperty.mock.calls.filter(
-        c => c[0] === "--bs-progress",
-      ).length;
+      move("pointermove", 300);
+      expect(progressWrites(setProperty)).toBeGreaterThan(0);
 
-      await engine.dragTo(601);
-      const progressWritesAfterTinyDelta = setProperty.mock.calls.filter(
-        c => c[0] === "--bs-progress",
-      ).length;
-
-      await engine.dragTo(700);
-      const progressWritesAfterRealDelta = setProperty.mock.calls.filter(
-        c => c[0] === "--bs-progress",
-      ).length;
-
-      expect(progressWritesAfterTinyDelta).toBe(progressWritesBaseline);
-      expect(progressWritesAfterRealDelta).toBeGreaterThan(
-        progressWritesAfterTinyDelta,
-      );
-
+      move("pointerup", 300);
       setProperty.mockRestore();
       engine.destroy();
+    });
+
+    it("writes a small progress change made while the sheet is at rest", async () => {
+      const { sheet, engine } = build();
+
+      await engine.dragTo(600);
+      await engine.dragTo(601);
+
+      expect(sheet.style.getPropertyValue("--bs-progress")).toBe("0.501");
+      engine.destroy();
+    });
+  });
+
+  describe("values left behind once the sheet rests", () => {
+    const runFrames = async (
+      start: () => Promise<void>,
+      frames: number,
+    ): Promise<void> => {
+      let queue: FrameRequestCallback[] = [];
+      vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+        queue.push(cb);
+        return queue.length;
+      });
+      vi.stubGlobal("cancelAnimationFrame", () => {});
+      const done = start();
+      let now = performance.now();
+      for (let i = 0; i < frames; i++) {
+        now += 16;
+        const batch = queue;
+        queue = [];
+        for (const cb of batch) cb(now);
+      }
+      await done;
+      vi.unstubAllGlobals();
+    };
+
+    const build = (initial: string) => {
+      const { sheet, handle } = makeDom();
+      const backdrop = document.createElement("div");
+      const scrim = document.createElement("div");
+      document.body.append(backdrop, scrim);
+      const engine = new BottomSheetEngine({
+        element: sheet,
+        handle,
+        backdrop,
+        scrim,
+        scrimColor: "rgba(0, 0, 0, 0.5)",
+        snapPoints: [
+          { id: "closed", size: 0 },
+          { id: "half", size: 400 },
+          { id: "open", size: 800 },
+        ],
+        initial,
+        animation: "tween",
+        duration: 320,
+        easing: easeOutCubic,
+        respectReducedMotion: false,
+      });
+      const drop = (): void => {
+        engine.destroy();
+        backdrop.remove();
+        scrim.remove();
+      };
+      return { engine, sheet, backdrop, scrim, drop };
+    };
+
+    it("a close that ends in small steps leaves progress and both dim layers at zero", async () => {
+      const { engine, sheet, backdrop, scrim, drop } = build("open");
+      await runFrames(() => engine.snapTo("closed"), 32);
+
+      expect(engine.state.size).toBe(0);
+      expect(sheet.style.getPropertyValue("--bs-progress")).toBe("0");
+      expect(backdrop.style.opacity).toBe("0");
+      expect(scrim.style.opacity).toBe("0");
+      expect(scrim.style.display).toBe("none");
+      drop();
+    });
+
+    it("an open that ends in small steps leaves progress and both dim layers at one", async () => {
+      const { engine, sheet, backdrop, scrim, drop } = build("half");
+      await runFrames(() => engine.snapTo("open"), 32);
+
+      expect(engine.state.size).toBe(800);
+      expect(sheet.style.getPropertyValue("--bs-progress")).toBe("1");
+      expect(backdrop.style.opacity).toBe("1");
+      expect(scrim.style.opacity).toBe("1");
+      drop();
+    });
+
+    it("a snap between two open points leaves the exact progress", async () => {
+      const { engine, sheet, backdrop, drop } = build("open");
+      await runFrames(() => engine.snapTo("half"), 32);
+
+      expect(sheet.style.getPropertyValue("--bs-progress")).toBe("0.5");
+      expect(backdrop.style.opacity).toBe("0.5");
+      drop();
     });
   });
 

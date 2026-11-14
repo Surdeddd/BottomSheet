@@ -1644,11 +1644,10 @@ export class BottomSheetCore {
     const offset = cap - clamped;
     const style = this.element.style;
     if (!skipTransform) style.transform = this.transformTemplate(offset);
+    const moving = this.animation.isAnimating || this.isDraggingAny();
     const sizeChanged = this.sizeWriteSentinel.shouldWrite(
       clamped,
-      this.animation.isAnimating || this.isDraggingAny()
-        ? SIZE_WRITE_EPSILON
-        : 0,
+      moving ? SIZE_WRITE_EPSILON : 0,
     );
     if (sizeChanged) {
       style.setProperty("--bs-size", `${clamped}px`);
@@ -1668,9 +1667,10 @@ export class BottomSheetCore {
       this.homeRoot?.style.setProperty("--bs-size", `${clamped}px`);
     }
     const progress = this.computeProgress(clamped);
+    const opacityEpsilon = moving ? OPACITY_WRITE_EPSILON : 0;
     const progressChanged = this.progressWriteSentinel.shouldWrite(
       progress,
-      OPACITY_WRITE_EPSILON,
+      opacityEpsilon,
     );
     if (progressChanged) {
       style.setProperty("--bs-progress", String(progress));
@@ -1683,7 +1683,7 @@ export class BottomSheetCore {
       this.homeRoot?.style.setProperty("--bs-progress", String(progress));
     }
 
-    this.scrim.applyOpacity(progress, progressChanged);
+    this.scrim.applyOpacity(progress, progressChanged, opacityEpsilon);
     if (
       (progressChanged || sizeChanged) &&
       this.bus.listenerCount("progress") > 0

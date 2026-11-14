@@ -131,7 +131,11 @@ export class ScrimController {
     }
   }
 
-  applyOpacity(progress: number, progressChanged: boolean): void {
+  applyOpacity(
+    progress: number,
+    progressChanged: boolean,
+    epsilon: number = OPACITY_WRITE_EPSILON,
+  ): void {
     if (
       !progressChanged &&
       this.backdropOpacitySentinel.value !== -1 &&
@@ -146,12 +150,7 @@ export class ScrimController {
         Math.max((progress - s) / range, 0),
         1,
       );
-      if (
-        this.backdropOpacitySentinel.shouldWrite(
-          backdropOpacity,
-          OPACITY_WRITE_EPSILON,
-        )
-      ) {
+      if (this.backdropOpacitySentinel.shouldWrite(backdropOpacity, epsilon)) {
         this.backdrop.style.opacity = String(backdropOpacity);
       }
       const nextPointer: "auto" | "none" =
@@ -170,12 +169,7 @@ export class ScrimController {
           (progress - ss) / Math.max(RANGE_DIVISION_EPSILON, se - ss),
         ),
       );
-      if (
-        this.screenOpacitySentinel.shouldWrite(
-          screenOpacity,
-          OPACITY_WRITE_EPSILON,
-        )
-      ) {
+      if (this.screenOpacitySentinel.shouldWrite(screenOpacity, epsilon)) {
         this.screenComponent.style.opacity = String(screenOpacity);
       }
       const nextDisplay: "" | "none" = screenOpacity > 0 ? "" : "none";
