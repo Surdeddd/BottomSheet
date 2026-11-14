@@ -37,6 +37,14 @@
   transition: none;
 }
 
+.bs-sheet,
+.bs-handle,
+.bs-header,
+.bs-content,
+.bs-footer {
+  box-sizing: border-box;
+}
+
 .bs-sheet {
   position: fixed;
   background: var(--bs-surface, var(--bs-surface-d));
