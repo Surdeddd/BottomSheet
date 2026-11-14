@@ -464,7 +464,8 @@ export class BottomSheetCore {
       activeId: this.activeId,
       phase: this.phase,
       isDragging: this.isDraggingAny(),
-      isAnimating: this.animation.isAnimating,
+      isAnimating:
+        this.animation.isAnimating || this.currentViewTransition !== null,
       progress: this.computeProgress(this.size),
     };
   }

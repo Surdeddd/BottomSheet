@@ -380,6 +380,30 @@ describe("visualViewport resizes", () => {
   });
 });
 
+describe("a view transition in flight", () => {
+  it("reports the sheet as animating until the transition is over", async () => {
+    (document as unknown as { startViewTransition: unknown }).startViewTransition = (
+      apply: () => void,
+    ) => {
+      setTimeout(apply, 20);
+      return {
+        finished: new Promise<void>(r => setTimeout(r, 120)),
+        ready: Promise.resolve(),
+        skipTransition: () => {},
+      };
+    };
+    const { engine } = build("half", { viewTransitions: true });
+    const moving = engine.snapTo("full");
+    expect(engine.state.isAnimating).toBe(true);
+    await wait(60);
+    expect(engine.state.size).toBe(800);
+    expect(engine.state.isAnimating).toBe(true);
+    await moving;
+    expect(engine.state.isAnimating).toBe(false);
+    engine.destroy();
+  });
+});
+
 describe("a tab that goes to the background mid-transition", () => {
   it("lands a closing sheet closed, with nothing left dimming the page", async () => {
     const { dom, engine } = build("full");
