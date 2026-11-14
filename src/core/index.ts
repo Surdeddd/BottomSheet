@@ -44,6 +44,8 @@ export type {
 } from "./types";
 export { SCRIM_PRESETS } from "./types";
 export type { Plugin, TeardownScope } from "./types";
+export type { EngineConfig } from "./primitives/option-keys";
+export type { TeleportTarget } from "./features/teleport";
 export type { ResolvedSnap } from "./primitives/snap-points";
 export type { Tween, TweenOptions } from "./animation/animation";
 export type {

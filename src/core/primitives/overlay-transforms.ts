@@ -1,6 +1,6 @@
-import { CLOSED_TRANSFORM, type TransformAxis } from "./transform";
+import { CLOSED_TRANSFORM } from "./transform";
 
-export type OverlayEdge = TransformAxis;
+export type OverlayEdge = "bottom" | "top" | "left" | "right";
 
 export type OverlayAnimation = "slide" | "fade" | "scale";
 
