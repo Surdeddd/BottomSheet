@@ -9,7 +9,7 @@ Solid, Qwik, Preact** и под **веб-компонентом** `<bottom-sheet
 [![npm](https://img.shields.io/npm/v/@surdeddd/bottom-sheet?style=flat-square&color=1a1614)](https://www.npmjs.com/package/@surdeddd/bottom-sheet)
 [![downloads](https://img.shields.io/npm/dm/@surdeddd/bottom-sheet?style=flat-square&color=1a1614)](https://www.npmjs.com/package/@surdeddd/bottom-sheet)
 ![core size](https://img.shields.io/badge/core-25.6%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-1000%2B%20unit%20%C2%B7%20340%20e2e%20per%20engine-2ea44f?style=flat-square)
+![tests](https://img.shields.io/badge/tests-1000%2B%20unit%20%C2%B7%20370%20e2e%20per%20engine-2ea44f?style=flat-square)
 ![types](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
