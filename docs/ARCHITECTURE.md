@@ -274,7 +274,7 @@ try/catch — one buggy feature can't take down siblings or the engine.
 | `notifyX(...)` | one-shot pure function | `notifyLinkedSheets` |
 
 `attachGestures` was removed in 0.14.0 — `installGestures` is the only name.
-See `docs/migration-v2.md`.
+See `docs/api-stability.md`.
 
 ## Plugin contract
 
@@ -372,7 +372,7 @@ other entries are pure for tree-shaking.
 ## Further reading
 
 - `docs/plugins.md` — plugin contract with a worked analytics-tracker example
-- `docs/migration-v2.md` — breaking changes and the stable-surface plan
+- `docs/api-stability.md` — breaking changes and the stable-surface plan
 - `docs/rtl.md` — logical `start` / `end` modes and how direction is resolved
 - `docs/webgl.md` — the opt-in GPU renderer, and what stays in the DOM
 - `docs/webgl-renderer-design.md` — why that split, and the phases ahead

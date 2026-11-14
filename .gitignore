@@ -169,3 +169,16 @@ memory-bank/
 
 # Lighthouse CI local output
 .lighthouseci/
+
+# Scratch output of local runs and agent sessions: screenshots, reports,
+# knowledge graphs, patch leftovers. Nothing here is a source file.
+artifacts/
+graphify-out/
+blob-report/
+.playwright-cli/
+tmp/
+.tmp/
+*.orig
+*.rej
+MEMORY_BANK/
+tests/unit/__*.test.ts

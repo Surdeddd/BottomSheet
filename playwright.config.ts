@@ -63,7 +63,7 @@ export default defineConfig({
     {
       name: "firefox",
       testIgnore:
-        /(visual-regression|headtohead|benchmark|pull-to-refresh|soft-keyboard)\.spec\.ts/,
+        /(visual-regression|headtohead|benchmark|pull-to-refresh)\.spec\.ts/,
       retries: 3,
       timeout: 60_000,
       use: devices["Desktop Firefox"],

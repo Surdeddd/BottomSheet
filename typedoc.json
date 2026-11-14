@@ -22,7 +22,7 @@
   "readme": "README.md",
   "navigationLinks": {
     "GitHub": "https://github.com/Surdeddd/BottomSheet",
-    "Breaking changes": "https://github.com/Surdeddd/BottomSheet/blob/main/docs/migration-v2.md"
+    "Breaking changes": "https://github.com/Surdeddd/BottomSheet/blob/main/docs/api-stability.md"
   },
   "categorizeByGroup": true,
   "sort": [
