@@ -1,3 +1,4 @@
+import { hasHardwareWebGL } from "./hero-3d/capability";
 import { buildPhone, type Palette } from "./hero-3d/model";
 import {
   LAYER_COUNT,
@@ -48,17 +49,8 @@ const prefersReducedMotion = (): boolean =>
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const hasWebGL = (): boolean => {
-  try {
-    const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") ?? c.getContext("webgl"));
-  } catch {
-    return false;
-  }
-};
-
 export const canRenderStage = (): boolean =>
-  !prefersReducedMotion() && hasWebGL();
+  !prefersReducedMotion() && hasHardwareWebGL();
 
 const readPalette = (): Palette => {
   const cs = getComputedStyle(document.documentElement);
