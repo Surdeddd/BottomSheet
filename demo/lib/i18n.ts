@@ -159,7 +159,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — typed registry mapping route keys to configs. <code>onOpen</code>/<code>onClose</code> hooks, framework-agnostic.",
     "f12.title": "WebGL renderer",
     "f12.body":
-      "An opt-in second renderer paints the surface on the GPU: it bends with drag velocity and hands the text back to the DOM when it settles. Layout, scrolling and the accessibility tree never leave the DOM.",
+      "An opt-in second renderer paints the surface on the GPU: it bends with drag velocity and hands the text back to the DOM when it settles. Layout, scrolling and the accessibility tree never leave the DOM. Switch it on in the workbench above.",
     "f13.title": "Drag zones",
     "f13.body":
       "<code>dragFrom</code>: handle, whole sheet, or opt-in <code>[data-bs-drag]</code> islands. <code>[data-bs-no-drag]</code> excludes a subtree, so carousels keep their own gesture.",
@@ -343,7 +343,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — типизированный реестр ключ маршрута → конфиг. Хуки <code>onOpen</code>/<code>onClose</code>, без привязки к фреймворку.",
     "f12.title": "WebGL-рендерер",
     "f12.body":
-      "Второй рендерер по желанию рисует поверхность на GPU: она гнётся от скорости жеста и возвращает текст в DOM, когда успокаивается. Вёрстка, прокрутка и дерево доступности остаются в DOM.",
+      "Второй рендерер по желанию рисует поверхность на GPU: она гнётся от скорости жеста и возвращает текст в DOM, когда успокаивается. Вёрстка, прокрутка и дерево доступности остаются в DOM. Включается переключателем в верстаке выше.",
     "f13.title": "Зоны перетаскивания",
     "f13.body":
       "<code>dragFrom</code>: ручка, весь лист или только острова <code>[data-bs-drag]</code>. <code>[data-bs-no-drag]</code> исключает поддерево — карусель сохраняет свой жест.",
