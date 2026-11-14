@@ -83,13 +83,15 @@ const distance = (a: Rgb, b: Rgb): number =>
 const turnOn = async (page: Page, adapter: string): Promise<void> => {
   await page.locator(TOGGLE).check();
   const force = page.locator(FORCE);
-  await expect
-    .poll(
-      async () =>
-        (await canvasOf(page, adapter).count()) > 0 || (await force.isVisible()),
-      { timeout: 8000 },
-    )
-    .toBe(true);
+  const note = page.locator(NOTE);
+  const settled = async (): Promise<string> => {
+    if ((await canvasOf(page, adapter).count()) > 0) return "drawn";
+    if (await force.isVisible()) return "asks";
+    const key = await note.getAttribute("data-i18n");
+    return key === "ctrl.webgl.note.no-webgl" ? "none" : "";
+  };
+  await expect.poll(settled, { timeout: 8000 }).not.toBe("");
+  test.skip((await settled()) === "none", "this browser has no WebGL");
   if (await force.isVisible()) await force.click();
   await expect(canvasOf(page, adapter)).toHaveCount(1);
   await expect(sheetOf(page, adapter)).toHaveAttribute("data-bs-webgl", "on");
@@ -189,6 +191,10 @@ test.describe("the demo's renderer switch", () => {
     await sheetOf(page, "vanilla").waitFor({ state: "attached" });
     await expect(page.locator(TOGGLE)).toBeChecked();
     await expect(canvasOf(page, "vanilla")).toHaveCount(1);
+    await expect(page.locator(NOTE)).not.toHaveAttribute(
+      "data-i18n",
+      "ctrl.webgl.note.dom",
+    );
   });
 
   test("the snippet shows how to switch it on", async ({ page }) => {

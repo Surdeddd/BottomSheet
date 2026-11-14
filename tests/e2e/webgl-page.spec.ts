@@ -104,12 +104,18 @@ test.describe("WebGL renderer and the page around it", () => {
   }) => {
     await open(page, "?frame=plain&sheen=0");
     await page.click("#to-full");
-    await page.waitForTimeout(900);
     const mount = await boxOf(page, "#mount");
+    await expect
+      .poll(
+        async () => {
+          const box = await boxOf(page, SHEET);
+          return Math.round(box.y + box.height);
+        },
+        { timeout: 5000 },
+      )
+      .toBe(Math.round(mount.y + mount.height));
+    await page.waitForTimeout(400);
     const sheet = await boxOf(page, SHEET);
-    expect(Math.round(sheet.y + sheet.height)).toBe(
-      Math.round(mount.y + mount.height),
-    );
 
     const [bottom, top] = await sample(page, [
       [mount.x + 1.5, mount.y + mount.height - 1.5],
