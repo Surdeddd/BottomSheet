@@ -1,4 +1,5 @@
 import { animate, inView, scroll, stagger } from "motion";
+import { BENCH_MEDIA } from "./details";
 
 const reduced = (): boolean =>
   typeof matchMedia === "function" &&
@@ -234,6 +235,7 @@ export const initDepthParallax = (): FxHandle => {
   for (const [selector, distance] of layers) {
     const el = document.querySelector<HTMLElement>(selector);
     if (!el) continue;
+    if (el.closest(".bench") && matchMedia(BENCH_MEDIA).matches) continue;
     stops.push(
       scroll(animate(el, { y: [distance, -distance] }, { ease: "linear" }), {
         target: el,
