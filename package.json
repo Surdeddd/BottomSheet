@@ -285,13 +285,13 @@
     {
       "name": "web component (self-contained)",
       "path": "dist/element.js",
-      "limit": "31.92 KB",
+      "limit": "31.96 KB",
       "gzip": true
     },
     {
       "name": "web component (IIFE / CDN)",
       "path": "dist/element.iife.global.js",
-      "limit": "31.47 KB",
+      "limit": "31.49 KB",
       "gzip": true
     },
     {

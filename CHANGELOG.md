@@ -81,6 +81,7 @@ Layout
 - **Auto `aria-labelledby` never found the title** in adapter markup, where it lives in `.bs-header`, not in the handle.
 - **The WebGL surface was drawn white** for a background written as `oklch()`, `color-mix()` or `color(display-p3 …)`, and its canvas did not follow the sheet's `z-index` in a stack.
 - **Losing pointer capture mid-gesture** left the handle unable to start another drag.
+- **A header or footer in `left` / `right` mode ran under the handle** — the side handle is a 28px strip over the sheet's inner edge, and only `.bs-content` was padded away from it, so the first letters of a title in `.bs-header` were covered. Header and footer get the same 36px inset.
 - A snap size the browser rejects as a CSS length now warns in development instead of silently resolving to 0.
 
 The sheet stack, the scroll-lock counter, the focus-trap stack and the history coordinator are now shared through `globalThis`, so two entry points on one page (`/react` next to `/element`, or ESM next to CJS) no longer keep separate copies: a sheet from one was invisible to an overlay from the other, and the page was unlocked while one of them was still open.

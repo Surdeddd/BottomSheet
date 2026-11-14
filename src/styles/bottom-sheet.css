@@ -123,10 +123,14 @@
   box-shadow: none;
 }
 
-.bs-sheet[data-mode="left"] .bs-content {
+.bs-sheet[data-mode="left"] .bs-content,
+.bs-sheet[data-mode="left"] .bs-header,
+.bs-sheet[data-mode="left"] .bs-footer {
   padding-right: 36px;
 }
-.bs-sheet[data-mode="right"] .bs-content {
+.bs-sheet[data-mode="right"] .bs-content,
+.bs-sheet[data-mode="right"] .bs-header,
+.bs-sheet[data-mode="right"] .bs-footer {
   padding-left: 36px;
 }
 
