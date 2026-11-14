@@ -73,10 +73,10 @@ const { sheetRef, handleRef, contentRef, state, snapTo, close } =
 | `change` | `EngineState` (settled state) |
 | `snap` | `id: string` |
 | `before-snap` | `{ id, size, previousId, cancel }` — call `cancel()` synchronously to veto |
-| `open` | `id: string` (enter starts) |
-| `opened` | `id: string` (enter settled) |
-| `close` | — (exit starts) |
-| `closed` | — (exit settled) |
+| `open` | `id: string` — the enter starts; `update:open` flips to `true` here |
+| `opened` | `id: string` — the enter landed |
+| `close` | — the exit starts; `update:open` flips to `false` here |
+| `closed` | — the exit landed; unmount the sheet on this one |
 | `before-close` | `{ reason, cancel }` — call `cancel()` synchronously to veto |
 | `drag-start` | `{ size }` |
 | `drag-end` | `{ size, velocity }` |
@@ -88,8 +88,16 @@ const { sheetRef, handleRef, contentRef, state, snapTo, close } =
 
 `v-model:open` and `v-model:snap` bind the open state and active snap id.
 `backdropColor`, `backdropOpacity`, `radius`, `maxHeight`, `persistent`,
-`disableClose`, `disableDrag`, `dragFrom`, `dragFromContent`, `snapPoints` (deep) and `allowed` are all
-reactive — changing them after mount applies to the live engine.
+`disableClose`, `disableDrag`, `dragFrom`, `dragFromContent`, `mode`,
+`snapPoints` and `allowed` are all reactive — changing them after mount applies
+to the live engine. `snapPoints` is compared by content, so an inline array
+(`:snap-points="[…]"`) does not reset anything when the parent re-renders.
+
+Options you do not pass keep the engine's defaults: `lockBodyScroll`,
+`closeOnEscape`, `rubberBand`, `dragFromContent` and `respectReducedMotion` are
+on. Before 0.24 the component turned them off, because Vue casts an absent
+boolean prop to `false`; pass `:lock-body-scroll="false"` and so on if you
+relied on that.
 
 ```vue
 <BottomSheet v-model:open="isOpen" v-model:snap="activeSnap" :max-height="cap" />

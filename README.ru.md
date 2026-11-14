@@ -4,9 +4,9 @@ English: [README.md](./README.md)
 
 > Универсальный headless-движок bottom sheet. **Одно ядро, восемь адаптеров, GPU-ускорение, полное покрытие тестами.**
 
-![bundle](https://img.shields.io/badge/core-%E2%89%A424%20KB%20gzip%20budget-1a1614?style=flat-square)
-![slim](https://img.shields.io/badge/slim%20core-%E2%89%A419.5%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-500%2B%20unit-2ea44f?style=flat-square)
+![bundle](https://img.shields.io/badge/core-%E2%89%A425.1%20KB%20gzip%20budget-1a1614?style=flat-square)
+![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.4%20KB%20gzip-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-850%2B%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -53,8 +53,8 @@ English: [README.md](./README.md)
 - **Стек из нескольких sheet** и типизированный реестр sheet manager.
 - **Отменяемые `before-snap` / `before-close`** — переход можно
   синхронно заблокировать.
-- Под капотом 500+ unit-тестов и ~200 e2e-прогонов Playwright на трёх
-  браузерных движках (`mobile-chrome` / `mobile-safari` / `firefox`).
+- Под капотом 850+ unit-тестов и ~190 e2e-тестов Playwright на каждом из
+  трёх браузерных движков (`mobile-chrome` / `mobile-safari` / `firefox`).
 
 ## Установка
 
@@ -240,16 +240,16 @@ type SnapPoint =
 | `rubberBand`         | `true`             | Мягкое «резиновое» перетягивание в стиле iOS                                                                               |
 | `backdropRange`      | `[0, 1]`           | Диапазон progress, в котором backdrop проявляется                                                                          |
 | `screenRange`        | `[0, 1]`           | Диапазон progress, в котором проявляется контент `screen`/scrim                                                            |
-| `focusTrap`          | `false`            | Удерживать Tab-фокус внутри открытого sheet                                                                                |
+| `focusTrap`          | `false`            | Удерживать Tab-фокус внутри sheet, пока он верхний. Попап, отрисованный вне sheet (выпадающий список, датапикер), пометьте `data-bs-focus-allow` — фокус сможет уходить в него |
 | `initialFocus`       | первое поле        | Элемент / селектор, получающий фокус при открытии; `false` фокусирует контейнер sheet (`tabindex=-1`) — так не открывается клавиатура iOS |
 | `closeOnEscape`      | `true`             | Слушать Escape и закрывать                                                                                                 |
-| `closeOnBack`        | `false`            | Перехватывать кнопку «Назад» на Android (history.popstate)                                                                 |
-| `closeOnRouteChange` | `false`            | Закрывать при смене URL (патчит `pushState`/`replaceState` + popstate)                                                     |
+| `closeOnBack`        | `false`            | Закрывать по кнопке «Назад». Кладёт запись в историю, сохраняя `history.state` роутера; см. `historySettled()` ниже        |
+| `closeOnRouteChange` | `false`            | Закрывать при смене URL (`pushState` / `replaceState` / popstate). Вызов History API с тем же адресом не считается          |
 | `lockBodyScroll`     | `true`             | Блокировка прокрутки body, безопасная для iOS (`position: fixed`)                                                          |
 | `stackEffect`        | `false`            | Стек карточек как в iOS: нижние sheet уменьшаются с глубиной                                                               |
-| `inertSiblings`      | `false`            | Помечать соседние элементы страницы `inert`, пока sheet открыт (полноценная модалка)                                       |
+| `inertSiblings`      | `false`            | Помечать `inert` всё вне sheet, пока он верхний (полноценная модалка)                                                      |
 | `persistent`         | `false`            | Запретить закрытие пользователем (backdrop / Escape / «Назад»); программный `close()` работает                             |
-| `disableClose`       | `false`            | Запретить любое закрытие, включая программное                                                                              |
+| `disableClose`       | `false`            | Запретить любое закрытие: программное, перетаскивание в закрытую точку, клавиши на handle                                  |
 | `disableDrag`        | `false`            | Отключить жест drag (императивные snap продолжают работать)                                                                |
 | `dragFrom`           | `"handle"`         | Какие области запускают drag: `"handle"`, `"sheet"` (весь sheet) или `"zones"` (только поддеревья `[data-bs-drag]`). Если handle не задан, по умолчанию `"sheet"`. `[data-bs-no-drag]` исключает поддерево в любом режиме. Также `setDragFrom()` / `getDragFrom()` — переключение перемонтирует жест, без перемонтирования компонента |
 | `dragFromContent`    | `true`             | Тянет ли sheet touch-жест на scroll-контейнере; переопределяется для отдельной snap point через `{ id, size, dragFromContent: false }`. Также `setDragFromContent()` |
@@ -305,6 +305,14 @@ engine.on('before-snap', ({ id, size, previousId, cancel }) => {});
 engine.on('before-close', ({ reason, cancel }) => {}); // reason: programmatic | backdrop | escape | back
 ```
 
+`open` и `close` приходят в начале перехода — вместе с блокировкой прокрутки,
+ловушкой фокуса и записью в истории, — а `opened` и `closed` при посадке.
+Переход, развёрнутый на полпути, объявляется заново (`close`, `open`,
+`opened`), поэтому `open` и `close` строго чередуются, а `opened` / `closed`
+пропускаются, если посадки не было. Размонтировать sheet нужно по `closed`, а
+не по `close`. `engine.state.phase` принимает значения `closed`, `opening`,
+`open`, `closing`.
+
 ### Императивный API
 
 ```ts
@@ -323,9 +331,23 @@ engine.setDisableDrag(bool); // toggle the drag gesture at runtime
 engine.setRadius('28px'); // corner radius
 engine.setMaxHeight('92dvh'); // height cap (re-resolved on viewport change)
 engine.canDismiss(); // false when persistent / disableClose
+engine.state.phase; // 'closed' | 'opening' | 'open' | 'closing'
 engine.isTop(); // top of the multi-sheet stack?
 engine.depth(); // open sheets above this one
 engine.destroy(); // remove listeners + cancel animation
+```
+
+С `closeOnBack` или `routedTo` закрытие снимает запись в истории, а
+`history.back()` браузер применяет асинхронно. `await engine.close()`
+завершается после снятия записи, поэтому переходить по маршруту сразу за ним
+безопасно; код, который закрытие не ждёт, может дождаться самой истории:
+
+```ts
+import { historySettled } from '@surdeddd/bottom-sheet';
+
+void sheet.close();
+await historySettled();
+router.push('/next');
 ```
 
 `initial` запускает sheet **сразу открытым** на любой snap point, размер
@@ -404,8 +426,8 @@ const cfg = sheets.resolve(currentRoute); // typed!
 ## Slim core и composable-фичи
 
 Стандартный `BottomSheetEngine` поставляется со всеми опциональными
-поведениями. Если нужно только необходимое, импортируйте slim core (~17.5 KB
-gzip против ~23 KB) и подключайте только нужные фичи:
+поведениями. Если нужно только необходимое, импортируйте slim core (~21.4 KB
+gzip против ~25 KB) и подключайте только нужные фичи:
 
 ```ts
 import { BottomSheetCore } from '@surdeddd/bottom-sheet/core';
@@ -442,7 +464,7 @@ const engine = new BottomSheetEngine({
 момент начала drag текст sheet переносится в текстуру, так что весь sheet
 изгибается как единая поверхность, а после остановки возвращается обратно в
 DOM. Layout, прокрутка, жесты и дерево доступности из DOM никуда не уходят.
-4.2 KB gzip, и только если вы его импортируете.
+5.9 KB gzip, и только если вы его импортируете.
 Откатывается на DOM-рендерер — молча и даже посреди сессии, если потребуется, —
 когда WebGL недоступен, при `prefers-reduced-motion` или если браузер сбросил
 GL-контекст.
@@ -677,7 +699,7 @@ new BottomSheetEngine({ element, handle, mode: 'start', snapPoints });
 ## Тестирование
 
 ```bash
-npm test                 # 500+ unit tests via vitest + happy-dom
+npm test                 # 850+ unit tests via vitest + happy-dom
 npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
 npm run typecheck        # TypeScript --noEmit
 ```

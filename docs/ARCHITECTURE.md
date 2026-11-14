@@ -108,10 +108,14 @@ async snapTo(id: string): Promise<void> {
 ```
 
 `newCycle()` is called on:
-- `snapTo` / `dragTo` / `settleAfterDrag` entry
-- viewport resize (clamps maxAxisSize)
-- `setAllowed` / `setSnapPoints` (geometry change)
-- `handleOpen` failure path (rolls back open state)
+- the start of every transition (`snapTo`, `open`, `close`, a drag release) and `dragTo`
+- `suspend()` — a finger catching the sheet, an external abort
+- `landNow()` — the tab going to the background, a mode change
+- the failure path of an opening (rolls the open state back)
+
+Geometry changes — a viewport resize, `recompute()`, `setSnapPoints()` — do
+not start a new cycle: they retarget the transition that is running (see
+[Phases and the landing](#phases-and-the-landing)).
 
 `destroy()` does a **terminal abort**: aborts the controller without
 creating a fresh one, so any captured signal sees `aborted=true` for the
@@ -124,6 +128,43 @@ short-circuits without firing `emit("snap")`.
 
 This pattern replaces the older numeric `cycleNonce` with standard browser
 abort semantics — see commit history for migration details.
+
+## Phases and the landing
+
+The engine keeps a phase — `closed`, `opening`, `open`, `closing` — and every
+lifecycle side effect hangs off a phase change, not off the animation's promise:
+
+- **start of an opening** (`closed` / `closing` → `opening`): promote in the
+  stack, install the lifecycle (scroll lock, focus trap, `inert`), emit `open`;
+- **start of a closing** (`open` / `opening` → `closing`): emit `close`;
+- **landing** (`land()`): emit `snap`, then `opened` or, after releasing the
+  lifecycle, `closed`.
+
+Every way a transition can end goes through one of three paths:
+
+- `suspend()` — a finger grabbed the sheet or an external `AbortSignal` fired.
+  The animation stops, the phase stays, nothing is emitted; the drag release
+  (or the next `snapTo`) starts a new transition that lands.
+- `reseat()` — the geometry changed under a running transition (root resize,
+  `visualViewport`, `recompute()`, `setSnapPoints()`). The animation is
+  retargeted to the new size instead of being cancelled.
+- `landNow()` — the tab went to the background or the mode changed. The sheet
+  jumps to its target and lands.
+
+Lifecycle events are queued and delivered after the state change, so a
+listener that calls `open()` / `close()` / `snapTo()` re-enters a consistent
+engine, and its events are delivered after the batch in flight.
+
+## History entries
+
+`closeOnBack` / `routedTo` push one history entry per open surface. An entry
+carries the previous `history.state` plus `__bs: true`, a label
+(`__bsSheet` / `__bsRouted` / `__bsOverlay`), a stack id and its depth; the
+entry it was pushed from is stamped with depth 0. The `popstate` handler keeps
+no counters: it reads where the browser landed and compares the depth with the
+list of open surfaces — close what is above, skip an entry whose surface is
+gone, ignore a hash navigation. `history.back()` is issued only when the
+current entry is the surface's own.
 
 ## Opening at construction
 
@@ -311,7 +352,7 @@ other entries are pure for tree-shaking.
 
 ## Test layout
 
-- `tests/unit/*.test.ts` — vitest + happy-dom; 500+ tests covering engine
+- `tests/unit/*.test.ts` — vitest + happy-dom; 850+ tests covering engine
   behaviour, gestures, focus trap, scroll lock, snap math, persist,
   auto-collapse, linked sheets, plugin system, dragTo, scroll cache,
   AbortSignal API, ARIA slider attributes, route mount-time push.

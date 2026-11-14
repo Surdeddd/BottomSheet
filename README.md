@@ -4,9 +4,9 @@
 
 > Universal, headless bottom-sheet engine. **One core, eight adapters, GPU-accelerated, fully tested.**
 
-![bundle](https://img.shields.io/badge/core-%E2%89%A424%20KB%20gzip%20budget-1a1614?style=flat-square)
-![slim](https://img.shields.io/badge/slim%20core-%E2%89%A419.5%20KB%20gzip-1a1614?style=flat-square)
-![tests](https://img.shields.io/badge/tests-500%2B%20unit-2ea44f?style=flat-square)
+![bundle](https://img.shields.io/badge/core-%E2%89%A425.1%20KB%20gzip%20budget-1a1614?style=flat-square)
+![slim](https://img.shields.io/badge/slim%20core-%E2%89%A421.4%20KB%20gzip-1a1614?style=flat-square)
+![tests](https://img.shields.io/badge/tests-850%2B%20unit-2ea44f?style=flat-square)
 ![ts](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-dc3522?style=flat-square)
 
@@ -51,8 +51,8 @@ Every item below is verifiable in this repo's `src/`:
 - **Multi-sheet stacking** plus a typed sheet-manager registry.
 - **Cancelable `before-snap` / `before-close`** — veto a transition
   synchronously.
-- Backed by 500+ unit tests across the suite and ~200 Playwright e2e runs
-  across three browser engines (`mobile-chrome` / `mobile-safari` /
+- Backed by 850+ unit tests and ~190 Playwright e2e tests on each of
+  three browser engines (`mobile-chrome` / `mobile-safari` /
   `firefox`).
 
 ## Install
@@ -239,16 +239,16 @@ type SnapPoint =
 | `rubberBand`         | `true`        | iOS-style soft over-drag                                                                                                   |
 | `backdropRange`      | `[0, 1]`      | Progress range over which backdrop fades                                                                                   |
 | `screenRange`        | `[0, 1]`      | Progress range over which the `screen`/scrim content fades                                                                 |
-| `focusTrap`          | `false`       | Trap Tab focus inside the sheet when open                                                                                  |
+| `focusTrap`          | `false`       | Trap Tab focus inside the sheet while it is the top one. Mark a popup rendered outside the sheet (dropdown, date picker) with `data-bs-focus-allow` and focus may go there |
 | `initialFocus`       | first field   | Element / selector to focus on open; `false` focuses the sheet container (`tabindex=-1`) instead — avoids the iOS keyboard |
 | `closeOnEscape`      | `true`        | Listen for Escape and close                                                                                                |
-| `closeOnBack`        | `false`       | Intercept Android back button (history.popstate)                                                                           |
-| `closeOnRouteChange` | `false`       | Close when the URL changes (patches `pushState`/`replaceState` + popstate)                                                 |
+| `closeOnBack`        | `false`       | Close on the Back button. Pushes a history entry that keeps the router's `history.state`; see `historySettled()` below     |
+| `closeOnRouteChange` | `false`       | Close when the URL changes (`pushState` / `replaceState` / popstate). A History API call that keeps the URL does not count |
 | `lockBodyScroll`     | `true`        | iOS-safe body lock (`position: fixed`)                                                                                     |
 | `stackEffect`        | `false`       | iOS card-stack: back sheets scale down per depth                                                                           |
-| `inertSiblings`      | `false`       | Mark page siblings `inert` while open (full modal)                                                                         |
+| `inertSiblings`      | `false`       | Mark everything outside the sheet `inert` while it is the top one (full modal)                                             |
 | `persistent`         | `false`       | Block dismissal (backdrop / Escape / back); programmatic `close()` still works                                             |
-| `disableClose`       | `false`       | Block all closing, including programmatic                                                                                  |
+| `disableClose`       | `false`       | Block all closing: programmatic, drag to the closed snap, the handle's keys                                                |
 | `disableDrag`        | `false`       | Suppress the drag gesture (imperative snaps still work)                                                                    |
 | `dragFrom`           | `"handle"`    | Which regions start a drag: `"handle"`, `"sheet"` (whole sheet), or `"zones"` (only `[data-bs-drag]` subtrees). Defaults to `"sheet"` when no handle is given. `[data-bs-no-drag]` opts a subtree out in every mode. Also `setDragFrom()` / `getDragFrom()` — switching remounts the gesture, no component remount |
 | `dragFromContent`    | `true`        | Whether a touch gesture on the scroll container drags the sheet; override per snap point with `{ id, size, dragFromContent: false }`. Also `setDragFromContent()` |
@@ -304,6 +304,13 @@ engine.on('before-snap', ({ id, size, previousId, cancel }) => {});
 engine.on('before-close', ({ reason, cancel }) => {}); // reason: programmatic | backdrop | escape | back
 ```
 
+`open` and `close` fire when the transition starts — together with the scroll
+lock, the focus trap and the history entry — and `opened` / `closed` when it
+lands. A transition reversed half-way announces itself again (`close`, `open`,
+`opened`), so `open` and `close` strictly alternate, while `opened` / `closed`
+are skipped when there was no landing. Unmount the sheet on `closed`, not on
+`close`. `engine.state.phase` is `closed`, `opening`, `open` or `closing`.
+
 ### Imperative
 
 ```ts
@@ -322,9 +329,23 @@ engine.setDisableDrag(bool); // toggle the drag gesture at runtime
 engine.setRadius('28px'); // corner radius
 engine.setMaxHeight('92dvh'); // height cap (re-resolved on viewport change)
 engine.canDismiss(); // false when persistent / disableClose
+engine.state.phase; // 'closed' | 'opening' | 'open' | 'closing'
 engine.isTop(); // top of the multi-sheet stack?
 engine.depth(); // open sheets above this one
 engine.destroy(); // remove listeners + cancel animation
+```
+
+With `closeOnBack` or `routedTo`, closing pops a history entry, and the
+browser applies `history.back()` asynchronously. `await engine.close()`
+resolves after the pop, so navigating right after it is safe; code that does
+not await the close can wait for the history itself:
+
+```ts
+import { historySettled } from '@surdeddd/bottom-sheet';
+
+void sheet.close();
+await historySettled();
+router.push('/next');
 ```
 
 `initial` starts the sheet **born open** at any snap whose size resolves `> 0`
@@ -401,8 +422,8 @@ Three deliberate choices keep things 60 fps even on mid-range Android:
 ## Slim core & composable features
 
 The default `BottomSheetEngine` ships every optional behavior preinstalled.
-If you only need the essentials, import the slim core (~17.5 KB gzip vs
-~23 KB) and register just the features you use:
+If you only need the essentials, import the slim core (~21.4 KB gzip vs
+~25 KB) and register just the features you use:
 
 ```ts
 import { BottomSheetCore } from '@surdeddd/bottom-sheet/core';
@@ -438,7 +459,7 @@ Paints the sheet surface — panel, radii, shadow, edge sheen — on the GPU. Th
 moment a drag starts, the sheet's text is lifted into a texture so the whole
 sheet bends as one surface, and handed straight back to the DOM once it
 settles. Layout, scrolling, gestures and the accessibility tree never leave the
-DOM. 4.2 KB gzip, and only if you import it.
+DOM. 5.9 KB gzip, and only if you import it.
 Falls back to the DOM renderer, silently and mid-session if it has to, when
 there is no WebGL, under `prefers-reduced-motion`, or when the browser drops
 the GL context.
@@ -664,7 +685,7 @@ Events, CSS custom properties, `ResizeObserver`). Everything else, from
 ## Testing
 
 ```bash
-npm test                 # 500+ unit tests via vitest + happy-dom
+npm test                 # 850+ unit tests via vitest + happy-dom
 npx playwright test      # e2e via Playwright on mobile-Chrome / mobile-Safari / Firefox
 npm run typecheck        # TypeScript --noEmit
 ```

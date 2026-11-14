@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0]
+
+A bug-fix release: a full audit of 0.23.4 plus six bugs reported from a production app. Most of it is behaviour that now matches the documentation; five changes are visible to code that relied on the old behaviour and are listed first.
+
+### Changed
+
+- **`open` and `close` fire when the transition starts, `opened` and `closed` when it lands** — this is what the README and the adapter docs have always said; the engine fired both pairs at the end of the animation. The body scroll lock, the focus trap, `inert` and the history entry now go on when the opening starts, and the history entry comes off when the closing starts. A transition reversed half-way announces itself again (`close`, `open`, `opened`), so `open` and `close` strictly alternate, while `opened` and `closed` report a landing and are skipped when there was none. If you unmount the sheet on `close` or on `update:open`, do it on `closed`: the exit animation now runs after `close`. Vue's `v-model:open` and Svelte's `bind:open` flip at the start for the same reason.
+- **The Vue component uses the engine's defaults** — `lockBodyScroll`, `closeOnEscape`, `rubberBand`, `dragFromContent` and `respectReducedMotion` were `false` in `<BottomSheet>` when not passed, because Vue turns an absent boolean prop into `false` before the engine sees it. They are `true` now, as documented and as in every other adapter; `initialFocus` falls back to the first focusable element instead of the sheet container. Pass `:lock-body-scroll="false"` and so on to keep the old behaviour.
+- **`persistent` refuses the Back button too, and `disableClose` closes every way out** — a `persistent` sheet with `closeOnBack` closed on Back; it now stays open and gets its history entry back. `disableClose` blocked `close()` only: dragging to the closed snap, Home and ArrowDown on the handle, `snapTo("closed")` and `setAllowed(ids, "closed")` all still closed the sheet. `persistent` is unchanged otherwise — it blocks backdrop, Escape and Back, as the README says; dragging the sheet shut is not a dismissal it covers.
+- **Engine-level teleport wraps what it moves** — `teleportTo` in the React hook, the Vue composable, Svelte, Solid and Qwik moved the backdrop, scrim and sheet straight into the target, out from under `.bs-root`, where every theme default is declared: the sheet came out with no background, no radius and a transparent backdrop. They now go into a `div.bs-root[data-bs-teleported]` created in the target, which copies the original root's classes (and follows them when they change) and its inline custom properties. A selector such as `body > .bs-sheet` no longer matches. The Vue component is not affected: it teleports its whole root with `<Teleport>`.
+- **`closeOnRouteChange` means the address changed** — it reacted to every `pushState` and `replaceState`, so a router saving the scroll position with `replaceState(history.state, "", location.href)` closed the sheet. It now closes when `location.href` changes.
+
+### Added
+
+- **`engine.state.phase`** — `"closed" | "opening" | "open" | "closing"`, also in the state every adapter exposes.
+- **`historySettled()`** — exported from the main entry and from `/features`. `closeOnBack` and `routedTo` pop their history entry with `history.back()`, which the browser applies asynchronously; a navigation issued before it lands is rolled back by it. `await sheet.close()` now waits for the pop, and `await historySettled()` covers code that does not await the close.
+- **`data-bs-focus-allow`** — put it on a dropdown, date picker or autocomplete that a UI kit renders outside the sheet, and the focus trap leaves focus inside it alone.
+- **`on()` on the React handle and hook** — `ref.current.on("snap", fn)` subscribes to engine events; a subscription made before the engine exists is attached when it is created.
+- **`physicalMode`, `restAtStart` and `setMode()` from the Vue composable** — what a hand-written template needs to render `data-mode` and `data-bs-rest` correctly for logical modes and server markup.
+- **`setMode()` on `<bottom-sheet>`**, and `start` / `end` as values of its `mode` attribute.
+
+### Fixed
+
+Transitions
+
+- **A finger that caught a moving sheet completed the snap** — pressing the handle while the sheet was closing fired `close` and `closed`, released the scroll lock and the focus trap and set `data-bs-rest="closed"` while the sheet was still on screen under the finger. An interrupted transition now stays in its phase until it lands.
+- **A resize, a keyboard, `recompute()` or `setSnapPoints()` cut the running animation short** — the sheet jumped to the target, and with `setSnapPoints` no `snap`, `open` or `opened` followed, the page stayed unlocked and no history entry was pushed. The running animation is now retargeted and lands normally. Content that grows while the sheet opens is followed to its full size: a 776px sheet no longer stops at 239px. `setSnapPoints` also keeps the `maxHeight` cap, which it used to drop, pushing the sheet off screen.
+- **A sheet opened in the tick it was mounted flashed at full size for a frame** — the first content measurement wrote the final size under the running animation.
+- **A `visualViewport` resize that changed nothing interrupted the animation**, and any `visualViewport` event shrank a full-height sheet by 8px: the keyboard safety pad applied even with no keyboard.
+- **A tab sent to the background mid-animation stranded the sheet** half-way with the backdrop up; the transition now lands at once.
+- **`open()` and `close()` in the same tick** left the sheet reported closed but visible, or open but hidden; two `snapTo()` calls in one tick left `activeId` and the position disagreeing.
+- **`close()` on a closed sheet fired `close` and `closed`**, and a second `close()` during the exit restarted the animation and asked `before-close` again. A repeated `snapTo()` to the id already in flight no longer restarts the animation either.
+- **A listener that threw stopped the lifecycle** — an exception in a `close` handler left the page scroll-locked until reload. Listeners are isolated; the error is rethrown asynchronously.
+- **A spring with no damping never finished** — it is now cut off after three seconds and lands on its target.
+- **Opening to a `content` or `fit` snap that still measured zero jumped open later without animating** — it now opens with the full animation and events once the size is known.
+
+Focus and scroll
+
+- **In a stack of sheets, typing into the upper one sent focus to the lower one** — the focus trap kept its own order by the moment each trap was installed, not by the sheet stack, so a lower sheet that finished opening later, or an upper sheet without `focusTrap`, left the lower sheet's trap in charge. The trap of the top sheet is the active one now.
+- **Focus chosen while the sheet was opening was taken away when it landed**, and a field in a popup rendered outside the sheet could not be focused at all (see `data-bs-focus-allow`).
+- **Shift+Tab on the first element of a `<bottom-sheet>` did not wrap** — the trap compared against `document.activeElement`, which is the host for anything inside a shadow root.
+- **Scrolling the content while the sheet opened was undone when it landed**, and a reopened sheet came back at the scroll position of the previous open. The remembered position is restored when a collapsed sheet starts to expand, never at landing and never across a close.
+- **Releasing the scroll lock animated the page back** under `scroll-behavior: smooth`.
+
+History (`closeOnBack`, `routedTo`, `closeOnRouteChange`)
+
+- **The sheet's history entry replaced the router's state** — vue-router keeps `current`, `position` and `scroll` in `history.state`; with the sheet's entry on top, `router.push()` built a URL from `undefined`. The entry now carries everything that was in `history.state`, including when it is restored after a cancelled close or re-labelled for a surviving sheet.
+- **Closing a sheet could undo a navigation of the app** — the coordinator called `history.back()` on the assumption that its entry was the current one. If the app had pushed a route while the sheet was open, or navigated right after `await close()`, that route was popped. `back()` is now issued only when the current entry is the sheet's; a spent entry left behind is skipped when the user walks over it.
+- **A hash link inside the sheet closed it** and left an entry behind on which Back did nothing; a reload with the sheet open left the same dead entry.
+- **A routed sheet lost its address when the sheet under it closed.**
+- **Removing the last `closeOnRouteChange` sheet broke `history.pushState`** when another script had wrapped it afterwards (`TypeError`, then infinite recursion on the next sheet).
+
+Adapters
+
+- **React `noSSR` left the sheet without an engine** — the documented fix for hydration mismatches produced a sheet that never moved.
+- **Server markup painted a closed sheet open** until hydration; every adapter now renders `data-bs-rest="closed"` for a sheet that starts closed.
+- **`mode="start"` / `"end"` were written to `data-mode` as is**, where no CSS rule matches them, in Vue, Qwik and the web component, and in React and Svelte when a physical mode changed to its logical twin.
+- **Vue:** a `@snap` listener ran twice; `open` and `snap` ignored a prop reversed mid-animation; an inline `:snap-points` array reset the snap points on every parent render.
+- **React:** `dragFromContent` was not reactive; a controlled `<Overlay>` whose parent mirrors `onChange` into `open` reopened itself.
+- **Svelte:** `open` and `snap` ignored a prop reversed mid-animation.
+- **Solid:** an optional prop was ignored the first time it got a value; `radius` and `maxHeight` were not reactive; `header`, `footer` and the button slots were created twice.
+- **Qwik:** the engine was created only when the component scrolled into view, so a sheet rendered far down the page stayed painted and dead.
+- **Web component:** the `snap` attribute was ignored at creation; setting an attribute to its current value rebuilt the engine; a malformed `snap-points` shorthand threw from `connectedCallback`; an element with `slot="anchor"` was moved into the shadow tree and lost the page's styles.
+- **Form guards** (`useFormGuard`, `useFormikGuard`) never bound when the sheet mounted a render later, and only guarded a snap called `closed`.
+
+Layout
+
+- **A `content` or `fit` sheet did not notice its header or footer growing** — only the scroll container's children were observed, so a taller footer was cut off below the screen edge.
+- **`inertSiblings` left the rest of the app interactive** when the sheet lived inside the app root, and made an upper sheet inert when a lower one applied it. Everything outside the top sheet is inert now, level by level, and the set moves with the stack.
+- **The scrim sat under a lower sheet and scrolled with the page** — its `z-index` did not follow the stack, and it was `position: absolute` next to a fixed backdrop. The engine publishes `--bs-z-sheet` on its root; `.bs-screen`, scrim overlays and scrim stages are `position: fixed`.
+- **`setMode()` left the old edge behind** — switching axis with equal pixel sizes removed `height` without setting `width`; the above-sheet scrim inset, anchors, the scrim overlay and scrim stages kept their old positions.
+- **Auto `aria-labelledby` never found the title** in adapter markup, where it lives in `.bs-header`, not in the handle.
+- **The WebGL surface was drawn white** for a background written as `oklch()`, `color-mix()` or `color(display-p3 …)`, and its canvas did not follow the sheet's `z-index` in a stack.
+- **Losing pointer capture mid-gesture** left the handle unable to start another drag.
+- A snap size the browser rejects as a CSS length now warns in development instead of silently resolving to 0.
+
+The sheet stack, the scroll-lock counter, the focus-trap stack and the history coordinator are now shared through `globalThis`, so two entry points on one page (`/react` next to `/element`, or ESM next to CJS) no longer keep separate copies: a sheet from one was invisible to an overlay from the other, and the page was unlocked while one of them was still open.
+
+Measured against 0.23.4, the core entry grew by 2.6 KB gzip, to 25.0 KB; the framework adapters by 2.9–3.1 KB and the custom element by 3.0 KB; the slim core by 1.8 KB, `/overlay` by 1.3 KB, `/features` by 1.0 KB and `/webgl` by 173 B. Most of it is the transition logic in the engine and the history coordinator. Each budget that moved sits 30 B above the largest reading; `/webgl` stayed inside its budget.
+
 ## [0.23.4]
 
 ### Fixed

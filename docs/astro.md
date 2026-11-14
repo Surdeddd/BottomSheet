@@ -72,7 +72,10 @@ React/Vue tree to manage.
 
 ## Notes
 
-- `client:visible` is preferred over `client:load` for sheets — they only
-  matter once visible.
+- Use `client:idle` or `client:load` for a sheet placed far down the page.
+  `client:visible` hydrates the island when its root scrolls into view, and a
+  bottom sheet is fixed to the viewport, not to where its root sits: until
+  then the sheet has no engine. For a sheet near the top of the page
+  `client:visible` is fine.
 - For SSR-rendered shells (Server Islands), set `noSSR` on the React adapter
   to skip server render of the sheet — it'll mount on the client only.

@@ -38,7 +38,7 @@ npm i @surdeddd/bottom-sheet
 | `snap-points` | JSON or shorthand | required | `'[{"id":"min","size":96}]'` or `"min:96,half:45%"` |
 | `allowed` | comma list | all ids | `"min,half,full"` |
 | `initial` | string | first allowed | starting snap id |
-| `mode` | enum | `"bottom"` | `bottom \| top \| left \| right` |
+| `mode` | enum | `"bottom"` | `bottom \| top \| left \| right`, or logical `start \| end` |
 | `animation` | enum | `"spring"` | `spring`, `tween`, `ios-spring`, `material-bounce`, `linear`, `snappy` |
 | `focus-trap` | bool | `false` | `"true"` to enable |
 | `close-on-escape` | bool | `true` | set `"false"` to disable |
@@ -54,7 +54,7 @@ npm i @surdeddd/bottom-sheet
 | `fit-content-to-snap` | bool | `false` | keep the whole scroll container reachable and the footer on screen at every snap point; read when the engine is built |
 | `radius` | length / px | — | corner radius |
 | `max-height` | length / px | — | height cap; a string is re-resolved on viewport changes |
-| `snap` | string | — | active snap id — set it to snap imperatively |
+| `snap` | string | — | active snap id — set it to snap imperatively; at creation it wins over `initial` |
 | `backdrop-color` / `scrim-color` | color | — | scrim fill color |
 | `return-focus-to` | selector | opener | focus target on dismiss |
 | `stylesheet` | url | — | inject a stylesheet into the shadow root |
@@ -82,8 +82,9 @@ it instead of the `initial` attribute.
 
 ## Anchored elements
 
-Any light-DOM child with `slot="anchor"` becomes an anchor — it is moved into
-a fixed wrapper that rides the sheet edge:
+Any light-DOM child with `slot="anchor"` becomes an anchor — it is projected
+into a fixed wrapper that rides the sheet edge. The element itself stays a
+light-DOM child of `<bottom-sheet>`, so your page's CSS keeps styling it:
 
 ```html
 <bottom-sheet snap-points="min:96,full:85%">

@@ -72,10 +72,10 @@ Every `EngineOption` is forwarded plus:
 | `onSnap(id)` | `string` | Settled on a new snap |
 | `onBeforeSnap(e)` | `{ id, size, previousId, cancel }` | Before a snap settles — call `e.cancel()` **synchronously** to veto |
 | `onBeforeClose(e)` | `{ reason, cancel }` | Before a dismissal — call `e.cancel()` synchronously to veto |
-| `onOpen(id)` | `string` | Enter starts (0 → >0) |
-| `onOpened(id)` | `string` | Enter settled |
+| `onOpen(id)` | `string` | Enter starts (0 → >0); scroll lock, focus trap and the history entry go on here |
+| `onOpened(id)` | `string` | Enter landed |
 | `onClose()` | — | Exit starts |
-| `onClosed()` | — | Exit settled |
+| `onClosed()` | — | Exit landed — unmount the sheet here, not in `onClose` |
 | `onDragStart(e)` | `{ size }` | Pointer drag begins |
 | `onDragEnd(e)` | `{ size, velocity }` | Pointer drag ends |
 | `onDrag(e)` | `{ size, delta }` | ~60 fps during drag — **provide at mount** (see below) |
@@ -173,6 +173,8 @@ return (
 The adapter is **import-safe in Node** — importing it server-side touches no
 `window`/DOM. It is **SSR-renderable**: the sheet markup renders on the server,
 and the engine (all gesture/DOM work) attaches only on **client hydration**.
+A sheet that starts closed is rendered with `data-bs-rest="closed"`, so it is
+hidden in the server markup instead of being painted open until hydration.
 For hydration-strict pages where you want to skip the server render entirely,
 pass `noSSR`:
 

@@ -69,10 +69,15 @@ engine.setMode("start"); // re-resolves against the direction in effect now
 engine.setMode("right"); // drawer, whatever the writing direction
 ```
 
-In every adapter you do not need to reach for the engine: the `mode` prop is
-watched, so re-rendering with a new value calls `setMode` for you, and the
-custom element treats its `mode` attribute the same way. Passing `start` again
-after a language switch is enough to re-resolve it.
+In every adapter the `mode` prop is watched, so re-rendering with a new value
+calls `setMode` for you, and the custom element treats its `mode` attribute the
+same way. A prop that keeps the value `start` does not fire its watcher,
+though: after a language switch call `setMode("start")` yourself — on the
+engine (`getEngine()`), on the Vue composable, or on the custom element, which
+all re-resolve the logical mode against the direction in effect now.
+
+Adapters render the resolved physical edge into `data-mode` (`left` / `right`),
+never `start` / `end`, so your own CSS can keep targeting the four edges.
 
 ```tsx
 <BottomSheet mode={wide ? "start" : "bottom"} snapPoints={points} />

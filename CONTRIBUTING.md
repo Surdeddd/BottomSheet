@@ -10,8 +10,8 @@ cd bottom-sheet
 nvm use               # Node >= 20.19 — pinned in .nvmrc (dev toolchain requirement)
 npm install
 npm run build         # dist/ for SSR tests
-npm test              # 500+ unit tests via vitest + happy-dom
-npm run e2e           # Playwright e2e (mobile-chrome project; ~200 specs per browser)
+npm test              # 850+ unit tests via vitest + happy-dom
+npm run e2e           # Playwright e2e (mobile-chrome project; ~190 tests per browser)
 npm run demo          # http://localhost:5173 — interactive playground
 ```
 
