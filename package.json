@@ -265,7 +265,7 @@
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "33.23 KB",
+      "limit": "33.26 KB",
       "gzip": true
     },
     {

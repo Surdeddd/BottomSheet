@@ -354,7 +354,7 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
       <div className="bs-root">
         {backdrop && (
           <div
-            ref={backdropRef as React.RefObject<HTMLDivElement>}
+            ref={backdropRef}
             className="bs-backdrop"
             onClick={
               closeOnBackdrop
@@ -366,13 +366,13 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           />
         )}
         <div
-          ref={screenRef as React.RefObject<HTMLDivElement>}
+          ref={screenRef}
           className="bs-screen"
         >
           {screen}
         </div>
         <section
-          ref={sheetRef as React.RefObject<HTMLElement>}
+          ref={sheetRef}
           className={`bs-sheet ${className}`.trim()}
           style={style}
           data-mode={physicalMode}
@@ -384,7 +384,7 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
           aria-labelledby={ariaLabelledBy}
         >
           <div
-            ref={handleRef as React.RefObject<HTMLDivElement>}
+            ref={handleRef}
             className="bs-handle"
             role="slider"
             tabIndex={0}
@@ -396,7 +396,7 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
             </div>
           )}
           <div
-            ref={contentRef as React.RefObject<HTMLDivElement>}
+            ref={contentRef}
             className="bs-content"
             tabIndex={0}
             role="region"

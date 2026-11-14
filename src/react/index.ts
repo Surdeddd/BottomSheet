@@ -9,6 +9,7 @@ export {
 } from "./BottomSheetFromConfig";
 export type { BottomSheetProps, BottomSheetHandle, HeaderProp } from "./BottomSheet";
 export type { UseBottomSheetReturn, UseBottomSheetRefs } from "./useBottomSheet";
+export type { ElementRef } from "./element-ref";
 export type { OverlayProps, OverlayHandle } from "./Overlay";
 export type { UseOverlayReturn } from "./useOverlay";
 export type {

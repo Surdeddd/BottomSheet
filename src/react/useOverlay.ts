@@ -7,13 +7,14 @@ import {
   useState,
 } from "react";
 import { OverlayEngine, type OverlayOptions, type OverlayState } from "../core/overlay";
+import { useElementRef, type ElementRef } from "./element-ref";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export type UseOverlayReturn = {
-  panelRef: React.RefObject<HTMLElement | null>;
-  backdropRef: React.RefObject<HTMLElement | null>;
+  panelRef: ElementRef;
+  backdropRef: ElementRef;
   state: OverlayState;
   open: () => Promise<void>;
   close: () => Promise<void>;
@@ -24,8 +25,8 @@ export type UseOverlayReturn = {
 export const useOverlay = (
   opts: Omit<OverlayOptions, "element" | "backdrop">,
 ): UseOverlayReturn => {
-  const panelRef = useRef<HTMLElement>(null);
-  const backdropRef = useRef<HTMLElement>(null);
+  const panelRef = useElementRef();
+  const backdropRef = useElementRef();
   const engineRef = useRef<OverlayEngine | null>(null);
   const optsRef = useRef(opts);
   optsRef.current = opts;

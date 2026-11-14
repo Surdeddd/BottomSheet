@@ -9,6 +9,7 @@ import {
 } from "react";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
 import { useEnginePropSync } from "./useEnginePropSync";
+import { useElementRef, type ElementRef } from "./element-ref";
 import {
   resolveTeleportTarget,
   teleportElements,
@@ -26,11 +27,11 @@ const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export type UseBottomSheetRefs = {
-  sheetRef: React.RefObject<HTMLElement | null>;
-  handleRef: React.RefObject<HTMLElement | null>;
-  contentRef: React.RefObject<HTMLElement | null>;
-  backdropRef: React.RefObject<HTMLElement | null>;
-  screenRef: React.RefObject<HTMLElement | null>;
+  sheetRef: ElementRef;
+  handleRef: ElementRef;
+  contentRef: ElementRef;
+  backdropRef: ElementRef;
+  screenRef: ElementRef;
 };
 
 export type UseBottomSheetReturn<TId extends string = string> =
@@ -100,11 +101,11 @@ type HookOpts<TId extends string> = Omit<
 export function useBottomSheet<TId extends string = string>(
   opts: HookOpts<TId>,
 ): UseBottomSheetReturn<TId> {
-  const sheetRef = useRef<HTMLElement>(null);
-  const handleRef = useRef<HTMLElement>(null);
-  const contentRef = useRef<HTMLElement>(null);
-  const backdropRef = useRef<HTMLElement>(null);
-  const screenRef = useRef<HTMLElement>(null);
+  const sheetRef = useElementRef();
+  const handleRef = useElementRef();
+  const contentRef = useElementRef();
+  const backdropRef = useElementRef();
+  const screenRef = useElementRef();
   const engineRef = useRef<BottomSheetEngine | null>(null);
   const subscribersRef = useRef<Set<() => void>>(new Set());
   const cachedSnapshotRef = useRef<EngineState>(SSR_STATE);

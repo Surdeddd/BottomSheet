@@ -87,13 +87,13 @@ export const Overlay = forwardRef<OverlayHandle, OverlayProps>(function Overlay(
     <div className="ovl-root">
       {backdrop && (
         <div
-          ref={backdropRef as React.RefObject<HTMLDivElement>}
+          ref={backdropRef}
           className="ovl-backdrop"
           aria-hidden="true"
         />
       )}
       <section
-        ref={panelRef as React.RefObject<HTMLElement>}
+        ref={panelRef}
         className={`ovl-panel ${className}`.trim()}
         data-edge={edge}
         style={style}
