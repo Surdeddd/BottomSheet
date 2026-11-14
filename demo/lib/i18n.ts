@@ -84,6 +84,24 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.esc": "close on Esc",
     "ctrl.haptic": "haptic on snap",
     "ctrl.rubber": "rubber-band",
+    "ctrl.webgl": "WebGL renderer",
+    "ctrl.webgl.force": "draw on the CPU anyway",
+    "ctrl.webgl.note.dom": "The browser paints the sheet. This is the default.",
+    "ctrl.webgl.note.webgl":
+      "The GPU draws the surface and bends it while you drag. The content stays in the DOM.",
+    "ctrl.webgl.note.cpu":
+      "WebGL is drawn on the CPU here, as you asked. Expect it to be slow.",
+    "ctrl.webgl.note.software-renderer":
+      "This browser draws WebGL on the CPU, so the sheet stayed on the DOM renderer.",
+    "ctrl.webgl.note.reduced-motion":
+      "Reduced motion is on in your system, so the sheet stayed on the DOM renderer.",
+    "ctrl.webgl.note.no-webgl":
+      "This browser has no WebGL, so the sheet stayed on the DOM renderer.",
+    "ctrl.webgl.note.context-lost":
+      "The browser took the WebGL context away. The sheet went back to the DOM renderer.",
+    "ctrl.webgl.note.failed":
+      "The renderer did not load. The sheet stayed on the DOM renderer.",
+    "ctrl.webgl.note.overlay": "The overlay panel has no WebGL renderer.",
     "ctrl.drag": "Drag surface",
     "ctrl.drag.handle": "handle",
     "ctrl.drag.sheet": "whole sheet",
@@ -250,6 +268,24 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.esc": "закрытие по Esc",
     "ctrl.haptic": "вибро при фиксации",
     "ctrl.rubber": "резиновое отскакивание",
+    "ctrl.webgl": "рендерер WebGL",
+    "ctrl.webgl.force": "всё равно рисовать процессором",
+    "ctrl.webgl.note.dom": "Лист рисует браузер. Так по умолчанию.",
+    "ctrl.webgl.note.webgl":
+      "Поверхность рисует видеокарта и гнёт её, пока вы тянете. Содержимое остаётся в DOM.",
+    "ctrl.webgl.note.cpu":
+      "WebGL здесь рисует процессор, как вы и просили. Будет медленно.",
+    "ctrl.webgl.note.software-renderer":
+      "Этот браузер рисует WebGL процессором, поэтому лист остался на DOM-рендерере.",
+    "ctrl.webgl.note.reduced-motion":
+      "В системе включено уменьшение движения, поэтому лист остался на DOM-рендерере.",
+    "ctrl.webgl.note.no-webgl":
+      "В этом браузере нет WebGL, поэтому лист остался на DOM-рендерере.",
+    "ctrl.webgl.note.context-lost":
+      "Браузер отобрал контекст WebGL. Лист вернулся на DOM-рендерер.",
+    "ctrl.webgl.note.failed":
+      "Рендерер не загрузился. Лист остался на DOM-рендерере.",
+    "ctrl.webgl.note.overlay": "У оверлей-панели нет WebGL-рендерера.",
     "ctrl.drag": "Зона перетаскивания",
     "ctrl.drag.handle": "только ручка",
     "ctrl.drag.sheet": "весь лист",

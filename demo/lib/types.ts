@@ -37,6 +37,8 @@ export type Settings = {
   scrimAboveSheet: boolean;
   scrimTapToClose: boolean;
   scrimFloatingAction: boolean;
+  webgl: boolean;
+  webglOnCpu: boolean;
 };
 
 export type ThemePreset = "default" | "ios" | "material" | "vercel";

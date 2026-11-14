@@ -9,6 +9,7 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import { demoFeatures } from "../lib/renderer";
 
 type SvelteAppHandle = {
   snapTo: (id: string) => Promise<void>;
@@ -38,6 +39,7 @@ export const mountSvelteDemo = (
       focusTrap: settings.focusTrap,
       closeOnEscape: settings.closeOnEscape,
       rubberBand: settings.rubberBand,
+      features: demoFeatures(settings),
       rows: demoRows,
       onstate: (s: EngineState) => {
         lastState = s;

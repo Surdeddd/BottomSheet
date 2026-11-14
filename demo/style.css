@@ -1467,6 +1467,14 @@ html:not(.has-stage) .asm-item {
 .toggle input[type=checkbox]:checked::before {
   transform: translateX(16px);
 }
+.toggle input[type=checkbox]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+#renderer-force {
+  align-self: flex-start;
+  text-transform: none;
+}
 .toggle input[type=checkbox]:focus-visible {
   outline: 2px solid var(--vermillion);
   outline-offset: 2px;

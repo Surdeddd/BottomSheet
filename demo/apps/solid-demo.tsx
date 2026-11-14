@@ -10,6 +10,7 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import { demoFeatures } from "../lib/renderer";
 
 const SolidSheet = (props: {
   settings: DemoSettings;
@@ -46,6 +47,7 @@ const SolidSheet = (props: {
       focusTrap: props.settings.focusTrap,
       closeOnEscape: props.settings.closeOnEscape,
       rubberBand: props.settings.rubberBand,
+      features: demoFeatures(props.settings),
       backdropRange: [0.4, 1],
       lockBodyScroll: false,
     });

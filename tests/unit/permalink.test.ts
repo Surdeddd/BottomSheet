@@ -16,6 +16,8 @@ const sample: DemoSettings = {
   scrimAboveSheet: true,
   scrimTapToClose: false,
   scrimFloatingAction: true,
+  webgl: false,
+  webglOnCpu: false,
 };
 
 describe("permalink encode/decode round-trip", () => {
@@ -174,5 +176,28 @@ describe("writeHash — throttle delay (250ms)", () => {
     vi.advanceTimersByTime(300);
     expect(replaceState).toHaveBeenCalledTimes(1);
     expect(replaceState).toHaveBeenLastCalledWith(null, "", "#a=3");
+  });
+});
+
+describe("permalink and the renderer", () => {
+  it("leaves the DOM renderer out of the picture by default", () => {
+    const out = decode(encode({ ...sample, webgl: false, webglOnCpu: false }, "react"));
+    expect(out.settings.webgl).toBe(false);
+    expect(out.settings.webglOnCpu).toBe(false);
+  });
+
+  it("carries the WebGL renderer and the permission to draw on the CPU", () => {
+    const hash = encode({ ...sample, webgl: true, webglOnCpu: true }, "vue");
+    expect(hash).toContain("webgl=1");
+    expect(hash).toContain("cpu=1");
+    const out = decode(hash);
+    expect(out.settings.webgl).toBe(true);
+    expect(out.settings.webglOnCpu).toBe(true);
+  });
+
+  it("ignores a renderer flag it does not understand", () => {
+    const out = decode("#adapter=react&webgl=yes&cpu=maybe");
+    expect(out.settings.webgl).toBeUndefined();
+    expect(out.settings.webglOnCpu).toBeUndefined();
   });
 });

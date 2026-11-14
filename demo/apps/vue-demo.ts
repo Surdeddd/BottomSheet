@@ -8,12 +8,14 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import { demoFeatures } from "../lib/renderer";
 
 export const mountVueDemo = (
   host: HTMLElement,
   settings: DemoSettings,
 ): DemoController => {
   buildShell(host, "Issue 02 · Vue 3");
+  const features = demoFeatures(settings);
   const mountPoint = document.createElement("div");
   host.firstElementChild!.appendChild(mountPoint);
 
@@ -67,6 +69,7 @@ export const mountVueDemo = (
             focusTrap: settings.focusTrap,
             closeOnEscape: settings.closeOnEscape,
             rubberBand: settings.rubberBand,
+            features,
             backdropRange: [0.4, 1] as [number, number],
             lockBodyScroll: false,
             teleport: false,

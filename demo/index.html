@@ -639,6 +639,27 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <input type="checkbox" id="tg-rubber" checked />
           <span data-i18n="ctrl.rubber">rubber-band</span>
         </label>
+        <label class="toggle">
+          <input type="checkbox" id="tg-webgl" />
+          <span data-i18n="ctrl.webgl">WebGL renderer</span>
+        </label>
+        <p
+          class="control-note"
+          id="renderer-note"
+          role="status"
+          data-i18n="ctrl.webgl.note.dom"
+        >
+          The browser paints the sheet. This is the default.
+        </p>
+        <button
+          class="chip"
+          id="renderer-force"
+          type="button"
+          data-i18n="ctrl.webgl.force"
+          hidden
+        >
+          draw on the CPU anyway
+        </button>
       </div>
 
       <div class="control-group">

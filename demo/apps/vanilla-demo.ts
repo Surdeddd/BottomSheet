@@ -8,6 +8,7 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import { demoFeatures } from "../lib/renderer";
 
 export const mountVanillaDemo = (
   host: HTMLElement,
@@ -80,6 +81,7 @@ export const mountVanillaDemo = (
     focusTrap: settings.focusTrap,
     closeOnEscape: settings.closeOnEscape,
     rubberBand: settings.rubberBand,
+    features: demoFeatures(settings),
     backdropRange: [0.4, 1],
     lockBodyScroll: false,
   });

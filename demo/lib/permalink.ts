@@ -49,6 +49,8 @@ export function encode(settings: DemoSettings, adapter: AdapterKey): string {
   p.set("scrimA", settings.scrimAboveSheet ? "1" : "0");
   p.set("scrimT", settings.scrimTapToClose ? "1" : "0");
   p.set("scrimF", settings.scrimFloatingAction ? "1" : "0");
+  p.set("webgl", settings.webgl ? "1" : "0");
+  p.set("cpu", settings.webglOnCpu ? "1" : "0");
   return "#" + p.toString();
 }
 
@@ -81,6 +83,8 @@ export function decode(hash: string): Permalink {
     ["scrimA", "scrimAboveSheet"],
     ["scrimT", "scrimTapToClose"],
     ["scrimF", "scrimFloatingAction"],
+    ["webgl", "webgl"],
+    ["cpu", "webglOnCpu"],
   ] as const) {
     const v = flag(p.get(k));
     if (v != null) out.settings[prop] = v;

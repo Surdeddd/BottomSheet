@@ -30,6 +30,8 @@ export type DemoSettings = {
   scrimAboveSheet: boolean;
   scrimTapToClose: boolean;
   scrimFloatingAction: boolean;
+  webgl: boolean;
+  webglOnCpu: boolean;
 };
 
 export type DemoController = {

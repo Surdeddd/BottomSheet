@@ -11,13 +11,16 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import { demoFeatures } from "../lib/renderer";
 
 class LitDemoSheet extends LitElement {
   static override properties = {
     settings: { attribute: false },
+    sheetOptions: { attribute: false },
   };
 
   declare settings: DemoSettings;
+  declare sheetOptions: BottomSheetElement["options"];
 
   protected override createRenderRoot(): HTMLElement {
     return this;
@@ -35,6 +38,7 @@ class LitDemoSheet extends LitElement {
         focus-trap=${String(this.settings.focusTrap)}
         close-on-escape=${String(this.settings.closeOnEscape)}
         lock-body-scroll="false"
+        .options=${this.sheetOptions}
       >
         <div slot="header" class="sheet-header">
           <h2>Active routes</h2>
@@ -75,6 +79,7 @@ export const mountLitDemo = (
 
   const litRoot = document.createElement("lit-demo-sheet") as LitDemoSheet;
   litRoot.settings = settings;
+  litRoot.sheetOptions = { features: demoFeatures(settings) };
   shell.append(litRoot);
 
   let updateCb: ((s: EngineState) => void) | null = null;

@@ -38,6 +38,7 @@ import { startViewTransition } from "./lib/view-transition";
 import { wireScrimControls } from "./lib/scrim-controls";
 import { whenEngineReady, wireFloatingUi } from "./lib/floating-ui";
 import { wireDragSurface } from "./lib/drag-surface";
+import { loadRenderer, wireRendererSwitch } from "./lib/renderer";
 import {
   canRenderStage,
   initHero3D,
@@ -68,6 +69,8 @@ const defaults: Settings = {
   scrimAboveSheet: true,
   scrimTapToClose: false,
   scrimFloatingAction: false,
+  webgl: false,
+  webglOnCpu: false,
 };
 const settings: Settings = { ...defaults };
 
@@ -89,6 +92,7 @@ let activeController: DemoController | null = null;
 let scrimControlsSync: (() => void) | null = null;
 let floatingUiSync: (() => void) | null = null;
 let dragSurfaceSync: (() => void) | null = null;
+let rendererSync: (() => void) | null = null;
 
 const ro = {
   active: $<HTMLElement>("#ro-active"),
@@ -145,6 +149,7 @@ const mountAdapter = (key: AdapterKey): void => {
 
     const host = document.querySelector<HTMLElement>(`#screen-${key}`)!;
     while (host.firstChild) host.removeChild(host.firstChild);
+    rendererSync?.();
     activeController =
       settings.mode === "overlay" && key !== "react"
         ? mountOverlayDemo(host, settings, key)
@@ -372,6 +377,11 @@ const dragSurface = wireDragSurface({
 });
 dragSurfaceSync = dragSurface.syncToEngine;
 
+rendererSync = wireRendererSwitch({
+  settings,
+  remount: () => mountAdapter(activeAdapter),
+}).sync;
+
 const initial = decode(location.hash);
 if (initial.adapter) activeAdapter = initial.adapter;
 Object.assign(settings, initial.settings);
@@ -406,7 +416,15 @@ if (snipTag) snipTag.textContent = activeAdapter;
 syncModeUi();
 updateChipsForMode();
 
-mountAdapter(activeAdapter);
+if (settings.webgl) {
+  void loadRenderer()
+    .catch(() => {
+      settings.webgl = false;
+    })
+    .then(() => mountAdapter(activeAdapter));
+} else {
+  mountAdapter(activeAdapter);
+}
 initReveal();
 initScrollProgress();
 initCountUp();

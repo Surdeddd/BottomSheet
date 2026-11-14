@@ -14,6 +14,7 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import { demoFeatures } from "../lib/renderer";
 import {
   OVERLAY_AUTO_CLOSE_MS,
   OVERLAY_ITEMS,
@@ -110,6 +111,7 @@ const ReactSheet: FC<{
   registerEngine: (getter: () => any) => void;
 }> = ({ settings, registerSnap, registerPoll, registerEngine }) => {
   const ref = useRef<BottomSheetHandle>(null);
+  const [features] = useState(() => demoFeatures(settings));
 
   useEffect(() => {
     registerSnap((id: string) => {
@@ -119,7 +121,7 @@ const ReactSheet: FC<{
     registerEngine(() => ref.current?.getEngine?.() ?? null);
   }, [registerSnap, registerPoll, registerEngine]);
 
-  const remountKey = `${settings.mode}-${settings.stiffness}-${settings.damping}-${settings.focusTrap}-${settings.closeOnEscape}-${settings.rubberBand}`;
+  const remountKey = `${settings.mode}-${settings.stiffness}-${settings.damping}-${settings.focusTrap}-${settings.closeOnEscape}-${settings.rubberBand}-${settings.webgl}-${settings.webglOnCpu}`;
 
   return (
     <BottomSheet
@@ -134,6 +136,7 @@ const ReactSheet: FC<{
       focusTrap={settings.focusTrap}
       closeOnEscape={settings.closeOnEscape}
       rubberBand={settings.rubberBand}
+      features={features}
       backdropRange={[0.4, 1]}
       lockBodyScroll={false}
       header={

@@ -8,6 +8,7 @@ import {
   type DemoController,
   type DemoSettings,
 } from "./shared";
+import { demoFeatures } from "../lib/renderer";
 
 export const mountElementDemo = (
   host: HTMLElement,
@@ -25,6 +26,7 @@ export const mountElementDemo = (
   sheet.setAttribute("focus-trap", String(settings.focusTrap));
   sheet.setAttribute("close-on-escape", String(settings.closeOnEscape));
   sheet.setAttribute("lock-body-scroll", "false");
+  sheet.options = { features: demoFeatures(settings) };
 
   const header = document.createElement("div");
   header.slot = "header";

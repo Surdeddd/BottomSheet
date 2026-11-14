@@ -1,6 +1,11 @@
 <script lang="ts">
   import BottomSheet from "../../src/svelte/BottomSheet.svelte";
-  import type { EngineState, SheetMode, SnapPointDef } from "../../src/core/types";
+  import type {
+    EngineFeature,
+    EngineState,
+    SheetMode,
+    SnapPointDef,
+  } from "../../src/core/types";
 
   type Props = {
     snapPoints: SnapPointDef[];
@@ -11,6 +16,7 @@
     focusTrap: boolean;
     closeOnEscape: boolean;
     rubberBand: boolean;
+    features?: EngineFeature[];
     rows: Array<[string, string]>;
     onstate?: (s: EngineState) => void;
   };
@@ -24,6 +30,7 @@
     focusTrap,
     closeOnEscape,
     rubberBand,
+    features,
     rows,
     onstate,
   }: Props = $props();
@@ -51,6 +58,7 @@
   {focusTrap}
   {closeOnEscape}
   {rubberBand}
+  {features}
   backdropRange={[0.4, 1]}
   lockBodyScroll={false}
   onchange={onstate}
