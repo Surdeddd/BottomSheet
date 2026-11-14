@@ -182,13 +182,7 @@ export class BottomSheetCore {
 
   constructor(opts: EngineOptions) {
     const resolved = resolveEngineOptions(opts, {
-      shouldApplyInertSiblings: () => {
-        if (typeof document === "undefined") return false;
-        const bodyChildren = Array.from(document.body.children) as HTMLElement[];
-        return bodyChildren.some(
-          c => c === opts.element || c.contains(opts.element),
-        );
-      },
+      shouldApplyInertSiblings: () => opts.element.isConnected,
     });
 
     this.element = opts.element;

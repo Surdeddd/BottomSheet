@@ -30,14 +30,23 @@ export function createInertSiblings(
       const surface = rootProvider();
       let node: HTMLElement | null =
         surface.closest<HTMLElement>(OWN_ROOTS) ?? surface;
-      while (node && node !== document.body && node.parentElement) {
-        for (const sibling of Array.from(node.parentElement.children)) {
+      while (node && node !== document.body) {
+        const parent: HTMLElement | null = node.parentElement;
+        if (!parent) {
+          const root = node.getRootNode();
+          node =
+            typeof ShadowRoot !== "undefined" && root instanceof ShadowRoot
+              ? (root.host as HTMLElement)
+              : null;
+          continue;
+        }
+        for (const sibling of Array.from(parent.children)) {
           if (sibling === node) continue;
           if (sibling.hasAttribute("inert") || isLayer(sibling)) continue;
           sibling.setAttribute("inert", "");
           tracked.push(sibling as HTMLElement);
         }
-        node = node.parentElement;
+        node = parent;
       }
     },
     remove,

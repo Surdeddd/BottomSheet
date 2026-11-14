@@ -153,12 +153,7 @@ export class OverlayEngine {
         closeOnEscape: this.closeOnEscape,
         lockBodyScroll: this.bodyScrollLockEnabled,
         inertSiblings: this.inertSiblingsEnabled,
-        shouldApplyInertSiblings: () => {
-          const bodyChildren = Array.from(document.body.children) as HTMLElement[];
-          return bodyChildren.some(
-            c => c === this.element || c.contains(this.element),
-          );
-        },
+        shouldApplyInertSiblings: () => this.element.isConnected,
         returnFocus: opts.returnFocus,
       },
     );
