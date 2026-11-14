@@ -71,6 +71,7 @@ export default defineConfig({
         history: resolve(__dirname, "demo/fixtures/history.html"),
         solidProps: resolve(__dirname, "demo/fixtures/solid-props.html"),
         teleport: resolve(__dirname, "demo/fixtures/teleport.html"),
+        features: resolve(__dirname, "demo/fixtures/features.html"),
       },
     },
   },

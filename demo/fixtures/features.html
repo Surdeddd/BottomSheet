@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>features fixture</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+      }
+      #app {
+        padding: 16px;
+      }
+      #page {
+        height: 3000px;
+        margin: 0;
+      }
+      .lab-row {
+        height: 44px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+      }
+      .lab-tag {
+        padding: 4px 8px;
+        border: 0;
+        background: #c12d1c;
+        color: #fff;
+      }
+      .lab-overlay {
+        display: grid;
+        gap: 12px;
+        padding: 24px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <button id="before" type="button">before</button>
+      <p id="page">page</p>
+      <button id="after" type="button">after</button>
+    </div>
+    <aside id="sibling">sibling</aside>
+    <div id="portal" data-bs-focus-allow>
+      <input id="outside-allowed" aria-label="allowed" />
+    </div>
+    <input id="outside-plain" aria-label="plain" />
+    <div id="mount"></div>
+    <div id="element-mount"></div>
+    <div id="overlay-mount"></div>
+    <script type="module" src="./features.ts"></script>
+  </body>
+</html>
