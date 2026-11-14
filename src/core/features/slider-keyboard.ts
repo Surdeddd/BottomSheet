@@ -13,8 +13,9 @@ export function installSliderKeyboard(deps: SliderKeyboardDeps): () => void {
   const isVerticalAxis = deps.mode === "bottom" || deps.mode === "top";
   const stepUp = isVerticalAxis ? "ArrowUp" : "ArrowRight";
   const stepDown = isVerticalAxis ? "ArrowDown" : "ArrowLeft";
-  const sheetExpandsKey = deps.mode === "top" ? stepDown : stepUp;
-  const sheetCollapsesKey = deps.mode === "top" ? stepUp : stepDown;
+  const flipped = deps.mode === "top" || deps.mode === "right";
+  const sheetExpandsKey = flipped ? stepDown : stepUp;
+  const sheetCollapsesKey = flipped ? stepUp : stepDown;
 
   const onHandleKey = (e: KeyboardEvent): void => {
     if (deps.isDestroyed()) return;
