@@ -261,6 +261,12 @@ The context is created without multisampling. The surface is one triangle that
 covers the canvas, and its edges are smoothed in the shader, so a multisampled
 buffer would add memory and fill work and change nothing on screen.
 
+It is created with `preserveDrawingBuffer`, which is not the usual advice. The
+renderer draws on demand, not every frame, and without multisampling WebKit on
+Linux puts each frame on screen one draw late: the first frame never shows, and
+a new colour arrives with the next move. Keeping the buffer makes the frame
+that was drawn the frame that is shown, in every engine.
+
 ## Browser support
 
 WebGL 1 is required: Chrome 9, Safari 5.1, Firefox 4. In practice the floor is

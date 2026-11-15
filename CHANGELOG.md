@@ -22,7 +22,7 @@ Fixes to the WebGL renderer (`@surdeddd/bottom-sheet/webgl`), found by measuring
 
 ### Changed
 
-- **No multisampled buffer** — the surface is one triangle whose edges are smoothed in the shader, so the 4x multisampled context bought nothing. At a device pixel ratio of 3 that was a 1179×2556 buffer with four samples a pixel.
+- **No multisampled buffer** — the surface is one triangle whose edges are smoothed in the shader, so the 4x multisampled context bought nothing. At a device pixel ratio of 3 that was a 1179×2556 buffer with four samples a pixel. The context keeps its drawing buffer between frames instead (`preserveDrawingBuffer`): without multisampling WebKit on Linux showed every frame one draw late.
 - **`/webgl` is 6.4 KB gzip**, up from 5.9 KB.
 
 ### Added

@@ -77,7 +77,7 @@ export const createGLHandle = (onLost: () => void): GLHandle | null => {
     antialias: false,
     depth: false,
     stencil: false,
-    preserveDrawingBuffer: false,
+    preserveDrawingBuffer: true,
   };
 
   let gl: WebGLRenderingContext | null = null;
