@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.3]
+
+Release process only: no code or documentation in the package changes.
+
+### Fixed
+
+- **The npm page shows the English README.** npm reads the readme from the package directory and, with `README.md` and `README.ru.md` side by side, picked the Russian one, so the npm page has been in Russian since 0.23.4. The release workflow now leaves `README.ru.md` out before publishing. It stays in the repository.
+
 ## [0.24.2]
 
 Documentation and demo only: no code in the package changes.
