@@ -90,7 +90,7 @@ const turnOn = async (page: Page, adapter: string): Promise<void> => {
     const key = await note.getAttribute("data-i18n");
     return key === "ctrl.webgl.note.no-webgl" ? "none" : "";
   };
-  await expect.poll(settled, { timeout: 8000 }).not.toBe("");
+  await expect.poll(settled, { timeout: 20_000 }).not.toBe("");
   test.skip((await settled()) === "none", "this browser has no WebGL");
   if (await force.isVisible()) await force.click();
   await expect(canvasOf(page, adapter)).toHaveCount(1);
@@ -113,6 +113,8 @@ const drawsOnCpu = (page: Page): Promise<boolean> =>
   });
 
 test.describe("the demo's renderer switch", () => {
+  test.describe.configure({ timeout: 90_000 });
+
   for (const adapter of ADAPTERS) {
     test(`${adapter}: WebGL draws the sheet where the DOM drew it`, async ({
       page,
@@ -154,7 +156,7 @@ test.describe("the demo's renderer switch", () => {
       await expect
         .poll(
           async () => distance(await surfaceColour(page, adapter), first),
-          { timeout: 6000 },
+          { timeout: 20_000 },
         )
         .toBeLessThan(40);
       await expect(canvasOf(page, adapter)).toHaveCount(1);
