@@ -84,6 +84,9 @@ jobs:
       - name: Bundle-size budget (size-limit)
         run: npm run size
 
+      - name: Drop README.ru.md so the npm page shows the English README
+        run: rm README.ru.md
+
       - name: npm pack --dry-run (tarball contents preview)
         run: npm pack --dry-run
 
