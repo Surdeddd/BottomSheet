@@ -26,11 +26,17 @@ const sheetOf = (page: Page, adapter: string): Locator =>
 const canvasOf = (page: Page, adapter: string): Locator =>
   page.locator(`${screen(adapter)} canvas`);
 
-const open = async (page: Page, hash = ""): Promise<void> => {
-  await page.goto(`/${hash}`);
+const open = async (page: Page): Promise<void> => {
+  await page.goto("/#webgl=1");
   await page.waitForSelector(".device-screen:not([hidden]) .bs-sheet", {
     state: "attached",
   });
+  await page.locator(TOGGLE).uncheck();
+  await expect(page.locator(NOTE)).toHaveAttribute(
+    "data-i18n",
+    "ctrl.webgl.note.dom",
+  );
+  await expect(canvasOf(page, "react")).toHaveCount(0);
 };
 
 const pick = async (page: Page, adapter: string): Promise<void> => {
@@ -114,6 +120,29 @@ const drawsOnCpu = (page: Page): Promise<boolean> =>
 
 test.describe("the demo's renderer switch", () => {
   test.describe.configure({ timeout: 90_000 });
+
+  test("stays off the workbench unless the link asks for it", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.waitForSelector(".device-screen:not([hidden]) .bs-sheet", {
+      state: "attached",
+    });
+    await page.waitForTimeout(800);
+
+    await expect(page.locator(TOGGLE)).toBeHidden();
+    await expect(page.locator(".device-screen canvas")).toHaveCount(0);
+    expect(await page.evaluate(() => location.hash)).not.toContain("webgl");
+  });
+
+  test("the link brings it back, marked experimental", async ({ page }) => {
+    await open(page);
+
+    await expect(page.locator(TOGGLE)).toBeVisible();
+    await expect(page.locator("label", { has: page.locator(TOGGLE) })).toContainText(
+      "experimental",
+    );
+  });
 
   for (const adapter of ADAPTERS) {
     test(`${adapter}: WebGL draws the sheet where the DOM drew it`, async ({

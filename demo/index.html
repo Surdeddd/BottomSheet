@@ -639,27 +639,29 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <input type="checkbox" id="tg-rubber" checked />
           <span data-i18n="ctrl.rubber">rubber-band</span>
         </label>
-        <label class="toggle">
-          <input type="checkbox" id="tg-webgl" />
-          <span data-i18n="ctrl.webgl">WebGL renderer</span>
-        </label>
-        <p
-          class="control-note"
-          id="renderer-note"
-          role="status"
-          data-i18n="ctrl.webgl.note.dom"
-        >
-          The browser paints the sheet. This is the default.
-        </p>
-        <button
-          class="chip"
-          id="renderer-force"
-          type="button"
-          data-i18n="ctrl.webgl.force"
-          hidden
-        >
-          draw on the CPU anyway
-        </button>
+        <div class="renderer-switch" id="renderer-switch" hidden>
+          <label class="toggle">
+            <input type="checkbox" id="tg-webgl" />
+            <span data-i18n="ctrl.webgl">WebGL renderer (experimental)</span>
+          </label>
+          <p
+            class="control-note"
+            id="renderer-note"
+            role="status"
+            data-i18n="ctrl.webgl.note.dom"
+          >
+            The browser paints the sheet. This is the default.
+          </p>
+          <button
+            class="chip"
+            id="renderer-force"
+            type="button"
+            data-i18n="ctrl.webgl.force"
+            hidden
+          >
+            draw on the CPU anyway
+          </button>
+        </div>
       </div>
 
       <div class="control-group">
@@ -949,9 +951,10 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
             An opt-in second renderer paints the surface on the GPU: it bends
             with drag velocity and hands the text back to the DOM when it
             settles. Layout, scrolling and the accessibility tree never leave
-            the DOM. Switch it on in the workbench above.
+            the DOM. Experimental: the text can shift by a few pixels when it
+            moves into the texture.
           </p>
-          <div class="feature-spec mono">/webgl · 6.4 KB · DOM fallback</div>
+          <div class="feature-spec mono">/webgl · 6.4 KB · experimental</div>
         </article>
 
         <article class="feature" data-viz="zones">

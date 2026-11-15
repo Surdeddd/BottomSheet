@@ -35,7 +35,9 @@ export const wireRendererSwitch = (
   opts: RendererSwitchOptions,
 ): { sync: () => void } => {
   const { settings } = opts;
+  const container = document.getElementById("renderer-switch");
   const toggle = document.getElementById("tg-webgl") as HTMLInputElement | null;
+  let revealed = false;
   const note = document.getElementById("renderer-note");
   const force = document.getElementById("renderer-force");
   let outcome: Outcome = null;
@@ -48,6 +50,8 @@ export const wireRendererSwitch = (
   };
 
   const render = (): void => {
+    if (settings.webgl) revealed = true;
+    if (container) container.hidden = !revealed;
     const key = noteKey();
     if (toggle) {
       toggle.checked = settings.webgl;

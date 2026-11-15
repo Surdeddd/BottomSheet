@@ -49,8 +49,8 @@ export function encode(settings: DemoSettings, adapter: AdapterKey): string {
   p.set("scrimA", settings.scrimAboveSheet ? "1" : "0");
   p.set("scrimT", settings.scrimTapToClose ? "1" : "0");
   p.set("scrimF", settings.scrimFloatingAction ? "1" : "0");
-  p.set("webgl", settings.webgl ? "1" : "0");
-  p.set("cpu", settings.webglOnCpu ? "1" : "0");
+  if (settings.webgl) p.set("webgl", "1");
+  if (settings.webglOnCpu) p.set("cpu", "1");
   return "#" + p.toString();
 }
 

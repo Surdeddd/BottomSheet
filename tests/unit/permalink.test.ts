@@ -44,6 +44,8 @@ describe("permalink encode/decode round-trip", () => {
       scrimAboveSheet: _sa,
       scrimTapToClose: _st,
       scrimFloatingAction: _sf,
+      webgl: _wg,
+      webglOnCpu: _wc,
       ...structural
     } = sample;
     expect(out.settings).toMatchObject(structural);
@@ -66,6 +68,8 @@ describe("permalink encode/decode round-trip", () => {
       scrimAboveSheet: _sa,
       scrimTapToClose: _st,
       scrimFloatingAction: _sf,
+      webgl: _wg,
+      webglOnCpu: _wc,
       ...structural
     } = edge;
     expect(out.settings).toMatchObject(structural);
@@ -180,10 +184,13 @@ describe("writeHash — throttle delay (250ms)", () => {
 });
 
 describe("permalink and the renderer", () => {
-  it("leaves the DOM renderer out of the picture by default", () => {
-    const out = decode(encode({ ...sample, webgl: false, webglOnCpu: false }, "react"));
-    expect(out.settings.webgl).toBe(false);
-    expect(out.settings.webglOnCpu).toBe(false);
+  it("keeps the renderer out of the link while it is off", () => {
+    const hash = encode({ ...sample, webgl: false, webglOnCpu: false }, "react");
+    expect(hash).not.toContain("webgl");
+    expect(hash).not.toContain("cpu");
+    const out = decode(hash);
+    expect(out.settings.webgl).toBeUndefined();
+    expect(out.settings.webglOnCpu).toBeUndefined();
   });
 
   it("carries the WebGL renderer and the permission to draw on the CPU", () => {

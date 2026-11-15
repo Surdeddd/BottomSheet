@@ -1471,6 +1471,14 @@ html:not(.has-stage) .asm-item {
   opacity: 0.45;
   cursor: not-allowed;
 }
+.renderer-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.renderer-switch[hidden] {
+  display: none;
+}
 #renderer-force {
   align-self: flex-start;
   text-transform: none;
