@@ -19,6 +19,9 @@ it will be before 1.0:
 - The custom element's attribute names and event names.
 - The `--bs-*` custom properties and the `.bs-*` class names.
 
+One exception: `/webgl` is [experimental](webgl.md#known-issues). Its options
+and behaviour may change in any release, and it may be removed before 1.0.
+
 What 0.x releases do change is behaviour at the edges: what a method does on
 a sheet that is already there, which gestures an option blocks, when an event
 fires. Each such change is listed in the [changelog](../CHANGELOG.md) under
@@ -283,7 +286,8 @@ behaviour change without a major version.
 ### Not frozen
 
 Anything not exported from an entry point: the controllers, the primitives,
-the features' internals and the engine's private fields. The DOM the
+the features' internals and the engine's private fields. The experimental
+`/webgl` entry is not frozen either. The DOM the
 components render is frozen only as far as the documented class names and
 `data-` attributes go.
 

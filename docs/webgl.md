@@ -1,5 +1,10 @@
 # WebGL renderer
 
+> **Experimental.** The text visibly shifts when a drag starts and when the
+> sheet settles, and the options may change, or the renderer may be removed,
+> before 1.0. In production, use the default DOM renderer. See
+> [Known issues](#known-issues).
+
 An opt-in renderer that paints the sheet surface on the GPU. The DOM renderer
 remains the default and is unchanged — this adds a second way to draw, not a
 replacement.
@@ -84,6 +89,22 @@ screen, and the footer is pinned to that edge. The pinned footer is not lifted
 into the texture; it stays in the DOM and flat while the surface bends. While
 the sheet moves it paints the sheet's surface colour, because rows pass behind
 it during motion and a transparent footer would show them.
+
+## Known issues
+
+- **The text shifts when a drag starts and when the sheet settles.** At those
+  two moments the text moves from the DOM into a texture drawn on a 2D canvas,
+  and back. The canvas lays text out on its own: fonts, line breaks,
+  `letter-spacing` and `text-transform` do not match the browser exactly, so
+  the text jumps by a few pixels. `liftContent: false` keeps the text in the
+  DOM and avoids the jump, but then the text does not bend with the surface.
+- **Text meant only for screen readers can show up in the texture.** The
+  capture skips elements that are hidden, transparent or not displayed, but
+  not text hidden by clipping, such as a live region.
+- **The bend can look like jitter.** It follows the drag velocity, so an uneven
+  drag shakes the top edge. `jelly: 0` turns it off.
+- **Safari hides the renderer's name**, so the check for a software rasteriser
+  cannot fire there.
 
 ## Options
 

@@ -637,7 +637,7 @@ const sheet = new BottomSheetCore({
 | `/react` `/vue` `/svelte` `/solid` `/qwik` | от 27 до 33 KB | Полный движок вместе с адаптером |
 | `/element` | 33.3 KB | Полный движок, элемент и его стили |
 | `/overlay` | 8.4 KB | Отдельный [оверлей](docs/overlay.md) |
-| `/webgl` | 6.4 KB | Необязательный [рендерер на GPU](docs/webgl.md) для поверхности шторки |
+| `/webgl` | 6.4 KB | Экспериментальный [рендерер на GPU](docs/webgl.md) для поверхности шторки |
 | `/debug` | 0.9 KB | `attachDebugOverlay(engine)`: панель с состоянием движка в реальном времени |
 
 Опция, для которой не подключена возможность, один раз предупреждает в
@@ -656,7 +656,7 @@ Chrome и Edge 80, Safari 13.1 (iOS 13.4), Firefox 72. Эту границу з�
 | | |
 | --- | --- |
 | Фреймворки | [React](docs/react.md) · [Vue](docs/vue.md) · [Svelte](docs/svelte.md) · [Solid](docs/solid.md) · [Qwik](docs/qwik.md) · [Preact](docs/preact.md) · [Веб-компонент](docs/web-component.md) · [Без фреймворка](docs/vanilla.md) · [Angular](docs/angular.md) · [Lit](docs/lit.md) · [Astro](docs/astro.md) |
-| Темы | [Стилизация](docs/theming.md) · [Якоря и сцены скрима](docs/anchors.md) · [Содержимое на каждой точке](docs/content-fit.md) · [Оверлей](docs/overlay.md) · [RTL](docs/rtl.md) · [Рендерер WebGL](docs/webgl.md) · [Плагины](docs/plugins.md) |
+| Темы | [Стилизация](docs/theming.md) · [Якоря и сцены скрима](docs/anchors.md) · [Содержимое на каждой точке](docs/content-fit.md) · [Оверлей](docs/overlay.md) · [RTL](docs/rtl.md) · [Рендерер WebGL (экспериментальный)](docs/webgl.md) · [Плагины](docs/plugins.md) |
 | Рецепты | [Десять разобранных примеров](docs/recipes/README.md): панель фильтров, оформление заказа, тред комментариев, навигационная панель, мини-плеер и другие |
 | Примеры | [Запускаемые проекты](https://github.com/Surdeddd/BottomSheet/tree/main/examples) для React, Vue, Svelte, Solid, Lit, веб-компонента и движка без фреймворка |
 | Переход с другой библиотеки | [С vaul или react-modal-sheet](docs/MIGRATION.md) |

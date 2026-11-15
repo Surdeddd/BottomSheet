@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.2]
+
+Documentation and demo only: no code in the package changes.
+
+### Changed
+
+- **The WebGL renderer is marked experimental.** On real devices the text visibly shifts when a drag starts and when the sheet settles: it moves between the DOM and a texture drawn on a 2D canvas, which lays text out differently from the browser. The guide lists the known issues, the README and `llms.txt` mark the entry as experimental, and `docs/api-stability.md` leaves `/webgl` out of what 1.0 freezes. Use the default DOM renderer in production.
+- **The demo's WebGL switch is off the workbench.** It shows up when the link carries `#webgl=1`, for testing on devices, and is labelled experimental.
+
 ## [0.24.1]
 
 Fixes to the WebGL renderer (`@surdeddd/bottom-sheet/webgl`), found by measuring it in Chromium, WebKit and Firefox and by switching it on in the demo. Nothing outside the `/webgl` entry changes.

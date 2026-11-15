@@ -1,7 +1,7 @@
 # WebGL renderer — design
 
 **Date:** 2026-07-26
-**Status:** approved, phase 1 in progress
+**Status:** shipped; experimental since 0.24.2, see [Known issues](webgl.md#known-issues)
 
 ## Problem
 
