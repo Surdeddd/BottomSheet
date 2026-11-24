@@ -139,5 +139,7 @@ so the sheet is live as soon as the page is, not when it scrolls into view.
   engine writes it on every change of the stack. See
   [Theming → stacking](theming.md#stacking).
 - **Anchors and scrim stages** need the engine, which this adapter does not
-  hand out. For those, use the [custom element](web-component.md) inside a
-  Qwik component.
+  hand out, and they cannot be slots: an anchor is an element the engine
+  moves into its own wrapper, and Qwik projects a slot back to where the
+  component rendered it on every render. For those, use the
+  [custom element](web-component.md) inside a Qwik component.

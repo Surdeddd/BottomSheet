@@ -373,8 +373,11 @@
   pointer-events: auto;
 }
 
-.bs-root[data-bs-bounds] > :is(.bs-backdrop, .bs-screen, .bs-sheet, .bs-button-slot) {
+.bs-root[data-bs-bounds] > :is(.bs-backdrop, .bs-sheet, .bs-button-slot) {
   position: absolute;
+}
+.bs-root[data-bs-bounds] :is(.bs-screen, .bs-anchor, .bs-scrim-stage, .bs-scrim-overlay) {
+  position: absolute !important;
 }
 .bs-button-slot[data-side="left"] {
   left: 16px;

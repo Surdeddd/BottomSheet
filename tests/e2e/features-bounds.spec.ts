@@ -158,6 +158,55 @@ test.describe("bounds: what a percentage is a percentage of", () => {
     expect(seen.panel!.bottom - seen.sheet!.top).toBeCloseTo(360, 0);
   });
 
+  test("anchors, a scrim overlay, a scrim stage and the above-sheet scrim stay inside the panel", async ({
+    page,
+  }) => {
+    await mount(page, {
+      snapPoints: POINTS,
+      initial: "half",
+      bounds: "container",
+      scrimMode: "above-sheet",
+      panel: PANEL,
+    });
+    await settled(page);
+
+    const inside = await page.evaluate(() => {
+      const ids = [
+        window.lab.anchor({ position: "sheet-top-right" }),
+        window.lab.anchor({ position: "dock-top" }),
+        window.lab.scrimOverlay({ position: "top-left" }),
+        ...window.lab.stages([{ for: "half", position: "center" }]),
+      ];
+      const panel = document.querySelector("#panel-0")!.getBoundingClientRect();
+      const within = (selector: string): boolean => {
+        const r = document.querySelector(selector)!.getBoundingClientRect();
+        return (
+          r.width > 0 &&
+          r.left >= panel.left - 0.5 &&
+          r.right <= panel.right + 0.5 &&
+          r.top >= panel.top - 0.5 &&
+          r.bottom <= panel.bottom + 0.5
+        );
+      };
+      const scrim = document.querySelector("#scrim-0")!.getBoundingClientRect();
+      return {
+        marks: ids.map(id => within(`#${id}`)),
+        scrimLeft: Math.round(scrim.left - panel.left),
+        scrimTop: Math.round(scrim.top - panel.top),
+        scrimRight: Math.round(panel.right - scrim.right),
+        scrimBottom: Math.round(panel.bottom - scrim.bottom),
+      };
+    });
+
+    expect(inside.marks).toEqual([true, true, true, true]);
+    expect(inside).toMatchObject({
+      scrimLeft: 0,
+      scrimTop: 0,
+      scrimRight: 0,
+      scrimBottom: 200,
+    });
+  });
+
   test("a sheet bound to its panel does not rise for the on-screen keyboard", async ({
     page,
   }) => {

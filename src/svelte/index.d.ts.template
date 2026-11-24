@@ -100,6 +100,18 @@ export type BottomSheetProps<TId extends string = string> = Omit<
   contentLabel?: string;
   header?: Snippet<[EngineState & { activeId: TId }]>;
   footer?: Snippet<[EngineState & { activeId: TId }]>;
+  anchors?: Array<
+    Omit<AnchorOptions, "element"> & {
+      content: Snippet<[EngineState & { activeId: TId }]>;
+    }
+  >;
+  scrimStages?: Omit<ScrimStagesOptions, "stages"> & {
+    stages: Array<
+      Omit<ScrimStagesOptions["stages"][number], "element"> & {
+        content: Snippet<[EngineState & { activeId: TId }]>;
+      }
+    >;
+  };
   leftButton?: Snippet;
   rightButton?: Snippet;
   screen?: Snippet;

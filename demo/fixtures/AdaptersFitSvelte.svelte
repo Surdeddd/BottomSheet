@@ -8,6 +8,12 @@
   export const close = (): Promise<unknown> => sheet.close();
 </script>
 
+{#snippet pin()}
+  <button type="button" data-anchor="svelte">pin</button>
+{/snippet}
+{#snippet stage()}
+  <p data-stage="svelte">stage</p>
+{/snippet}
 <BottomSheet
   bind:this={sheet}
   snapPoints={POINTS}
@@ -16,6 +22,10 @@
   lockBodyScroll={false}
   focusTrap={TRAP}
   fitContentToSnap
+  anchors={[
+    { position: "sheet-top-right", showOn: ["half", "full"], content: pin },
+  ]}
+  scrimStages={{ stages: [{ for: "full", content: stage }] }}
 >
   {#snippet footer()}
     <button type="button" data-action="svelte">action</button>

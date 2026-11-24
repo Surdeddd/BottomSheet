@@ -81,6 +81,8 @@ Every [engine option](../README.md#options) is a prop. The component adds:
 | `header`, `footer` | none | Regions above and below the scroll area |
 | `leftButton`, `rightButton` | none | Buttons that float above the sheet's leading edge |
 | `screen` | none | Content of the scrim layer; fades in with `progress` |
+| `anchors` | none | [Anchors](anchors.md) as data: the engine's options plus a `node` each |
+| `scrimStages` | none | [Scrim stages](anchors.md#scrim-stages--enginesetscrimstagesopts) as data: the shared options plus `stages`, each with a `node` |
 | `backdrop` | `true` | Render the backdrop |
 | `closeOnBackdrop` | `true` | A tap on the backdrop closes the sheet |
 | `teleportTo` | none | Element, selector or `"body"` to move the sheet's DOM to. `teleport={false}` switches it off |
@@ -126,6 +128,7 @@ server and the client.
 - **Do not set `z-index` on `.bs-sheet`, `.bs-backdrop` or anchors.** The
   engine writes it on every change of the stack. See
   [Theming → stacking](theming.md#stacking).
-- **Anchors and scrim stages** have no props on this component. Add them
-  through the engine: `sheet.addAnchor()` and `sheet.setScrimStages()`; see
+- **Anchors and scrim stages** are attached again when the `anchors` or
+  `scrimStages` prop changes. For elements you own, the engine still takes
+  them directly: `sheet.addAnchor()` and `sheet.setScrimStages()`; see
   [Anchors and scrim stages](anchors.md).

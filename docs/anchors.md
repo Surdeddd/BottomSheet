@@ -164,12 +164,36 @@ const { addAnchor, setScrimStages } = useBottomSheet({ ... });
 addAnchor({ element: btnEl.value!, position: "sheet-top-center" });
 ```
 
-**Svelte** — on the controller:
+**Svelte** — props with a snippet each:
+
+```svelte
+{#snippet close()}<CloseButton />{/snippet}
+{#snippet teaser()}<Teaser />{/snippet}
+
+<BottomSheet
+  anchors={[{ position: "sheet-top-right", showOn: ["half", "full"], content: close }]}
+  scrimStages={{ stages: [{ for: "peek", content: teaser }] }}
+  ...
+/>
+```
+
+With elements of your own, use the component's `addAnchor()` and
+`setScrimStages()`, or the controller:
 
 ```ts
 const ctrl = createBottomSheet({ ... });
 ctrl.addAnchor({ element: btnEl, showOn: ["full"] });
 ctrl.setScrimStages({ stages: [...] });
+```
+
+**Solid** — the same props as React, with a `node` each:
+
+```tsx
+<BottomSheet
+  anchors={[{ position: "sheet-top-right", showOn: ["half", "full"], node: <CloseButton /> }]}
+  scrimStages={{ stages: [{ for: "peek", node: <Teaser /> }] }}
+  ...
+/>
 ```
 
 **Web Component** — declarative slot + methods:

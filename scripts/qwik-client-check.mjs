@@ -21,7 +21,7 @@ export default component$(() => {
       <BottomSheet
         snapPoints={[
           { id: "closed", size: 0 },
-          { id: "half", size: 300 },
+          { id: "half", size: 300, label: "Half open" },
           { id: "full", size: 500 },
         ]}
         open={open.value}
@@ -135,9 +135,21 @@ try {
   await until("engine attaches at the closed point", size, "0px");
   await until("starts closed", active, "closed");
 
+  await until("a sheet without a focus trap is a region", () => sheet.getAttribute("role"), "region");
+
   await press("#open");
   await until("open=true opens the sheet", active, "half");
   await until("opening is reported through onOpenChange$", text("#open-state"), "true");
+  await until(
+    "the slider reads the label of the point",
+    () => tab.locator(".bs-handle").getAttribute("aria-valuetext"),
+    "Half open",
+  );
+  await until(
+    "the live region says the label too",
+    async () => ((await tab.locator(".bs-sheet [role=status]").textContent()) ?? "").trim(),
+    "Half open",
+  );
 
   await press("#full");
   await until("snap moves the sheet to that point", active, "full");

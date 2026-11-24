@@ -10,7 +10,10 @@
   import { startsClosed } from "../core/primitives/snap-points";
   import { closedSnapId, snapLabel } from "../core/primitives/open-state";
   import type { AnchorOptions } from "../core/features/sheet-anchors";
-  import type { ScrimStagesOptions } from "../core/features/scrim-stages";
+  import type {
+    ScrimStageDef,
+    ScrimStagesOptions,
+  } from "../core/features/scrim-stages";
   import type {
     CloseReason,
     EngineState,
@@ -50,6 +53,18 @@
     contentLabel?: string;
     header?: Snippet<[EngineState & { activeId: TId }]>;
     footer?: Snippet<[EngineState & { activeId: TId }]>;
+    anchors?: Array<
+      Omit<AnchorOptions, "element"> & {
+        content: Snippet<[EngineState & { activeId: TId }]>;
+      }
+    >;
+    scrimStages?: Omit<ScrimStagesOptions, "stages"> & {
+      stages: Array<
+        Omit<ScrimStageDef, "element"> & {
+          content: Snippet<[EngineState & { activeId: TId }]>;
+        }
+      >;
+    };
     leftButton?: Snippet;
     rightButton?: Snippet;
     screen?: Snippet;
@@ -105,6 +120,8 @@
     contentLabel = "Sheet content",
     header,
     footer,
+    anchors,
+    scrimStages,
     leftButton,
     rightButton,
     screen,
@@ -154,6 +171,9 @@
   });
 
   let engine: BottomSheetEngine | null = null;
+  let ready = $state(false);
+  let anchorEls: HTMLElement[] = $state([]);
+  let stageEls: HTMLElement[] = $state([]);
   let restoreTeleport: (() => void) | null = null;
   let physicalMode: PhysicalSheetMode = $state(
     untrack(() => guessPhysicalMode(mode)),
@@ -250,6 +270,68 @@
     });
     if (ondrag) engine.on("drag", payload => ondrag(payload));
     if (onprogress) engine.on("progress", payload => onprogress(payload));
+    ready = true;
+  });
+
+  const kindOf = (animation: unknown): unknown =>
+    typeof animation === "string" ? animation : animation ? "custom" : null;
+
+  const anchorsKey = $derived(
+    JSON.stringify(
+      (anchors ?? []).map(a => [
+        a.position,
+        a.inset,
+        Array.isArray(a.showOn) ? a.showOn : a.showOn ? "fn" : null,
+        a.fadeRange,
+        a.interactive,
+        kindOf(a.animation),
+      ]),
+    ),
+  );
+
+  $effect(() => {
+    void anchorsKey;
+    if (!ready || !engine) return;
+    const live = engine;
+    const detachers = untrack(() =>
+      (anchors ?? []).map(({ content: _content, ...rest }, i) => {
+        const element = anchorEls[i];
+        return element ? live.addAnchor({ ...rest, element }) : () => {};
+      }),
+    );
+    return () => detachers.forEach(detach => detach());
+  });
+
+  const stagesKey = $derived(
+    JSON.stringify([
+      scrimStages?.position,
+      scrimStages?.inset,
+      scrimStages?.interactive,
+      kindOf(scrimStages?.animation),
+      (scrimStages?.stages ?? []).map(s => [
+        s.for,
+        s.forRange,
+        s.position,
+        s.inset,
+        s.interactive,
+        kindOf(s.animation),
+      ]),
+    ]),
+  );
+
+  $effect(() => {
+    void stagesKey;
+    if (!ready || !engine) return;
+    const live = engine;
+    return untrack(() => {
+      if (!scrimStages?.stages.length) return undefined;
+      const stages: ScrimStageDef[] = [];
+      scrimStages.stages.forEach(({ content: _content, ...rest }, i) => {
+        const element = stageEls[i];
+        if (element) stages.push({ ...rest, element });
+      });
+      return live.setScrimStages({ ...scrimStages, stages });
+    });
   });
 
   onDestroy(() => {
@@ -428,4 +510,12 @@
       {@render rightButton()}
     </div>
   {/if}
+  <div hidden>
+    {#each anchors ?? [] as anchor, i (i)}
+      <div bind:this={anchorEls[i]}>{@render anchor.content(viewState)}</div>
+    {/each}
+    {#each scrimStages?.stages ?? [] as stage, i (i)}
+      <div bind:this={stageEls[i]}>{@render stage.content(viewState)}</div>
+    {/each}
+  </div>
 </div>

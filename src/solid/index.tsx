@@ -11,7 +11,13 @@ import {
   untrack,
   type JSX,
 } from "solid-js";
+import { insert } from "solid-js/web";
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import type { AnchorOptions } from "../core/features/sheet-anchors";
+import type {
+  ScrimStageDef,
+  ScrimStagesOptions,
+} from "../core/features/scrim-stages";
 import {
   resolveTeleportTarget,
   teleportElements,
@@ -36,6 +42,14 @@ import type {
   SnapPointDef,
   SheetMode,
 } from "../core/types";
+
+export type BottomSheetAnchorProp = Omit<AnchorOptions, "element"> & {
+  node: JSX.Element;
+};
+
+export type BottomSheetScrimStagesProp = Omit<ScrimStagesOptions, "stages"> & {
+  stages: Array<Omit<ScrimStageDef, "element"> & { node: JSX.Element }>;
+};
 
 export type BottomSheetProps<TId extends string = string> = Omit<
   Partial<EngineConfig>,
@@ -66,6 +80,8 @@ export type BottomSheetProps<TId extends string = string> = Omit<
   onProgress?: (payload: SheetEventMap["progress"]) => void;
   onChange?: (state: EngineState & { activeId: TId }) => void;
   engineRef?: (engine: BottomSheetEngine | null) => void;
+  anchors?: BottomSheetAnchorProp[];
+  scrimStages?: BottomSheetScrimStagesProp;
   header?: JSX.Element;
   footer?: JSX.Element;
   leftButton?: JSX.Element;
@@ -103,6 +119,7 @@ export const BottomSheet = <TId extends string = string>(
 
   let engine: BottomSheetEngine | null = null;
   let restoreTeleport: (() => void) | null = null;
+  const [mounted, setMounted] = createSignal<BottomSheetEngine | null>(null);
   const [physicalMode, setPhysicalMode] = createSignal<PhysicalSheetMode>(
     guessPhysicalMode(untrack(() => props.mode)),
   );
@@ -138,6 +155,7 @@ export const BottomSheet = <TId extends string = string>(
 
     engine = new BottomSheetEngine(engineOpts);
     setPhysicalMode(engine.getMode());
+    setMounted(engine);
     props.engineRef?.(engine);
 
     const sync = (): void => {
@@ -199,6 +217,36 @@ export const BottomSheet = <TId extends string = string>(
     engine?.destroy();
     engine = null;
     props.engineRef?.(null);
+  });
+
+  const hostOf = (node: JSX.Element): HTMLElement => {
+    const host = document.createElement("div");
+    insert(host, node);
+    return host;
+  };
+
+  createEffect(() => {
+    const live = mounted();
+    const anchors = props.anchors;
+    if (!live || !anchors?.length) return;
+    const detachers = anchors.map(({ node, ...rest }) =>
+      live.addAnchor({ ...rest, element: hostOf(node) }),
+    );
+    onCleanup(() => detachers.forEach(detach => detach()));
+  });
+
+  createEffect(() => {
+    const live = mounted();
+    const staged = props.scrimStages;
+    if (!live || !staged?.stages.length) return;
+    const detach = live.setScrimStages({
+      ...staged,
+      stages: staged.stages.map(({ node, ...rest }) => ({
+        ...rest,
+        element: hostOf(node),
+      })),
+    });
+    onCleanup(detach);
   });
 
   createEffect(

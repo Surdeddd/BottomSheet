@@ -88,6 +88,13 @@ Every [engine option](../README.md#options) is a prop. The component adds:
 | `leftButton`, `rightButton` | Buttons that float above the sheet's leading edge |
 | `screen` | Content of the scrim layer; fades in with `progress` |
 
+Anchors and scrim stages are props that carry a snippet each:
+
+| Prop | What it does |
+| --- | --- |
+| `anchors` | [Anchors](anchors.md) as data: the engine's options plus `content`, a snippet that receives the state |
+| `scrimStages` | [Scrim stages](anchors.md#scrim-stages--enginesetscrimstagesopts) as data: the shared options plus `stages`, each with its own `content` snippet |
+
 ### Callbacks
 
 | Prop | Receives | When |
@@ -195,6 +202,7 @@ which hides it until then.
 - **Do not set `z-index` on `.bs-sheet`, `.bs-backdrop` or anchors.** The
   engine writes it on every change of the stack. See
   [Theming → stacking](theming.md#stacking).
-- **Anchors and scrim stages** have no props on this component. Add them
-  through `addAnchor()` and `setScrimStages()`; see
-  [Anchors and scrim stages](anchors.md).
+- **Anchors and scrim stages** are read when their options change, not when
+  the array is a new one: pass a new `position`, `showOn` and so on to move an
+  anchor. `addAnchor()` and `setScrimStages()` stay available for elements you
+  own; see [Anchors and scrim stages](anchors.md).

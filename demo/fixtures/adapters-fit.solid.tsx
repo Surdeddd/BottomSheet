@@ -22,6 +22,20 @@ export const mountSolid = (): AdapterHandle => {
         lockBodyScroll={false}
         focusTrap={TRAP}
         fitContentToSnap
+        anchors={[
+          {
+            position: "sheet-top-right",
+            showOn: ["half", "full"],
+            node: (
+              <button type="button" data-anchor="solid">
+                pin
+              </button>
+            ),
+          },
+        ]}
+        scrimStages={{
+          stages: [{ for: "full", node: <p data-stage="solid">stage</p> }],
+        }}
         engineRef={next => {
           engine = next;
         }}
