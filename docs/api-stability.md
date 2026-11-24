@@ -30,33 +30,39 @@ fires. Each such change is listed in the [changelog](../CHANGELOG.md) under
 ## The road to 1.0
 
 1.0 is a promise that the list above, and the behaviour behind it, changes
-only with a major version. Three things stand between 0.24 and that promise:
+only with a major version. Two things stand between 0.25 and that promise:
 
-1. **Field time for 0.24.** It changed when lifecycle events fire, what
-   `persistent` blocks and how the backdrop options work. Those were the last
-   known places where the engine and its documentation disagreed; they need a
-   release cycle in real apps before they are frozen.
+1. **Field time for 0.24 and 0.25.** 0.24 changed when lifecycle events fire,
+   what `persistent` blocks and how the backdrop options work; 0.25 answered
+   the design questions below. Both need a release cycle in real apps before
+   they are frozen.
 2. **A real-device pass for the on-screen keyboard.** Resting on the keyboard
    is tested against an emulated `visualViewport`. iOS Safari and Android
    Chrome each need a manual pass, and the result recorded here.
-3. **The two open design questions below**, which would be breaking if
-   answered after 1.0.
 
-Open questions:
+Answered in 0.25, because the answers would have been breaking after 1.0:
 
-- **What a percentage is a percentage of.** `"50%"` and `"full"` are measured
-  against the window. A sheet inside a panel or a split view has no way to
-  say "half of my container". This needs an option, and a decision on its
-  default.
+- **What a move's promise says.** `snapTo()`, `open()`, `close()`, `expand()`
+  and `collapse()` resolve with `"landed"`, `"vetoed"` or `"replaced"`.
+- **What a percentage is a percentage of.** The window, unless
+  `bounds: "container"` says the sheet's nearest positioned ancestor.
+- **The role of a sheet that is not modal.** A `region` in every adapter; a
+  `dialog` with `aria-modal` only with `focusTrap`.
+- **What a screen reader hears for a snap point.** Its `label`, or its `id`.
 
-- **The role of a sheet that is not modal.** With `focusTrap` every adapter
-  renders `role="dialog"` and `aria-modal`. Without it, React and Vue render
-  `role="region"`, while Svelte, Solid, Qwik and the custom element keep
-  `role="dialog"`. Both are valid ARIA; they should be the same.
+Not planned for 1.0:
 
-Not planned for 1.0: an Angular package (the [recipe](angular.md) and the
-custom element cover it), compound components, and scaling the page behind
-the sheet.
+- an Angular package (the [recipe](angular.md) and the custom element cover
+  it), compound components, and scaling the page behind the sheet;
+- **anchors and scrim stages as a separate feature.** They live in the engine
+  class, so the slim core carries them. Moving them out would make
+  `addAnchor()`, `setScrimStages()` and `setScrimOverlay()` something a feature
+  adds, on the engine and on every adapter's handle, and those methods are in
+  the list above. The saving goes to `/core` users only;
+- **anchors in Qwik.** An anchor is an element the engine moves into its own
+  wrapper, and Qwik projects a slot back to where the component rendered it
+  on every render. It needs an anchor the engine positions in place, which is
+  an addition and can come after 1.0.
 
 ## Removed in 0.14.0
 

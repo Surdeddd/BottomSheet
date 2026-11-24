@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0]
+
+The questions that 1.0 would have frozen are answered here, while the answers are still additive. Two of them change what existing code sees, and are listed first.
+
+### Changed
+
+- **A move's promise says how it ended** — `snapTo()`, `open()`, `close()`, `expand()` and `collapse()` resolved with nothing, whether the sheet landed, the move was refused, or another move took over. They resolve with `"landed"`, `"vetoed"` or `"replaced"`: landed when the sheet rests on the point that was asked for, also when it was there already; vetoed when the move never began, because a `before-snap` or `before-close` listener refused it, `persistent` or `disableClose` blocked it, the point is unknown or not allowed, or the sheet is destroyed; replaced when another move, a drag, the move's own `signal` or `destroy()` took over on the way. Code that awaits the promise or ignores it is not affected. A function declared to return `Promise<void>` that returns one of these calls no longer type-checks: declare `Promise<MoveOutcome>`, or `await` the call.
+- **`open()` on an opening sheet waits for it** — called without an id on a sheet that was already on its way open, `open()` resolved at once. It resolves when that opening lands, with its outcome.
+- **A sheet that does not trap focus is a `region` in every adapter** — React and Vue rendered `role="region"` without `focusTrap`; Svelte, Solid, Qwik and `<bottom-sheet>` rendered `role="dialog"`, and the custom element carried `aria-modal="false"`. All of them now render a `region` without `focusTrap` and a `dialog` with `aria-modal="true"` with it. A selector or a test that looks for `[role="dialog"]` on a sheet without `focusTrap` needs the new role.
+
+### Added
+
+- **`bounds: "container"`** — sizes are measured against the window: `"50%"` is half of it, `"full"` all of it, and a sheet inside a panel had no way to say "half of my panel". With `bounds: "container"` the engine measures `"full"`, percentages, CSS lengths that contain a percentage and `maxHeight` against the sheet's nearest positioned ancestor, follows that ancestor when it is resized, and the stylesheet places the sheet, its backdrop, scrim, anchors, scrim stages and button slots inside it. The default stays `"window"`. A sheet bound to a container does not rise for the on-screen keyboard, which belongs to the window; without a positioned ancestor the option falls back to the window.
+- **`label` on a snap point** — a screen reader heard the raw id of a point, such as "minimized", as the slider's value and in the live region. `{ id: "peek", size: 120, label: "Collapsed" }` gives it a name in the language of the interface. The state has `activeLabel` next to `activeId`.
+- **`MoveOutcome`** — the type of the three outcomes, exported from every entry that exports the engine's types.
+- **`anchors` and `scrimStages` as props in Svelte and Solid** — they were available there only through `addAnchor()` and `setScrimStages()` with elements of your own. Solid takes a `node` with each, as React does; Svelte takes a `content` snippet, which receives the state.
+- **Descriptions in the published types** — every engine option carries its description and default from the README, so an editor shows them on hover. The sources stay free of comments; the build writes them into `dist`.
+
+### Fixed
+
+- **The retarget test no longer depends on the machine's load** — it measured how far one frame moved a tween in real time, and failed with a correct tween when a frame took long. It runs on a faked clock and asserts the exact continuation.
+
+### Sizes
+
+The four additions cost about 0.35 KB gzip in every bundle that holds the engine: the full engine is 26.0 KB (25.6 before), the slim core 22.2 KB (21.9). The Svelte and Solid adapters also carry the new props and are 29.3 KB and 27.9 KB (28.4 and 27.4).
+
 ## [0.24.4]
 
 The WebGL renderer (`@surdeddd/bottom-sheet/webgl`), reworked after it was tried on real devices, where the surface shook during a drag and the text jumped at both ends of one. Nothing outside the `/webgl` entry changes, and the renderer stays experimental until it has been checked on real phones.
