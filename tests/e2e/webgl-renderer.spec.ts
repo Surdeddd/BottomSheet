@@ -94,6 +94,8 @@ test.describe("WebGL renderer", () => {
   test("lifts the content into the texture while dragging and hands it back", async ({
     page,
   }) => {
+    await page.goto(`${FIXTURE}?lift=1`);
+    await page.waitForSelector(SHEET);
     const unsupported = await page.getAttribute("#status", "data-unsupported");
     test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
 
@@ -147,6 +149,8 @@ test.describe("WebGL renderer", () => {
   test("hands the content back promptly, not when the spring finishes", async ({
     page,
   }) => {
+    await page.goto(`${FIXTURE}?lift=1`);
+    await page.waitForSelector(SHEET);
     const unsupported = await page.getAttribute("#status", "data-unsupported");
     test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
 
@@ -208,6 +212,8 @@ test.describe("WebGL renderer", () => {
   test("lifts backgrounds, borders and images too, not just text", async ({
     page,
   }) => {
+    await page.goto(`${FIXTURE}?lift=1`);
+    await page.waitForSelector(SHEET);
     const unsupported = await page.getAttribute("#status", "data-unsupported");
     test.skip(!!unsupported, `renderer bailed: ${unsupported}`);
 

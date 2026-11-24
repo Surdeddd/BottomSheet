@@ -132,6 +132,10 @@
   box-shadow: none;
 }
 
+.bs-sheet[data-bs-webgl="on"] {
+  border-color: transparent;
+}
+
 .bs-sheet[data-mode="left"] .bs-content,
 .bs-sheet[data-mode="left"] .bs-header,
 .bs-sheet[data-mode="left"] .bs-footer {

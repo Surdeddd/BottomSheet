@@ -49,6 +49,7 @@ const engine = new BottomSheetEngine({
   features: [
     webglRenderer({
       allowSoftware: true,
+      liftContent: true,
       onUnsupported: reason => {
         status.dataset.unsupported = reason;
       },

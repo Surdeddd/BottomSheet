@@ -75,11 +75,15 @@ const engine = new BottomSheetEngine({
     { id: "full", size: frame ? 400 : "80%" },
   ],
   initial: "minimized",
+  ...(params.has("slow")
+    ? { animation: "linear" as const, duration: Number(params.get("slow")) }
+    : {}),
   lockBodyScroll: !freeScroll,
   features: [
     webglRenderer({
-      jelly: 0.7,
+      jelly: Number(params.get("jelly") ?? 0.7),
       allowSoftware: params.get("software") !== "refuse",
+      liftContent: params.has("lift"),
       ...(params.has("sheen") ? { sheen: Number(params.get("sheen")) } : {}),
       onUnsupported: reason => {
         status.dataset.unsupported = reason;

@@ -4,6 +4,7 @@ import type {
   WebGLRendererOptions,
   WebGLUnsupportedReason,
 } from "./types";
+import { createBend, type Bend } from "./bend";
 import {
   createGLHandle,
   drawsOnCpu,
@@ -28,10 +29,20 @@ const DEFAULT_JELLY = 0.5;
 const DEFAULT_SHADOW = 1;
 const DEFAULT_SHEEN = 0.35;
 const DEFAULT_GLASS = 0.6;
-const MAX_BEND_PX = 22;
-const BEND_DECAY_HELD = 0.86;
-const BEND_DECAY_FREE = 0.62;
-const BEND_REST = 0.35;
+const GLASS_FULL_PX = 22;
+const HANDBACK_MS = 40;
+const HANDBACK_PER_FRAME = 0.62;
+const MAX_FRAME_MS = 64;
+const FLAT_PX = 0.35;
+
+type Edge = { position: number; axis: 0 | 1; inward: 1 | -1 };
+
+const edgeOf = (mode: string | undefined, rect: DOMRect): Edge => {
+  if (mode === "top") return { position: rect.bottom, axis: 0, inward: -1 };
+  if (mode === "left") return { position: rect.right, axis: 1, inward: -1 };
+  if (mode === "right") return { position: rect.left, axis: 1, inward: 1 };
+  return { position: rect.top, axis: 0, inward: 1 };
+};
 
 const prefersReducedMotion = (): boolean =>
   typeof matchMedia === "function" &&
@@ -110,13 +121,21 @@ export const webglRenderer = (
     const shadowStrength = options.shadow ?? DEFAULT_SHADOW;
     const sheenStrength = options.sheen ?? DEFAULT_SHEEN;
     const glassStrength = options.glass ?? DEFAULT_GLASS;
-    const liftContent = options.liftContent !== false;
+    const liftContent = options.liftContent === true;
 
     let handle: GLHandle | null = null;
     let program: SurfaceProgram | null = null;
     let frameId: number | null = null;
     let running = false;
-    let bend = 0;
+    let bend: Bend | null = null;
+    let inward = 0;
+    let offset = 0;
+    let axis: 0 | 1 = 0;
+    let drive = 1;
+    let edgeSeen = Number.NaN;
+    let wasMoving = false;
+    let tickedAt = 0;
+    let drawnSinceTick = false;
     let disposed = false;
     let capture: ContentCapture | null = null;
     let releaseText: (() => void) | null = null;
@@ -264,15 +283,15 @@ export const webglRenderer = (
       };
     };
 
-    const paint = (): void => {
+    const paint = (rect?: DOMRect): void => {
       if (disposed || !handle || !program) return;
-      const sheet = element.getBoundingClientRect();
+      const sheet = rect ?? element.getBoundingClientRect();
       const area = handle.canvas.getBoundingClientRect();
       if (sheet.width <= 0 || sheet.height <= 0) return;
       if (area.width <= 0 || area.height <= 0) return;
       const dpr = dprOf();
       resizeDrawingBuffer(handle, area.width, area.height, dpr);
-      const motion = Math.min(1, Math.abs(bend) / MAX_BEND_PX);
+      const motion = Math.min(1, Math.abs(offset) / GLASS_FULL_PX);
       const frame: SurfaceFrame = {
         x: sheet.left - area.left,
         y: sheet.top - area.top,
@@ -283,7 +302,8 @@ export const webglRenderer = (
         shadow: shadowStrength,
       };
       program.draw(frame, {
-        bend,
+        bend: offset,
+        axis,
         dpr,
         sheen: sheenStrength,
         glass: glassStrength * motion,
@@ -294,20 +314,47 @@ export const webglRenderer = (
 
     const tick = (): void => {
       if (disposed) return;
-      const held = ctx.isDragging();
-      if (held || !ctx.isAnimating()) paint();
-      bend *= held ? BEND_DECAY_HELD : BEND_DECAY_FREE;
-      const flat = Math.abs(bend) < BEND_REST;
-
-      if (!held && flat && capture) {
-        bend = 0;
-        releaseCapture();
-        paint();
+      const now = performance.now();
+      const elapsed = Math.min(now - tickedAt, MAX_FRAME_MS);
+      tickedAt = now;
+      const sheet = element.getBoundingClientRect();
+      const edge = edgeOf(element.dataset.mode, sheet);
+      if (!bend || edge.inward !== inward || edge.axis !== axis) {
+        bend = createBend({ jelly, inward: edge.inward });
+        bend.reset(edge.position, now);
+        inward = edge.inward;
+        axis = edge.axis;
       }
+      const held = ctx.isDragging();
+      const moving = held || ctx.isAnimating();
+      if (!moving && !wasMoving && edge.position !== edgeSeen) {
+        bend.reset(edge.position, now);
+      }
+      wasMoving = moving;
+      edgeSeen = edge.position;
+      const lag = bend.step(edge.position, now);
 
-      if (!held && flat && !ctx.isAnimating()) {
-        bend = 0;
-        paint();
+      const handingBack = !!capture && !held;
+      const kept = Math.exp(-elapsed / HANDBACK_MS);
+      drive = handingBack
+        ? drive * Math.min(kept, HANDBACK_PER_FRAME)
+        : 1 - (1 - drive) * kept;
+      offset = lag * drive;
+
+      let stale = !drawnSinceTick;
+      drawnSinceTick = false;
+      if (handingBack && Math.abs(offset) < FLAT_PX) {
+        releaseCapture();
+        stale = true;
+      }
+      if (stale) paint(sheet);
+
+      if (!moving && !capture && bend.rest()) {
+        if (offset !== 0) {
+          offset = 0;
+          paint(sheet);
+        }
+        drive = 1;
         running = false;
         frameId = null;
         queueRefresh();
@@ -319,22 +366,14 @@ export const webglRenderer = (
     const wake = (): void => {
       if (disposed || running) return;
       running = true;
+      tickedAt = performance.now();
       frameId = requestAnimationFrame(tick);
     };
 
-    ctx.addTeardown(
-      ctx.on("drag", payload => {
-        const velocity = (payload as { delta?: number }).delta ?? 0;
-        bend = Math.max(
-          -MAX_BEND_PX,
-          Math.min(MAX_BEND_PX, velocity * jelly * 0.35),
-        );
-        wake();
-      }),
-    );
+    ctx.addTeardown(ctx.on("drag", wake));
     ctx.addTeardown(
       ctx.on("dragstart", () => {
-        queueMicrotask(takeCapture);
+        if (liftContent) queueMicrotask(takeCapture);
         wake();
       }),
     );
@@ -355,7 +394,8 @@ export const webglRenderer = (
 
     const onGeometry = (): void => {
       followStack();
-      if (!ctx.isDragging()) paint();
+      paint();
+      drawnSinceTick = true;
       wake();
     };
     const geometryObserver = new MutationObserver(onGeometry);

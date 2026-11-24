@@ -16,6 +16,7 @@ uniform vec4 u_radius;
 uniform vec4 u_color;
 uniform float u_shadow;
 uniform float u_bend;
+uniform float u_axis;
 uniform float u_sheen;
 uniform float u_glass;
 uniform float u_hasContent;
@@ -37,11 +38,18 @@ void main() {
   vec2 center = u_rect.xy + u_rect.zw * 0.5;
   vec2 halfSize = u_rect.zw * 0.5;
 
-  float across = clamp((frag.x - u_rect.x) / max(u_rect.z, 1.0), 0.0, 1.0);
-  float bend = sin(across * 3.14159265) * u_bend;
+  vec2 span = u_axis < 0.5
+    ? vec2(frag.x - u_rect.x, u_rect.z)
+    : vec2(frag.y - u_rect.y, u_rect.w);
+  float across = clamp(span.x / max(span.y, 1.0), 0.0, 1.0);
+  float lag = (1.0 - sin(across * 3.14159265)) * u_bend;
 
   vec2 p = frag - center;
-  p.y -= bend;
+  if (u_axis < 0.5) {
+    p.y -= lag;
+  } else {
+    p.x -= lag;
+  }
 
   float d = roundedBoxSDF(p, halfSize, u_radius);
   float surface = 1.0 - smoothstep(-1.0, 1.0, d);
@@ -119,6 +127,7 @@ export type ScrollLayer = {
 
 export type DrawState = {
   bend: number;
+  axis: 0 | 1;
   dpr: number;
   sheen: number;
   glass: number;
@@ -172,6 +181,7 @@ export const createSurfaceProgram = (
   const uColor = gl.getUniformLocation(program, "u_color");
   const uShadow = gl.getUniformLocation(program, "u_shadow");
   const uBend = gl.getUniformLocation(program, "u_bend");
+  const uAxis = gl.getUniformLocation(program, "u_axis");
   const uSheen = gl.getUniformLocation(program, "u_sheen");
   const uGlass = gl.getUniformLocation(program, "u_glass");
   const uHasContent = gl.getUniformLocation(program, "u_hasContent");
@@ -215,6 +225,7 @@ export const createSurfaceProgram = (
       gl.uniform4f(uColor, ...frame.color);
       gl.uniform1f(uShadow, frame.shadow);
       gl.uniform1f(uBend, state.bend * dpr);
+      gl.uniform1f(uAxis, state.axis);
       gl.uniform1f(uSheen, state.sheen);
       gl.uniform1f(uGlass, state.glass);
 

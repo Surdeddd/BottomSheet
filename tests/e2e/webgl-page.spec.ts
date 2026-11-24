@@ -62,6 +62,43 @@ const column = async (
   );
 };
 
+const outline = async (
+  page: Page,
+  centre: number,
+  corner: number,
+): Promise<{ centre: number; corner: number; pill: number }> => {
+  const shot = (await page.screenshot()).toString("base64");
+  return page.evaluate(
+    async ({ data, centre, corner }) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${data}`;
+      await img.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const scale = img.width / window.innerWidth;
+      const first = (x: number, from: number, above: number): number => {
+        const column = Math.round(x * scale);
+        for (let row = Math.round(from * scale); row < img.height; row++) {
+          if (ctx.getImageData(column, row, 1, 1).data[0]! > above) {
+            return row / scale;
+          }
+        }
+        return -1;
+      };
+      const edge = first(centre, 90, 26);
+      return {
+        centre: edge,
+        corner: first(corner, 90, 26),
+        pill: first(centre, edge + 2, 80),
+      };
+    },
+    { data: shot, centre, corner },
+  );
+};
+
 const open = async (page: Page, query = ""): Promise<void> => {
   await page.goto(`${FIXTURE}${query}`);
   await page.waitForSelector(SHEET);
@@ -80,6 +117,18 @@ const SURFACE = 30;
 const BACKGROUND = 24;
 
 test.describe("WebGL renderer and the page around it", () => {
+  test("comes up wherever the browser has WebGL", async ({ page }) => {
+    await page.goto(FIXTURE);
+    await page.waitForSelector(SHEET);
+    const available = await page.evaluate(
+      () => !!document.createElement("canvas").getContext("webgl"),
+    );
+    test.skip(!available, "this browser has no WebGL");
+
+    await expect(page.locator("#status")).toHaveAttribute("data-unsupported", "");
+    await expect(page.locator(SHEET)).toHaveAttribute("data-bs-webgl", "on");
+  });
+
   for (const frame of ["transform", "contain", "plain"] as const) {
     test(`inside a frame (${frame}) the surface is drawn on the sheet and nowhere else`, async ({
       page,
@@ -127,6 +176,101 @@ test.describe("WebGL renderer and the page around it", () => {
     expect(top!.r, "rounded where the DOM sheet is rounded").toBeLessThan(
       BACKGROUND,
     );
+  });
+
+  test("the content stays in the DOM through a drag unless lifting is asked for", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.evaluate(() => {
+      const counter = window as unknown as { uploads: number };
+      counter.uploads = 0;
+      const protos = [
+        WebGLRenderingContext.prototype,
+        typeof WebGL2RenderingContext !== "undefined"
+          ? WebGL2RenderingContext.prototype
+          : null,
+      ].filter(Boolean) as WebGLRenderingContext[];
+      for (const proto of protos) {
+        const original = proto.texImage2D as (...args: unknown[]) => void;
+        proto.texImage2D = function (
+          this: WebGLRenderingContext,
+          ...args: unknown[]
+        ) {
+          counter.uploads += 1;
+          return original.apply(this, args);
+        } as WebGLRenderingContext["texImage2D"];
+      }
+    });
+
+    const handle = await boxOf(page, ".bs-handle");
+    const x = handle.x + handle.width / 2;
+    const y = handle.y + handle.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(x, y - i * 24);
+    await page.waitForTimeout(150);
+
+    const held = await page.evaluate(() => ({
+      text: (document.querySelector(".sheet-body") as HTMLElement).style.color,
+      card: getComputedStyle(document.querySelector(".sheet-card")!)
+        .backgroundColor,
+      image: (document.querySelector(".sheet-swatch") as HTMLElement).style
+        .opacity,
+      uploads: (window as unknown as { uploads: number }).uploads,
+    }));
+    await page.mouse.up();
+
+    expect(held.text).toBe("");
+    expect(held.card).not.toBe("rgba(0, 0, 0, 0)");
+    expect(held.image).toBe("");
+    expect(held.uploads).toBe(0);
+  });
+
+  test("the middle of the leading edge stays on the sheet and the corners trail", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await open(page, "?slow=4000&jelly=4&sheen=0");
+    const landing = (): Promise<unknown> =>
+      page.waitForFunction(
+        () =>
+          !(
+            window as unknown as {
+              __webglEngine: { state: { isAnimating: boolean } };
+            }
+          ).__webglEngine.state.isAnimating,
+        undefined,
+        { timeout: 20_000 },
+      );
+    const sheet = await boxOf(page, SHEET);
+    const centre = sheet.x + sheet.width / 2;
+    const corner = sheet.x + 28;
+
+    const rest = await outline(page, centre, corner);
+    expect(Math.abs(rest.corner - rest.centre)).toBeLessThan(1);
+    const handleGap = rest.pill - rest.centre;
+    expect(handleGap).toBeGreaterThan(2);
+
+    await page.click("#to-full");
+    await page.waitForTimeout(1200);
+    const opening = await outline(page, centre, corner);
+    expect(opening.centre).toBeLessThan(rest.centre - 40);
+    expect(Math.abs(opening.pill - opening.centre - handleGap)).toBeLessThan(1.5);
+    expect(opening.corner - opening.centre).toBeGreaterThan(2);
+    expect(opening.corner - opening.centre).toBeLessThan(9);
+
+    await landing();
+    await page.waitForTimeout(900);
+    const landed = await outline(page, centre, corner);
+    expect(Math.abs(landed.corner - landed.centre)).toBeLessThan(1);
+
+    await page.click("#to-min");
+    await page.waitForTimeout(1200);
+    const closing = await outline(page, centre, corner);
+    expect(Math.abs(closing.pill - closing.centre - handleGap)).toBeLessThan(1.5);
+    expect(closing.centre - closing.corner).toBeGreaterThan(2);
+    expect(closing.centre - closing.corner).toBeLessThan(23);
   });
 
   test("the surface stays on a sheet that scrolls away with the page", async ({
@@ -281,10 +425,6 @@ test.describe("WebGL renderer and the page around it", () => {
     page,
   }) => {
     await open(page, "?sheen=0");
-    await page.$eval(SHEET, el => {
-      (el as HTMLElement).style.borderTopColor = "transparent";
-    });
-    await page.waitForTimeout(200);
     const sheet = await boxOf(page, SHEET);
     const reds = await column(page, sheet.x + sheet.width / 4, sheet.y, 3);
     const outside = reds[0]!;
