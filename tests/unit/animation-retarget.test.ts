@@ -1,10 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tween } from "../../src/core/animation/animation";
 import { runSpring } from "../../src/core/animation/spring";
 import { AnimationRunner } from "../../src/core/controllers/animation-runner";
 
-const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+const wait = (ms: number): Promise<unknown> => vi.advanceTimersByTimeAsync(ms);
+const settled = async <T>(running: Promise<T>): Promise<T> => {
+  await vi.runAllTimersAsync();
+  return running;
+};
 const linear = (t: number): number => t;
+
+beforeEach(() => {
+  vi.useFakeTimers({
+    toFake: [
+      "requestAnimationFrame",
+      "cancelAnimationFrame",
+      "performance",
+      "setTimeout",
+      "clearTimeout",
+    ],
+  });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("tween retarget", () => {
   it("continues from where it is and lands on the new target", async () => {
@@ -20,10 +40,10 @@ describe("tween retarget", () => {
     const before = values[values.length - 1]!;
     const seen = values.length;
     tw.retarget(300);
-    await tw.promise;
+    await settled(tw.promise);
     const firstAfter = values[seen]!;
-    expect(before).toBeGreaterThan(5);
-    expect(Math.abs(firstAfter - before)).toBeLessThan(25);
+    expect(before).toBeCloseTo(40, 5);
+    expect(firstAfter - before).toBeCloseTo(((300 - before) * 16) / 120, 5);
     expect(values[values.length - 1]).toBe(300);
     for (let i = seen + 1; i < values.length; i++) {
       expect(values[i]!).toBeGreaterThanOrEqual(values[i - 1]!);
@@ -39,7 +59,7 @@ describe("tween retarget", () => {
       easing: linear,
       onUpdate: v => values.push(v),
     });
-    await tw.promise;
+    await settled(tw.promise);
     const seen = values.length;
     tw.retarget(400);
     await wait(60);
@@ -60,7 +80,7 @@ describe("spring retarget", () => {
     const before = values[values.length - 1]!;
     const seen = values.length;
     spring.retarget(300);
-    await spring.promise;
+    await settled(spring.promise);
     expect(Math.abs(values[seen]! - before)).toBeLessThan(25);
     expect(values[values.length - 1]).toBe(300);
   });
@@ -74,7 +94,7 @@ describe("spring retarget", () => {
       maxDuration: 150,
       onUpdate: v => values.push(v),
     });
-    await spring.promise;
+    await settled(spring.promise);
     expect(values[values.length - 1]).toBe(100);
   });
 });
@@ -112,7 +132,7 @@ describe("AnimationRunner", () => {
   it("cancels a running animation when asked to go where it already is", async () => {
     const { runner, state } = makeRunner();
     void runner.animateTo(100, 0);
-    await runner.animateTo(0, 0);
+    await settled(runner.animateTo(0, 0));
     await wait(300);
     expect(state.size).toBe(0);
     expect(runner.isAnimating).toBe(false);
@@ -124,7 +144,7 @@ describe("AnimationRunner", () => {
     const done = runner.animateTo(100, 0);
     await wait(60);
     expect(runner.retarget(250)).toBe(true);
-    await done;
+    await settled(done);
     expect(state.size).toBe(250);
     expect(runner.isAnimating).toBe(false);
   });
@@ -186,7 +206,7 @@ describe("AnimationRunner", () => {
     expect(runner.isAnimating).toBe(true);
 
     created[1]!.finish();
-    await done;
+    await settled(done);
     expect(state.size).toBe(500);
     expect(runner.isAnimating).toBe(false);
   });
