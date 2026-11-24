@@ -382,8 +382,17 @@ test.describe("WebGL renderer and the page around it", () => {
   test("the middle of the leading edge stays on the sheet and the corners trail", async ({
     page,
   }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     await open(page, "?slow=4000&jelly=4&sheen=0");
+    const moving = (): Promise<boolean> =>
+      page.evaluate(
+        () =>
+          (
+            window as unknown as {
+              __webglEngine: { state: { isAnimating: boolean } };
+            }
+          ).__webglEngine.state.isAnimating,
+      );
     const landing = (): Promise<unknown> =>
       page.waitForFunction(
         () =>
@@ -399,14 +408,28 @@ test.describe("WebGL renderer and the page around it", () => {
     const centre = sheet.x + sheet.width / 2;
     const corner = sheet.x + 28;
 
+    const inFlight = async (
+      go: string,
+      back: string,
+    ): Promise<{ centre: number; corner: number; pill: number }> => {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await page.click(go);
+        await page.waitForTimeout(1200);
+        const seen = await outline(page, centre, corner);
+        if (await moving()) return seen;
+        await landing();
+        await page.click(back);
+        await landing();
+      }
+      throw new Error("the sheet landed before a frame could be taken in flight");
+    };
+
     const rest = await outline(page, centre, corner);
     expect(Math.abs(rest.corner - rest.centre)).toBeLessThan(1);
     const handleGap = rest.pill - rest.centre;
     expect(handleGap).toBeGreaterThan(2);
 
-    await page.click("#to-full");
-    await page.waitForTimeout(1200);
-    const opening = await outline(page, centre, corner);
+    const opening = await inFlight("#to-full", "#to-min");
     expect(opening.centre).toBeLessThan(rest.centre - 40);
     expect(Math.abs(opening.pill - opening.centre - handleGap)).toBeLessThan(1.5);
     expect(opening.corner - opening.centre).toBeGreaterThan(2);
@@ -423,9 +446,7 @@ test.describe("WebGL renderer and the page around it", () => {
       )
       .toBeLessThan(1);
 
-    await page.click("#to-min");
-    await page.waitForTimeout(1200);
-    const closing = await outline(page, centre, corner);
+    const closing = await inFlight("#to-min", "#to-full");
     expect(Math.abs(closing.pill - closing.centre - handleGap)).toBeLessThan(1.5);
     expect(closing.centre - closing.corner).toBeGreaterThan(2);
     expect(closing.centre - closing.corner).toBeLessThan(23);

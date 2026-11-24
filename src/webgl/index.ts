@@ -147,6 +147,7 @@ export const webglRenderer = (
     let releaseText: (() => void) | null = null;
     let lifted = false;
     let heldAt = 0;
+    let shown = 0;
 
     const painted = {
       background: element.style.background,
@@ -355,6 +356,7 @@ export const webglRenderer = (
         shadow: shadowStrength,
       };
       const at: Pixel = { x: frame.x * dpr, y: frame.y * dpr };
+      shown = offset;
       program.draw(frame, {
         bend: offset,
         axis,
@@ -404,10 +406,8 @@ export const webglRenderer = (
       if (stale) paint(sheet);
 
       if (!moving && !capture && bend.rest()) {
-        if (offset !== 0) {
-          offset = 0;
-          paint(sheet);
-        }
+        offset = 0;
+        if (shown !== 0) paint(sheet);
         drive = 1;
         running = false;
         frameId = null;

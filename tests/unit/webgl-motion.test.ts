@@ -166,6 +166,12 @@ const mount = (
       await settle();
     }
   };
+  let stalled = 0;
+  const clock = performance.now.bind(performance);
+  vi.spyOn(performance, "now").mockImplementation(() => clock() + stalled);
+  const stall = (ms: number): void => {
+    stalled += ms;
+  };
 
   return {
     sheet,
@@ -176,6 +182,7 @@ const mount = (
     emit,
     moveTo,
     frame,
+    stall,
     dispose: () => {
       if (typeof dispose === "function") dispose();
     },
@@ -280,6 +287,20 @@ describe("the WebGL surface in motion", () => {
 
     expect(moving).toBeGreaterThan(2);
     expect(justAfter).toBeGreaterThan(moving * 0.5);
+    r.dispose();
+  });
+
+  it("does not leave the surface bent when the page stalls through the end of an animation", async () => {
+    const r = mount();
+    await animate(r, 500, -14, 15);
+    expect(Math.abs(r.frames[r.frames.length - 1]!.bend)).toBeGreaterThan(2);
+
+    r.stall(2500);
+    r.state.animating = false;
+    await r.moveTo(500 - 14 * 16);
+    await r.frame(4);
+
+    expect(r.frames[r.frames.length - 1]!.bend).toBe(0);
     r.dispose();
   });
 
