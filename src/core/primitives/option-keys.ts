@@ -40,6 +40,7 @@ export const ENGINE_OPTION_KEYS = [
   "closeOnRouteChange",
   "radius",
   "maxHeight",
+  "bounds",
   "returnFocusTo",
   "persistKey",
   "autoCollapseAfter",

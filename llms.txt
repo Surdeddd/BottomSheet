@@ -99,11 +99,12 @@ Elements, engine only: `element` (required), `handle`, `scrollContainer`, `backd
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `snapPoints` | `{ id: string; size: SnapPoint; dragFromContent?: boolean }[]` | required | The sizes the sheet can rest at |
+| `snapPoints` | `{ id: string; size: SnapPoint; label?: string; dragFromContent?: boolean }[]` | required | The sizes the sheet can rest at; `label` is what a screen reader hears for the point, the `id` when absent |
 | `allowed` | `string[]` | all ids | Ids the sheet may rest at now |
 | `initial` | `string` | first allowed | Id to start at |
 | `mode` | `"bottom" \| "top" \| "left" \| "right" \| "start" \| "end"` | `"bottom"` | Edge |
 | `maxHeight` | `number \| string` | none | Cap on the size |
+| `bounds` | `"window" \| "container"` | `"window"` | What `"full"`, percentages and the cap are measured against; `"container"` is the sheet's nearest positioned ancestor, and the sheet, backdrop and scrim are positioned inside it |
 | `radius` | `number \| string` | `20px` | Corner radius |
 | `fitContentToSnap` | `boolean` | `false` | Keep the scroll area and footer reachable at every point |
 | `animation` | `"spring" \| "ios-spring" \| "material-bounce" \| "snappy" \| "tween" \| "linear"` | `"spring"` | Motion preset |
@@ -149,11 +150,16 @@ Elements, engine only: `element` (required), `handle`, `scrollContainer`, `backd
 ## Engine methods
 
 ```ts
-sheet.open(id?): Promise<void>      // to the first allowed open point; no-op on an open sheet without id
-sheet.close(reason?): Promise<void> // to the point of size 0; without one, the smallest point
-sheet.snapTo(id, { velocity?, signal? }?): Promise<void>
-sheet.expand(): Promise<void>       // largest allowed point
-sheet.collapse(): Promise<void>     // smallest allowed open point
+type MoveOutcome = "landed" | "vetoed" | "replaced"
+// landed: rests on the point asked for; vetoed: never began (before-snap/before-close
+// listener, persistent, disableClose, unknown or disallowed point, destroyed);
+// replaced: another move, a drag, its signal or destroy() took over on the way
+
+sheet.open(id?): Promise<MoveOutcome>      // to the first allowed open point; no-op on an open sheet without id
+sheet.close(reason?): Promise<MoveOutcome> // to the point of size 0; without one, the smallest point
+sheet.snapTo(id, { velocity?, signal? }?): Promise<MoveOutcome>
+sheet.expand(): Promise<MoveOutcome>       // largest allowed point
+sheet.collapse(): Promise<MoveOutcome>     // smallest allowed open point
 sheet.dragTo(sizePx, { velocity?, signal? }?): Promise<void>
 
 sheet.setAllowed(ids, snapTo?)
@@ -175,7 +181,7 @@ sheet.setScrimOverlay({ children, position?, inset?, interactive? }): () => void
 sheet.addAnchor({ element, position?, inset?, showOn?, fadeRange?, interactive?, animation? }): () => void
 sheet.setScrimStages({ stages } | null): () => void
 
-sheet.state        // { activeId, size, progress, phase, isDragging, isAnimating }
+sheet.state        // { activeId, activeLabel, size, progress, phase, isDragging, isAnimating }
 sheet.canDismiss(); sheet.isTop(); sheet.depth()
 sheet.on(event, listener): () => void
 sheet.use(plugin); sheet.destroy()

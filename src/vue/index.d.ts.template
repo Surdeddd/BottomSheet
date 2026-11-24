@@ -5,6 +5,7 @@ import type {
   CloseReason,
   EngineOptions,
   EngineState,
+  MoveOutcome,
   PhysicalSheetMode,
   SheetEventMap,
   SheetMode,
@@ -42,9 +43,9 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   backdropRef: { value: HTMLElement | null };
   screenRef: { value: HTMLElement | null };
   state: EngineState & { activeId: TId };
-  snapTo: (id: TId) => Promise<void>;
-  open: (id?: TId) => Promise<void>;
-  close: (reason?: CloseReason) => Promise<void>;
+  snapTo: (id: TId) => Promise<MoveOutcome>;
+  open: (id?: TId) => Promise<MoveOutcome>;
+  close: (reason?: CloseReason) => Promise<MoveOutcome>;
   setAllowed: (ids: TId[], snap?: TId) => void;
   setSnapPoints: (
     points: EngineOptions["snapPoints"],
@@ -61,8 +62,8 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   setBackdropColor: (color: string | undefined | null) => void;
   setRadius: (r: string | number) => void;
   setMaxHeight: (h: string | number) => void;
-  expand: () => Promise<void>;
-  collapse: () => Promise<void>;
+  expand: () => Promise<MoveOutcome>;
+  collapse: () => Promise<MoveOutcome>;
   isTop: () => boolean;
   depth: () => number;
   canDismiss: () => boolean;
@@ -157,4 +158,5 @@ export type {
   EngineState,
   EngineOptions,
   CloseReason,
+  MoveOutcome,
 };

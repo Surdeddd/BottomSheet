@@ -79,7 +79,7 @@ describe("a throwing listener does not corrupt the sheet lifecycle", () => {
     const closed = vi.fn();
     engine.on("closed", closed);
 
-    await expect(engine.close()).resolves.toBeUndefined();
+    await expect(engine.close()).resolves.toBe("landed");
     await Promise.resolve();
     trap.restore();
 

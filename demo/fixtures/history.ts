@@ -66,8 +66,8 @@ const create = (name: string, options: SheetOptions = {}): void => {
 
 const api = {
   create,
-  open: (name: string): Promise<void> => sheetOf(name).open("full"),
-  close: (name: string): Promise<void> => sheetOf(name).close(),
+  open: (name: string): Promise<unknown> => sheetOf(name).open("full"),
+  close: (name: string): Promise<unknown> => sheetOf(name).close(),
   destroy: (name: string): void => {
     sheetOf(name).destroy();
     sheets.delete(name);

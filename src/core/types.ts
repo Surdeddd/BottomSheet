@@ -9,6 +9,7 @@ export type SnapPoint =
 export type SnapPointDef<Id extends string = string> = {
   id: Id;
   size: SnapPoint;
+  label?: string;
 
   dragFromContent?: boolean;
 };
@@ -127,6 +128,10 @@ export type SheetEventMap = {
 
 export type CloseReason = "programmatic" | "backdrop" | "escape" | "back";
 
+export type MoveOutcome = "landed" | "vetoed" | "replaced";
+
+export type SheetBounds = "window" | "container";
+
 export type EngineOptions = {
   element: HTMLElement;
   handle?: HTMLElement;
@@ -188,6 +193,7 @@ export type EngineOptions = {
   closeOnRouteChange?: boolean;
   radius?: string | number;
   maxHeight?: string | number;
+  bounds?: SheetBounds;
   returnFocusTo?: HTMLElement | string | (() => HTMLElement | null);
 
   persistKey?: string;
@@ -214,6 +220,7 @@ export type EngineFeatureOptions = {
   autoCollapseAfter?: number;
   fitContentToSnap: boolean;
   settleAnimation?: "waapi";
+  bounds?: SheetBounds;
 };
 
 export type EngineFeatureContext = {
@@ -245,7 +252,7 @@ export type EngineFeatureContext = {
   cancelInFlight: () => void;
   resyncAfterResize: () => void;
   snapTo: (id: string) => void;
-  close: (reason?: CloseReason) => Promise<void>;
+  close: (reason?: CloseReason) => Promise<MoveOutcome>;
 
   attachDragSurface: (
     surface: HTMLElement,
@@ -281,6 +288,7 @@ export type SheetPhase = "closed" | "opening" | "open" | "closing";
 export type EngineState = {
   size: number;
   activeId: string;
+  activeLabel: string;
   phase: SheetPhase;
   isDragging: boolean;
   isAnimating: boolean;

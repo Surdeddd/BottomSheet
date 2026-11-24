@@ -4,7 +4,13 @@ import {
   BottomSheet,
   type BottomSheetHandle,
 } from "@surdeddd/bottom-sheet/react";
-import { POINTS, ROWS, hostFor, type AdapterHandle } from "./adapters-fit-shared";
+import {
+  POINTS,
+  ROWS,
+  TRAP,
+  hostFor,
+  type AdapterHandle,
+} from "./adapters-fit-shared";
 
 export const mountReact = (): AdapterHandle => {
   const sheet = createRef<BottomSheetHandle>();
@@ -15,6 +21,7 @@ export const mountReact = (): AdapterHandle => {
       initial="closed"
       animation="tween"
       lockBodyScroll={false}
+      focusTrap={TRAP}
       fitContentToSnap
       footer={
         <button type="button" data-action="react">

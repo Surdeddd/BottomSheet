@@ -50,8 +50,7 @@ export const buildShadowTree = (): {
   const sheet = document.createElement("section");
   sheet.className = "bs-sheet";
   sheet.setAttribute("part", "sheet");
-  sheet.setAttribute("role", "dialog");
-  sheet.setAttribute("aria-modal", "false");
+  sheet.setAttribute("role", "region");
 
   const leftButton = document.createElement("div");
   leftButton.className = "bs-button-slot";

@@ -3,7 +3,13 @@ import { render } from "solid-js/web";
 import { For } from "solid-js";
 import { BottomSheet } from "@surdeddd/bottom-sheet/solid";
 import type { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
-import { POINTS, ROWS, hostFor, type AdapterHandle } from "./adapters-fit-shared";
+import {
+  POINTS,
+  ROWS,
+  TRAP,
+  hostFor,
+  type AdapterHandle,
+} from "./adapters-fit-shared";
 
 export const mountSolid = (): AdapterHandle => {
   let engine: BottomSheetEngine | null = null;
@@ -14,6 +20,7 @@ export const mountSolid = (): AdapterHandle => {
         initial="closed"
         animation="tween"
         lockBodyScroll={false}
+        focusTrap={TRAP}
         fitContentToSnap
         engineRef={next => {
           engine = next;

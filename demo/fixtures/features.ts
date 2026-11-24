@@ -27,6 +27,7 @@ type Passthrough = Omit<
 
 export type LabOptions = Passthrough & {
   rows?: number;
+  panel?: { width: number; height: number; positioned?: boolean };
   dir?: "ltr" | "rtl";
   veto?: string;
   vetoClose?: boolean;
@@ -46,6 +47,7 @@ export type LabScrimOverlay = Omit<ScrimOverlayOptions, "children">;
 type Mounted = {
   engine: BottomSheetEngine;
   root: HTMLElement;
+  host: HTMLElement;
   sheet: HTMLElement;
   events: string[];
   drags: number;
@@ -89,6 +91,7 @@ const tag = <K extends keyof HTMLElementTagNameMap>(
 const build = (options: LabOptions, index: number): Mounted => {
   const {
     rows = 30,
+    panel,
     dir,
     veto,
     vetoClose,
@@ -134,7 +137,14 @@ const build = (options: LabOptions, index: number): Mounted => {
 
   sheet.append(handle, header, content);
   root.append(backdrop, scrim, sheet);
-  mountPoint.append(root);
+  let host: HTMLElement = root;
+  if (panel) {
+    host = tag("div", "lab-panel", `panel-${index}`);
+    host.style.cssText = `width:${panel.width}px;height:${panel.height}px;margin:80px 0 0 40px;overflow:hidden;background:#eef`;
+    if (panel.positioned !== false) host.style.position = "relative";
+    host.append(root);
+  }
+  mountPoint.append(host);
 
   const engine = new BottomSheetEngine({
     snapPoints: DEFAULT_SNAPS,
@@ -159,6 +169,7 @@ const build = (options: LabOptions, index: number): Mounted => {
   const mounted: Mounted = {
     engine,
     root,
+    host,
     sheet,
     events: [],
     drags: 0,
@@ -213,7 +224,7 @@ const lab = {
     for (const mounted of sheets.splice(0)) {
       for (const drop of mounted.extras.splice(0)) drop();
       mounted.engine.destroy();
-      mounted.root.remove();
+      mounted.host.remove();
     }
   },
   engine(index = 0): BottomSheetEngine {

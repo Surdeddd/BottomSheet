@@ -24,6 +24,7 @@ export class SnapResolver {
     private measureFit?: () => number,
 
     private onMaxAxisSizeChange?: (n: number) => void,
+    private host?: () => HTMLElement | null,
   ) {
     this.raw = raw;
     this.allowedIds = allowed ?? raw.map(p => p.id);
@@ -36,7 +37,12 @@ export class SnapResolver {
     const measureOnce = measure
       ? () => (measured ??= measure())
       : undefined;
-    this.resolved = resolveSnapList(this.raw, this.mode, measureOnce);
+    this.resolved = resolveSnapList(
+      this.raw,
+      this.mode,
+      measureOnce,
+      this.host?.(),
+    );
     const nextMax = this.resolved.reduce(
       (m, s) => (s.size > m ? s.size : m),
       0,

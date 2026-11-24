@@ -2,7 +2,7 @@ import { shared } from "../primitives/shared";
 
 export type BackSurface = {
   isOpen(): boolean;
-  close(): Promise<void> | void;
+  close(): Promise<unknown> | void;
   markerState(): Record<string, unknown>;
   url?: string;
 };
@@ -259,7 +259,7 @@ const closeAbove = (depth: number): void => {
   const dropped = state.live.splice(depth);
   for (let i = dropped.length - 1; i >= 0; i -= 1) {
     const entry = dropped[i]!;
-    let closing: Promise<void> | void = undefined;
+    let closing: Promise<unknown> | void = undefined;
     try {
       closing = entry.surface.close();
     } catch (err) {

@@ -15,10 +15,12 @@ import {
   teleportElements,
   type TeleportTarget,
 } from "../core/features/teleport";
+import { notMounted } from "../core/primitives/move-outcome";
 import type {
   CloseReason,
   EngineOptions,
   EngineState,
+  MoveOutcome,
   SheetEventMap,
   SnapPointDef,
 } from "../core/types";
@@ -37,11 +39,11 @@ export type UseBottomSheetRefs = {
 export type UseBottomSheetReturn<TId extends string = string> =
   UseBottomSheetRefs & {
     state: EngineState & { activeId: TId };
-    snapTo: (id: TId) => Promise<void>;
-    open: (id?: TId) => Promise<void>;
-    close: (reason?: CloseReason) => Promise<void>;
-    expand: () => Promise<void>;
-    collapse: () => Promise<void>;
+    snapTo: (id: TId) => Promise<MoveOutcome>;
+    open: (id?: TId) => Promise<MoveOutcome>;
+    close: (reason?: CloseReason) => Promise<MoveOutcome>;
+    expand: () => Promise<MoveOutcome>;
+    collapse: () => Promise<MoveOutcome>;
     isTop: () => boolean;
     depth: () => number;
     setAllowed: (ids: TId[], snap?: TId) => void;
@@ -62,6 +64,7 @@ export type UseBottomSheetReturn<TId extends string = string> =
 const SSR_STATE: EngineState = Object.freeze({
   size: 0,
   activeId: "",
+  activeLabel: "",
   phase: "closed",
   isDragging: false,
   isAnimating: false,
@@ -243,24 +246,24 @@ export function useBottomSheet<TId extends string = string>(
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const snapTo = useCallback(
-    (id: string) => engineRef.current?.snapTo(id) ?? Promise.resolve(),
+    (id: string) => engineRef.current?.snapTo(id) ?? notMounted(),
     [],
   );
   const open = useCallback(
-    (id?: string) => engineRef.current?.open(id) ?? Promise.resolve(),
+    (id?: string) => engineRef.current?.open(id) ?? notMounted(),
     [],
   );
   const close = useCallback(
     (reason?: CloseReason) =>
-      engineRef.current?.close(reason) ?? Promise.resolve(),
+      engineRef.current?.close(reason) ?? notMounted(),
     [],
   );
   const expand = useCallback(
-    () => engineRef.current?.expand() ?? Promise.resolve(),
+    () => engineRef.current?.expand() ?? notMounted(),
     [],
   );
   const collapse = useCallback(
-    () => engineRef.current?.collapse() ?? Promise.resolve(),
+    () => engineRef.current?.collapse() ?? notMounted(),
     [],
   );
   const isTop = useCallback(() => engineRef.current?.isTop() ?? false, []);

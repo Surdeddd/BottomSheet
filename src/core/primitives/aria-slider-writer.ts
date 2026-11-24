@@ -11,7 +11,11 @@ export class AriaSliderWriter {
     );
   }
 
-  setValue(allowedIds: readonly string[], activeId: string): void {
+  setValue(
+    allowedIds: readonly string[],
+    activeId: string,
+    label: string = activeId,
+  ): void {
     if (allowedIds.length === 0) {
       this.handle.removeAttribute("aria-valuemin");
       this.handle.removeAttribute("aria-valuemax");
@@ -24,6 +28,6 @@ export class AriaSliderWriter {
     this.handle.setAttribute("aria-valuemin", "0");
     this.handle.setAttribute("aria-valuemax", String(max));
     this.handle.setAttribute("aria-valuenow", String(idx));
-    this.handle.setAttribute("aria-valuetext", activeId);
+    this.handle.setAttribute("aria-valuetext", label);
   }
 }

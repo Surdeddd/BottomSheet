@@ -16,6 +16,7 @@ vi.mock("@builder.io/qwik", () => ({
 const EXPECTED_STATE_KEYS = [
   "size",
   "activeId",
+  "activeLabel",
   "phase",
   "isDragging",
   "isAnimating",

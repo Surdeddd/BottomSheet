@@ -132,11 +132,11 @@ it.
 
 ```ts
 type BottomSheetHandle = {
-  snapTo(id: string): Promise<void>;
-  open(id?: string): Promise<void>;
-  close(reason?: CloseReason): Promise<void>;
-  expand(): Promise<void>;
-  collapse(): Promise<void>;
+  snapTo(id: string): Promise<MoveOutcome>;
+  open(id?: string): Promise<MoveOutcome>;
+  close(reason?: CloseReason): Promise<MoveOutcome>;
+  expand(): Promise<MoveOutcome>;
+  collapse(): Promise<MoveOutcome>;
   setAllowed(ids: string[], snap?: string): void;
   setSnapPoints(points: SnapPointDef[], allowed?: string[]): void;
   recompute(): void;

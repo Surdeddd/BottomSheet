@@ -7,6 +7,7 @@ export type {
   EngineFeatureStage,
   EngineOptions,
   EngineState,
+  MoveOutcome,
   SheetPhase,
   SheetEventMap,
   SheetMode,

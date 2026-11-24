@@ -10,10 +10,11 @@ export const resolveSnapList = (
   points: SnapPointDef[],
   mode: SheetMode,
   measureFit?: () => number,
+  host?: HTMLElement | null,
 ): ResolvedSnap[] =>
   points
     .map(p => {
-      const raw = resolveSnap(p.size, mode, measureFit);
+      const raw = resolveSnap(p.size, mode, measureFit, host);
 
       if (!Number.isFinite(raw) || raw < 0) {
         devWarn(

@@ -3,6 +3,7 @@ import {
   createSheetManager,
   historySettled,
   type EngineState,
+  type MoveOutcome,
 } from "@surdeddd/bottom-sheet";
 import { BottomSheetCore } from "@surdeddd/bottom-sheet/core";
 import {
@@ -34,8 +35,9 @@ const sheet = new BottomSheetEngine({
   snapPoints: [
     { id: "closed", size: 0 },
     { id: "open", size: "fit" },
-    { id: "half", size: "50%", dragFromContent: false },
+    { id: "half", size: "50%", dragFromContent: false, label: "Half open" },
   ],
+  bounds: "container",
   initial: "closed",
   focusTrap: true,
   backdropOpacity: 0.6,
@@ -71,6 +73,8 @@ sheet.on("before-snap", ({ id, previousId, cancel }) => {
 
 const state: EngineState = sheet.state;
 void state.phase;
+const spoken: string = state.activeLabel;
+void spoken;
 
 export async function methods() {
   await sheet.open();
@@ -80,6 +84,12 @@ export async function methods() {
   await sheet.snapTo("open", { velocity: 0.2 });
   await sheet.expand();
   await sheet.collapse();
+  const outcome: MoveOutcome = await sheet.snapTo("half");
+  if (outcome === "vetoed" || outcome === "replaced") return;
+  const landed: "landed" = outcome;
+  void landed;
+  const shut: Promise<MoveOutcome> = sheet.close();
+  void shut;
   await sheet.dragTo(300, { velocity: 0.1 });
   sheet.setAllowed(["half", "open"]);
   sheet.setAllowed(["half", "open"], "open");

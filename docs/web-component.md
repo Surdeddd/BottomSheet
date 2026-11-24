@@ -162,8 +162,8 @@ sheet.canDismiss();
 sheet.getEngine();
 ```
 
-`sheetState` is the engine's `{ activeId, size, progress, phase, isDragging,
-isAnimating }`. `getEngine()` returns the engine for everything else.
+`sheetState` is the engine's `{ activeId, activeLabel, size, progress, phase,
+isDragging, isAnimating }`. `getEngine()` returns the engine for everything else.
 
 In TypeScript, `TypedBottomSheetElement<"half" | "full">` types the element
 and its snap ids.

@@ -22,7 +22,11 @@ import {
   pickEngineOptions,
   type EngineConfig,
 } from "../core/primitives/option-keys";
-import { closedSnapId, syncOpen } from "../core/primitives/open-state";
+import {
+  closedSnapId,
+  snapLabel,
+  syncOpen,
+} from "../core/primitives/open-state";
 import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
@@ -90,6 +94,7 @@ export const BottomSheet = <TId extends string = string>(
   const [state, setState] = createSignal<EngineState & { activeId: TId }>({
     size: 0,
     activeId: initialActive(),
+    activeLabel: snapLabel(props.snapPoints, initialActive()),
     phase: "closed",
     isDragging: false,
     isAnimating: false,
@@ -324,7 +329,7 @@ export const BottomSheet = <TId extends string = string>(
         data-mode={physicalMode()}
         data-bs-rest={restAtStart}
         data-active={state().activeId}
-        role="dialog"
+        role={props.focusTrap ? "dialog" : "region"}
         aria-modal={props.focusTrap ? "true" : undefined}
         aria-label={ariaLabel()}
       >
@@ -351,7 +356,7 @@ export const BottomSheet = <TId extends string = string>(
           <div class="bs-footer">{footer()}</div>
         </Show>
         <span class="bs-sr-only" role="status" aria-live="polite">
-          {state().activeId}
+          {state().activeLabel}
         </span>
       </section>
       <Show when={leftButton()}>

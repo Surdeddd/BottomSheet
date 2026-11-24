@@ -307,7 +307,7 @@ to and a `size`:
 ```ts
 type SnapPoint =
   | number                 // pixels
-  | `${number}%`           // share of the viewport along the sheet's axis
+  | `${number}%`           // share of the window along the sheet's axis, or of its container with bounds: "container"
   | 'fit' | 'content'      // the sheet's own height: handle, header, content, footer
   | 'full'                 // the whole axis
   | string;                // any CSS length: "50dvh", "clamp(200px, 60%, 800px)"
@@ -316,12 +316,16 @@ type SnapPoint =
 A point of size `0` is the **closed** state. A sheet without one cannot be
 closed, only collapsed to its smallest point.
 
+A point can carry a `label`, the name a screen reader hears for it:
+`{ id: 'peek', size: 120, label: 'Collapsed' }`. Without one the `id` is read
+out.
+
 **Three layers** make up a sheet: the *sheet* itself, the *backdrop* that dims
 the page, and an optional *scrim* (`screen`) for content that fades in behind
 the sheet, such as a map preview or a blurred overlay.
 
-**State** is one object: `{ activeId, size, progress, phase, isDragging,
-isAnimating }`. `progress` runs from 0 at the smallest allowed point to 1 at the
+**State** is one object: `{ activeId, activeLabel, size, progress, phase,
+isDragging, isAnimating }`. `progress` runs from 0 at the smallest allowed point to 1 at the
 largest. `phase` is `closed`, `opening`, `open` or `closing`.
 
 ## API
@@ -336,11 +340,12 @@ Sizing and position
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `snapPoints` | required | List of `{ id, size }` |
+| `snapPoints` | required | List of `{ id, size, label? }` |
 | `allowed` | all ids | The points the sheet may rest at right now |
 | `initial` | first allowed | The point to start at. A point larger than `0` starts the sheet open, with no `open` event |
 | `mode` | `"bottom"` | Edge: `bottom`, `top`, `left`, `right`, or `start` / `end` |
 | `maxHeight` | none | Cap on the sheet's size: pixels, or a CSS length resolved again when the viewport changes |
+| `bounds` | `"window"` | What `"full"`, percentages and the size cap are measured against. `"container"` measures against the sheet's nearest positioned ancestor and keeps the sheet, its backdrop and its scrim inside it. [Details](#a-sheet-inside-a-panel) |
 | `radius` | `20px` | Corner radius |
 | `fitContentToSnap` | `false` | Keep the whole scroll area and the footer reachable at every point, not only the largest. [Details](docs/content-fit.md) |
 
@@ -446,15 +451,27 @@ sheet.setMaxHeight('92dvh');
 sheet.setBackdropOpacity(0.6);
 sheet.setBackdropColor('rgb(0 0 0 / 0.4)');
 
-sheet.state;               // { activeId, size, progress, phase, isDragging, isAnimating }
+sheet.state;               // { activeId, activeLabel, size, progress, phase, isDragging, isAnimating }
 sheet.getResolvedSnaps();  // [{ id, size }] in pixels right now
 sheet.canDismiss();        // false while persistent or disableClose
 sheet.isTop();             // is it the top sheet of the stack?
 sheet.destroy();
 ```
 
-`open()`, `close()` and `snapTo()` return a promise that resolves when the
-sheet has landed. They are safe to call in the tick the sheet is mounted.
+`open()`, `close()`, `snapTo()`, `expand()` and `collapse()` return a promise
+that says how the move ended:
+
+| Resolves with | When |
+| --- | --- |
+| `"landed"` | The sheet rests on the point that was asked for, whether it had to move or was already there |
+| `"vetoed"` | The move never began: a `before-snap` or `before-close` listener refused it, `persistent` or `disableClose` blocked it, the point is unknown or not allowed, or the sheet is destroyed |
+| `"replaced"` | The move began and something else took over before it landed: another move, a drag, its `signal`, or `destroy()` |
+
+```ts
+if ((await sheet.close()) === "vetoed") keepTheFormOpen();
+```
+
+They are safe to call in the tick the sheet is mounted.
 
 When `setAllowed()` or `setSnapPoints()` takes the active point away, an open
 sheet moves to the nearest point that keeps it open.
@@ -499,6 +516,33 @@ The handle is a slider. The arrow that points away from the sheet's edge grows
 it (`ArrowUp` for a bottom sheet, `ArrowLeft` for a right one), the opposite one
 shrinks it, `Home` and `End` jump to the smallest and largest point, `Escape`
 closes.
+
+### A sheet inside a panel
+
+Sizes are measured against the window: `"50%"` is half of it, `"full"` all of
+it. A sheet that lives inside a panel, a split view or a phone mock-up can be
+measured against that panel instead:
+
+```ts
+new BottomSheetEngine({
+  element, handle,
+  snapPoints: [{ id: 'half', size: '50%' }, { id: 'full', size: 'full' }],
+  bounds: 'container',
+});
+```
+
+The container is the sheet's nearest positioned ancestor, so give the panel
+`position: relative`, and usually `overflow: hidden`. With
+`bounds: "container"`:
+
+- `"full"`, percentages, CSS lengths that contain a percentage and `maxHeight`
+  are resolved against the panel, and again whenever the panel is resized;
+- the sheet, the backdrop and the scrim are placed inside the panel, not over
+  the whole window;
+- the sheet does not rise for the on-screen keyboard, which belongs to the
+  window.
+
+Without a positioned ancestor the option falls back to the window.
 
 ### More of the API
 
@@ -555,8 +599,12 @@ What is built in, and what you switch on:
 - **The handle is a slider.** It has a label, a current value and arrow-key
   steps, and it is in the tab order. Name it in your language with
   `handleLabel`; `contentLabel` does the same for the scroll area.
+- **Every point has a name.** The slider's value and the live region that
+  announces a move read the `label` of the point, or its `id` when it has
+  none. Give the points labels in the language of your interface.
 - **The sheet has a name.** `ariaLabel`, or `ariaLabelledBy` pointing at a
-  heading. With `focusTrap` it is a `dialog` with `aria-modal`.
+  heading. With `focusTrap` it is a `dialog` with `aria-modal`; without it, a
+  `region`, in every adapter.
 - **Focus.** `focusTrap` moves focus into the sheet, keeps Tab inside it and
   returns focus to the opener on close. In a stack, only the top sheet traps.
 - **The page behind.** `inertSiblings` takes everything outside the top sheet

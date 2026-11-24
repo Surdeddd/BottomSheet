@@ -199,7 +199,7 @@ describe("Hot-path threshold regressions", () => {
 
   describe("values left behind once the sheet rests", () => {
     const runFrames = async (
-      start: () => Promise<void>,
+      start: () => Promise<unknown>,
       frames: number,
     ): Promise<void> => {
       let queue: FrameRequestCallback[] = [];

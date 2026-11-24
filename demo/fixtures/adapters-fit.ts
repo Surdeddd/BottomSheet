@@ -5,7 +5,13 @@ import AdaptersFitSvelte from "./AdaptersFitSvelte.svelte";
 import { mountReact } from "./adapters-fit-react";
 import { mountVue } from "./adapters-fit-vue";
 import { mountSolid } from "./adapters-fit.solid";
-import { POINTS, ROWS, hostFor, type AdapterHandle } from "./adapters-fit-shared";
+import {
+  POINTS,
+  ROWS,
+  TRAP,
+  hostFor,
+  type AdapterHandle,
+} from "./adapters-fit-shared";
 
 const mountSvelte = (): AdapterHandle =>
   mount(AdaptersFitSvelte, { target: hostFor("svelte") }) as AdapterHandle;
@@ -17,6 +23,7 @@ const mountElement = (): AdapterHandle => {
   el.setAttribute("initial", "closed");
   el.setAttribute("animation", "tween");
   el.setAttribute("lock-body-scroll", "false");
+  if (TRAP) el.setAttribute("focus-trap", "true");
   el.setAttribute("fit-content-to-snap", "");
   for (const i of ROWS) {
     const row = document.createElement("div");

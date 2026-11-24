@@ -8,7 +8,7 @@
   } from "../core/features/teleport";
   import { guessPhysicalMode } from "../core/primitives/logical-mode";
   import { startsClosed } from "../core/primitives/snap-points";
-  import { closedSnapId } from "../core/primitives/open-state";
+  import { closedSnapId, snapLabel } from "../core/primitives/open-state";
   import type { AnchorOptions } from "../core/features/sheet-anchors";
   import type { ScrimStagesOptions } from "../core/features/scrim-stages";
   import type {
@@ -143,6 +143,9 @@
     size: 0,
     activeId: untrack(
       () => (startAt ?? snapPoints[0]?.id ?? "default") as TId,
+    ),
+    activeLabel: untrack(() =>
+      snapLabel(snapPoints, startAt ?? snapPoints[0]?.id ?? "default"),
     ),
     phase: "closed",
     isDragging: false,
@@ -390,7 +393,7 @@
     data-mode={physicalMode}
     data-bs-rest={restAtStart}
     data-active={viewState.activeId}
-    role="dialog"
+    role={focusTrap ? "dialog" : "region"}
     aria-modal={focusTrap ? "true" : undefined}
     aria-label={ariaLabel}
   >
@@ -412,7 +415,7 @@
     </div>
     {#if footer}<div class="bs-footer">{@render footer(viewState)}</div>{/if}
     <span class="bs-sr-only" role="status" aria-live="polite">
-      {viewState.activeId}
+      {viewState.activeLabel}
     </span>
   </section>
   {#if leftButton}

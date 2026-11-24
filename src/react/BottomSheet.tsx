@@ -17,6 +17,7 @@ import type {
   CloseReason,
   EngineOptions,
   EngineState,
+  MoveOutcome,
   PhysicalSheetMode,
   SheetEventMap,
 } from "../core/types";
@@ -90,11 +91,11 @@ export type BottomSheetProps = EngineOptionsForProps & {
 };
 
 export type BottomSheetHandle<TId extends string = string> = {
-  snapTo: (id: TId) => Promise<void>;
-  open: (id?: TId) => Promise<void>;
-  close: (reason?: CloseReason) => Promise<void>;
-  expand: () => Promise<void>;
-  collapse: () => Promise<void>;
+  snapTo: (id: TId) => Promise<MoveOutcome>;
+  open: (id?: TId) => Promise<MoveOutcome>;
+  close: (reason?: CloseReason) => Promise<MoveOutcome>;
+  expand: () => Promise<MoveOutcome>;
+  collapse: () => Promise<MoveOutcome>;
   isTop: () => boolean;
   depth: () => number;
   setAllowed: (ids: TId[], snap?: TId) => void;
@@ -211,11 +212,11 @@ const MountedBottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(
     const lastAnnouncedRef = useRef<string>("");
     const [announce, setAnnounce] = useState("");
     useEffect(() => {
-      if (state.activeId !== lastAnnouncedRef.current) {
-        lastAnnouncedRef.current = state.activeId;
-        setAnnounce(state.activeId);
+      if (state.activeLabel !== lastAnnouncedRef.current) {
+        lastAnnouncedRef.current = state.activeLabel;
+        setAnnounce(state.activeLabel);
       }
-    }, [state.activeId]);
+    }, [state.activeLabel]);
 
     useImperativeHandle(
       ref,

@@ -44,12 +44,6 @@ only with a major version. Three things stand between 0.24 and that promise:
 
 Open questions:
 
-- **What a move's promise says.** `snapTo()`, `open()` and `close()` resolve
-  the same way whether the sheet landed, the move was vetoed by `before-snap`,
-  or another move replaced it. A caller that needs to know has to compare
-  `state.activeId` afterwards. The fix is a resolved value, such as
-  `"landed" | "vetoed" | "replaced"`; it is additive for callers that ignore
-  the value and belongs before the freeze.
 - **What a percentage is a percentage of.** `"50%"` and `"full"` are measured
   against the window. A sheet inside a panel or a split view has no way to
   say "half of my container". This needs an option, and a decision on its
@@ -242,7 +236,8 @@ behaviour change without a major version.
 
 - `new BottomSheetEngine(options)` and `new BottomSheetCore(options)`
 - Moving: `snapTo(id, { velocity?, signal? })`, `open(id?)`, `close(reason?)`,
-  `expand()`, `collapse()`, `dragTo(size, { velocity?, signal? })`
+  `expand()`, `collapse()`, each resolving with `"landed"`, `"vetoed"` or
+  `"replaced"`, and `dragTo(size, { velocity?, signal? })`
 - Points: `setSnapPoints(points, allowed?)`, `setAllowed(ids, snap?)`,
   `getAllowedIds()`, `getResolvedSnaps()`, `recompute()`
 - Behaviour: `setMode()`, `getMode()`, `setPersistent()`, `setDisableClose()`,

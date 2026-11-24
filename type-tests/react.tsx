@@ -91,7 +91,8 @@ export function Hook() {
   const { sheetRef, handleRef, contentRef, backdropRef, state, snapTo } =
     useBottomSheet({ snapPoints, initial: "peek" });
   void state;
-  void snapTo;
+  const moved: Promise<"landed" | "vetoed" | "replaced"> = snapTo("full");
+  void moved;
   return (
     <div className="bs-root">
       <div ref={backdropRef} className="bs-backdrop" />

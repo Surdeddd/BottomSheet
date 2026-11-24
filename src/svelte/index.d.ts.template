@@ -5,6 +5,7 @@ import type {
   CloseReason,
   EngineOptions,
   EngineState,
+  MoveOutcome,
   SheetEventMap,
   SheetMode,
   SnapPoint,
@@ -49,11 +50,11 @@ export type SvelteBottomSheetController<TId extends string = string> = {
     event: K,
     fn: (payload: SheetEventMap[K]) => void,
   ): () => void;
-  snapTo(id: TId): Promise<void>;
-  open(id?: TId): Promise<void>;
-  close(reason?: CloseReason): Promise<void>;
-  expand(): Promise<void>;
-  collapse(): Promise<void>;
+  snapTo(id: TId): Promise<MoveOutcome>;
+  open(id?: TId): Promise<MoveOutcome>;
+  close(reason?: CloseReason): Promise<MoveOutcome>;
+  expand(): Promise<MoveOutcome>;
+  collapse(): Promise<MoveOutcome>;
   isTop(): boolean;
   depth(): number;
   setAllowed(ids: TId[], snap?: TId): void;
@@ -118,11 +119,11 @@ export type BottomSheetProps<TId extends string = string> = Omit<
 };
 
 export type BottomSheetExports<TId extends string = string> = {
-  snapTo(id: TId): Promise<void>;
-  open(id?: TId): Promise<void>;
-  close(reason?: CloseReason): Promise<void>;
-  expand(): Promise<void>;
-  collapse(): Promise<void>;
+  snapTo(id: TId): Promise<MoveOutcome>;
+  open(id?: TId): Promise<MoveOutcome>;
+  close(reason?: CloseReason): Promise<MoveOutcome>;
+  expand(): Promise<MoveOutcome>;
+  collapse(): Promise<MoveOutcome>;
   isTop(): boolean;
   depth(): number;
   setAllowed(ids: TId[], snap?: TId): void;
@@ -151,4 +152,5 @@ export type {
   SheetMode,
   EngineState,
   EngineOptions,
+  MoveOutcome,
 };

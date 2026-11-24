@@ -22,7 +22,11 @@ import {
   pickEngineOptions,
   type EngineConfig,
 } from "../core/primitives/option-keys";
-import { closedSnapId, syncOpen } from "../core/primitives/open-state";
+import {
+  closedSnapId,
+  snapLabel,
+  syncOpen,
+} from "../core/primitives/open-state";
 import { startsClosed } from "../core/primitives/snap-points";
 import type {
   EngineOptions,
@@ -84,6 +88,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
   const state = useStore<EngineState>({
     size: 0,
     activeId: initialActive,
+    activeLabel: snapLabel(props.snapPoints, initialActive),
     phase: "closed",
     isDragging: false,
     isAnimating: false,
@@ -142,6 +147,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
       const s = engine.state;
       state.size = s.size;
       state.activeId = s.activeId;
+      state.activeLabel = s.activeLabel;
       state.isDragging = s.isDragging;
       state.phase = s.phase;
       state.isAnimating = s.isAnimating;
@@ -304,7 +310,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
         data-mode={physicalMode.value}
         data-bs-rest={restAtStart}
         data-active={state.activeId}
-        role="dialog"
+        role={props.focusTrap ? "dialog" : "region"}
         aria-modal={props.focusTrap ? "true" : undefined}
         aria-label={ariaLabel}
       >
@@ -331,7 +337,7 @@ export const BottomSheet = component$<BottomSheetProps>(props => {
           <Slot name="footer" />
         </div>
         <span class="bs-sr-only" role="status" aria-live="polite">
-          {state.activeId}
+          {state.activeLabel}
         </span>
       </section>
       <div

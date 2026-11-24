@@ -85,6 +85,7 @@ export function visualViewportFeature(): EngineFeature {
     name: "visual-viewport",
     install: ctx => {
       if (typeof window === "undefined") return;
+      if (ctx.options.bounds === "container") return;
       return installVisualViewport({
         isVerticalAxis: ctx.isVerticalAxis,
         isDestroyed: ctx.isDestroyed,

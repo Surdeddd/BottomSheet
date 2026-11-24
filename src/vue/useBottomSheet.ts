@@ -7,7 +7,8 @@ import {
 } from "../core/features/teleport";
 import { guessPhysicalMode } from "../core/primitives/logical-mode";
 import { startsClosed } from "../core/primitives/snap-points";
-import { closedSnapId } from "../core/primitives/open-state";
+import { closedSnapId, snapLabel } from "../core/primitives/open-state";
+import { notMounted } from "../core/primitives/move-outcome";
 import type {
   EngineOptions,
   EngineState,
@@ -48,9 +49,11 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   backdropRef: Ref<HTMLElement | null>;
   screenRef: Ref<HTMLElement | null>;
   state: EngineState & { activeId: TId };
-  snapTo: (id: TId) => Promise<void>;
-  open: (id?: TId) => Promise<void>;
-  close: (reason?: import("../core/types").CloseReason) => Promise<void>;
+  snapTo: (id: TId) => Promise<import("../core/types").MoveOutcome>;
+  open: (id?: TId) => Promise<import("../core/types").MoveOutcome>;
+  close: (
+    reason?: import("../core/types").CloseReason,
+  ) => Promise<import("../core/types").MoveOutcome>;
   setAllowed: (ids: TId[], snap?: TId) => void;
   setSnapPoints: (
     points: EngineOptions["snapPoints"],
@@ -73,8 +76,8 @@ export type UseBottomSheetVueReturn<TId extends string = string> = {
   setBackdropColor: (color: string | undefined | null) => void;
   setRadius: (r: string | number) => void;
   setMaxHeight: (h: string | number) => void;
-  expand: () => Promise<void>;
-  collapse: () => Promise<void>;
+  expand: () => Promise<import("../core/types").MoveOutcome>;
+  collapse: () => Promise<import("../core/types").MoveOutcome>;
   isTop: () => boolean;
   depth: () => number;
   canDismiss: () => boolean;
@@ -104,9 +107,11 @@ export function useBottomSheet<TId extends string = string>(
   };
   const pending: PendingEntry[] = [];
 
+  const firstId = opts.initial ?? opts.snapPoints[0]?.id ?? "default";
   const state = reactive<EngineState>({
     size: 0,
-    activeId: opts.initial ?? opts.snapPoints[0]?.id ?? "default",
+    activeId: firstId,
+    activeLabel: snapLabel(opts.snapPoints, firstId),
     phase: "closed",
     isDragging: false,
     isAnimating: false,
@@ -186,10 +191,10 @@ export function useBottomSheet<TId extends string = string>(
     backdropRef,
     screenRef,
     state,
-    snapTo: (id: TId) => engine?.snapTo(id) ?? Promise.resolve(),
-    open: (id?: TId) => engine?.open(id) ?? Promise.resolve(),
+    snapTo: (id: TId) => engine?.snapTo(id) ?? notMounted(),
+    open: (id?: TId) => engine?.open(id) ?? notMounted(),
     close: (reason?: import("../core/types").CloseReason) =>
-      engine?.close(reason) ?? Promise.resolve(),
+      engine?.close(reason) ?? notMounted(),
     setAllowed: (ids: TId[], snap?: TId) =>
       engine?.setAllowed(ids as unknown as string[], snap),
     setSnapPoints: (
@@ -216,8 +221,8 @@ export function useBottomSheet<TId extends string = string>(
       engine?.setBackdropColor(color),
     setRadius: (r: string | number) => engine?.setRadius(r),
     setMaxHeight: (h: string | number) => engine?.setMaxHeight(h),
-    expand: () => engine?.expand() ?? Promise.resolve(),
-    collapse: () => engine?.collapse() ?? Promise.resolve(),
+    expand: () => engine?.expand() ?? notMounted(),
+    collapse: () => engine?.collapse() ?? notMounted(),
     isTop: () => engine?.isTop() ?? false,
     depth: () => engine?.depth() ?? 0,
     canDismiss: () => engine?.canDismiss() ?? false,

@@ -1,6 +1,8 @@
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
+import { notMounted } from "../core/primitives/move-outcome";
 import type {
   CloseReason,
+  MoveOutcome,
   EngineOptions,
   EngineState,
   ScrimOverlayOptions,
@@ -51,11 +53,11 @@ export type SvelteBottomSheetController<TId extends string = string> = {
     event: K,
     fn: (payload: SheetEventMap[K]) => void,
   ) => () => void;
-  snapTo: (id: TId) => Promise<void>;
-  open: (id?: TId) => Promise<void>;
-  close: (reason?: CloseReason) => Promise<void>;
-  expand: () => Promise<void>;
-  collapse: () => Promise<void>;
+  snapTo: (id: TId) => Promise<MoveOutcome>;
+  open: (id?: TId) => Promise<MoveOutcome>;
+  close: (reason?: CloseReason) => Promise<MoveOutcome>;
+  expand: () => Promise<MoveOutcome>;
+  collapse: () => Promise<MoveOutcome>;
   isTop: () => boolean;
   depth: () => number;
   setAllowed: (ids: TId[], snap?: TId) => void;
@@ -75,6 +77,7 @@ export type SvelteBottomSheetController<TId extends string = string> = {
 const SSR_STATE: EngineState = Object.freeze({
   size: 0,
   activeId: "",
+  activeLabel: "",
   phase: "closed",
   isDragging: false,
   isAnimating: false,
@@ -147,12 +150,12 @@ export function createBottomSheet<TId extends string = string>(
         }
       };
     },
-    snapTo: (id: TId) => engine?.snapTo(id) ?? Promise.resolve(),
-    open: (id?: TId) => engine?.open(id) ?? Promise.resolve(),
+    snapTo: (id: TId) => engine?.snapTo(id) ?? notMounted(),
+    open: (id?: TId) => engine?.open(id) ?? notMounted(),
     close: (reason?: CloseReason) =>
-      engine?.close(reason) ?? Promise.resolve(),
-    expand: () => engine?.expand() ?? Promise.resolve(),
-    collapse: () => engine?.collapse() ?? Promise.resolve(),
+      engine?.close(reason) ?? notMounted(),
+    expand: () => engine?.expand() ?? notMounted(),
+    collapse: () => engine?.collapse() ?? notMounted(),
     isTop: () => engine?.isTop() ?? false,
     depth: () => engine?.depth() ?? 0,
     setAllowed: (ids: TId[], snap?: TId) =>
@@ -178,4 +181,4 @@ export function createBottomSheet<TId extends string = string>(
 export { resolveTeleportTarget, teleportElements };
 export { guessPhysicalMode } from "../core/primitives/logical-mode";
 export { startsClosed } from "../core/primitives/snap-points";
-export { closedSnapId } from "../core/primitives/open-state";
+export { closedSnapId, snapLabel } from "../core/primitives/open-state";

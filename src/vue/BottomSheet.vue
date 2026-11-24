@@ -435,7 +435,7 @@ defineExpose({
           <slot name="footer" :state="state" />
         </div>
         <span class="bs-sr-only" role="status" aria-live="polite">
-          {{ state.activeId }}
+          {{ state.activeLabel }}
         </span>
       </section>
       <div

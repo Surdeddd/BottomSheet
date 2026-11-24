@@ -7,7 +7,7 @@ import {
 
 export type LifecycleControllerDeps = {
   element: HTMLElement;
-  close: () => Promise<void> | void;
+  close: () => Promise<unknown> | void;
   isTop?: () => boolean;
 };
 

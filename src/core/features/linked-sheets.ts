@@ -2,7 +2,7 @@ export type LinkedSheet = {
   getAllowedIds(): string[];
   getResolvedSnaps(): readonly { id: string; size: number }[];
   readonly state: { activeId: string; size: number };
-  snapTo(id: string): Promise<void> | void;
+  snapTo(id: string): Promise<unknown> | void;
 };
 
 export function notifyLinkedSheets(

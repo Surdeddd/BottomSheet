@@ -8,6 +8,7 @@ export type MaxHeightControllerDeps = {
   getMaxAxisSize: () => number;
   setMaxAxisSize: (size: number) => void;
   recompute: () => void;
+  getContainer?: () => HTMLElement | null;
 };
 
 export type MaxHeightController = {
@@ -35,7 +36,12 @@ export function createMaxHeightController(
       return;
     }
     if (typeof window === "undefined") return;
-    const measured = resolveSnap(raw, deps.mode);
+    const measured = resolveSnap(
+      raw,
+      deps.mode,
+      undefined,
+      deps.getContainer?.(),
+    );
     maxHeightCap = measured > 0 ? measured : undefined;
   };
 

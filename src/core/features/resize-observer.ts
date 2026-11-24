@@ -1,6 +1,7 @@
 import type { TransformAxis } from "../primitives/transform";
 import type { ResolvedSnap } from "../primitives/snap-points";
 import { SIZE_WRITE_EPSILON } from "../primitives/hot-path-thresholds";
+import { extentOf } from "../primitives/css-length";
 
 export type Seat = { target: number | null; max: number };
 
@@ -31,6 +32,7 @@ export type ResizeObserverDeps = {
   recomputeSnaps: () => void;
   reseat: () => void;
   landNow: () => void;
+  getContainer?: () => HTMLElement | null;
 };
 
 export function installResizeObserver(deps: ResizeObserverDeps): () => void {
@@ -44,9 +46,7 @@ export function installResizeObserver(deps: ResizeObserverDeps): () => void {
     deps.recomputeSnaps();
     const mode = deps.getMode();
     const isVerticalAxis = mode === "bottom" || mode === "top";
-    const viewportSize = isVerticalAxis
-      ? window.innerHeight
-      : window.innerWidth;
+    const viewportSize = extentOf(deps.getContainer?.(), isVerticalAxis);
     const max = deps.getMaxAxisSize();
     if (viewportSize > 0 && viewportSize < max) {
       deps.setMaxAxisSize(viewportSize);
@@ -59,6 +59,8 @@ export function installResizeObserver(deps: ResizeObserverDeps): () => void {
   if (typeof ResizeObserver !== "undefined") {
     resizeObserver = new ResizeObserver(onResize);
     resizeObserver.observe(document.documentElement);
+    const container = deps.getContainer?.();
+    if (container) resizeObserver.observe(container);
   } else {
     window.addEventListener("resize", onResize);
   }

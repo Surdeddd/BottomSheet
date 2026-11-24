@@ -1,9 +1,11 @@
 import { BottomSheetEngine } from "../core/BottomSheetEngine";
 import { guessPhysicalMode } from "../core/primitives/logical-mode";
+import { notMounted } from "../core/primitives/move-outcome";
 import type {
   CloseReason,
   EngineOptions,
   EngineState,
+  MoveOutcome,
 } from "../core/types";
 import { closedSnapId, syncOpen } from "../core/primitives/open-state";
 import {
@@ -271,8 +273,10 @@ export class BottomSheetElement extends BaseHTMLElement {
       given(ATTR_FOCUS_TRAP, isTrue) ?? extra.focusTrap ?? false;
 
     if (focusTrap) {
+      sheet.setAttribute("role", "dialog");
       sheet.setAttribute("aria-modal", "true");
     } else {
+      sheet.setAttribute("role", "region");
       sheet.removeAttribute("aria-modal");
     }
 
@@ -370,7 +374,7 @@ export class BottomSheetElement extends BaseHTMLElement {
     this.offHandlers = [
       this.engine.on("snap", payload => {
         sheet.setAttribute("data-active", payload.id);
-        announcer.textContent = payload.id;
+        announcer.textContent = this.engine?.state.activeLabel ?? payload.id;
         this.dispatchEvent(new CustomEvent("snap", { detail: payload }));
       }),
       this.engine.on("before-snap", payload => {
@@ -420,20 +424,20 @@ export class BottomSheetElement extends BaseHTMLElement {
     ];
   }
 
-  snapTo(id: string): Promise<void> {
-    return this.engine?.snapTo(id) ?? Promise.resolve();
+  snapTo(id: string): Promise<MoveOutcome> {
+    return this.engine?.snapTo(id) ?? notMounted();
   }
-  open(id?: string): Promise<void> {
-    return this.engine?.open(id) ?? Promise.resolve();
+  open(id?: string): Promise<MoveOutcome> {
+    return this.engine?.open(id) ?? notMounted();
   }
-  close(reason?: CloseReason): Promise<void> {
-    return this.engine?.close(reason) ?? Promise.resolve();
+  close(reason?: CloseReason): Promise<MoveOutcome> {
+    return this.engine?.close(reason) ?? notMounted();
   }
-  expand(): Promise<void> {
-    return this.engine?.expand() ?? Promise.resolve();
+  expand(): Promise<MoveOutcome> {
+    return this.engine?.expand() ?? notMounted();
   }
-  collapse(): Promise<void> {
-    return this.engine?.collapse() ?? Promise.resolve();
+  collapse(): Promise<MoveOutcome> {
+    return this.engine?.collapse() ?? notMounted();
   }
   isTop(): boolean {
     return this.engine?.isTop() ?? false;
@@ -488,11 +492,11 @@ export class BottomSheetElement extends BaseHTMLElement {
 
 export type TypedBottomSheetElement<TId extends string = string> =
   HTMLElement & {
-    snapTo: (id: TId) => Promise<void>;
-    open: (id?: TId) => Promise<void>;
-    close: (reason?: CloseReason) => Promise<void>;
-    expand: () => Promise<void>;
-    collapse: () => Promise<void>;
+    snapTo: (id: TId) => Promise<MoveOutcome>;
+    open: (id?: TId) => Promise<MoveOutcome>;
+    close: (reason?: CloseReason) => Promise<MoveOutcome>;
+    expand: () => Promise<MoveOutcome>;
+    collapse: () => Promise<MoveOutcome>;
     isTop: () => boolean;
     depth: () => number;
     canDismiss: () => boolean;

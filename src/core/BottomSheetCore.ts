@@ -21,9 +21,11 @@ import {
   type MaxHeightControllerDeps,
 } from "./features/max-height-controller";
 import {
+  containerOf,
   measureFitSize,
   type FitMeasurementDeps,
 } from "./features/fit-measurement";
+import { dropProbe } from "./primitives/css-length";
 import { installSliderKeyboard } from "./features/slider-keyboard";
 import { ScrimController } from "./controllers/scrim-controller";
 import { AnimationRunner } from "./controllers/animation-runner";
@@ -62,6 +64,7 @@ import { TeardownStack } from "./primitives/teardown-stack";
 import { WriteSentinel } from "./primitives/opacity-dedup";
 import type {
   CloseReason,
+  MoveOutcome,
   DragSurfaceKind,
   EngineFeature,
   EngineFeatureContext,
@@ -77,13 +80,17 @@ import type {
   SheetPhase,
   TeardownScope,
 } from "./types";
+import { snapLabel } from "./primitives/open-state";
 import type { ResolvedSnap } from "./primitives/snap-points";
 
 type Listener<K extends keyof SheetEventMap> = (
   payload: SheetEventMap[K],
 ) => void;
 
-type Flight = { id: string; done: Promise<void> };
+type Flight = { id: string; done: Promise<MoveOutcome>; landed: boolean };
+
+const LANDED: Promise<MoveOutcome> = Promise.resolve("landed");
+const VETOED: Promise<MoveOutcome> = Promise.resolve("vetoed");
 
 const HAPTIC_DURATION_MS = 8;
 
@@ -110,6 +117,7 @@ export class BottomSheetCore {
   private fitContentToSnap: boolean;
   private settleAnimation: "waapi" | undefined;
   private persistent: boolean;
+  private bounded = false;
   private keyboardInset = 0;
   private disableCloseFlag: boolean;
   private disableDragFlag: boolean;
@@ -278,6 +286,8 @@ export class BottomSheetCore {
 
     this.rootEl = this.element.closest<HTMLElement>(".bs-root");
     this.homeRoot = homeRootOf(this.rootEl);
+    this.bounded = opts.bounds === "container";
+    if (this.bounded) this.rootEl?.setAttribute("data-bs-bounds", "");
     this.maxHeightDeps = {
       element: this.element,
       mode: this.mode,
@@ -286,6 +296,7 @@ export class BottomSheetCore {
         this.snaps.setMaxAxisSize(size);
       },
       recompute: () => this.recompute(),
+      getContainer: this.container,
     };
     this.maxHeight = createMaxHeightController(this.maxHeightDeps);
     this.fitDeps = {
@@ -303,6 +314,7 @@ export class BottomSheetCore {
         this.element.style[layoutAxis(this.mode as TransformAxis)] =
           `${maxAxisSize}px`;
       },
+      this.container,
     );
     const initial = this.snaps.findById(this.activeId);
     if (initial) this.size = initial.size;
@@ -379,6 +391,7 @@ export class BottomSheetCore {
         autoCollapseAfter,
         fitContentToSnap: this.fitContentToSnap,
         settleAnimation: this.settleAnimation,
+        bounds: this.bounded ? "container" : "window",
       },
       isDestroyed: () => this.destroyed,
       isDragging: () => this.isDraggingAny(),
@@ -458,6 +471,7 @@ export class BottomSheetCore {
     return {
       size: this.size,
       activeId: this.activeId,
+      activeLabel: this.labelOf(this.activeId),
       phase: this.phase,
       isDragging: this.isDraggingAny(),
       isAnimating:
@@ -527,7 +541,7 @@ export class BottomSheetCore {
       | number
       | { velocity?: number; signal?: AbortSignal } = 0,
     _skipBeforeSnap = false,
-  ): Promise<void> {
+  ): Promise<MoveOutcome> {
     const opts =
       typeof velocityOrOpts === "object"
         ? velocityOrOpts
@@ -545,23 +559,23 @@ export class BottomSheetCore {
     velocityPxPerMs = 0,
     skipBeforeSnap = false,
     externalSignal?: AbortSignal,
-  ): Promise<void> {
-    if (this.destroyed || externalSignal?.aborted) return Promise.resolve();
+  ): Promise<MoveOutcome> {
+    if (this.destroyed || externalSignal?.aborted) return VETOED;
     const target = this.snaps.findById(id);
     if (!target) {
       devWarn(`[BottomSheet] unknown snap id: ${id}`);
-      return Promise.resolve();
+      return VETOED;
     }
     if (!this.snaps.getAllowedIds().includes(id)) {
       devWarn(`[BottomSheet] snap "${id}" is not in allowed list`);
-      return Promise.resolve();
+      return VETOED;
     }
-    if (target.size === 0 && this.closingBlocked()) return Promise.resolve();
+    if (target.size === 0 && this.closingBlocked()) return VETOED;
     if (!externalSignal && this.inFlight?.id === id) return this.inFlight.done;
     if (!skipBeforeSnap && this.emitBeforeSnap(target, this.activeId)) {
-      return Promise.resolve();
+      return VETOED;
     }
-    const flight: Flight = { id, done: Promise.resolve() };
+    const flight: Flight = { id, done: LANDED, landed: false };
     flight.done = this.runTransition(
       target,
       velocityPxPerMs,
@@ -578,10 +592,10 @@ export class BottomSheetCore {
     fromDrag: boolean,
     externalSignal?: AbortSignal,
     flight: Flight | null = null,
-  ): Promise<void> {
+  ): Promise<MoveOutcome> {
     const signal = this.beginTransition(target);
     const transition = this.transition;
-    if (signal.aborted || !transition) return;
+    if (signal.aborted || !transition) return "replaced";
     this.inFlight = flight;
     const onExternalAbort = (): void => this.suspend();
     externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
@@ -610,12 +624,13 @@ export class BottomSheetCore {
       await this.animation.animateTo(transition.size, velocityPxPerMs);
     }
     externalSignal?.removeEventListener("abort", onExternalAbort);
-    if (signal.aborted) return;
+    if (signal.aborted) return flight?.landed ? "landed" : "replaced";
     if (this.size !== transition.size) this.applySize(transition.size);
     this.land(fromDrag);
     if (this.settleHolds.length > 0) {
       await Promise.allSettled(this.settleHolds.splice(0));
     }
+    return "landed";
   }
 
   private beginTransition(target: ResolvedSnap): AbortSignal {
@@ -707,12 +722,14 @@ export class BottomSheetCore {
 
   private landNow(): void {
     const transition = this.transition;
+    const flight = this.inFlight;
     if (this.destroyed || !transition || this.isDraggingAny()) return;
     this.animation.cancel();
     this.currentViewTransition?.skipTransition?.();
     this.newCycle();
     this.applySize(transition.size);
     this.land(false);
+    if (flight) flight.landed = true;
   }
 
   private reseat(): void {
@@ -785,6 +802,9 @@ export class BottomSheetCore {
     if (id === "closed") return true;
     return this.snapPointsRaw.find(p => p.id === id)?.size === 0;
   }
+
+  private container = (): HTMLElement | null =>
+    this.bounded ? containerOf(this.element) : null;
 
   private closingBlocked(): boolean {
     return this.disableCloseFlag && this.phase !== "closed";
@@ -865,10 +885,10 @@ export class BottomSheetCore {
     externalSignal?.removeEventListener("abort", onExternalAbort);
   }
 
-  open(id?: string): Promise<void> {
-    if (this.destroyed) return Promise.resolve();
+  open(id?: string): Promise<MoveOutcome> {
+    if (this.destroyed) return VETOED;
     if (!id && (this.phase === "open" || this.phase === "opening")) {
-      return Promise.resolve();
+      return this.inFlight?.done ?? LANDED;
     }
     const target =
       id ??
@@ -879,16 +899,14 @@ export class BottomSheetCore {
     return this.snapTo(target);
   }
 
-  close(reason: CloseReason = "programmatic"): Promise<void> {
-    if (this.destroyed || this.disableCloseFlag) return Promise.resolve();
-    if (this.persistent && reason !== "programmatic") return Promise.resolve();
+  close(reason: CloseReason = "programmatic"): Promise<MoveOutcome> {
+    if (this.destroyed || this.disableCloseFlag) return VETOED;
+    if (this.persistent && reason !== "programmatic") return VETOED;
     const target = this.zeroSnapId() ?? this.allowedIdsBySize()[0];
-    if (target === undefined) return Promise.resolve();
-    if (this.phase === "closed" && this.activeId === target) {
-      return Promise.resolve();
-    }
+    if (target === undefined) return VETOED;
+    if (this.phase === "closed" && this.activeId === target) return LANDED;
     const visible = this.phase === "open" || this.phase === "opening";
-    if (visible && this.emitBeforeClose(reason)) return Promise.resolve();
+    if (visible && this.emitBeforeClose(reason)) return VETOED;
     return this.snapTo(target);
   }
 
@@ -981,20 +999,20 @@ export class BottomSheetCore {
     return sheetStack.depthOf(this.id);
   }
 
-  expand(): Promise<void> {
-    if (this.destroyed) return Promise.resolve();
+  expand(): Promise<MoveOutcome> {
+    if (this.destroyed) return VETOED;
     const ids = this.allowedIdsBySize();
     const target = ids[ids.length - 1];
-    if (!target) return Promise.resolve();
+    if (!target) return VETOED;
     return this.snapTo(target);
   }
 
-  collapse(): Promise<void> {
-    if (this.destroyed) return Promise.resolve();
+  collapse(): Promise<MoveOutcome> {
+    if (this.destroyed) return VETOED;
     const ids = this.allowedIdsBySize();
     const nonZero = ids.find(id => (this.snaps.findById(id)?.size ?? 0) > 0);
     const target = nonZero ?? ids[0];
-    if (!target) return Promise.resolve();
+    if (!target) return VETOED;
     return this.snapTo(target);
   }
 
@@ -1232,6 +1250,11 @@ export class BottomSheetCore {
       host.style.removeProperty("--bs-keyboard-inset");
     }
     this.element.style.removeProperty("--bs-keyboard-inset");
+    if (this.bounded) {
+      const host = this.container();
+      if (host) dropProbe(host);
+      this.rootEl?.removeAttribute("data-bs-bounds");
+    }
     if (this.screenComponent) {
       this.screenComponent.style.opacity = "";
       this.screenComponent.style.display = "";
@@ -1326,8 +1349,16 @@ export class BottomSheetCore {
       );
   }
 
+  private labelOf(id: string): string {
+    return snapLabel(this.snapPointsRaw, id);
+  }
+
   private updateAriaSlider(): void {
-    this.aria.setValue(this.allowedIdsBySize(), this.activeId);
+    this.aria.setValue(
+      this.allowedIdsBySize(),
+      this.activeId,
+      this.labelOf(this.activeId),
+    );
   }
 
   private registerInStack(): void {
@@ -1554,6 +1585,7 @@ export class BottomSheetCore {
         recomputeSnaps: () => this.recomputeSnaps(),
         reseat: () => this.reseat(),
         landNow: () => this.landNow(),
+        getContainer: this.container,
       }));
 
       if (this.lifecycle.closeOnEscape) {

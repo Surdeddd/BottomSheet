@@ -109,6 +109,7 @@ export const mountOverlayDemo = (
     const { isOpen, isAnimating } = engine.state;
     updateCb?.({
       activeId: isOpen ? "open" : "closed",
+      activeLabel: isOpen ? "open" : "closed",
       progress: isOpen ? 1 : 0,
       size: 0,
       isDragging: false,

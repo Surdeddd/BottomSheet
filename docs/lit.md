@@ -12,7 +12,7 @@ import "@surdeddd/bottom-sheet/element";
 @customElement("filter-panel")
 export class FilterPanel extends LitElement {
   @state() private active = "closed";
-  @query("bottom-sheet") private sheet!: HTMLElement & { open(): Promise<void> };
+  @query("bottom-sheet") private sheet!: HTMLElement & { open(): Promise<unknown> };
 
   render() {
     return html`

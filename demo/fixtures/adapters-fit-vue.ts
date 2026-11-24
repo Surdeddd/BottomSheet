@@ -1,6 +1,12 @@
 import { createApp, h } from "vue";
 import { BottomSheet } from "@surdeddd/bottom-sheet/vue";
-import { POINTS, ROWS, hostFor, type AdapterHandle } from "./adapters-fit-shared";
+import {
+  POINTS,
+  ROWS,
+  TRAP,
+  hostFor,
+  type AdapterHandle,
+} from "./adapters-fit-shared";
 
 export const mountVue = (): AdapterHandle => {
   let sheet: AdapterHandle | null = null;
@@ -16,6 +22,7 @@ export const mountVue = (): AdapterHandle => {
           initial: "closed",
           animation: "tween",
           lockBodyScroll: false,
+          focusTrap: TRAP,
           fitContentToSnap: true,
         },
         {

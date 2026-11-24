@@ -1,3 +1,4 @@
+import { extentOf } from "../primitives/css-length";
 import { layoutAxis, type TransformAxis } from "../primitives/transform";
 import type { SheetMode } from "../types";
 
@@ -41,16 +42,17 @@ export const measureSheetNatural = (
   return natural;
 };
 
+export const containerOf = (element: HTMLElement): HTMLElement | null => {
+  const op = element.offsetParent as HTMLElement | null;
+  return op && op !== document.body && op !== document.documentElement
+    ? op
+    : null;
+};
+
 export const containingExtent = (
   element: HTMLElement,
   vertical: boolean,
-): number => {
-  const op = element.offsetParent as HTMLElement | null;
-  if (op && op !== document.body && op !== document.documentElement) {
-    return vertical ? op.clientHeight : op.clientWidth;
-  }
-  return vertical ? window.innerHeight : window.innerWidth;
-};
+): number => extentOf(containerOf(element), vertical);
 
 export const measureFitSize = (deps: FitMeasurementDeps): number => {
   const vertical = layoutAxis(deps.mode as TransformAxis) === "height";

@@ -598,7 +598,7 @@ describe("BottomSheetEngine — linkedSheets", () => {
       respectReducedMotion: false,
     });
     engine.setLinkedSheets([engine]);
-    await expect(engine.open()).resolves.toBeUndefined();
+    await expect(engine.open()).resolves.toBe("landed");
     engine.destroy();
   });
 
@@ -1249,8 +1249,8 @@ describe("BottomSheetEngine — scroll position preservation", () => {
       duration: 0,
       respectReducedMotion: false,
     });
-    await expect(engine.snapTo("mini")).resolves.toBeUndefined();
-    await expect(engine.snapTo("full")).resolves.toBeUndefined();
+    await expect(engine.snapTo("mini")).resolves.toBe("landed");
+    await expect(engine.snapTo("full")).resolves.toBe("landed");
     engine.destroy();
   });
 });
@@ -2309,8 +2309,8 @@ describe("AnimationRunner — null-overwrite race (B1 regression)", () => {
       respectReducedMotion: false,
     });
     let raceError: unknown;
-    let firstSnap: Promise<void>;
-    let secondSnap: Promise<void>;
+    let firstSnap: Promise<unknown>;
+    let secondSnap: Promise<unknown>;
     expect(() => {
       firstSnap = engine.snapTo("b");
       secondSnap = engine.snapTo("c");

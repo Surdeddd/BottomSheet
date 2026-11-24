@@ -96,14 +96,15 @@ await, it checks `signal.aborted` and bails if a newer cycle has aborted
 the controller.
 
 ```ts
-async snapTo(id: string): Promise<void> {
-  if (this.destroyed) return;
+async snapTo(id: string): Promise<MoveOutcome> {
+  if (this.destroyed) return "vetoed";
   const signal = this.newCycle();      // aborts prior controller, returns new signal
   await this.animateTo(target.size);   // animation runs; resize/destroy/concurrent
                                         // snapTo can call newCycle() again, which
                                         // flips `signal.aborted` to true
-  if (signal.aborted) return;          // post-await guard short-circuits stale path
+  if (signal.aborted) return "replaced"; // post-await guard short-circuits stale path
   this.emit("snap", { id, size });     // safe to fire — we own this cycle
+  return "landed";
 }
 ```
 

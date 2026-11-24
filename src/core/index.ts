@@ -33,6 +33,7 @@ export type {
   LogicalSheetMode,
   SheetEventMap,
   CloseReason,
+  MoveOutcome,
   EngineOptions,
   EngineState,
   SheetPhase,

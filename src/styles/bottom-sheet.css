@@ -372,6 +372,10 @@
   z-index: calc(var(--bs-z-sheet) + 1);
   pointer-events: auto;
 }
+
+.bs-root[data-bs-bounds] > :is(.bs-backdrop, .bs-screen, .bs-sheet, .bs-button-slot) {
+  position: absolute;
+}
 .bs-button-slot[data-side="left"] {
   left: 16px;
   bottom: calc(var(--bs-size, 0px) + var(--bs-keyboard-inset, 0px) + 12px);

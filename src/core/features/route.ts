@@ -21,7 +21,7 @@ export type RouteDeps = {
   closeOnBack: boolean;
   isOpen: () => boolean;
   isDestroyed: () => boolean;
-  close: () => Promise<void>;
+  close: () => Promise<unknown>;
   hold: (settled: Promise<void>) => void;
   on: RouteEngine["on"];
   sheetId: string;
@@ -79,7 +79,7 @@ export const __resetRouteCoordinatorForTests = (): void => {
 export type RouteChangeDeps = {
   isDestroyed: () => boolean;
   isOpen: () => boolean;
-  close: () => Promise<void>;
+  close: () => Promise<unknown>;
 };
 
 export function installRouteChange(deps: RouteChangeDeps): () => void {
