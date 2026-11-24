@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { BottomSheetEngine } from "../../src/core/BottomSheetEngine";
 import { __resetSheetStackForTests } from "../../src/core/lifecycle/sheet-stack";
 import { __resetScrollLockForTests } from "../../src/core/lifecycle/scroll-lock";
@@ -39,7 +39,13 @@ const build = (
     respectReducedMotion: false,
   });
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+const pass = (ms: number): Promise<unknown> =>
+  vi.advanceTimersByTimeAsync(ms);
+
+const landed = async <T>(move: Promise<T>): Promise<T> => {
+  await pass(600);
+  return move;
+};
 
 type Watch = { target: Element; run: () => void };
 const watches: Watch[] = [];
@@ -72,7 +78,8 @@ const installControlledObserver = (): void => {
     ControlledResizeObserver as unknown as typeof ResizeObserver;
 };
 
-const restoreObserver = (): void => {
+const restore = (): void => {
+  vi.useRealTimers();
   globalThis.ResizeObserver = RealResizeObserver;
 };
 
@@ -83,6 +90,15 @@ const fireRootResize = (): void => {
 };
 
 const reset = (): void => {
+  vi.useFakeTimers({
+    toFake: [
+      "requestAnimationFrame",
+      "cancelAnimationFrame",
+      "performance",
+      "setTimeout",
+      "clearTimeout",
+    ],
+  });
   __resetSheetStackForTests();
   __resetScrollLockForTests();
   __resetCssLengthProbeForTests();
@@ -94,7 +110,7 @@ const reset = (): void => {
 
 describe("a root resize that changes nothing for the sheet", () => {
   beforeEach(reset);
-  afterEach(restoreObserver);
+  afterEach(restore);
 
   it("reaches the engine through the observer this suite controls", () => {
     const engine = build(makeSheet());
@@ -107,7 +123,7 @@ describe("a root resize that changes nothing for the sheet", () => {
     const engine = build(makeSheet());
 
     const opening = engine.open("half");
-    await sleep(60);
+    await pass(60);
     const midFlight = engine.state.size;
     expect(midFlight).toBeGreaterThan(0);
     expect(midFlight).toBeLessThan(300);
@@ -117,7 +133,7 @@ describe("a root resize that changes nothing for the sheet", () => {
     expect(engine.state.isAnimating).toBe(true);
     expect(engine.state.size).toBeLessThan(300);
 
-    await opening;
+    await landed(opening);
     expect(engine.state.size).toBe(300);
     engine.destroy();
   });
@@ -130,10 +146,9 @@ describe("a root resize that changes nothing for the sheet", () => {
     engine.on("snap", () => events.push("snap"));
 
     const opening = engine.open("half");
-    await sleep(60);
+    await pass(60);
     fireRootResize();
-    await opening;
-    await sleep(20);
+    await landed(opening);
 
     expect(events.filter(e => e === "open")).toHaveLength(1);
     expect(events.filter(e => e === "opened")).toHaveLength(1);
@@ -153,9 +168,9 @@ describe("a root resize that changes nothing for the sheet", () => {
     });
 
     const openingA = engineA.open("half");
-    await sleep(40);
+    await pass(40);
     const openingB = engineB.open("half");
-    await Promise.all([openingA, openingB]);
+    await landed(Promise.all([openingA, openingB]));
 
     expect(bSizeWhenALanded).toBeGreaterThan(0);
     expect(bSizeWhenALanded).toBeLessThan(300);
@@ -167,7 +182,7 @@ describe("a root resize that changes nothing for the sheet", () => {
 
   it("keeps an idle sheet where it is and announces nothing", async () => {
     const engine = build(makeSheet());
-    await engine.open("half");
+    await landed(engine.open("half"));
     const events: string[] = [];
     engine.on("snap", () => events.push("snap"));
 
@@ -185,10 +200,10 @@ describe("a root resize that changes nothing for the sheet", () => {
 
     const opening = engine.open("half");
     for (let i = 0; i < 5; i++) {
-      await sleep(25);
+      await pass(25);
       fireRootResize();
     }
-    await opening;
+    await landed(opening);
 
     expect(engine.state.size).toBe(300);
     expect(events).toHaveLength(1);
@@ -198,11 +213,11 @@ describe("a root resize that changes nothing for the sheet", () => {
 
 describe("a resize that does change the sheet's geometry", () => {
   beforeEach(reset);
-  afterEach(restoreObserver);
+  afterEach(restore);
 
   it("re-seats an idle sheet on a percent snap when the viewport shrinks", async () => {
     const engine = build(makeSheet(), "50%");
-    await engine.open("half");
+    await landed(engine.open("half"));
     expect(engine.state.size).toBe(500);
 
     setViewportHeight(800);
@@ -216,11 +231,10 @@ describe("a resize that does change the sheet's geometry", () => {
     const engine = build(makeSheet(), "50%");
 
     const opening = engine.open("half");
-    await sleep(60);
+    await pass(60);
     setViewportHeight(800);
     fireRootResize();
-    await opening;
-    await sleep(20);
+    await landed(opening);
 
     expect(engine.state.size).toBe(400);
     expect(engine.state.activeId).toBe("half");
@@ -229,7 +243,7 @@ describe("a resize that does change the sheet's geometry", () => {
 
   it("clamps a pixel snap that no longer fits the viewport", async () => {
     const engine = build(makeSheet(), 900);
-    await engine.open("half");
+    await landed(engine.open("half"));
     expect(engine.state.size).toBe(900);
 
     setViewportHeight(600);

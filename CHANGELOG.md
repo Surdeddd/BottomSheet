@@ -28,7 +28,7 @@ The questions that 1.0 would have frozen are answered here, while the answers ar
 ### Fixed
 
 - **The sheet stays above the on-screen keyboard** — while the keyboard is open the engine shortens the sheet to the room the keyboard leaves. Anything that measured the snap points again took that limit away: a resize of the page, `recompute()`, `setSnapPoints()`, a new `maxHeight`, content that changed size under a `"fit"` point, or a keyboard that opened in the frame the sheet was created in. The sheet went back to its full size while it was still lifted, and its top left the screen until the keyboard moved again. The limit now holds for as long as the keyboard is open and is dropped when it closes.
-- **The retarget test no longer depends on the machine's load** — it measured how far one frame moved a tween in real time, and failed with a correct tween when a frame took long. It runs on a faked clock and asserts the exact continuation.
+- **Two unit tests no longer depend on the machine's load** — the retarget test measured how far one frame moved a tween in real time, and the root resize tests slept for 60 ms and expected to find the sheet in mid-flight. Both failed with correct code on a busy machine. They run on a faked clock, and the retarget test asserts the exact continuation.
 
 ### Sizes
 
