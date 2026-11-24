@@ -1,6 +1,6 @@
 {
   "name": "@surdeddd/bottom-sheet",
-  "version": "0.24.3",
+  "version": "0.24.4",
   "description": "Bottom sheet, drawer and modal sheet with snap points, spring physics and touch gestures. One engine for React, Vue 3, Svelte 5, Solid, Qwik, Preact and a <bottom-sheet> web component. Accessible, SSR-safe, no dependencies.",
   "type": "module",
   "license": "MIT",
