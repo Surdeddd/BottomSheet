@@ -3,7 +3,11 @@ import type { BottomSheetEngine } from "../core/BottomSheetEngine";
 import type { EngineOptions } from "../core/types";
 
 type PropSyncOpts = {
-  snapPoints: ReadonlyArray<{ id: string; size: number | string }>;
+  snapPoints: ReadonlyArray<{
+    id: string;
+    size: number | string;
+    label?: string;
+  }>;
   allowed?: ReadonlyArray<string>;
   backdropColor?: string;
   backdropOpacity?: number;
@@ -27,7 +31,7 @@ export function useEnginePropSync(
     "\x00",
   );
   const defKey = opts.snapPoints
-    .map(p => `${p.id}\x01${String(p.size)}`)
+    .map(p => `${p.id}\x01${String(p.size)}\x01${p.label ?? ""}`)
     .join("\x00");
   const defApplied = useRef(false);
   useEffect(() => {

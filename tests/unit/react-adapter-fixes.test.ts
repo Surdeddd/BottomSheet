@@ -253,6 +253,35 @@ describe("React <BottomSheet> fixes", () => {
     await act(async () => root.unmount());
   });
 
+  it("passes a new label of a snap point on to the engine", async () => {
+    const ref = createRef<BottomSheetHandle>();
+    const render = (label: string) =>
+      act(async () => {
+        root.render(
+          jsx(BottomSheet, {
+            ref,
+            snapPoints: [
+              { id: "closed", size: 0 },
+              { id: "half", size: 300, label },
+            ],
+            initial: "half",
+            animation: "tween",
+            duration: 0,
+          }),
+        );
+      });
+    const spoken = () =>
+      document.querySelector(".bs-handle")!.getAttribute("aria-valuetext");
+
+    await render("Half open");
+    expect(spoken()).toBe("Half open");
+
+    await render("Наполовину");
+    expect(spoken()).toBe("Наполовину");
+    expect(ref.current?.getEngine()?.state.activeLabel).toBe("Наполовину");
+    await act(async () => root.unmount());
+  });
+
   it("passes a changed dragFromContent on to the engine", async () => {
     const ref = createRef<BottomSheetHandle>();
     const render = (dragFromContent: boolean) =>
