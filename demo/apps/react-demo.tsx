@@ -121,7 +121,7 @@ const ReactSheet: FC<{
     registerEngine(() => ref.current?.getEngine?.() ?? null);
   }, [registerSnap, registerPoll, registerEngine]);
 
-  const remountKey = `${settings.mode}-${settings.stiffness}-${settings.damping}-${settings.focusTrap}-${settings.closeOnEscape}-${settings.rubberBand}-${settings.webgl}-${settings.webglOnCpu}`;
+  const remountKey = `${settings.mode}-${settings.stiffness}-${settings.damping}-${settings.focusTrap}-${settings.closeOnEscape}-${settings.rubberBand}-${settings.webgl}-${settings.webglOnCpu}-${settings.webglLift}`;
 
   return (
     <BottomSheet

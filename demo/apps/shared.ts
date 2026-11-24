@@ -32,6 +32,7 @@ export type DemoSettings = {
   scrimFloatingAction: boolean;
   webgl: boolean;
   webglOnCpu: boolean;
+  webglLift: boolean;
 };
 
 export type DemoController = {

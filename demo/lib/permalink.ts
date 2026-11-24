@@ -51,6 +51,7 @@ export function encode(settings: DemoSettings, adapter: AdapterKey): string {
   p.set("scrimF", settings.scrimFloatingAction ? "1" : "0");
   if (settings.webgl) p.set("webgl", "1");
   if (settings.webglOnCpu) p.set("cpu", "1");
+  if (settings.webgl && settings.webglLift) p.set("lift", "1");
   return "#" + p.toString();
 }
 
@@ -85,6 +86,7 @@ export function decode(hash: string): Permalink {
     ["scrimF", "scrimFloatingAction"],
     ["webgl", "webgl"],
     ["cpu", "webglOnCpu"],
+    ["lift", "webglLift"],
   ] as const) {
     const v = flag(p.get(k));
     if (v != null) out.settings[prop] = v;

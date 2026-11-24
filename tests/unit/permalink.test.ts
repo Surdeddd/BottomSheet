@@ -18,6 +18,7 @@ const sample: DemoSettings = {
   scrimFloatingAction: true,
   webgl: false,
   webglOnCpu: false,
+  webglLift: false,
 };
 
 describe("permalink encode/decode round-trip", () => {
@@ -46,6 +47,7 @@ describe("permalink encode/decode round-trip", () => {
       scrimFloatingAction: _sf,
       webgl: _wg,
       webglOnCpu: _wc,
+      webglLift: _wl,
       ...structural
     } = sample;
     expect(out.settings).toMatchObject(structural);
@@ -70,6 +72,7 @@ describe("permalink encode/decode round-trip", () => {
       scrimFloatingAction: _sf,
       webgl: _wg,
       webglOnCpu: _wc,
+      webglLift: _wl,
       ...structural
     } = edge;
     expect(out.settings).toMatchObject(structural);
@@ -200,6 +203,21 @@ describe("permalink and the renderer", () => {
     const out = decode(hash);
     expect(out.settings.webgl).toBe(true);
     expect(out.settings.webglOnCpu).toBe(true);
+  });
+
+  it("carries the content lift only when it is on", () => {
+    const off = encode({ ...sample, webgl: true }, "react");
+    expect(off).not.toContain("lift");
+    expect(decode(off).settings.webglLift).toBeUndefined();
+
+    const on = encode({ ...sample, webgl: true, webglLift: true }, "react");
+    expect(on).toContain("lift=1");
+    expect(decode(on).settings.webglLift).toBe(true);
+  });
+
+  it("drops the content lift from the link when the renderer itself is off", () => {
+    const hash = encode({ ...sample, webgl: false, webglLift: true }, "react");
+    expect(hash).not.toContain("lift");
   });
 
   it("ignores a renderer flag it does not understand", () => {

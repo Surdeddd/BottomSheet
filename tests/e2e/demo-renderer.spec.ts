@@ -16,6 +16,7 @@ const FRAME = "#device-frame";
 const TOGGLE = "#tg-webgl";
 const NOTE = "#renderer-note";
 const FORCE = "#renderer-force";
+const LIFT = "#tg-webgl-lift";
 
 const screen = (adapter: string): string =>
   `.device-screen[data-screen="${adapter}"]`;
@@ -240,6 +241,41 @@ test.describe("the demo's renderer switch", () => {
     await expect(page.locator("#code-react")).toContainText(
       "<BottomSheet features={[webglRenderer(",
     );
+  });
+
+  test("bending the content is a second choice, offered only once the renderer is on", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(page.locator(LIFT)).toBeDisabled();
+    await expect(page.locator(LIFT)).not.toBeChecked();
+
+    await turnOn(page, "react");
+    await expect(page.locator(LIFT)).toBeEnabled();
+    await expect(page.locator("#code-react")).not.toContainText("contentLift");
+
+    await page.locator(LIFT).check();
+
+    await expect(canvasOf(page, "react")).toHaveCount(1);
+    await expect(page.locator(NOTE)).toHaveAttribute(
+      "data-i18n",
+      /ctrl\.webgl\.note\.(lifted|cpu)/,
+    );
+    await expect(page.locator("#code-react")).toContainText(
+      'import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";',
+    );
+    await expect(page.locator("#code-react")).toContainText("lift: contentLift()");
+    await expect
+      .poll(() => page.evaluate(() => location.hash), { timeout: 3000 })
+      .toContain("lift=1");
+
+    await page.locator(TOGGLE).uncheck();
+
+    await expect(page.locator(LIFT)).toBeDisabled();
+    await expect(page.locator(LIFT)).not.toBeChecked();
+    await expect
+      .poll(() => page.evaluate(() => location.hash), { timeout: 3000 })
+      .not.toContain("lift");
   });
 
   test("says why the sheet stayed on the DOM under reduced motion", async ({

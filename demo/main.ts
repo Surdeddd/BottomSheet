@@ -71,6 +71,7 @@ const defaults: Settings = {
   scrimFloatingAction: false,
   webgl: false,
   webglOnCpu: false,
+  webglLift: false,
 };
 const settings: Settings = { ...defaults };
 

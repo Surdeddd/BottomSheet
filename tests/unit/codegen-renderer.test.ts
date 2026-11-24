@@ -18,6 +18,7 @@ const base: DemoSettings = {
   scrimFloatingAction: false,
   webgl: false,
   webglOnCpu: false,
+  webglLift: false,
 };
 
 const snaps = [
@@ -60,6 +61,28 @@ describe("the snippet and the renderer", () => {
     expect(
       genCode("react", { ...base, webgl: true, webglOnCpu: true }, snaps),
     ).toContain("webglRenderer({ allowSoftware: true })");
+  });
+
+  it("imports the content lift and passes it only when the content is lifted", () => {
+    const plain = genCode("react", { ...base, webgl: true }, snaps);
+    expect(plain).not.toContain("contentLift");
+
+    const lifted = genCode("react", { ...base, webgl: true, webglLift: true }, snaps);
+    expect(lifted).toContain(
+      'import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";',
+    );
+    expect(lifted).toContain("webglRenderer({ lift: contentLift() })");
+  });
+
+  it("puts the lift and the CPU permission into one call", () => {
+    const code = genCode(
+      "vanilla",
+      { ...base, webgl: true, webglLift: true, webglOnCpu: true },
+      snaps,
+    );
+    expect(code).toContain(
+      "webglRenderer({ lift: contentLift(), allowSoftware: true })",
+    );
   });
 
   it("keeps WebGL out of the overlay snippet, which has no such renderer", () => {

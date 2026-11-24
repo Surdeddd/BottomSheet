@@ -39,6 +39,7 @@ export type Settings = {
   scrimFloatingAction: boolean;
   webgl: boolean;
   webglOnCpu: boolean;
+  webglLift: boolean;
 };
 
 export type ThemePreset = "default" | "ios" | "material" | "vercel";

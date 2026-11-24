@@ -4,22 +4,23 @@ import type { DemoSettings } from "../apps/shared";
 import { hasHardwareWebGL } from "./hero-3d/capability";
 import { t } from "./i18n";
 
-type Factory = typeof import("@surdeddd/bottom-sheet/webgl").webglRenderer;
+type Module = typeof import("@surdeddd/bottom-sheet/webgl");
 type Outcome = WebGLUnsupportedReason | "failed" | null;
 
-let factory: Factory | null = null;
+let renderer: Module | null = null;
 let report: (reason: WebGLUnsupportedReason) => void = () => {};
 
 export const loadRenderer = async (): Promise<void> => {
-  factory ??= (await import("@surdeddd/bottom-sheet/webgl")).webglRenderer;
+  renderer ??= await import("@surdeddd/bottom-sheet/webgl");
 };
 
 export const demoFeatures = (
   settings: DemoSettings,
 ): EngineFeature[] | undefined =>
-  settings.webgl && settings.mode !== "overlay" && factory
+  settings.webgl && settings.mode !== "overlay" && renderer
     ? [
-        factory({
+        renderer.webglRenderer({
+          lift: settings.webglLift ? renderer.contentLift() : undefined,
           allowSoftware: settings.webglOnCpu,
           onUnsupported: reason => report(reason),
         }),
@@ -38,6 +39,9 @@ export const wireRendererSwitch = (
   const container = document.getElementById("renderer-switch");
   const toggle = document.getElementById("tg-webgl") as HTMLInputElement | null;
   let revealed = false;
+  const lift = document.getElementById(
+    "tg-webgl-lift",
+  ) as HTMLInputElement | null;
   const note = document.getElementById("renderer-note");
   const force = document.getElementById("renderer-force");
   let outcome: Outcome = null;
@@ -46,7 +50,8 @@ export const wireRendererSwitch = (
     if (settings.mode === "overlay") return "overlay";
     if (outcome) return outcome;
     if (!settings.webgl) return "dom";
-    return settings.webglOnCpu && !hasHardwareWebGL() ? "cpu" : "webgl";
+    if (settings.webglOnCpu && !hasHardwareWebGL()) return "cpu";
+    return settings.webglLift ? "lifted" : "webgl";
   };
 
   const render = (): void => {
@@ -56,6 +61,10 @@ export const wireRendererSwitch = (
     if (toggle) {
       toggle.checked = settings.webgl;
       toggle.disabled = settings.mode === "overlay";
+    }
+    if (lift) {
+      lift.checked = settings.webgl && settings.webglLift;
+      lift.disabled = !settings.webgl || settings.mode === "overlay";
     }
     if (note) {
       note.dataset.i18n = `ctrl.webgl.note.${key}`;
@@ -81,11 +90,18 @@ export const wireRendererSwitch = (
       }
     }
     settings.webgl = webgl;
-    if (!webgl) settings.webglOnCpu = false;
+    if (!webgl) {
+      settings.webglOnCpu = false;
+      settings.webglLift = false;
+    }
     opts.remount();
   };
 
   toggle?.addEventListener("change", () => void choose(toggle.checked));
+  lift?.addEventListener("change", () => {
+    settings.webglLift = lift.checked;
+    opts.remount();
+  });
   force?.addEventListener("click", () => {
     settings.webglOnCpu = true;
     opts.remount();
