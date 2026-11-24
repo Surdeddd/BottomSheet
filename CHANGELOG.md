@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.4]
+
+The WebGL renderer (`@surdeddd/bottom-sheet/webgl`), reworked after it was tried on real devices, where the surface shook during a drag and the text jumped at both ends of one. Nothing outside the `/webgl` entry changes, and the renderer stays experimental until it has been checked on real phones.
+
+### Fixed
+
+- **The surface no longer shakes during a drag** — the bend was computed from how far the drag had travelled, not from how the sheet was moving. Past 126 px of travel it sat at its 22 px limit, sagged while the finger rested and jumped back to the limit on the next pointer event; a finger on a touch screen never rests, so the surface jerked for as long as it was held. The bend is now a damped spring on the real position of the sheet's leading edge: the middle of the edge stays on the sheet, the corners trail by at most 22 px outside it and 8 px inside, and it is flat about a third of a second after the sheet stops. It runs the same in a snap animation as in a drag, at 60 and at 120 frames a second, and along its own edge for a sheet docked to a side.
+- **The surface cannot fall a frame behind the sheet** — during a drag the surface waited for its own next frame. It is now redrawn in the task that moves the sheet, once a frame.
+- **The text does not jump** — up to 0.24.3 every drag swapped the content for a picture of it that a 2D canvas had laid out again, and the two did not match. Now the content stays in the DOM unless you ask for it to bend (see Changed), and when it is lifted:
+  - it is drawn where the browser drew it — line by line from the boxes the browser reports, at the baseline the layout engine reports for the font, on the same device pixel row, with `letter-spacing` and `text-transform` applied. The share of the sheet's pixels that differ between the DOM and the lifted picture was 1.4–3.9 % across the three engines. It is now 0 in Firefox; 0.04 % in WebKit, where single glyphs differ by a fraction of a pixel; and in Chromium on a real screen the same 0–0.07 % by which Chromium itself repaints a DOM sheet that is pressed;
+  - what cannot be reproduced exactly is left in the DOM instead of being approximated: SVG, form controls, gradients, shadows, decorated text, generated content, anything transformed, filtered or clipped. Text hidden for screen readers no longer shows up in the picture;
+  - a press that does not move the sheet changes nothing on screen. The picture takes over once the sheet moves, and the content is back in the DOM a few frames after the release;
+  - handing the content back does not move it. Chromium paints text on different pixel rows with and without `will-change: transform` on the sheet, and the engine drops that hint when the sheet stops; the renderer keeps it for the one frame of the hand-back.
+- **The sheet's own border does not stay straight over a bent edge** — while the renderer draws the surface, the stylesheet makes the border of `.bs-sheet` transparent along with its background.
+
+### Changed
+
+- **The content bends only when asked, through `lift`** — until now it was lifted unless `liftContent: false` was set. The lift is a separate export, `webglRenderer({ lift: contentLift() })`, so its code stays out of your bundle unless you import it. Without it the content rides on the sheet as DOM and only the surface bends. `liftContent` is still accepted and no longer does anything.
+- **`/webgl` is 5.5 KB gzip**, down from 6.4 KB; with the content lift it is 9.8 KB.
+- **The demo's WebGL switch has a second toggle** for the content lift. Both still show up only when the link carries `#webgl=1`.
+
+### Added
+
+- **`contentLift()`** and the `lift` option of `webglRenderer()`.
+
+One limit is known and documented: under an emulated device pixel ratio — Chromium's device toolbar and the test tools built on it — Chromium rounds text to whole CSS pixels, so lifted lines can sit one device pixel off there. A real screen is not affected.
+
 ## [0.24.3]
 
 Release process only: no code or documentation in the package changes.

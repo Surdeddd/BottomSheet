@@ -1,7 +1,8 @@
 # WebGL renderer — design
 
 **Date:** 2026-07-26
-**Status:** shipped; experimental since 0.24.2, see [Known issues](webgl.md#known-issues)
+**Status:** shipped; experimental since 0.24.2, see [Known issues](webgl.md#known-issues).
+Revised in 0.24.4, see [What changed in 0.24.4](#what-changed-in-0244).
 
 ## Problem
 
@@ -123,6 +124,44 @@ refracts the sheet's own captured content — real distortion of real pixels.
 Background refraction would require re-rendering the page into the texture,
 which is a different product.
 
+## What changed in 0.24.4
+
+The first shipped renderer moved visibly at the two ends of a drag and shook in
+the middle of one. Three decisions in this document were behind that, and all
+three were reversed.
+
+**The bend is driven by the sheet, not by the pointer.** The draft read "drag
+velocity from the `drag` event payload". The payload carries the distance from
+where the drag began, not a velocity, so past a short pull the bend sat at its
+limit and jumped back to it on every pointer event. The bend is now a damped
+spring that follows the real position of the sheet's leading edge in real
+time. It needs nothing from the event but a wake-up, and it works the same for
+a drag, a snap animation and a sheet on any side.
+
+**The surface is the default, the content lift is opt-in.** Lifting the
+content into a texture is the only part that can disagree with the DOM, so it
+is no longer on unless asked for, and it is a separate export:
+`webglRenderer({ lift: contentLift() })`. The surface alone is 5.5 KB; the lift
+adds 4.2 KB to those who import it.
+
+**The lift reproduces, it does not re-lay-out.** The first capture laid text
+out on a 2D canvas on its own. The current one draws only what it can
+reproduce exactly and leaves the rest in the DOM:
+
+- text is drawn line by line from the boxes the browser reports, at the
+  baseline the layout engine reports for that font;
+- every line, box and image is put on the device pixel row the browser put it
+  on. Chromium and Firefox count rows from the corner of the transformed
+  sheet, WebKit from the screen;
+- the texture replaces the DOM only once the sheet has moved, so a press alone
+  changes nothing, and it is handed back while the sheet still travels.
+
+One browser behaviour is worked around rather than matched. Chromium paints
+text on different rows depending on whether its layer carries
+`will-change: transform`, and does not repaint when the hint is dropped. The
+hand-back repaints the text, so the renderer holds the hint for that one
+frame; otherwise lines would land a pixel away from where the drag found them.
+
 ## Testing
 
 - **Unit** — feature installs and tears down cleanly; degrades when
@@ -131,8 +170,11 @@ which is a different product.
   detached.
 - **E2E** — a fixture page asserts the canvas mounts, matches the sheet rect,
   and that a `webglcontextlost` event restores a visible DOM sheet.
-- **Size** — a dedicated `size-limit` entry for the subpath, and an assertion
-  that the main entry does not grow.
+- **Size** — two `size-limit` entries for the subpath, with and without the
+  content lift, and an assertion that the main entry does not grow.
+- **Pixels** — the fixture is screenshotted at rest, under a press, with the
+  content lifted and after the hand-back; the frames are compared pixel by
+  pixel in all three engines.
 
 ## Non-goals
 

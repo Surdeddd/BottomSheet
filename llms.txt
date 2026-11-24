@@ -21,7 +21,7 @@ This file is a complete reference written for AI coding assistants. Every name b
 | `@surdeddd/bottom-sheet/overlay` | `OverlayEngine`: a two-state slide-in panel without snap points |
 | `@surdeddd/bottom-sheet/core` | `BottomSheetCore`: the engine without optional features |
 | `@surdeddd/bottom-sheet/features` | `routeFeature`, `visualViewportFeature`, `contentSwipeFeature`, `contentFitFeature`, `persistFeature`, `autoCollapseFeature` |
-| `@surdeddd/bottom-sheet/webgl` | `webglRenderer`: experimental GPU renderer; do not add it unless asked |
+| `@surdeddd/bottom-sheet/webgl` | `webglRenderer`, `contentLift`: experimental GPU renderer; do not add it unless asked |
 | `@surdeddd/bottom-sheet/debug` | `attachDebugOverlay(engine)` |
 | `@surdeddd/bottom-sheet/integrations/react-hook-form` | `useFormGuard(sheetRef, form)` |
 | `@surdeddd/bottom-sheet/integrations/formik` | `useFormikGuard(sheetRef, formikRef)` |
