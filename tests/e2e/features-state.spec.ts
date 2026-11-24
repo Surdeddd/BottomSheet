@@ -262,6 +262,56 @@ test.describe("the on-screen keyboard", () => {
       .toBe(height);
   });
 
+  test("a keyboard that opens in the frame the sheet was built in still gets its room", async ({
+    page,
+  }) => {
+    const { height } = await viewport(page);
+    await page.evaluate(px => {
+      window.lab.mount({ initial: "full", rows: 2 });
+      const vv = window.visualViewport!;
+      const full = window.innerHeight;
+      Object.defineProperty(vv, "height", {
+        configurable: true,
+        get: () => full - px,
+      });
+      vv.dispatchEvent(new Event("resize"));
+    }, 300);
+
+    await expect
+      .poll(async () => (await edges(page)).bottom, { timeout: 3000 })
+      .toBe(height - 300);
+    expect((await edges(page)).top).toBe(8);
+  });
+
+  test("the sheet stays above the keyboard when the page resizes or the points are measured again", async ({
+    page,
+  }) => {
+    await mount(page, { initial: "full", rows: 2 });
+    const { height } = await viewport(page);
+    await keyboard(page, 300);
+    await expect
+      .poll(async () => (await edges(page)).bottom, { timeout: 3000 })
+      .toBe(height - 300);
+    expect((await edges(page)).top).toBe(8);
+
+    await page.evaluate(
+      () =>
+        new Promise<void>(done => {
+          document.documentElement.style.width = "380px";
+          requestAnimationFrame(() => requestAnimationFrame(() => done()));
+        }),
+    );
+    expect((await edges(page)).top).toBe(8);
+
+    await page.evaluate(() => window.lab.engine().recompute());
+    expect((await edges(page)).top).toBe(8);
+
+    await keyboard(page, 0);
+    await expect
+      .poll(async () => (await edges(page)).top, { timeout: 3000 })
+      .toBe(height - 500);
+  });
+
   test("anchors and the above-sheet scrim follow the lifted sheet", async ({
     page,
   }) => {

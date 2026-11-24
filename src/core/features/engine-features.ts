@@ -94,6 +94,7 @@ export function visualViewportFeature(): EngineFeature {
         getMaxAxisSize: ctx.getMaxAxisSize,
         setMaxAxisSize: ctx.setMaxAxisSize,
         setKeyboardInset: ctx.setKeyboardInset,
+        setViewportCap: ctx.setViewportCap,
         reseat: ctx.reseat,
       });
     },

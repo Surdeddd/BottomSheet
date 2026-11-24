@@ -27,11 +27,12 @@ The questions that 1.0 would have frozen are answered here, while the answers ar
 
 ### Fixed
 
+- **The sheet stays above the on-screen keyboard** — while the keyboard is open the engine shortens the sheet to the room the keyboard leaves. Anything that measured the snap points again took that limit away: a resize of the page, `recompute()`, `setSnapPoints()`, a new `maxHeight`, content that changed size under a `"fit"` point, or a keyboard that opened in the frame the sheet was created in. The sheet went back to its full size while it was still lifted, and its top left the screen until the keyboard moved again. The limit now holds for as long as the keyboard is open and is dropped when it closes.
 - **The retarget test no longer depends on the machine's load** — it measured how far one frame moved a tween in real time, and failed with a correct tween when a frame took long. It runs on a faked clock and asserts the exact continuation.
 
 ### Sizes
 
-The four additions cost about 0.35 KB gzip in every bundle that holds the engine: the full engine is 26.0 KB (25.6 before), the slim core 22.2 KB (21.9). The Svelte and Solid adapters also carry the new props and are 29.3 KB and 27.9 KB (28.4 and 27.4).
+The four additions and the keyboard fix cost about 0.4 KB gzip in every bundle that holds the engine: the full engine is 26.0 KB (25.6 before), the slim core 22.2 KB (21.9). The Svelte and Solid adapters also carry the new props and are 29.3 KB and 28.0 KB (28.4 and 27.4).
 
 ## [0.24.4]
 

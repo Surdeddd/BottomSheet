@@ -413,6 +413,7 @@ export class BottomSheetCore {
         this.snaps.setMaxAxisSize(size);
       },
       setKeyboardInset: px => this.setKeyboardInset(px),
+      setViewportCap: size => this.maxHeight.setViewportCap(size),
       applySize: size => this.applySize(size),
       recomputeSnaps: () => this.recomputeSnaps(),
       reseat: () => this.reseat(),
@@ -972,6 +973,7 @@ export class BottomSheetCore {
 
     if (wasVertical !== nowVertical) {
       this.aria = new AriaSliderWriter(this.handle, next);
+      this.maxHeight.setViewportCap(0);
     }
 
     this.detachSliderKeyboard?.();

@@ -244,6 +244,7 @@ export type EngineFeatureContext = {
   setSize: (size: number) => void;
   setMaxAxisSize: (size: number) => void;
   setKeyboardInset: (px: number) => void;
+  setViewportCap: (size: number) => void;
   applySize: (size: number) => void;
   recomputeSnaps: () => void;
   reseat: () => void;

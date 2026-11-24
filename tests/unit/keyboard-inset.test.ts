@@ -120,6 +120,67 @@ describe("the on-screen keyboard", () => {
     expect(rootInset()).toBe("");
   });
 
+  describe("the room above an open keyboard", () => {
+    const raised = async () => {
+      const built = build();
+      await built.engine.snapTo("full");
+      await move({ height: 600 });
+      return built;
+    };
+
+    it("holds the sheet to what the keyboard leaves visible", async () => {
+      const { dom, engine } = await raised();
+      expect(engine.state.size).toBe(592);
+      expect(dom.sheet.style.height).toBe("592px");
+      engine.destroy();
+    });
+
+    it.each<[string, (engine: BottomSheetEngine) => void]>([
+      [
+        "the window reports a resize",
+        () => window.dispatchEvent(new Event("orientationchange")),
+      ],
+      ["the snap points are measured again", engine => engine.recompute()],
+      [
+        "the snap points are replaced",
+        engine =>
+          engine.setSnapPoints([
+            { id: "closed", size: 0 },
+            { id: "half", size: 300 },
+            { id: "full", size: 900 },
+          ]),
+      ],
+    ])("still holds it after %s", async (_, act) => {
+      const { dom, engine } = await raised();
+
+      act(engine);
+
+      expect(engine.state.size).toBe(592);
+      expect(dom.sheet.style.height).toBe("592px");
+      engine.destroy();
+    });
+
+    it("gives the room back once the keyboard is closed", async () => {
+      const { dom, engine } = await raised();
+      await move({ height: 1000 });
+
+      engine.recompute();
+
+      expect(engine.state.size).toBe(800);
+      expect(dom.sheet.style.height).toBe("800px");
+      engine.destroy();
+    });
+
+    it("does not carry the room of one axis over to the other", async () => {
+      const { dom, engine } = await raised();
+
+      engine.setMode("right");
+
+      expect(dom.sheet.style.width).toBe("800px");
+      engine.destroy();
+    });
+  });
+
   it("keeps anchors on the edge of a lifted bottom sheet only", () => {
     expect(
       resolveSheetAnchoredStyle("bottom", "sheet-top-right", "16px").bottom,

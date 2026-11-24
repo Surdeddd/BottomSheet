@@ -14,6 +14,7 @@ export type MaxHeightControllerDeps = {
 export type MaxHeightController = {
   setRadius: (r: string | number) => void;
   setMaxHeight: (h: string | number) => void;
+  setViewportCap: (size: number) => void;
   resolveCap: () => void;
   clampTo: () => void;
   getCap: () => number | undefined;
@@ -24,6 +25,7 @@ export function createMaxHeightController(
 ): MaxHeightController {
   let maxHeightCap: number | undefined;
   let maxHeightRaw: string | number | undefined;
+  let viewportCap = 0;
 
   const resolveCap = (): void => {
     const raw = maxHeightRaw;
@@ -46,10 +48,8 @@ export function createMaxHeightController(
   };
 
   const clampTo = (): void => {
-    if (maxHeightCap === undefined) return;
-    if (deps.getMaxAxisSize() > maxHeightCap) {
-      deps.setMaxAxisSize(maxHeightCap);
-    }
+    const cap = Math.min(maxHeightCap ?? Infinity, viewportCap || Infinity);
+    if (deps.getMaxAxisSize() > cap) deps.setMaxAxisSize(cap);
   };
 
   return {
@@ -69,6 +69,9 @@ export function createMaxHeightController(
       maxHeightRaw = h;
       resolveCap();
       deps.recompute();
+    },
+    setViewportCap(size) {
+      viewportCap = size;
     },
     resolveCap,
     clampTo,

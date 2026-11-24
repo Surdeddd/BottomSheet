@@ -13,6 +13,7 @@ export type VisualViewportDeps = {
   getMaxAxisSize: () => number;
   setMaxAxisSize: (size: number) => void;
   setKeyboardInset: (px: number) => void;
+  setViewportCap: (size: number) => void;
   reseat: () => void;
 };
 
@@ -36,12 +37,16 @@ export function installVisualViewport(deps: VisualViewportDeps): () => void {
       if (deps.isDestroyed()) return;
       deps.setKeyboardInset(coveredByKeyboard());
       const before = seatOf(deps);
-      deps.recomputeSnaps();
       const isVertical = deps.isVerticalAxis();
       const visible = isVertical ? vv.height : vv.width;
       const windowSize = isVertical ? window.innerHeight : window.innerWidth;
-      const pad = windowSize - visible > KEYBOARD_MIN_INSET ? SAFETY_PAD : 0;
-      const clamp = Math.max(0, Math.min(windowSize, visible) - pad);
+      const shrunk = windowSize - visible > KEYBOARD_MIN_INSET;
+      const clamp = Math.max(
+        0,
+        Math.min(windowSize, visible) - (shrunk ? SAFETY_PAD : 0),
+      );
+      deps.setViewportCap(shrunk ? clamp : 0);
+      deps.recomputeSnaps();
       if (clamp < deps.getMaxAxisSize()) {
         deps.setMaxAxisSize(clamp);
       }
