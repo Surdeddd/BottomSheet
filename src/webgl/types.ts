@@ -1,8 +1,11 @@
+export type ContentLift = { readonly __bsContentLift: unique symbol };
+
 export type WebGLRendererOptions = {
   jelly?: number;
   shadow?: number;
   sheen?: number;
   glass?: number;
+  lift?: ContentLift;
   liftContent?: boolean;
   dpr?: number;
   allowSoftware?: boolean;

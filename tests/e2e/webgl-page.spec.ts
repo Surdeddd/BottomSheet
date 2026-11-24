@@ -116,6 +116,82 @@ const boxOf = async (page: Page, selector: string) => {
 const SURFACE = 30;
 const BACKGROUND = 24;
 
+const shot = async (page: Page): Promise<string> =>
+  (await page.screenshot()).toString("base64");
+
+const labelColour = (page: Page): Promise<string> =>
+  page.$eval(".rich-label", el => (el as HTMLElement).style.color);
+
+const pressHandle = async (page: Page): Promise<Point> => {
+  const handle = await boxOf(page, ".bs-handle");
+  const at: Point = [
+    handle.x + handle.width / 2,
+    handle.y + handle.height / 2,
+  ];
+  await page.mouse.move(at[0], at[1]);
+  await page.mouse.down();
+  return at;
+};
+
+const awayAndBack = async (page: Page, from: Point): Promise<void> => {
+  for (let i = 1; i <= 6; i++) {
+    await page.mouse.move(from[0], from[1] + i * 5);
+    await page.waitForTimeout(30);
+  }
+  await page.waitForFunction(
+    () =>
+      (document.querySelector(".rich-label") as HTMLElement).style.color ===
+      "transparent",
+    undefined,
+    { timeout: 5000 },
+  );
+  for (let i = 5; i >= 0; i--) {
+    await page.mouse.move(from[0], from[1] + i * 5);
+    await page.waitForTimeout(30);
+  }
+};
+
+const changedShare = (
+  page: Page,
+  a: string,
+  b: string,
+  box: { x: number; y: number; width: number; height: number },
+): Promise<number> =>
+  page.evaluate(
+    async ({ a, b, box }) => {
+      const load = async (data: string): Promise<ImageData> => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${data}`;
+        await img.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        const scale = img.width / window.innerWidth;
+        return ctx.getImageData(
+          Math.round(box.x * scale),
+          Math.round(box.y * scale),
+          Math.round(box.width * scale),
+          Math.round(Math.min(box.height, window.innerHeight - box.y) * scale),
+        );
+      };
+      const one = await load(a);
+      const two = await load(b);
+      let strong = 0;
+      for (let i = 0; i < one.data.length; i += 4) {
+        const diff = Math.max(
+          Math.abs(one.data[i]! - two.data[i]!),
+          Math.abs(one.data[i + 1]! - two.data[i + 1]!),
+          Math.abs(one.data[i + 2]! - two.data[i + 2]!),
+        );
+        if (diff > 64) strong++;
+      }
+      return strong / (one.data.length / 4);
+    },
+    { a, b, box },
+  );
+
 test.describe("WebGL renderer and the page around it", () => {
   test("comes up wherever the browser has WebGL", async ({ page }) => {
     await page.goto(FIXTURE);
@@ -227,6 +303,82 @@ test.describe("WebGL renderer and the page around it", () => {
     expect(held.uploads).toBe(0);
   });
 
+  test("a press that does not move the sheet leaves the picture alone, even with lifting on", async ({
+    page,
+  }) => {
+    await open(page, "?lift=1&rich=1");
+    await page.click("#to-full");
+    await page.waitForTimeout(1300);
+
+    const sheet = await boxOf(page, SHEET);
+    const rest = await shot(page);
+    await pressHandle(page);
+    await page.waitForTimeout(400);
+    const held = await shot(page);
+    const colour = await labelColour(page);
+    await page.mouse.up();
+
+    expect(colour).toBe("");
+    expect(await changedShare(page, rest, held, sheet)).toBeLessThan(0.002);
+  });
+
+  test("lifted content is drawn where the DOM had it", async ({
+    page,
+    browserName,
+  }) => {
+    await open(page, "?lift=1&rich=1");
+    await page.click("#to-full");
+    await page.waitForTimeout(1300);
+
+    const sheet = await boxOf(page, SHEET);
+    const rest = await shot(page);
+    const from = await pressHandle(page);
+    await awayAndBack(page, from);
+    await page.waitForTimeout(1200);
+    const held = await shot(page);
+    const colour = await labelColour(page);
+    await page.mouse.up();
+
+    expect(colour).toBe("transparent");
+    expect(await changedShare(page, rest, held, sheet)).toBeLessThan(
+      browserName === "chromium" ? 0.012 : 0.004,
+    );
+  });
+
+  test.describe("on a screen of one device pixel per CSS pixel", () => {
+    test.use({ deviceScaleFactor: 1 });
+
+    test("lifted content lands on the very pixels the DOM had it on, and goes back to them", async ({
+      page,
+    }) => {
+      await open(page, "?lift=1&rich=1");
+      await page.click("#to-full");
+      await page.waitForTimeout(1300);
+
+      const sheet = await boxOf(page, SHEET);
+      const rest = await shot(page);
+      const from = await pressHandle(page);
+      await awayAndBack(page, from);
+      await page.waitForTimeout(1200);
+      const held = await shot(page);
+      const colour = await labelColour(page);
+      await page.mouse.up();
+      await page.waitForFunction(
+        () =>
+          (document.querySelector(".rich-label") as HTMLElement).style
+            .color === "",
+        undefined,
+        { timeout: 8000 },
+      );
+      await page.waitForTimeout(600);
+      const after = await shot(page);
+
+      expect(colour).toBe("transparent");
+      expect(await changedShare(page, rest, held, sheet)).toBeLessThan(0.002);
+      expect(await changedShare(page, rest, after, sheet)).toBeLessThan(0.001);
+    });
+  });
+
   test("the middle of the leading edge stays on the sheet and the corners trail", async ({
     page,
   }) => {
@@ -261,9 +413,15 @@ test.describe("WebGL renderer and the page around it", () => {
     expect(opening.corner - opening.centre).toBeLessThan(9);
 
     await landing();
-    await page.waitForTimeout(900);
-    const landed = await outline(page, centre, corner);
-    expect(Math.abs(landed.corner - landed.centre)).toBeLessThan(1);
+    await expect
+      .poll(
+        async () => {
+          const landed = await outline(page, centre, corner);
+          return Math.abs(landed.corner - landed.centre);
+        },
+        { timeout: 20_000 },
+      )
+      .toBeLessThan(1);
 
     await page.click("#to-min");
     await page.waitForTimeout(1200);

@@ -1,5 +1,5 @@
 import { BottomSheetEngine } from "@surdeddd/bottom-sheet";
-import { webglRenderer } from "@surdeddd/bottom-sheet/webgl";
+import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";
 import "@surdeddd/bottom-sheet/styles";
 
 const status = document.querySelector<HTMLElement>("#status");
@@ -49,7 +49,7 @@ const engine = new BottomSheetEngine({
   features: [
     webglRenderer({
       allowSoftware: true,
-      liftContent: true,
+      lift: contentLift(),
       onUnsupported: reason => {
         status.dataset.unsupported = reason;
       },

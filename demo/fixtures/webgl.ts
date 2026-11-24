@@ -1,5 +1,5 @@
 import { BottomSheetEngine } from "@surdeddd/bottom-sheet";
-import { webglRenderer } from "@surdeddd/bottom-sheet/webgl";
+import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";
 import "@surdeddd/bottom-sheet/styles";
 
 const mount = document.querySelector<HTMLElement>("#mount");
@@ -61,6 +61,44 @@ swatch.src =
   );
 content.append(swatch);
 
+if (params.has("rich")) {
+  const announcer = document.createElement("span");
+  announcer.className = "rich-hidden";
+  announcer.setAttribute("aria-live", "polite");
+  announcer.textContent = "minimized";
+
+  const label = document.createElement("p");
+  label.className = "rich-label";
+  label.textContent = "Route overview";
+
+  const text = document.createElement("p");
+  text.className = "rich-text";
+  text.append("The convoy leaves Munich at dawn and reaches ");
+  const strong = document.createElement("b");
+  strong.textContent = "Vienna";
+  text.append(strong, " before noon, with one stop to refuel on the way.");
+
+  const row = document.createElement("div");
+  row.className = "rich-row";
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  dot.setAttribute("cx", "12");
+  dot.setAttribute("cy", "12");
+  dot.setAttribute("r", "9");
+  dot.setAttribute("fill", "currentColor");
+  icon.append(dot);
+  const rowText = document.createElement("span");
+  rowText.textContent = "Three stops on this route";
+  row.append(icon, rowText);
+
+  const badge = document.createElement("div");
+  badge.className = "rich-badge";
+  badge.textContent = "Gradient badge";
+
+  content.prepend(announcer, label, text, row, badge);
+}
+
 sheet.append(handle, content);
 root.append(sheet);
 mount.append(root);
@@ -83,7 +121,7 @@ const engine = new BottomSheetEngine({
     webglRenderer({
       jelly: Number(params.get("jelly") ?? 0.7),
       allowSoftware: params.get("software") !== "refuse",
-      liftContent: params.has("lift"),
+      lift: params.has("lift") ? contentLift() : undefined,
       ...(params.has("sheen") ? { sheen: Number(params.get("sheen")) } : {}),
       onUnsupported: reason => {
         status.dataset.unsupported = reason;

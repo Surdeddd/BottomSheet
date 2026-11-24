@@ -23,8 +23,9 @@ uniform float u_hasContent;
 uniform sampler2D u_content;
 uniform float u_hasScroll;
 uniform sampler2D u_scroll;
-uniform vec4 u_scrollRect;
-uniform vec2 u_scrollMap;
+uniform vec4 u_contentBox;
+uniform vec4 u_scrollClip;
+uniform vec4 u_scrollBox;
 
 float roundedBoxSDF(vec2 p, vec2 halfSize, vec4 radii) {
   vec2 side = p.x < 0.0 ? radii.xw : radii.yz;
@@ -61,22 +62,22 @@ void main() {
   glassUv.x += sin(uv.y * 9.0 + u_bend * 0.08) * u_glass * 0.004;
   glassUv.y += u_glass * 0.002 * sin(uv.x * 7.0);
 
+  vec2 at = glassUv * u_rect.zw;
+
   vec4 content = vec4(0.0);
-  if (u_hasContent > 0.5 &&
-      glassUv.x > 0.0 && glassUv.x < 1.0 &&
-      glassUv.y > 0.0 && glassUv.y < 1.0) {
-    content = texture2D(u_content, glassUv);
+  if (u_hasContent > 0.5) {
+    vec2 st = (at - u_contentBox.xy) / max(u_contentBox.zw, vec2(1.0));
+    if (st.x > 0.0 && st.x < 1.0 && st.y > 0.0 && st.y < 1.0) {
+      content = texture2D(u_content, st);
+    }
   }
 
   vec4 scroll = vec4(0.0);
   if (u_hasScroll > 0.5 &&
-      glassUv.x >= u_scrollRect.x && glassUv.x <= u_scrollRect.z &&
-      glassUv.y >= u_scrollRect.y && glassUv.y <= u_scrollRect.w) {
-    vec2 st = vec2(
-      (glassUv.x - u_scrollRect.x) / max(u_scrollRect.z - u_scrollRect.x, 0.000001),
-      (glassUv.y - u_scrollRect.y) * u_scrollMap.x + u_scrollMap.y
-    );
-    if (st.y >= 0.0 && st.y <= 1.0) {
+      at.x >= u_scrollClip.x && at.x <= u_scrollClip.z &&
+      at.y >= u_scrollClip.y && at.y <= u_scrollClip.w) {
+    vec2 st = (at - u_scrollBox.xy) / max(u_scrollBox.zw, vec2(1.0));
+    if (st.x >= 0.0 && st.x <= 1.0 && st.y >= 0.0 && st.y <= 1.0) {
       scroll = texture2D(u_scroll, st);
     }
   }
@@ -119,10 +120,17 @@ const compile = (
   return shader;
 };
 
+type Quad = [number, number, number, number];
+
+export type ContentLayer = {
+  texture: WebGLTexture;
+  box: Quad;
+};
+
 export type ScrollLayer = {
   texture: WebGLTexture;
-  rect: [number, number, number, number];
-  map: [number, number];
+  clip: Quad;
+  box: Quad;
 };
 
 export type DrawState = {
@@ -131,7 +139,7 @@ export type DrawState = {
   dpr: number;
   sheen: number;
   glass: number;
-  content: WebGLTexture | null;
+  content: ContentLayer | null;
   scroll: ScrollLayer | null;
 };
 
@@ -188,8 +196,9 @@ export const createSurfaceProgram = (
   const uContent = gl.getUniformLocation(program, "u_content");
   const uHasScroll = gl.getUniformLocation(program, "u_hasScroll");
   const uScroll = gl.getUniformLocation(program, "u_scroll");
-  const uScrollRect = gl.getUniformLocation(program, "u_scrollRect");
-  const uScrollMap = gl.getUniformLocation(program, "u_scrollMap");
+  const uContentBox = gl.getUniformLocation(program, "u_contentBox");
+  const uScrollClip = gl.getUniformLocation(program, "u_scrollClip");
+  const uScrollBox = gl.getUniformLocation(program, "u_scrollBox");
 
   return {
     draw: (frame, state) => {
@@ -233,7 +242,8 @@ export const createSurfaceProgram = (
       gl.uniform1i(uScroll, 1);
       if (state.content) {
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, state.content);
+        gl.bindTexture(gl.TEXTURE_2D, state.content.texture);
+        gl.uniform4f(uContentBox, ...state.content.box);
         gl.uniform1f(uHasContent, 1);
       } else {
         gl.uniform1f(uHasContent, 0);
@@ -241,8 +251,8 @@ export const createSurfaceProgram = (
       if (state.scroll) {
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, state.scroll.texture);
-        gl.uniform4f(uScrollRect, ...state.scroll.rect);
-        gl.uniform2f(uScrollMap, ...state.scroll.map);
+        gl.uniform4f(uScrollClip, ...state.scroll.clip);
+        gl.uniform4f(uScrollBox, ...state.scroll.box);
         gl.uniform1f(uHasScroll, 1);
         gl.activeTexture(gl.TEXTURE0);
       } else {

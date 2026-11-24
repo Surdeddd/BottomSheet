@@ -5,6 +5,7 @@ import type {
   WebGLUnsupportedReason,
 } from "./types";
 import { createBend, type Bend } from "./bend";
+import { onGrid } from "./pixel-grid";
 import {
   createGLHandle,
   drawsOnCpu,
@@ -14,16 +15,19 @@ import {
 } from "./gl-context";
 import {
   createSurfaceProgram,
+  type ContentLayer,
   type ScrollLayer,
   type SurfaceProgram,
 } from "./surface-program";
-import {
-  captureContent,
-  hideCapturedText,
-  type ContentCapture,
-} from "./content-texture";
+import type { ContentCapture } from "./content-texture";
+import type { Lifter } from "./lift";
 
-export type { WebGLRendererOptions, WebGLUnsupportedReason } from "./types";
+export { contentLift } from "./lift";
+export type {
+  ContentLift,
+  WebGLRendererOptions,
+  WebGLUnsupportedReason,
+} from "./types";
 
 const DEFAULT_JELLY = 0.5;
 const DEFAULT_SHADOW = 1;
@@ -34,8 +38,10 @@ const HANDBACK_MS = 40;
 const HANDBACK_PER_FRAME = 0.62;
 const MAX_FRAME_MS = 64;
 const FLAT_PX = 0.35;
+const LIFT_PX = 0.5;
 
 type Edge = { position: number; axis: 0 | 1; inward: 1 | -1 };
+type Pixel = { x: number; y: number };
 
 const edgeOf = (mode: string | undefined, rect: DOMRect): Edge => {
   if (mode === "top") return { position: rect.bottom, axis: 0, inward: -1 };
@@ -121,7 +127,7 @@ export const webglRenderer = (
     const shadowStrength = options.shadow ?? DEFAULT_SHADOW;
     const sheenStrength = options.sheen ?? DEFAULT_SHEEN;
     const glassStrength = options.glass ?? DEFAULT_GLASS;
-    const liftContent = options.liftContent === true;
+    const lifter = (options.lift as unknown as Lifter | undefined) ?? null;
 
     let handle: GLHandle | null = null;
     let program: SurfaceProgram | null = null;
@@ -139,6 +145,8 @@ export const webglRenderer = (
     let disposed = false;
     let capture: ContentCapture | null = null;
     let releaseText: (() => void) | null = null;
+    let lifted = false;
+    let heldAt = 0;
 
     const painted = {
       background: element.style.background,
@@ -237,6 +245,7 @@ export const webglRenderer = (
     const releaseCapture = (): void => {
       releaseText?.();
       releaseText = null;
+      lifted = false;
       if (capture && handle) {
         if (capture.texture) handle.gl.deleteTexture(capture.texture);
         if (capture.scroll) handle.gl.deleteTexture(capture.scroll.texture);
@@ -244,41 +253,84 @@ export const webglRenderer = (
       capture = null;
     };
 
+    const handBack = (): void => {
+      const style = element.style;
+      if (lifted && style.willChange === "") {
+        style.willChange = "transform";
+        requestAnimationFrame(() => {
+          if (ctx.isDragging() || ctx.isAnimating()) return;
+          style.willChange = "";
+        });
+      }
+      releaseCapture();
+    };
+
     const fitted = (): boolean =>
       element.hasAttribute("data-bs-fit-content") &&
       element.dataset.mode === "bottom";
 
     const takeCapture = (): void => {
-      if (!liftContent || disposed || !handle || capture) return;
+      if (!lifter || jelly <= 0 || disposed || !handle || capture) return;
       const pinned = fitted();
-      const next = captureContent(handle.gl, element, dprOf(), {
+      const next = lifter.capture(handle.gl, element, dprOf(), {
         scroller: ctx.scrollContainer ?? null,
         above: pinned ? Math.max(0, ctx.getMaxAxisSize() - ctx.getSize()) : 0,
         skip: pinned ? el => el.classList.contains("bs-footer") : undefined,
       });
       if (!next) return;
       capture = next;
-      releaseText = hideCapturedText(next.hiddenNodes);
+      heldAt = edgeOf(
+        element.dataset.mode,
+        element.getBoundingClientRect(),
+      ).position;
     };
 
-    const scrollLayer = (sheet: DOMRect): ScrollLayer | null => {
-      const scroll = capture?.scroll;
+    const lift = (): void => {
+      if (!lifter || !capture || lifted) return;
+      lifted = true;
+      releaseText = lifter.hide(capture.hiddenNodes);
+    };
+
+    const liftOnceMoved = (sheet: DOMRect): void => {
+      if (!capture || lifted) return;
+      const edge = edgeOf(element.dataset.mode, sheet).position;
+      if (Math.abs(edge - heldAt) >= LIFT_PX) lift();
+    };
+
+    const contentLayer = (dpr: number, at: Pixel): ContentLayer | null => {
+      if (!lifted || !capture?.texture) return null;
+      const { x, y, w, h } = capture.box;
+      return {
+        texture: capture.texture,
+        box: [onGrid(at.x, x * dpr), onGrid(at.y, y * dpr), w * dpr, h * dpr],
+      };
+    };
+
+    const scrollLayer = (
+      sheet: DOMRect,
+      dpr: number,
+      at: Pixel,
+    ): ScrollLayer | null => {
+      const scroll = lifted ? capture?.scroll : null;
       const scroller = ctx.scrollContainer;
       if (!scroll || !scroller) return null;
       const box = scroller.getBoundingClientRect();
       const left = box.left + scroller.clientLeft - sheet.left;
       const top = box.top + scroller.clientTop - sheet.top;
+      const scrolled = scroller.scrollTop - scroll.top;
       return {
         texture: scroll.texture,
-        rect: [
-          left / sheet.width,
-          top / sheet.height,
-          (left + scroller.clientWidth) / sheet.width,
-          (top + scroller.clientHeight) / sheet.height,
+        clip: [
+          onGrid(at.x, left * dpr),
+          onGrid(at.y, top * dpr),
+          onGrid(at.x, (left + scroller.clientWidth) * dpr),
+          onGrid(at.y, (top + scroller.clientHeight) * dpr),
         ],
-        map: [
-          sheet.height / scroll.height,
-          (scroll.above + scroller.scrollTop - scroll.top) / scroll.height,
+        box: [
+          onGrid(at.x, (left + scroll.box.x) * dpr),
+          onGrid(at.y, (top + scroll.box.y - scroll.above - scrolled) * dpr),
+          scroll.box.w * dpr,
+          scroll.box.h * dpr,
         ],
       };
     };
@@ -291,6 +343,7 @@ export const webglRenderer = (
       if (area.width <= 0 || area.height <= 0) return;
       const dpr = dprOf();
       resizeDrawingBuffer(handle, area.width, area.height, dpr);
+      liftOnceMoved(sheet);
       const motion = Math.min(1, Math.abs(offset) / GLASS_FULL_PX);
       const frame: SurfaceFrame = {
         x: sheet.left - area.left,
@@ -301,14 +354,15 @@ export const webglRenderer = (
         color: surfaceStyle.color,
         shadow: shadowStrength,
       };
+      const at: Pixel = { x: frame.x * dpr, y: frame.y * dpr };
       program.draw(frame, {
         bend: offset,
         axis,
         dpr,
         sheen: sheenStrength,
         glass: glassStrength * motion,
-        content: capture?.texture ?? null,
-        scroll: scrollLayer(sheet),
+        content: contentLayer(dpr, at),
+        scroll: scrollLayer(sheet, dpr, at),
       });
     };
 
@@ -344,7 +398,7 @@ export const webglRenderer = (
       let stale = !drawnSinceTick;
       drawnSinceTick = false;
       if (handingBack && Math.abs(offset) < FLAT_PX) {
-        releaseCapture();
+        handBack();
         stale = true;
       }
       if (stale) paint(sheet);
@@ -373,7 +427,7 @@ export const webglRenderer = (
     ctx.addTeardown(ctx.on("drag", wake));
     ctx.addTeardown(
       ctx.on("dragstart", () => {
-        if (liftContent) queueMicrotask(takeCapture);
+        if (lifter) queueMicrotask(takeCapture);
         wake();
       }),
     );
@@ -383,8 +437,10 @@ export const webglRenderer = (
 
     const contentObserver = new MutationObserver(() => {
       if (!capture) return;
+      const shown = lifted;
       releaseCapture();
       takeCapture();
+      if (shown) lift();
     });
     contentObserver.observe(element, {
       childList: true,

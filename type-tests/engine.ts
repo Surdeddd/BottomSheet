@@ -15,7 +15,7 @@ import {
 } from "@surdeddd/bottom-sheet/features";
 import { OverlayEngine } from "@surdeddd/bottom-sheet/overlay";
 import { attachDebugOverlay } from "@surdeddd/bottom-sheet/debug";
-import { webglRenderer } from "@surdeddd/bottom-sheet/webgl";
+import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";
 import {
   defineBottomSheet,
   type BottomSheetElement,
@@ -43,6 +43,8 @@ const sheet = new BottomSheetEngine({
   features: [
     webglRenderer({
       jelly: 0.6,
+      lift: contentLift(),
+      liftContent: false,
       allowSoftware: false,
       onUnsupported: reason => {
         if (reason === "software-renderer") console.info("no GPU behind WebGL");

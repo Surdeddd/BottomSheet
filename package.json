@@ -340,7 +340,15 @@
     {
       "name": "webgl renderer (subpath)",
       "path": "dist/webgl.js",
-      "limit": "6.44 KB",
+      "import": "{ webglRenderer }",
+      "limit": "5.56 KB",
+      "gzip": true
+    },
+    {
+      "name": "webgl renderer with content lift (subpath)",
+      "path": "dist/webgl.js",
+      "import": "{ webglRenderer, contentLift }",
+      "limit": "9.8 KB",
       "gzip": true
     }
   ],

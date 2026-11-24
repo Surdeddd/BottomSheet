@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { webglRenderer } from "../../src/webgl";
+import { contentLift, webglRenderer } from "../../src/webgl";
 import type { WebGLRendererOptions } from "../../src/webgl";
 import type { EngineFeatureContext } from "../../src/core/types";
 
-type Frame = { rect: number[]; bend: number; axis: number };
+type Frame = { rect: number[]; bend: number; axis: number; content: number };
 
 const VIEW = { left: 0, top: 0, width: 390, height: 800 };
 const FRAME_MS = 16;
@@ -62,6 +62,7 @@ const mount = (
           rect: uniforms.u_rect ?? [],
           bend: uniforms.u_bend?.[0] ?? 0,
           axis: uniforms.u_axis?.[0] ?? 0,
+          content: uniforms.u_hasContent?.[0] ?? 0,
         });
       },
     } as Record<string, unknown>,
@@ -121,6 +122,10 @@ const mount = (
       return boxOf(16, position.along + 40, 200, 20);
     },
   );
+
+  Range.prototype.getClientRects = function () {
+    return [boxOf(16, position.along + 44, 40, 14)] as unknown as DOMRectList;
+  };
 
   const handlers: Record<string, Array<(payload: unknown) => void>> = {};
   const state = { dragging: false, animating: false };
@@ -342,12 +347,131 @@ describe("the WebGL surface in motion", () => {
     r.dispose();
   });
 
-  it("lifts the content into a texture when asked", async () => {
+  it("does not lift on the retired boolean flag alone", async () => {
     const r = mount({ liftContent: true });
+    await drag(r, 500, 400, 6);
+
+    expect(r.counts.textures).toBe(0);
+    expect(r.line.style.color).toBe("");
+    r.dispose();
+  });
+
+  it("lifts the content into a texture when asked", async () => {
+    const r = mount({ lift: contentLift() });
     await drag(r, 500, 400, 6);
 
     expect(r.counts.textures).toBeGreaterThan(0);
     expect(r.line.style.color).toBe("transparent");
+    expect(r.frames[r.frames.length - 1]!.content).toBe(1);
+    r.dispose();
+  });
+
+  it("keeps the content in the DOM until the sheet actually moves", async () => {
+    const r = mount({ lift: contentLift() });
+    r.state.dragging = true;
+    r.emit("dragstart", { size: 300 });
+    await r.frame(3);
+
+    expect(r.counts.textures).toBeGreaterThan(0);
+    expect(r.line.style.color).toBe("");
+    expect(r.frames.every(f => f.content === 0)).toBe(true);
+
+    await r.moveTo(497);
+    r.emit("drag", { size: 303, delta: 3 });
+    await r.frame();
+
+    expect(r.line.style.color).toBe("transparent");
+    expect(r.frames[r.frames.length - 1]!.content).toBe(1);
+    r.dispose();
+  });
+
+  it("leaves the DOM alone through a press that never moves", async () => {
+    const r = mount({ lift: contentLift() });
+    r.state.dragging = true;
+    r.emit("dragstart", { size: 300 });
+    await r.frame(3);
+    r.state.dragging = false;
+    r.emit("dragend", { size: 300, velocity: 0 });
+    await r.frame(10);
+
+    expect(r.line.style.color).toBe("");
+    expect(r.frames.every(f => f.content === 0)).toBe(true);
+    r.dispose();
+  });
+
+  it("does not lift anything when there is no bend to show", async () => {
+    const r = mount({ lift: contentLift(), jelly: 0 });
+    await drag(r, 500, 400, 6);
+
+    expect(r.counts.textures).toBe(0);
+    expect(r.line.style.color).toBe("");
+    r.dispose();
+  });
+
+  it("hands the content back under the same compositor hint it was lifted under", async () => {
+    const r = mount({ lift: contentLift() });
+    r.sheet.style.willChange = "transform";
+    await drag(r, 500, 400, 6);
+    await r.frame(60);
+    r.state.dragging = false;
+    r.sheet.style.willChange = "";
+    r.emit("dragend", { size: 400, velocity: 0 });
+
+    let hintAtHandBack = "unset";
+    for (let i = 0; i < 20 && hintAtHandBack === "unset"; i++) {
+      await r.frame();
+      if (r.line.style.color === "") hintAtHandBack = r.sheet.style.willChange;
+    }
+    await r.frame(3);
+
+    expect(hintAtHandBack).toBe("transform");
+    expect(r.sheet.style.willChange).toBe("");
+    r.dispose();
+  });
+
+  it("leaves the hint to the engine when a new animation starts right after the hand-back", async () => {
+    const r = mount({ lift: contentLift() });
+    r.sheet.style.willChange = "transform";
+    await drag(r, 500, 400, 6);
+    await r.frame(60);
+    r.state.dragging = false;
+    r.sheet.style.willChange = "";
+    r.emit("dragend", { size: 400, velocity: 0 });
+    for (let i = 0; i < 20 && r.line.style.color !== ""; i++) await r.frame();
+
+    r.state.animating = true;
+    r.sheet.style.willChange = "transform";
+    await r.frame(3);
+
+    expect(r.sheet.style.willChange).toBe("transform");
+    r.dispose();
+  });
+
+  it("stays lifted when the content changes in the middle of a drag", async () => {
+    const r = mount({ lift: contentLift() });
+    await drag(r, 500, 400, 6);
+    const before = r.counts.textures;
+
+    const added = document.createElement("p");
+    added.textContent = "A late line";
+    r.sheet.append(added);
+    await r.frame();
+
+    expect(r.counts.textures).toBeGreaterThan(before);
+    expect(r.line.style.color).toBe("transparent");
+    expect(added.style.color).toBe("transparent");
+    r.dispose();
+  });
+
+  it("gives the content back to the DOM once the sheet is let go", async () => {
+    const r = mount({ lift: contentLift() });
+    await drag(r, 500, 400, 6);
+    r.state.dragging = false;
+    r.emit("dragend", { size: 400, velocity: 0 });
+    await r.frame(40);
+
+    expect(r.line.style.color).toBe("");
+    expect(r.frames[r.frames.length - 1]!.content).toBe(0);
     r.dispose();
   });
 });
