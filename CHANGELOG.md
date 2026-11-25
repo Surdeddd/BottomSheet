@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.1]
+
+The WebGL renderer (`@surdeddd/bottom-sheet/webgl`) after its first check on a real screen. Nothing outside the `/webgl` entry and the demo changes.
+
 ### Fixed
 
 - **The far edge of the WebGL surface stays straight** — the bend moved the whole surface, not only its leading edge, so the edge on the other side carried the same curve. On a sheet dragged fast past its largest snap point that edge lifts off the screen, and it showed up bent and wobbling. The bend now fades along the sheet and is gone at the far edge. The same holds for a sheet that floats above the edge of the screen, and for sheets on the other three sides.
