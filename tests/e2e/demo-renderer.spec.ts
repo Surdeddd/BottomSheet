@@ -123,7 +123,7 @@ const drawsOnCpu = (page: Page): Promise<boolean> =>
 test.describe("the demo's renderer switch", () => {
   test.describe.configure({ timeout: 90_000 });
 
-  test("stays off the workbench unless the link asks for it", async ({
+  test("is on the workbench, switched off, and draws nothing until asked", async ({
     page,
   }) => {
     await page.goto("/");
@@ -132,18 +132,25 @@ test.describe("the demo's renderer switch", () => {
     });
     await page.waitForTimeout(800);
 
-    await expect(page.locator(TOGGLE)).toBeHidden();
+    await expect(page.locator(TOGGLE)).toBeVisible();
+    await expect(page.locator(TOGGLE)).not.toBeChecked();
+    await expect(page.locator(JELLY)).toBeDisabled();
+    await expect(page.locator(LIFT)).toBeDisabled();
+    await expect(page.locator(NOTE)).toHaveAttribute(
+      "data-i18n",
+      "ctrl.webgl.note.dom",
+    );
     await expect(page.locator(".device-screen canvas")).toHaveCount(0);
     expect(await page.evaluate(() => location.hash)).not.toContain("webgl");
   });
 
-  test("the link brings it back, marked experimental", async ({ page }) => {
-    await open(page);
+  test("the link switches it on", async ({ page }) => {
+    await page.goto("/#adapter=react&webgl=1&cpu=1");
+    await page.reload();
+    await sheetOf(page, "react").waitFor({ state: "attached" });
 
-    await expect(page.locator(TOGGLE)).toBeVisible();
-    await expect(page.locator("label", { has: page.locator(TOGGLE) })).toContainText(
-      "experimental",
-    );
+    await expect(page.locator(TOGGLE)).toBeChecked();
+    await expect(canvasOf(page, "react")).toHaveCount(1);
   });
 
   for (const adapter of ADAPTERS) {

@@ -639,10 +639,10 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <input type="checkbox" id="tg-rubber" checked />
           <span data-i18n="ctrl.rubber">rubber-band</span>
         </label>
-        <div class="renderer-switch" id="renderer-switch" hidden>
+        <div class="renderer-switch" id="renderer-switch">
           <label class="toggle">
             <input type="checkbox" id="tg-webgl" />
-            <span data-i18n="ctrl.webgl">WebGL renderer (experimental)</span>
+            <span data-i18n="ctrl.webgl">WebGL renderer</span>
           </label>
           <label class="toggle">
             <input type="checkbox" id="tg-webgl-jelly" disabled />
@@ -956,13 +956,12 @@ engine.snapTo(<span class="c-s">"full"</span>);</pre>
           <span class="feature-no mono">F.12</span>
           <h3 class="feature-title" data-i18n="f12.title">WebGL renderer</h3>
           <p class="feature-body" data-i18n-html="f12.body">
-            An opt-in second renderer paints the surface on the GPU: it bends
-            with drag velocity and hands the text back to the DOM when it
-            settles. Layout, scrolling and the accessibility tree never leave
-            the DOM. Experimental: the text can shift by a few pixels when it
-            moves into the texture.
+            An opt-in second renderer paints the sheet's surface on the GPU.
+            Ask for a bend and the leading edge trails the finger like jelly;
+            ask for the lift and the content bends with it. Layout, scrolling
+            and the accessibility tree never leave the DOM.
           </p>
-          <div class="feature-spec mono">/webgl · 6.4 KB · experimental</div>
+          <div class="feature-spec mono">/webgl · 5.8 KB · jelly · lift</div>
         </article>
 
         <article class="feature" data-viz="zones">

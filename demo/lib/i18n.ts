@@ -84,7 +84,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.esc": "close on Esc",
     "ctrl.haptic": "haptic on snap",
     "ctrl.rubber": "rubber-band",
-    "ctrl.webgl": "WebGL renderer (experimental)",
+    "ctrl.webgl": "WebGL renderer",
     "ctrl.webgl.jelly": "bend the surface while it moves",
     "ctrl.webgl.lift": "bend the content with it",
     "ctrl.webgl.force": "draw on the CPU anyway",
@@ -165,7 +165,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — typed registry mapping route keys to configs. <code>onOpen</code>/<code>onClose</code> hooks, framework-agnostic.",
     "f12.title": "WebGL renderer",
     "f12.body":
-      "An opt-in second renderer paints the surface on the GPU: it bends with drag velocity and hands the text back to the DOM when it settles. Layout, scrolling and the accessibility tree never leave the DOM. Experimental: the text can shift by a few pixels when it moves into the texture.",
+      "An opt-in second renderer paints the sheet's surface on the GPU. Ask for a bend and the leading edge trails the finger like jelly; ask for the lift and the content bends with it. Layout, scrolling and the accessibility tree never leave the DOM.",
     "f13.title": "Drag zones",
     "f13.body":
       "<code>dragFrom</code>: handle, whole sheet, or opt-in <code>[data-bs-drag]</code> islands. <code>[data-bs-no-drag]</code> excludes a subtree, so carousels keep their own gesture.",
@@ -274,7 +274,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.esc": "закрытие по Esc",
     "ctrl.haptic": "вибро при фиксации",
     "ctrl.rubber": "резиновое отскакивание",
-    "ctrl.webgl": "рендерер WebGL (экспериментальный)",
+    "ctrl.webgl": "рендерер WebGL",
     "ctrl.webgl.jelly": "гнуть поверхность, пока лист движется",
     "ctrl.webgl.lift": "гнуть вместе с ней и содержимое",
     "ctrl.webgl.force": "всё равно рисовать процессором",
@@ -355,7 +355,7 @@ const DICT: Record<Lang, Record<string, string>> = {
       "<code>createSheetManager()</code> — типизированный реестр ключ маршрута → конфиг. Хуки <code>onOpen</code>/<code>onClose</code>, без привязки к фреймворку.",
     "f12.title": "WebGL-рендерер",
     "f12.body":
-      "Второй рендерер по желанию рисует поверхность на GPU: она гнётся от скорости жеста и возвращает текст в DOM, когда успокаивается. Вёрстка, прокрутка и дерево доступности остаются в DOM. Экспериментальный: текст, переходя в текстуру, может сдвинуться на несколько пикселей.",
+      "Второй рендерер по желанию рисует поверхность шторки на GPU. Попросите изгиб, и ведущий край потянется за пальцем как желе; попросите подъём, и содержимое гнётся вместе с ним. Вёрстка, прокрутка и дерево доступности остаются в DOM.",
     "f13.title": "Зоны перетаскивания",
     "f13.body":
       "<code>dragFrom</code>: ручка, весь лист или только острова <code>[data-bs-drag]</code>. <code>[data-bs-no-drag]</code> исключает поддерево — карусель сохраняет свой жест.",
