@@ -1,7 +1,7 @@
 # WebGL renderer — design
 
 **Date:** 2026-07-26
-**Status:** shipped; experimental since 0.24.2, see [Known issues](webgl.md#known-issues).
+**Status:** shipped; experimental from 0.24.2 through 0.25, out of that stage since 0.26. See [Known issues](webgl.md#known-issues).
 Revised in 0.24.4, see [What changed in 0.24.4](#what-changed-in-0244).
 
 ## Problem
@@ -184,6 +184,28 @@ moves the sheet without the engine: the stylesheet's own `bottom 0.2s`, which
 lifts a sheet above the on-screen keyboard, left the surface where it was,
 300 px under the content. The loop now also runs while the sheet element has a
 running transition, and a `transitionrun` on the sheet wakes it.
+
+## What changed in 0.26.0
+
+**A frame is skipped only while the sheet is where it was drawn.** A write to
+the sheet's style is drawn in the same task, so that the surface never trails
+the DOM by a frame, and the loop then skipped its next draw. That draw shows
+the sheet where the write found it: at the start of a transition, when the
+stylesheet is the one moving it. A frame that came later than the end of the
+transition found nothing animating, drew nothing, and the loop went to sleep
+with the surface 150 px away. WebKit counts a transition from the moment it is
+created, so one stalled frame is enough there. The loop now keeps the box of
+that draw and compares it with the sheet's.
+
+**One context for a sheet.** The check for WebGL created a context of its own
+and lost it at once. It now only looks for the constructors.
+
+**The handle of a side sheet is transparent under the renderer.** The rule
+that clears it lost to a later rule of the same specificity, and the DOM
+painted the handle over the bend of the leading edge.
+
+**The canvas cannot be selected.** WebKit tints a selected canvas like a
+selected image, and a selection across the page covered the whole surface.
 
 ## Testing
 

@@ -35,6 +35,6 @@
     "A modal sheet needs both focusTrap and inertSiblings",
     "backdropRange is a range of progress; backdropOpacity is the opacity",
     "To scroll content with a finger at a half snap point, set fitContentToSnap and dragFromContent: false",
-    "The WebGL renderer (@surdeddd/bottom-sheet/webgl) is experimental; do not add it unless the user asks for it"
+    "The WebGL renderer (@surdeddd/bottom-sheet/webgl) is opt-in; do not add it unless the user asks for it"
   ]
 }

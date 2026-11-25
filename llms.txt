@@ -21,7 +21,7 @@ This file is a complete reference written for AI coding assistants. Every name b
 | `@surdeddd/bottom-sheet/overlay` | `OverlayEngine`: a two-state slide-in panel without snap points |
 | `@surdeddd/bottom-sheet/core` | `BottomSheetCore`: the engine without optional features |
 | `@surdeddd/bottom-sheet/features` | `routeFeature`, `visualViewportFeature`, `contentSwipeFeature`, `contentFitFeature`, `persistFeature`, `autoCollapseFeature` |
-| `@surdeddd/bottom-sheet/webgl` | `webglRenderer`, `contentLift`: experimental GPU renderer; do not add it unless asked |
+| `@surdeddd/bottom-sheet/webgl` | `webglRenderer`, `contentLift`: opt-in GPU renderer for the sheet surface; do not add it unless asked |
 | `@surdeddd/bottom-sheet/debug` | `attachDebugOverlay(engine)` |
 | `@surdeddd/bottom-sheet/integrations/react-hook-form` | `useFormGuard(sheetRef, form)` |
 | `@surdeddd/bottom-sheet/integrations/formik` | `useFormikGuard(sheetRef, formikRef)` |
@@ -329,7 +329,7 @@ Class names: `bs-root`, `bs-backdrop`, `bs-screen`, `bs-sheet`, `bs-handle`, `bs
 
 - [Architecture](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/ARCHITECTURE.md)
 - [API stability](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/api-stability.md)
-- [WebGL renderer (experimental)](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/webgl.md)
+- [WebGL renderer](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/webgl.md)
 - [Plugins](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/plugins.md)
 - [RTL](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/rtl.md)
 - [Browser support](https://raw.githubusercontent.com/Surdeddd/BottomSheet/main/docs/browser-support.md)

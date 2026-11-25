@@ -671,7 +671,7 @@ const sheet = new BottomSheetCore({
 | `/react` `/vue` `/svelte` `/solid` `/qwik` | 28 to 34 KB | The full engine plus the adapter |
 | `/element` | 33.9 KB | The full engine, the element and its styles |
 | `/overlay` | 8.4 KB | The standalone [overlay](docs/overlay.md) |
-| `/webgl` | 5.8 KB | Experimental [GPU renderer](docs/webgl.md) for the sheet surface; the optional content lift adds 4.2 KB |
+| `/webgl` | 5.8 KB | Opt-in [GPU renderer](docs/webgl.md) for the sheet surface; the optional content lift adds 4.2 KB |
 | `/debug` | 0.9 KB | `attachDebugOverlay(engine)`: a live panel of the engine's state |
 
 An option whose feature is missing warns once in development and is ignored.
@@ -689,7 +689,7 @@ to `backdrop-filter` to WebGL, is detected and degrades.
 | | |
 | --- | --- |
 | Frameworks | [React](docs/react.md) · [Vue](docs/vue.md) · [Svelte](docs/svelte.md) · [Solid](docs/solid.md) · [Qwik](docs/qwik.md) · [Preact](docs/preact.md) · [Custom element](docs/web-component.md) · [Vanilla](docs/vanilla.md) · [Angular](docs/angular.md) · [Lit](docs/lit.md) · [Astro](docs/astro.md) |
-| Topics | [Theming](docs/theming.md) · [Anchors and scrim stages](docs/anchors.md) · [Content at every snap](docs/content-fit.md) · [Overlay](docs/overlay.md) · [RTL](docs/rtl.md) · [WebGL renderer (experimental)](docs/webgl.md) · [Plugins](docs/plugins.md) |
+| Topics | [Theming](docs/theming.md) · [Anchors and scrim stages](docs/anchors.md) · [Content at every snap](docs/content-fit.md) · [Overlay](docs/overlay.md) · [RTL](docs/rtl.md) · [WebGL renderer](docs/webgl.md) · [Plugins](docs/plugins.md) |
 | Recipes | [Ten worked examples](docs/recipes/README.md): filter panel, checkout, comment thread, navigation drawer, mini player and more |
 | Examples | [Runnable projects](https://github.com/Surdeddd/BottomSheet/tree/main/examples) for React, Vue, Svelte, Solid, Lit, the custom element and vanilla |
 | Coming from another library | [From vaul or react-modal-sheet](docs/MIGRATION.md) |

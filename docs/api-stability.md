@@ -19,8 +19,10 @@ it will be before 1.0:
 - The custom element's attribute names and event names.
 - The `--bs-*` custom properties and the `.bs-*` class names.
 
-One exception: `/webgl` is [experimental](webgl.md#known-issues). Its options
-and behaviour may change in any release, and it may be removed before 1.0.
+`/webgl` was experimental through 0.25. Since 0.26 its two exports,
+`webglRenderer()` and `contentLift()`, and the names of the renderer's options
+belong to this list. What it has and has not been run on is in its
+[known issues](webgl.md#known-issues).
 
 What 0.x releases do change is behaviour at the edges: what a method does on
 a sheet that is already there, which gestures an option blocks, when an event
@@ -30,15 +32,20 @@ fires. Each such change is listed in the [changelog](../CHANGELOG.md) under
 ## The road to 1.0
 
 1.0 is a promise that the list above, and the behaviour behind it, changes
-only with a major version. Two things stand between 0.25 and that promise:
+only with a major version. Two things stand between 0.26 and that promise:
 
 1. **Field time for 0.24 and 0.25.** 0.24 changed when lifecycle events fire,
    what `persistent` blocks and how the backdrop options work; 0.25 answered
    the design questions below. Both need a release cycle in real apps before
    they are frozen.
 2. **A real-device pass for the on-screen keyboard.** Resting on the keyboard
-   is tested against an emulated `visualViewport`. iOS Safari and Android
-   Chrome each need a manual pass, and the result recorded here.
+   is tested against an emulated `visualViewport`. In 0.26 it was also run
+   against the real on-screen keyboard of Chrome 124 on an Android 15
+   emulator, with the DOM renderer and with the WebGL one: the sheet rests on
+   the keyboard, the focused field stays in view and takes text, `recompute()`
+   leaves the sheet where it is, and closing the keyboard gives the room back.
+   iOS Safari on a device and a physical Android phone each still need a
+   manual pass, and the result recorded here.
 
 Answered in 0.25, because the answers would have been breaking after 1.0:
 
@@ -268,6 +275,13 @@ behaviour change without a major version.
   `setReturnFocus()`, `setOverlayChildren()`, `clearOverlayChildren()`
 - `OVERLAY_PRESETS`: `sheet`, `dialog`, `sidebar`, `toast`
 
+### WebGL renderer
+
+- `webglRenderer(options)`: `jelly`, `sheen`, `glass`, `shadow`, `lift`, `dpr`,
+  `allowSoftware`, `onUnsupported`, and the reasons `onUnsupported` is called
+  with
+- `contentLift()`
+
 ### Types
 
 `SnapPoint`, `SnapPointDef`, `SnapId`, `SheetMode`, `SheetEventMap`,
@@ -287,8 +301,7 @@ behaviour change without a major version.
 ### Not frozen
 
 Anything not exported from an entry point: the controllers, the primitives,
-the features' internals and the engine's private fields. The experimental
-`/webgl` entry is not frozen either. The DOM the
+the features' internals and the engine's private fields. The DOM the
 components render is frozen only as far as the documented class names and
 `data-` attributes go.
 

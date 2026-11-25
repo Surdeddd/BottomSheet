@@ -1,9 +1,12 @@
 # WebGL renderer
 
-> **Experimental.** The renderer is checked under automation in Chromium,
-> Firefox and WebKit, on macOS and Linux, but not yet across real phones. Its
-> options may change, or the renderer may be removed, before 1.0. In
-> production, use the default DOM renderer. See [Known issues](#known-issues).
+> **Status.** Out of the experimental stage since 0.26: the options below fall
+> under the same [stability promise](api-stability.md) as the rest of the
+> package. The renderer is checked under automation in Chromium, Firefox and
+> WebKit, on macOS and Linux, on a real GPU, and in Chrome on an Android 15
+> emulator. It has not been run on a physical phone yet, so check it on yours
+> before you ship it. The DOM renderer stays the default. See
+> [Known issues](#known-issues).
 
 An opt-in renderer that paints the sheet surface on the GPU. The DOM renderer
 remains the default and is unchanged — this adds a second way to draw, not a
@@ -142,9 +145,10 @@ it during motion and a transparent footer would show them.
 
 ## Known issues
 
-- **Not yet checked across real phones.** The renderer is tested in three
-  engines on desktop hardware and in emulated phones. That is the reason it is
-  still marked experimental.
+- **Not yet run on a physical phone.** The renderer is tested in three engines
+  on desktop hardware, on a real GPU, in emulated phones, and in Chrome on an
+  Android 15 emulator with its real on-screen keyboard. A phone's own GPU
+  driver, and iOS Safari on a device, are not covered yet.
 - **Under an emulated device pixel ratio, lifted text can sit one device pixel
   off.** Chromium's device toolbar, and the test tools built on it, lay the page
   out in CSS pixels and scale it afterwards, so Chromium rounds every line of
