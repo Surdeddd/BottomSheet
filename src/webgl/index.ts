@@ -145,7 +145,7 @@ export const webglRenderer = (
     let edgeSeen = Number.NaN;
     let wasMoving = false;
     let tickedAt = 0;
-    let drawnSinceTick = false;
+    let drawnAt: DOMRect | null = null;
     let disposed = false;
     let capture: ContentCapture | null = null;
     let releaseText: (() => void) | null = null;
@@ -406,8 +406,13 @@ export const webglRenderer = (
         : 1 - (1 - drive) * kept;
       offset = lag * drive;
 
-      let stale = !drawnSinceTick;
-      drawnSinceTick = false;
+      let stale =
+        !drawnAt ||
+        drawnAt.left !== sheet.left ||
+        drawnAt.top !== sheet.top ||
+        drawnAt.width !== sheet.width ||
+        drawnAt.height !== sheet.height;
+      drawnAt = null;
       if (handingBack && Math.abs(offset) < FLAT_PX) {
         handBack();
         stale = true;
@@ -464,8 +469,8 @@ export const webglRenderer = (
 
     const onGeometry = (): void => {
       followStack();
-      paint();
-      drawnSinceTick = true;
+      drawnAt = element.getBoundingClientRect();
+      paint(drawnAt);
       wake();
     };
     const geometryObserver = new MutationObserver(onGeometry);

@@ -455,6 +455,18 @@ describe("the WebGL surface in motion", () => {
     r.dispose();
   });
 
+  it("lands with the sheet when a transition is over before the next frame comes", async () => {
+    const r = mount();
+    await r.frame(3);
+
+    await r.moveTo(500);
+    r.slideTo(350);
+    await r.frame(4);
+
+    expect(r.frames[r.frames.length - 1]!.rect[1]).toBe(350);
+    r.dispose();
+  });
+
   it("is not woken by a transition of something inside the sheet", async () => {
     const r = mount();
     await r.frame(3);

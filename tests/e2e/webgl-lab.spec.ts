@@ -238,7 +238,7 @@ test.describe("the WebGL renderer across the engine's features", () => {
     test(`${mode}: with a bend the surface comes to rest on the sheet`, async ({
       page,
     }) => {
-      await mountGl(page, { mode, webgl: { jelly: 2 } });
+      await mountGl(page, { mode, disableClose: true, webgl: { jelly: 2 } });
 
       await snapTo(page, "full");
       await expectOnSheet(page);
@@ -287,6 +287,8 @@ test.describe("the WebGL renderer across the engine's features", () => {
       const corner = (vertical ? box.left : box.top) + 28;
       const flying = (): Promise<boolean> =>
         page.evaluate(() => window.lab.state().isAnimating);
+      const landed = (): Promise<void> =>
+        expect.poll(flying, { timeout: 10_000 }).toBe(false);
 
       const bent = async (): Promise<{ near: Rim; far: Rim }> => {
         for (let attempt = 0; attempt < 3; attempt++) {
@@ -298,8 +300,11 @@ test.describe("the WebGL renderer across the engine's features", () => {
             if (!(await flying())) break;
             if (Math.abs(seen.near.corner - seen.near.centre) > 2) return seen;
           }
-          await settled(page);
-          await snapTo(page, "peek");
+          await landed();
+          await page.evaluate(() => {
+            void window.lab.engine().snapTo("peek");
+          });
+          await landed();
         }
         throw new Error("the sheet landed before its leading edge was seen bent");
       };
@@ -369,6 +374,23 @@ test.describe("the WebGL renderer across the engine's features", () => {
     await expect
       .poll(async () => (await onScreen(page)).bottom, { timeout: 3000 })
       .toBe(height);
+    await expectOnSheet(page);
+  });
+
+  test("the surface lands with the sheet when the page stalls through a whole transition", async ({
+    page,
+  }) => {
+    await mountGl(page, { initial: "half" });
+    await expectOnSheet(page);
+
+    await page.evaluate(() => {
+      const sheet = document.querySelector<HTMLElement>("#sheet-0")!;
+      sheet.style.bottom = "150px";
+      sheet.getBoundingClientRect();
+      const until = performance.now() + 400;
+      while (performance.now() < until);
+    });
+
     await expectOnSheet(page);
   });
 
