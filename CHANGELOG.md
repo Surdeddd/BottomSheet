@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Safari honours `user-select` on the sheet** — the stylesheet set `user-select` without the `-webkit-` prefix, and Safari listens only to the prefixed property. The handle and the header of a sheet could be selected there, and dragging the handle of a sheet docked to a side with a mouse selected the text of its content. The prefixed property is set next to each one, and the content cannot be selected for the length of a drag.
+- **A sheet docked to a side bends under the WebGL renderer** — the rule that makes the handle transparent while the renderer draws the surface lost to the rule that paints the handle of a left or right sheet, which has the same specificity and comes later. The handle stayed painted by the DOM, on top of the canvas, and hid the bend of the leading edge.
+- **A selection does not tint the WebGL surface in Safari** — the canvas could be selected like an image. Select everything on the page, or drag with a mouse so that Safari starts an empty selection across the sheet, and the whole surface was covered by the selection highlight. The canvas is not selectable now.
+- **The WebGL renderer takes one context for a sheet** — it created a second one only to find out whether WebGL exists, and lost it at once. Firefox logs a warning for every lost context, so every sheet logged one at mount. The check no longer creates a context.
+- **No error in Safari's console when the browser takes the WebGL context away** — the renderer answered a lost context by losing it again.
 
 ## [0.25.1]
 

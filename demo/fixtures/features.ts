@@ -6,6 +6,7 @@ import {
   type ScrimOverlayOptions,
   type ScrimStageDef,
 } from "@surdeddd/bottom-sheet";
+import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";
 import "@surdeddd/bottom-sheet/styles";
 import { elementLab } from "./features-element";
 import { overlayLab } from "./features-overlay";
@@ -27,6 +28,14 @@ type Passthrough = Omit<
 
 export type LabOptions = Passthrough & {
   rows?: number;
+  surface?: string;
+  webgl?: {
+    jelly?: number;
+    lift?: boolean;
+    sheen?: number;
+    shadow?: number;
+    software?: "refuse";
+  };
   panel?: { width: number; height: number; positioned?: boolean };
   dir?: "ltr" | "rtl";
   veto?: string;
@@ -46,6 +55,7 @@ export type LabScrimOverlay = Omit<ScrimOverlayOptions, "children">;
 
 type Mounted = {
   engine: BottomSheetEngine;
+  renderer: string;
   root: HTMLElement;
   host: HTMLElement;
   sheet: HTMLElement;
@@ -91,6 +101,8 @@ const tag = <K extends keyof HTMLElementTagNameMap>(
 const build = (options: LabOptions, index: number): Mounted => {
   const {
     rows = 30,
+    surface,
+    webgl,
     panel,
     dir,
     veto,
@@ -102,6 +114,7 @@ const build = (options: LabOptions, index: number): Mounted => {
   document.documentElement.dir = dir ?? "ltr";
 
   const root = tag("div", "bs-root", `root-${index}`);
+  if (surface) root.style.setProperty("--bs-surface", surface);
   const backdrop = tag("div", "bs-backdrop", `backdrop-${index}`);
   const scrim = tag("div", "bs-screen", `scrim-${index}`);
   const sheet = tag("section", "bs-sheet", `sheet-${index}`);
@@ -146,6 +159,7 @@ const build = (options: LabOptions, index: number): Mounted => {
   }
   mountPoint.append(host);
 
+  let renderer = webgl ? "webgl" : "dom";
   const engine = new BottomSheetEngine({
     snapPoints: DEFAULT_SNAPS,
     initial: "peek",
@@ -157,6 +171,23 @@ const build = (options: LabOptions, index: number): Mounted => {
     scrollContainer: content,
     backdrop,
     scrim,
+    ...(webgl
+      ? {
+          features: [
+            webglRenderer({
+              jelly: webgl.jelly,
+              sheen: webgl.sheen,
+              shadow: webgl.shadow,
+              lift: webgl.lift ? contentLift() : undefined,
+              allowSoftware: webgl.software !== "refuse",
+              onUnsupported: reason => {
+                renderer = reason;
+                if (sheets[index]) sheets[index]!.renderer = reason;
+              },
+            }),
+          ],
+        }
+      : {}),
     ...(initialFocus !== undefined ? { initialFocus } : {}),
     ...(returnFocusTo
       ? {
@@ -168,6 +199,7 @@ const build = (options: LabOptions, index: number): Mounted => {
 
   const mounted: Mounted = {
     engine,
+    renderer,
     root,
     host,
     sheet,
@@ -226,6 +258,9 @@ const lab = {
       mounted.engine.destroy();
       mounted.host.remove();
     }
+  },
+  renderer(index = 0): string {
+    return at(index).renderer;
   },
   engine(index = 0): BottomSheetEngine {
     return at(index).engine;

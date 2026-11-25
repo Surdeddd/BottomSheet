@@ -162,6 +162,9 @@ it during motion and a transparent footer would show them.
   a pixel.
 - **Safari hides the renderer's name**, so the check for a software rasteriser
   cannot fire there.
+- **Firefox logs `WebGL context was lost` when a sheet goes away.** The renderer
+  gives its context back on purpose when the sheet is destroyed, and Firefox
+  reports every lost context as a warning.
 
 ## Options
 

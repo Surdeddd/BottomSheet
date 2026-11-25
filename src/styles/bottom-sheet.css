@@ -127,6 +127,7 @@
 
 .bs-sheet[data-bs-webgl="on"],
 .bs-sheet[data-bs-webgl="on"] .bs-handle,
+.bs-sheet[data-bs-webgl="on"][data-mode] .bs-handle,
 .bs-sheet[data-bs-webgl="on"] .bs-header,
 .bs-sheet[data-bs-webgl="on"] .bs-footer {
   background: transparent;

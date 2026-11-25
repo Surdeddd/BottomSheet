@@ -144,7 +144,7 @@ const RENDERER = 0x1f01;
 const UNMASKED = 0x9246;
 
 const fakeWebGL = (renderer: FakeRenderer) => {
-  const calls = { draws: 0, extensions: [] as string[] };
+  const calls = { draws: 0, extensions: [] as string[], losses: 0, lost: false };
   const target: Record<string, unknown> = {
     RENDERER,
     getExtension(name: string) {
@@ -154,9 +154,16 @@ const fakeWebGL = (renderer: FakeRenderer) => {
           ? null
           : { UNMASKED_RENDERER_WEBGL: UNMASKED };
       }
-      if (name === "WEBGL_lose_context") return { loseContext: () => {} };
+      if (name === "WEBGL_lose_context") {
+        return {
+          loseContext: () => {
+            calls.losses += 1;
+          },
+        };
+      }
       return null;
     },
+    isContextLost: () => calls.lost,
     getParameter(id: number) {
       if (id === UNMASKED) return renderer.unmasked;
       if (id === RENDERER) return renderer.plain ?? MASKED;
@@ -213,6 +220,23 @@ describe("webglRenderer — software rasteriser", () => {
     const engine = new BottomSheetEngine(opts as never);
     return { engine, element, reasons, calls };
   };
+
+  it("gives its one context back when the sheet is destroyed", async () => {
+    const { engine, calls } = mount({ plain: APPLE });
+
+    engine.destroy();
+
+    expect(calls.losses).toBe(1);
+  });
+
+  it("does not lose a context the browser has already taken", async () => {
+    const { engine, calls } = mount({ plain: APPLE });
+    calls.lost = true;
+
+    engine.destroy();
+
+    expect(calls.losses).toBe(0);
+  });
 
   it("draws on a GPU", async () => {
     const { engine, element, reasons } = mount({ unmasked: APPLE });

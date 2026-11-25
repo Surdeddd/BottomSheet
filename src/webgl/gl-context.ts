@@ -34,31 +34,10 @@ export const drawsOnCpu = (gl: WebGLRenderingContext): boolean => {
   }
 };
 
-export const hasWebGL = (): boolean => {
-  if (typeof document === "undefined") return false;
-  if (
-    typeof WebGLRenderingContext === "undefined" &&
-    typeof WebGL2RenderingContext === "undefined"
-  ) {
-    return false;
-  }
-  try {
-    const probe = document.createElement("canvas");
-    const gl =
-      probe.getContext("webgl2", { alpha: true }) ??
-      probe.getContext("webgl", { alpha: true }) ??
-      probe.getContext("experimental-webgl");
-    if (!gl) return false;
-
-    const lose = (gl as WebGLRenderingContext).getExtension(
-      "WEBGL_lose_context",
-    );
-    lose?.loseContext();
-    return true;
-  } catch {
-    return false;
-  }
-};
+export const hasWebGL = (): boolean =>
+  typeof document !== "undefined" &&
+  (typeof WebGLRenderingContext !== "undefined" ||
+    typeof WebGL2RenderingContext !== "undefined");
 
 export const createGLHandle = (onLost: () => void): GLHandle | null => {
   if (typeof document === "undefined") return null;
@@ -70,6 +49,8 @@ export const createGLHandle = (onLost: () => void): GLHandle | null => {
   canvas.style.width = "100%";
   canvas.style.height = "100%";
   canvas.style.pointerEvents = "none";
+  canvas.style.webkitUserSelect = "none";
+  canvas.style.userSelect = "none";
 
   const attrs: WebGLContextAttributes = {
     alpha: true,
@@ -109,9 +90,10 @@ export const createGLHandle = (onLost: () => void): GLHandle | null => {
     highp: isWebGL2 || supportsHighpFragment(gl),
     destroy: () => {
       canvas.removeEventListener("webglcontextlost", handleLost);
-      const lose = gl?.getExtension("WEBGL_lose_context");
       try {
-        lose?.loseContext();
+        if (gl && !gl.isContextLost()) {
+          gl.getExtension("WEBGL_lose_context")?.loseContext();
+        }
       } catch {
         void 0;
       }
