@@ -1,6 +1,6 @@
 {
   "name": "@surdeddd/bottom-sheet",
-  "version": "0.25.1",
+  "version": "0.26.0",
   "description": "Bottom sheet, drawer and modal sheet with snap points, spring physics and touch gestures. One engine for React, Vue 3, Svelte 5, Solid, Qwik, Preact and a <bottom-sheet> web component. Accessible, SSR-safe, no dependencies.",
   "type": "module",
   "license": "MIT",
@@ -259,19 +259,19 @@
     {
       "name": "core (engine + types)",
       "path": "dist/index.js",
-      "limit": "26.13 KB",
+      "limit": "26.14 KB",
       "gzip": true
     },
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "33.79 KB",
+      "limit": "33.8 KB",
       "gzip": true
     },
     {
       "name": "vue adapter",
       "path": "dist/vue.js",
-      "limit": "29.45 KB",
+      "limit": "29.46 KB",
       "gzip": true
     },
     {
@@ -304,13 +304,13 @@
     {
       "name": "web component (self-contained)",
       "path": "dist/element.js",
-      "limit": "33.94 KB",
+      "limit": "33.95 KB",
       "gzip": true
     },
     {
       "name": "web component (IIFE / CDN)",
       "path": "dist/element.iife.global.js",
-      "limit": "33.45 KB",
+      "limit": "33.46 KB",
       "gzip": true
     },
     {
