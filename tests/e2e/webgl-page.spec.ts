@@ -99,6 +99,75 @@ const outline = async (
   );
 };
 
+type Rim = { centre: number; corner: number };
+
+const rims = async (
+  page: Page,
+  centre: number,
+  corner: number,
+): Promise<{ near: Rim; far: Rim }> => {
+  const shot = (await page.screenshot()).toString("base64");
+  return page.evaluate(
+    async ({ data, centre, corner }) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${data}`;
+      await img.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const scale = img.width / window.innerWidth;
+      const lit = (x: number, row: number): boolean =>
+        ctx.getImageData(Math.round(x * scale), row, 1, 1).data[0]! > 26;
+      const first = (x: number): number => {
+        for (let row = 0; row < img.height; row++) {
+          if (lit(x, row)) return row / scale;
+        }
+        return -1;
+      };
+      const last = (x: number): number => {
+        for (let row = img.height - 1; row >= 0; row--) {
+          if (lit(x, row)) return (row + 1) / scale;
+        }
+        return -1;
+      };
+      return {
+        near: { centre: first(centre), corner: first(corner) },
+        far: { centre: last(centre), corner: last(corner) },
+      };
+    },
+    { data: shot, centre, corner },
+  );
+};
+
+type Fixture = {
+  __webglEngine: {
+    state: { isAnimating: boolean };
+    snapTo: (id: string) => Promise<unknown>;
+  };
+};
+
+const flying = (page: Page): Promise<boolean> =>
+  page.evaluate(
+    () => (window as unknown as Fixture).__webglEngine.state.isAnimating,
+  );
+
+const landed = (page: Page): Promise<unknown> =>
+  page.waitForFunction(
+    () => !(window as unknown as Fixture).__webglEngine.state.isAnimating,
+    undefined,
+    { timeout: 30_000 },
+  );
+
+const sendTo = (page: Page, id: string): Promise<void> =>
+  page.evaluate(to => {
+    void (window as unknown as Fixture).__webglEngine.snapTo(to);
+  }, id);
+
+const bareStage = (page: Page): Promise<unknown> =>
+  page.addStyleTag({ content: "#controls, #status { visibility: hidden }" });
+
 const open = async (page: Page, query = ""): Promise<void> => {
   await page.goto(`${FIXTURE}${query}`);
   await page.waitForSelector(SHEET);
@@ -450,6 +519,71 @@ test.describe("WebGL renderer and the page around it", () => {
     expect(Math.abs(closing.pill - closing.centre - handleGap)).toBeLessThan(1.5);
     expect(closing.centre - closing.corner).toBeGreaterThan(2);
     expect(closing.centre - closing.corner).toBeLessThan(23);
+  });
+
+  test("the far edge of the surface stays straight while the leading one bends", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await open(page, "?slow=8000&jelly=8&sheen=0");
+    await bareStage(page);
+    await page.evaluate(() => {
+      document.querySelector<HTMLElement>(".bs-sheet")!.style.bottom = "300px";
+    });
+    const sheet = await boxOf(page, SHEET);
+    const centre = sheet.x + sheet.width / 2;
+    const corner = sheet.x + 28;
+    const height = await page.evaluate(() => window.innerHeight);
+
+    const bothInView = async (): Promise<{ near: Rim; far: Rim }> => {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        await sendTo(page, "full");
+        for (let i = 0; i < 60; i++) {
+          const seen = await rims(page, centre, corner);
+          if (!(await flying(page))) break;
+          if (seen.near.centre > 4 && seen.far.centre < height - 4) return seen;
+        }
+        await landed(page);
+        await sendTo(page, "minimized");
+        await landed(page);
+      }
+      throw new Error("no frame showed both edges of the moving sheet");
+    };
+
+    const seen = await bothInView();
+    expect(seen.near.corner - seen.near.centre).toBeGreaterThan(2);
+    expect(Math.abs(seen.far.corner - seen.far.centre)).toBeLessThan(1);
+  });
+
+  test("the surface follows the sheet when the on-screen keyboard lifts it", async ({
+    page,
+  }) => {
+    await open(page, "?sheen=0");
+    await bareStage(page);
+    const sheet = await boxOf(page, SHEET);
+    const centre = sheet.x + sheet.width / 2;
+    const corner = sheet.x + 28;
+    const drawnFrom = async (): Promise<number> =>
+      (await rims(page, centre, corner)).near.corner;
+    const sheetTop = async (): Promise<number> => (await boxOf(page, SHEET)).y;
+    expect(Math.abs((await drawnFrom()) - sheet.y)).toBeLessThan(2);
+
+    await page.evaluate(px => {
+      const vv = window.visualViewport!;
+      const full = window.innerHeight;
+      Object.defineProperty(vv, "height", {
+        configurable: true,
+        get: () => full - px,
+      });
+      vv.dispatchEvent(new Event("resize"));
+    }, 300);
+
+    await expect.poll(sheetTop, { timeout: 3000 }).toBeCloseTo(sheet.y - 300, 0);
+    await expect
+      .poll(async () => Math.abs((await drawnFrom()) - (await sheetTop())), {
+        timeout: 3000,
+      })
+      .toBeLessThan(2);
   });
 
   test("the surface stays on a sheet that scrolls away with the page", async ({

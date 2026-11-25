@@ -26,7 +26,7 @@ new BottomSheetEngine({
 ```
 
 The subpath is only pulled into your bundle if you import it: the main entry
-does not reference it. Measured cost when you do: **5.5 KB gzip** for the
+does not reference it. Measured cost when you do: **5.7 KB gzip** for the
 surface, and **4.2 KB more** for the [content lift](#lifting-the-content), which
 is a separate export and stays out of the bundle unless you import it.
 
@@ -36,6 +36,10 @@ The renderer paints the **surface**: the panel, its corner radii, its shadow,
 and an edge sheen. While the sheet moves, the surface bends: the middle of its
 leading edge stays on the sheet and the corners trail behind, like a sheet of
 jelly, and it is flat again about a third of a second after the sheet stops.
+The bend fades with the distance from that edge and is gone at the opposite
+one, so the edge the sheet hangs from stays straight when it comes into view:
+on a sheet dragged past its largest snap point, or one that floats above the
+edge of the screen.
 
 Everything else stays where it was, drag or no drag:
 
@@ -246,6 +250,13 @@ block, so the two stay together wherever the sheet lives:
 
 An ancestor that rotates or skews the sheet is not supported: the surface is
 placed by bounding boxes.
+
+The surface is redrawn when the engine moves the sheet, when the sheet's own
+style changes, and for as long as a CSS transition on the sheet itself is
+running. That last case is the on-screen keyboard: the stylesheet lifts a
+bottom sheet above it with a transition of `bottom`, and the surface rides
+along. A sheet moved by an animation on one of its ancestors is not followed
+until the next of those events.
 
 ## Colour and corners
 

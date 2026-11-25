@@ -360,6 +360,7 @@ export const webglRenderer = (
       program.draw(frame, {
         bend: offset,
         axis,
+        lead: inward < 0 ? -1 : 1,
         dpr,
         sheen: sheenStrength,
         glass: glassStrength * motion,
@@ -367,6 +368,10 @@ export const webglRenderer = (
         scroll: scrollLayer(sheet, dpr, at),
       });
     };
+
+    const inTransition = (): boolean =>
+      typeof element.getAnimations === "function" &&
+      element.getAnimations().some(running => "transitionProperty" in running);
 
     const tick = (): void => {
       if (disposed) return;
@@ -405,7 +410,7 @@ export const webglRenderer = (
       }
       if (stale) paint(sheet);
 
-      if (!moving && !capture && bend.rest()) {
+      if (!moving && !capture && bend.rest() && !inTransition()) {
         offset = 0;
         if (shown !== 0) paint(sheet);
         drive = 1;
@@ -434,6 +439,11 @@ export const webglRenderer = (
     ctx.addTeardown(ctx.on("dragend", wake));
     ctx.addTeardown(ctx.on("progress", wake));
     ctx.addTeardown(ctx.on("snap", wake));
+
+    const onTransition = (event: Event): void => {
+      if (event.target === element) wake();
+    };
+    element.addEventListener("transitionrun", onTransition);
 
     const contentObserver = new MutationObserver(() => {
       if (!capture) return;
@@ -527,6 +537,7 @@ export const webglRenderer = (
       contentObserver.disconnect();
       geometryObserver.disconnect();
       themeObserver.disconnect();
+      element.removeEventListener("transitionrun", onTransition);
       scheme?.removeEventListener?.("change", onThemeSignal);
       window.removeEventListener("resize", onResize);
       teardown();

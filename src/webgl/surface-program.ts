@@ -17,6 +17,7 @@ uniform vec4 u_color;
 uniform float u_shadow;
 uniform float u_bend;
 uniform float u_axis;
+uniform float u_lead;
 uniform float u_sheen;
 uniform float u_glass;
 uniform float u_hasContent;
@@ -36,21 +37,20 @@ float roundedBoxSDF(vec2 p, vec2 halfSize, vec4 radii) {
 
 void main() {
   vec2 frag = vec2(gl_FragCoord.x, u_resolution.y - gl_FragCoord.y);
-  vec2 center = u_rect.xy + u_rect.zw * 0.5;
   vec2 halfSize = u_rect.zw * 0.5;
 
-  vec2 span = u_axis < 0.5
-    ? vec2(frag.x - u_rect.x, u_rect.z)
-    : vec2(frag.y - u_rect.y, u_rect.w);
-  float across = clamp(span.x / max(span.y, 1.0), 0.0, 1.0);
-  float lag = (1.0 - sin(across * 3.14159265)) * u_bend;
+  vec2 local = frag - u_rect.xy;
+  vec2 span = u_axis < 0.5 ? local : local.yx;
+  vec2 reach = u_axis < 0.5 ? u_rect.zw : u_rect.wz;
+  float across = clamp(span.x / max(reach.x, 1.0), 0.0, 1.0);
+  float lag = (1.0 - sin(across * 3.14159265)) * u_bend * u_lead;
 
-  vec2 p = frag - center;
-  if (u_axis < 0.5) {
-    p.y -= lag;
-  } else {
-    p.x -= lag;
-  }
+  float depth = u_lead > 0.0 ? span.y : reach.y - span.y;
+  float held = (depth - lag) / max(1.0 - lag / max(reach.y, 1.0), 0.5);
+  held = held < 0.0 ? depth - lag : (held > reach.y ? depth : held);
+  span.y = u_lead > 0.0 ? held : reach.y - held;
+
+  vec2 p = (u_axis < 0.5 ? span : span.yx) - halfSize;
 
   float d = roundedBoxSDF(p, halfSize, u_radius);
   float surface = 1.0 - smoothstep(-1.0, 1.0, d);
@@ -136,6 +136,7 @@ export type ScrollLayer = {
 export type DrawState = {
   bend: number;
   axis: 0 | 1;
+  lead: 1 | -1;
   dpr: number;
   sheen: number;
   glass: number;
@@ -190,6 +191,7 @@ export const createSurfaceProgram = (
   const uShadow = gl.getUniformLocation(program, "u_shadow");
   const uBend = gl.getUniformLocation(program, "u_bend");
   const uAxis = gl.getUniformLocation(program, "u_axis");
+  const uLead = gl.getUniformLocation(program, "u_lead");
   const uSheen = gl.getUniformLocation(program, "u_sheen");
   const uGlass = gl.getUniformLocation(program, "u_glass");
   const uHasContent = gl.getUniformLocation(program, "u_hasContent");
@@ -235,6 +237,7 @@ export const createSurfaceProgram = (
       gl.uniform1f(uShadow, frame.shadow);
       gl.uniform1f(uBend, state.bend * dpr);
       gl.uniform1f(uAxis, state.axis);
+      gl.uniform1f(uLead, state.lead);
       gl.uniform1f(uSheen, state.sheen);
       gl.uniform1f(uGlass, state.glass);
 

@@ -3,7 +3,13 @@ import { contentLift, webglRenderer } from "../../src/webgl";
 import type { WebGLRendererOptions } from "../../src/webgl";
 import type { EngineFeatureContext } from "../../src/core/types";
 
-type Frame = { rect: number[]; bend: number; axis: number; content: number };
+type Frame = {
+  rect: number[];
+  bend: number;
+  axis: number;
+  lead: number;
+  content: number;
+};
 
 const VIEW = { left: 0, top: 0, width: 390, height: 800 };
 const FRAME_MS = 16;
@@ -62,6 +68,7 @@ const mount = (
           rect: uniforms.u_rect ?? [],
           bend: uniforms.u_bend?.[0] ?? 0,
           axis: uniforms.u_axis?.[0] ?? 0,
+          lead: uniforms.u_lead?.[0] ?? 0,
           content: uniforms.u_hasContent?.[0] ?? 0,
         });
       },
@@ -107,6 +114,10 @@ const mount = (
   sheet.append(line);
   root.append(sheet);
   document.body.append(root);
+
+  const transitions: Array<{ transitionProperty: string }> = [];
+  (sheet as unknown as { getAnimations: () => unknown[] }).getAnimations = () =>
+    transitions;
 
   const position = { along: mode === "bottom" ? 500 : 300 };
   vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(
@@ -160,6 +171,9 @@ const mount = (
     sheet.style.transform = `translate3d(0px, ${along}px, 0px)`;
     await settle();
   };
+  const slideTo = (along: number): void => {
+    position.along = along;
+  };
   const frame = async (count = 1): Promise<void> => {
     for (let i = 0; i < count; i++) {
       vi.advanceTimersByTime(FRAME_MS);
@@ -177,6 +191,8 @@ const mount = (
     sheet,
     line,
     frames,
+    transitions,
+    slideTo,
     counts,
     state,
     emit,
@@ -356,6 +372,66 @@ describe("the WebGL surface in motion", () => {
     const last = r.frames[r.frames.length - 1]!;
     expect(last.axis).toBe(1);
     expect(Math.max(...r.frames.map(f => Math.abs(f.bend)))).toBeGreaterThan(2);
+    r.dispose();
+  });
+
+  it("tells the shader that the top of a bottom sheet leads", async () => {
+    const r = mount();
+    await drag(r, 500, 300, 6);
+
+    expect(r.frames[r.frames.length - 1]!.lead).toBe(1);
+    r.dispose();
+  });
+
+  it("tells the shader that the far side of a left sheet leads", async () => {
+    const r = mount({}, "left");
+    r.state.dragging = true;
+    r.emit("dragstart", { size: 300 });
+    await r.frame();
+    for (let i = 1; i <= 6; i++) {
+      await r.moveTo(300 - i * 15);
+      await r.frame();
+    }
+
+    expect(r.frames[r.frames.length - 1]!.lead).toBe(-1);
+    r.dispose();
+  });
+
+  it("follows a sheet that a transition is moving, flat, and stops when it ends", async () => {
+    const r = mount();
+    await r.frame(3);
+    const before = r.frames.length;
+
+    r.transitions.push({ transitionProperty: "bottom" });
+    r.sheet.dispatchEvent(new Event("transitionrun"));
+    for (let i = 1; i <= 10; i++) {
+      r.slideTo(500 - i * 30);
+      await r.frame();
+    }
+
+    const drawn = r.frames.slice(before);
+    expect(drawn.length).toBeGreaterThanOrEqual(10);
+    expect(drawn[drawn.length - 1]!.rect[1]).toBe(200);
+    expect(Math.max(...drawn.map(f => Math.abs(f.bend)))).toBe(0);
+
+    r.transitions.length = 0;
+    await r.frame(4);
+    const settled = r.frames.length;
+    await r.frame(30);
+
+    expect(r.frames.length).toBe(settled);
+    r.dispose();
+  });
+
+  it("is not woken by a transition of something inside the sheet", async () => {
+    const r = mount();
+    await r.frame(3);
+    const before = r.frames.length;
+
+    r.line.dispatchEvent(new Event("transitionrun", { bubbles: true }));
+    await r.frame(6);
+
+    expect(r.frames.length).toBe(before);
     r.dispose();
   });
 

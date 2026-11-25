@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The far edge of the WebGL surface stays straight** — the bend moved the whole surface, not only its leading edge, so the edge on the other side carried the same curve. On a sheet dragged fast past its largest snap point that edge lifts off the screen, and it showed up bent and wobbling. The bend now fades along the sheet and is gone at the far edge. The same holds for a sheet that floats above the edge of the screen, and for sheets on the other three sides.
+- **The WebGL surface follows a sheet the on-screen keyboard lifts** — the stylesheet raises a bottom sheet above the keyboard with a transition, and the renderer redrew only when the engine moved the sheet. The content rose and the surface stayed behind it, under the keyboard. The surface is now redrawn for as long as a transition on the sheet is running.
+
+### Changed
+
+- **`/webgl` is 5.7 KB gzip**, up from 5.5 KB; with the content lift it is 9.9 KB.
+
 ## [0.25.0]
 
 The questions that 1.0 would have frozen are answered here, while the answers are still additive. Two of them change what existing code sees, and are listed first.

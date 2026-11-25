@@ -162,6 +162,23 @@ text on different rows depending on whether its layer carries
 hand-back repaints the text, so the renderer holds the hint for that one
 frame; otherwise lines would land a pixel away from where the drag found them.
 
+## What changed in 0.25.1
+
+**The bend stops at the far edge.** The shader moved the whole surface by the
+bend of the leading edge, so the opposite edge carried the same curve. That
+edge is out of sight for a sheet that sits flush against the screen, until the
+sheet is dragged past its largest snap point and lifts off it; then the curve
+showed, and wobbled. The displacement now falls off linearly along the sheet
+and is zero at the far edge. The shader inverts that mapping exactly, so the
+lifted content is squeezed by the same few percent as the surface.
+
+**The surface follows a transition on the sheet.** The loop ran while the
+engine moved the sheet and stopped as soon as it rested. A CSS transition
+moves the sheet without the engine: the stylesheet's own `bottom 0.2s`, which
+lifts a sheet above the on-screen keyboard, left the surface where it was,
+300 px under the content. The loop now also runs while the sheet element has a
+running transition, and a `transitionrun` on the sheet wakes it.
+
 ## Testing
 
 - **Unit** — feature installs and tears down cleanly; degrades when

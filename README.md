@@ -671,7 +671,7 @@ const sheet = new BottomSheetCore({
 | `/react` `/vue` `/svelte` `/solid` `/qwik` | 28 to 34 KB | The full engine plus the adapter |
 | `/element` | 33.8 KB | The full engine, the element and its styles |
 | `/overlay` | 8.4 KB | The standalone [overlay](docs/overlay.md) |
-| `/webgl` | 5.5 KB | Experimental [GPU renderer](docs/webgl.md) for the sheet surface; the optional content lift adds 4.2 KB |
+| `/webgl` | 5.7 KB | Experimental [GPU renderer](docs/webgl.md) for the sheet surface; the optional content lift adds 4.2 KB |
 | `/debug` | 0.9 KB | `attachDebugOverlay(engine)`: a live panel of the engine's state |
 
 An option whose feature is missing warns once in development and is ignored.
