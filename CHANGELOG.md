@@ -5,6 +5,16 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Defects of the engine that the pass over the renderer turned up. None of them is new; each one is in every earlier release.
+
+### Fixed
+
+- **A click with a mouse reaches the controls inside a part that drags the sheet** — the sheet took the pointer at the press, and a browser sends the click of a captured pointer to the element that holds it. A button, a link or a checkbox in the handle, in a `[data-bs-drag]` zone, or anywhere in a sheet with `dragFrom: "sheet"` never heard its click from a mouse; a tap with a finger was not affected. In Chrome and Firefox a click inside a selected word of a field there did not place the caret either. The sheet now takes a mouse's pointer once the press has travelled 12 px, which is where a press starts to count as a drag. A drag that begins on a button still moves the sheet and does not press the button.
+- **Letting go after a pause does not fling the sheet** — the speed of a release came from the last moves, however long ago they were made. A fast pull, a pause, then letting go sent the sheet flying with the speed of the pull. A release that comes later than the speed window after the last move, 160 ms for a mouse and 120 ms for a finger, now carries no speed, and the sheet settles on the nearest snap point.
+- **A release that never reaches the page does not leave the sheet following the mouse** — when the browser kept a `pointerup` to itself, the engine stayed in the drag and the sheet followed the cursor with no button held until the next click on the handle. A move of a mouse that reports no button held now ends the drag where it was left.
+
 ## [0.26.0]
 
 A full pass over the WebGL renderer (`@surdeddd/bottom-sheet/webgl`), after which it stops being experimental. The pass also found how a mouse drag of the sheet meets Safari's selection and the browser's own drag, and those fixes are in the engine itself.

@@ -105,7 +105,7 @@ export type SettleTargetInput = {
 };
 
 const MOUSE_FLICK_VELOCITY = 0.4;
-const MOUSE_DRAG_THRESHOLD = 12;
+export const MOUSE_DRAG_THRESHOLD = 12;
 const DIRECTIONAL_INTENT_VELOCITY = 0.15;
 
 export const findDragSettleTarget = (

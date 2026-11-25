@@ -1,7 +1,13 @@
 import type { Page } from "@playwright/test";
 import type { LabOptions } from "../../demo/fixtures/features";
 
-export type Step = { dx?: number; dy?: number; steps?: number; pause?: number };
+export type Step = {
+  dx?: number;
+  dy?: number;
+  steps?: number;
+  pause?: number;
+  hold?: number;
+};
 
 export const mount = (
   page: Page,
@@ -79,7 +85,7 @@ export const pointerDrag = async (
   step: Step,
 ) => {
   await page.evaluate(
-    async ([sel, pointerType, dx, dy, steps, pause]) => {
+    async ([sel, pointerType, dx, dy, steps, pause, hold]) => {
       const el = document.querySelector(sel)!;
       const wait = (ms: number): Promise<void> | void => {
         if (ms > 20) return new Promise(resolve => setTimeout(resolve, ms));
@@ -108,6 +114,7 @@ export const pointerDrag = async (
         await wait(pause);
         fire("pointermove", x + (dx * i) / steps, y + (dy * i) / steps);
       }
+      if (hold) await new Promise(resolve => setTimeout(resolve, hold));
       fire("pointerup", x + dx, y + dy);
     },
     [
@@ -117,6 +124,7 @@ export const pointerDrag = async (
       step.dy ?? 0,
       step.steps ?? 10,
       step.pause ?? 16,
+      step.hold ?? 0,
     ] as const,
   );
   return settled(page);

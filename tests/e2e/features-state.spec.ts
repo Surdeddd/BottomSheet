@@ -428,11 +428,61 @@ test.describe("where a drag may start", () => {
     );
     expect(word.trim()).toBe("weekly");
 
-    await field.click({ position: { x: 70, y: 8 } });
+    await field.click({ position: { x: 20, y: 8 } });
     await page.keyboard.type("!");
     const typed = await field.inputValue();
     expect(typed.replace("!", "")).toBe("weekly report");
-    expect(typed.indexOf("!")).toBeGreaterThan(6);
+    expect(typed.indexOf("!")).toBeGreaterThan(0);
+    expect(typed.indexOf("!")).toBeLessThan(6);
+  });
+
+  test("a click with a mouse reaches the controls in a part that drags the sheet", async ({
+    page,
+  }) => {
+    await mount(page, { dragFrom: "sheet", initial: "half" });
+    await page.evaluate(() => {
+      const row = document.createElement("div");
+      row.innerHTML =
+        '<button id="title-button" type="button">Press</button> ' +
+        '<a id="title-link" href="#elsewhere">Link</a> ' +
+        '<input id="title-check" type="checkbox">';
+      document.querySelector("#header-0")!.prepend(row);
+      document.querySelector("#title-button")!.addEventListener("click", () => {
+        document.body.dataset.pressed = "yes";
+      });
+    });
+
+    await page.locator("#title-button").click();
+    await page.locator("#title-check").click();
+    await page.locator("#title-link").click();
+
+    expect(await page.evaluate(() => document.body.dataset.pressed)).toBe("yes");
+    expect(await page.locator("#title-check").isChecked()).toBe(true);
+    expect(await page.evaluate(() => location.hash)).toBe("#elsewhere");
+    expect((await settled(page)).activeId).toBe("half");
+  });
+
+  test("a drag that starts on a button moves the sheet and does not press it", async ({
+    page,
+  }) => {
+    await mount(page, { dragFrom: "sheet", initial: "half" });
+    await page.evaluate(() => {
+      const button = document.createElement("button");
+      button.id = "title-button";
+      button.type = "button";
+      button.textContent = "Press";
+      button.addEventListener("click", () => {
+        document.body.dataset.pressed = "yes";
+      });
+      document.querySelector("#header-0")!.prepend(button);
+    });
+
+    expect(
+      (await drag(page, "#title-button", { dy: -150, ...SLOW })).activeId,
+    ).toBe("full");
+    expect(
+      await page.evaluate(() => document.body.dataset.pressed ?? "no"),
+    ).toBe("no");
   });
 
   test("setDragFrom switches the drag surface on a live sheet", async ({

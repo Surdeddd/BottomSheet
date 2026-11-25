@@ -592,3 +592,225 @@ describe("drag hardening — what the browser would do with the press", () => {
     removed.mockRestore();
   });
 });
+
+describe("drag hardening — how a press ends and who holds the pointer", () => {
+  type Init = PointerEventInit & { at?: number };
+
+  const send = (target: EventTarget, type: string, init: Init = {}): void => {
+    const { at, ...rest } = init;
+    const event = new PointerEvent(type, {
+      pointerId: 1,
+      pointerType: "mouse",
+      bubbles: true,
+      cancelable: true,
+      ...rest,
+    } as PointerEventInit);
+    if (at !== undefined) {
+      Object.defineProperty(event, "timeStamp", { value: at });
+    }
+    target.dispatchEvent(event);
+  };
+
+  const mounted = () => {
+    const dom = makeDom();
+    stub(dom.sheet);
+    const taken = vi.fn();
+    dom.handle.setPointerCapture = taken;
+    const engine = new BottomSheetEngine({
+      element: dom.sheet,
+      handle: dom.handle,
+      snapPoints: points,
+      initial: "half",
+      ...tween,
+    });
+    const ends: number[] = [];
+    engine.on("dragend", payload => ends.push(payload.velocity));
+    let moves = 0;
+    engine.on("drag", () => {
+      moves += 1;
+    });
+    return { dom, engine, taken, ends, moved: () => moves };
+  };
+
+  const pull = (handle: HTMLElement, kind: "mouse" | "touch"): void => {
+    send(handle, "pointerdown", { clientY: 500, pointerType: kind, at: 0 });
+    send(handle, "pointermove", { clientY: 480, pointerType: kind, at: 10 });
+    send(handle, "pointermove", { clientY: 440, pointerType: kind, at: 20 });
+    send(handle, "pointermove", { clientY: 380, pointerType: kind, at: 30 });
+  };
+
+  it("carries the speed of the drag when the release comes right after the last move", () => {
+    const { dom, engine, ends } = mounted();
+
+    pull(dom.handle, "mouse");
+    send(dom.handle, "pointerup", { clientY: 380, at: 40 });
+
+    expect(ends).toHaveLength(1);
+    expect(ends[0]).toBeGreaterThan(1);
+    engine.destroy();
+  });
+
+  it("carries no speed when the pointer rested before it let go", () => {
+    const { dom, engine, ends } = mounted();
+
+    pull(dom.handle, "mouse");
+    send(dom.handle, "pointerup", { clientY: 380, at: 600 });
+
+    expect(ends).toEqual([0]);
+    engine.destroy();
+  });
+
+  it("counts a finger as resting sooner than a mouse", () => {
+    const finger = mounted();
+    pull(finger.dom.handle, "touch");
+    send(finger.dom.handle, "pointerup", {
+      clientY: 380,
+      pointerType: "touch",
+      at: 170,
+    });
+    expect(finger.ends).toEqual([0]);
+    finger.engine.destroy();
+
+    const mouse = mounted();
+    pull(mouse.dom.handle, "mouse");
+    send(mouse.dom.handle, "pointerup", { clientY: 380, at: 170 });
+    expect(mouse.ends[0]).toBeGreaterThan(1);
+    mouse.engine.destroy();
+  });
+
+  it("ends the drag where it was left when a mouse moves with no button held", () => {
+    const { dom, engine, ends } = mounted();
+    send(dom.handle, "pointerdown", { clientY: 500, buttons: 1 });
+    send(dom.handle, "pointermove", { clientY: 450, buttons: 1 });
+    expect(engine.state.isDragging).toBe(true);
+
+    send(dom.handle, "pointermove", { clientY: 200, buttons: 0 });
+
+    expect(engine.state.isDragging).toBe(false);
+    expect(ends).toEqual([0]);
+    expect(engine.state.size).toBeLessThan(500);
+
+    const rested = engine.state.size;
+    send(dom.handle, "pointermove", { clientY: 100, buttons: 0 });
+    expect(engine.state.size).toBe(rested);
+    engine.destroy();
+  });
+
+  it("keeps dragging for a stream that never reports a pressed button", () => {
+    const { dom, engine } = mounted();
+    send(dom.handle, "pointerdown", { clientY: 500 });
+    send(dom.handle, "pointermove", { clientY: 450 });
+    send(dom.handle, "pointermove", { clientY: 400 });
+
+    expect(engine.state.isDragging).toBe(true);
+    expect(engine.state.size).toBe(400);
+    engine.destroy();
+  });
+
+  it("leaves the pointer of a mouse alone until the press has travelled", () => {
+    const { dom, engine, taken } = mounted();
+
+    send(dom.handle, "pointerdown", { clientX: 100, clientY: 500 });
+    send(dom.handle, "pointermove", { clientX: 101, clientY: 492 });
+    expect(taken).not.toHaveBeenCalled();
+
+    send(dom.handle, "pointermove", { clientX: 101, clientY: 480 });
+    expect(taken).toHaveBeenCalledTimes(1);
+    expect(taken).toHaveBeenCalledWith(1);
+
+    send(dom.handle, "pointermove", { clientX: 101, clientY: 450 });
+    expect(taken).toHaveBeenCalledTimes(1);
+    engine.destroy();
+  });
+
+  it("takes the pointer of a mouse on a sideways move as well", () => {
+    const { dom, engine, taken } = mounted();
+
+    send(dom.handle, "pointerdown", { clientX: 100, clientY: 500 });
+    send(dom.handle, "pointermove", { clientX: 108, clientY: 500 });
+    expect(taken).not.toHaveBeenCalled();
+
+    send(dom.handle, "pointermove", { clientX: 120, clientY: 500 });
+
+    expect(taken).toHaveBeenCalledTimes(1);
+    engine.destroy();
+  });
+
+  it("takes the pointer of a finger with the press", () => {
+    const { dom, engine, taken } = mounted();
+
+    send(dom.handle, "pointerdown", { clientY: 500, pointerType: "touch" });
+
+    expect(taken).toHaveBeenCalledTimes(1);
+    engine.destroy();
+  });
+
+  it("follows a mouse that has left the handle before its pointer was taken", () => {
+    const { dom, engine, taken } = mounted();
+    const elsewhere = document.createElement("p");
+    document.body.append(elsewhere);
+
+    send(dom.handle, "pointerdown", { clientY: 500 });
+    send(elsewhere, "pointermove", { clientY: 440 });
+
+    expect(engine.state.size).toBe(360);
+    expect(taken).toHaveBeenCalledTimes(1);
+    engine.destroy();
+  });
+
+  it("ends a press that is let go outside the handle before its pointer was taken", () => {
+    const { dom, engine, ends } = mounted();
+    const elsewhere = document.createElement("p");
+    document.body.append(elsewhere);
+
+    send(dom.handle, "pointerdown", { clientY: 500 });
+    send(elsewhere, "pointerup", { clientY: 500 });
+
+    expect(engine.state.isDragging).toBe(false);
+    expect(ends).toHaveLength(1);
+    engine.destroy();
+  });
+
+  it("ignores what another pointer does on the page", () => {
+    const { dom, engine } = mounted();
+    const elsewhere = document.createElement("p");
+    document.body.append(elsewhere);
+
+    send(dom.handle, "pointerdown", { clientY: 500 });
+    send(elsewhere, "pointermove", { clientY: 300, pointerId: 2 });
+    send(elsewhere, "pointerup", { clientY: 300, pointerId: 2 });
+
+    expect(engine.state.isDragging).toBe(true);
+    expect(engine.state.size).toBe(300);
+    engine.destroy();
+  });
+
+  it("counts a move once, though the page and the handle both hear it", () => {
+    const { dom, engine, moved } = mounted();
+
+    send(dom.handle, "pointerdown", { clientY: 500 });
+    send(dom.handle, "pointermove", { clientY: 498 });
+    send(dom.handle, "pointermove", { clientY: 470 });
+
+    expect(moved()).toBe(2);
+    expect(engine.state.size).toBe(330);
+    engine.destroy();
+  });
+
+  it("leaves the page's pointer listeners balanced when the sheet goes", () => {
+    const added = vi.spyOn(document, "addEventListener");
+    const removed = vi.spyOn(document, "removeEventListener");
+    const of = (spy: typeof added | typeof removed): string[] =>
+      spy.mock.calls.map(([type]) => String(type)).filter(type => type.startsWith("pointer")).sort();
+
+    const { dom, engine } = mounted();
+    send(dom.handle, "pointerdown", { clientY: 500 });
+    engine.setDragFrom("sheet");
+    engine.setDragFrom("handle");
+    engine.destroy();
+
+    expect(of(removed)).toEqual(of(added));
+    added.mockRestore();
+    removed.mockRestore();
+  });
+});

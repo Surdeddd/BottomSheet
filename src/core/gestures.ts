@@ -1,3 +1,4 @@
+import { MOUSE_DRAG_THRESHOLD } from "./primitives/snap-points";
 import type { SheetMode } from "./types";
 
 export type PointerSample = { t: number; v: number };
@@ -24,6 +25,8 @@ export type GestureOptions = {
 };
 
 const isAxisVertical = (mode: SheetMode) => mode === "bottom" || mode === "top";
+
+const PAGE_POINTER_EVENTS = ["pointermove", "pointerup", "pointercancel"] as const;
 
 class SampleRing {
   private readonly slots: PointerSample[];
@@ -87,6 +90,9 @@ export const installGestures = (
   let lastCoord = 0;
   let pendingStart = false;
   let movedInTask = false;
+  let captured = false;
+  let pressedButton = false;
+  let lastMove: Event | null = null;
   const VELOCITY_WINDOW_MS = (kind: PointerKind) =>
     kind === "mouse" ? 160 : 120;
   const MAX_SAMPLES = 32;
@@ -102,6 +108,7 @@ export const installGestures = (
     axis === "Y" ? e.clientX : e.clientY;
 
   const capture = (pointerId: number): void => {
+    captured = true;
     try {
       handle.setPointerCapture(pointerId);
     } catch {
@@ -116,6 +123,8 @@ export const installGestures = (
     activePointerId = null;
     pendingStart = false;
     movedInTask = false;
+    captured = false;
+    pressedButton = false;
     samples.reset();
   };
 
@@ -126,6 +135,7 @@ export const installGestures = (
     activePointerId = e.pointerId;
     activePointerType =
       (e.pointerType as PointerKind) || "touch";
+    pressedButton = activePointerType !== "touch" && e.buttons > 0;
     startCoord = coordOf(e);
     startCross = crossOf(e);
     lastCoord = startCoord;
@@ -135,12 +145,18 @@ export const installGestures = (
       pendingStart = true;
       return;
     }
-    capture(e.pointerId);
+    if (activePointerType === "touch") capture(e.pointerId);
     callbacks.onStart(startCoord, activePointerType);
   };
 
   const onPointerMove = (e: PointerEvent) => {
-    if (e.pointerId !== activePointerId) return;
+    if (e.pointerId !== activePointerId || e === lastMove) return;
+    lastMove = e;
+    if (pressedButton && e.buttons === 0) {
+      samples.reset();
+      finishGesture(e);
+      return;
+    }
     const coord = coordOf(e);
     const rawDelta = coord - startCoord;
     const delta = rawDelta * sign;
@@ -160,6 +176,13 @@ export const installGestures = (
       capture(e.pointerId);
       callbacks.onStart(startCoord, activePointerType);
       return;
+    }
+    if (
+      !captured &&
+      Math.max(Math.abs(rawDelta), Math.abs(crossOf(e) - startCross)) >
+        MOUSE_DRAG_THRESHOLD
+    ) {
+      capture(e.pointerId);
     }
     lastCoord = coord;
     samples.push(e.timeStamp, coord);
@@ -181,15 +204,21 @@ export const installGestures = (
     const rawDelta = lastCoord - startCoord;
     const delta = rawDelta * sign;
     let velocity = 0;
-    if (samples.length >= 3) {
+    const last = samples.newest();
+    if (
+      samples.length >= 3 &&
+      last &&
+      e.timeStamp - last.t <= VELOCITY_WINDOW_MS(activePointerType)
+    ) {
       const first = samples.oldest()!;
-      const last = samples.newest()!;
       const dt = last.t - first.t;
       if (dt > 0) velocity = ((last.v - first.v) / dt) * sign;
     }
     const finishedKind = activePointerType;
     activePointerId = null;
     movedInTask = false;
+    captured = false;
+    pressedButton = false;
     samples.reset();
     try {
       if (handle.hasPointerCapture(e.pointerId)) {
@@ -212,6 +241,14 @@ export const installGestures = (
     if (e.target === handle) onPointerCancel(e);
   };
 
+  const onPagePointer = (e: PointerEvent) => {
+    if (e.pointerId !== activePointerId || pendingStart) return;
+    if (captured && !(pressedButton && e.buttons === 0)) return;
+    if (e.type === "pointermove") onPointerMove(e);
+    else if (e.type === "pointerup") finishGesture(e);
+    else onPointerCancel(e);
+  };
+
   const onNativeDrag = (e: Event) => {
     if (activePointerId !== null && !pendingStart) e.preventDefault();
   };
@@ -226,9 +263,13 @@ export const installGestures = (
   handle.addEventListener("pointercancel", onPointerCancel);
   handle.addEventListener("lostpointercapture", onLostCapture);
   handle.addEventListener("dragstart", onNativeDrag);
-  const selectScopes = [handle.getRootNode(), handle.ownerDocument];
+  const page = handle.ownerDocument;
+  const selectScopes = [handle.getRootNode(), page];
   for (const scope of selectScopes) {
     scope.addEventListener("selectstart", onSelectStart);
+  }
+  for (const type of PAGE_POINTER_EVENTS) {
+    page.addEventListener(type, onPagePointer, true);
   }
   const managesTouchAction = options.manageTouchAction !== false;
   const prevTouchAction = handle.style.touchAction;
@@ -245,6 +286,9 @@ export const installGestures = (
     handle.removeEventListener("dragstart", onNativeDrag);
     for (const scope of selectScopes) {
       scope.removeEventListener("selectstart", onSelectStart);
+    }
+    for (const type of PAGE_POINTER_EVENTS) {
+      page.removeEventListener(type, onPagePointer, true);
     }
     if (managesTouchAction) handle.style.touchAction = prevTouchAction;
     if (activePointerId !== null && handle.hasPointerCapture(activePointerId)) {

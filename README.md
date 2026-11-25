@@ -364,7 +364,7 @@ Gestures
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `dragFrom` | `"handle"` | Where a drag may start: the `handle`, the whole `sheet`, or `zones` (`[data-bs-drag]` subtrees only). `[data-bs-no-drag]` opts a subtree out. A press that starts a drag cancels the browser's own drag of a link or of selected text under it. A sheet without a handle defaults to `sheet` |
+| `dragFrom` | `"handle"` | Where a drag may start: the `handle`, the whole `sheet`, or `zones` (`[data-bs-drag]` subtrees only). `[data-bs-no-drag]` opts a subtree out. A press that starts a drag cancels the browser's own drag of a link or of selected text under it; a button, a link or a field under it still takes a click. A sheet without a handle defaults to `sheet` |
 | `dragFromContent` | `true` | Whether a touch on the scroll area drags the sheet. Can be set per point: `{ id, size, dragFromContent: false }` |
 | `disableDrag` | `false` | Turn the gesture off; methods still work |
 | `rubberBand` | `true` | Soft over-drag past the last point |

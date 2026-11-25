@@ -413,6 +413,47 @@ test.describe("dragging", () => {
     await settled(page);
   });
 
+  test("letting go after a pause leaves the sheet where it is, however fast it was pulled", async ({
+    page,
+  }) => {
+    const pull = { dy: 90, steps: 4, pause: 8 };
+
+    await mount(page, { initial: "full" });
+    const flung = await pointerDrag(page, "#handle-0", "mouse", pull);
+    expect(flung.activeId).not.toBe("full");
+
+    await mount(page, { initial: "full" });
+    const placed = await pointerDrag(page, "#handle-0", "mouse", {
+      ...pull,
+      hold: 400,
+    });
+    expect(placed.activeId).toBe("full");
+  });
+
+  test("a release that never reaches the page does not leave the sheet following the mouse", async ({
+    page,
+  }) => {
+    await mount(page);
+    await page.evaluate(() => {
+      for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+        window.addEventListener(
+          type,
+          event => event.stopImmediatePropagation(),
+          true,
+        );
+      }
+    });
+
+    const from = await press(page, "#handle-0");
+    await move(page, from, { dy: -60, ...SLOW });
+    await page.mouse.up();
+    await page.mouse.move(from.x, from.y - 200, { steps: 4 });
+
+    const rested = await settled(page);
+    expect(rested.isDragging).toBe(false);
+    expect(rested.activeId).toBe("peek");
+  });
+
   test("a drag reports dragstart, drag and dragend before the snap", async ({
     page,
   }) => {
