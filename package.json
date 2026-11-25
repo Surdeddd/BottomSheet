@@ -1,6 +1,6 @@
 {
   "name": "@surdeddd/bottom-sheet",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "description": "Bottom sheet, drawer and modal sheet with snap points, spring physics and touch gestures. One engine for React, Vue 3, Svelte 5, Solid, Qwik, Preact and a <bottom-sheet> web component. Accessible, SSR-safe, no dependencies.",
   "type": "module",
   "license": "MIT",
@@ -259,37 +259,37 @@
     {
       "name": "core (engine + types)",
       "path": "dist/index.js",
-      "limit": "26.14 KB",
+      "limit": "26.26 KB",
       "gzip": true
     },
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "33.8 KB",
+      "limit": "33.95 KB",
       "gzip": true
     },
     {
       "name": "vue adapter",
       "path": "dist/vue.js",
-      "limit": "29.46 KB",
+      "limit": "29.6 KB",
       "gzip": true
     },
     {
       "name": "svelte adapter",
       "path": "dist/svelte.js",
-      "limit": "29.43 KB",
+      "limit": "29.59 KB",
       "gzip": true
     },
     {
       "name": "solid adapter",
       "path": "dist/solid.js",
-      "limit": "28.1 KB",
+      "limit": "28.24 KB",
       "gzip": true
     },
     {
       "name": "qwik adapter",
       "path": "dist/qwik.js",
-      "limit": "27.94 KB",
+      "limit": "28.1 KB",
       "gzip": true
     },
     {
@@ -304,13 +304,13 @@
     {
       "name": "web component (self-contained)",
       "path": "dist/element.js",
-      "limit": "33.95 KB",
+      "limit": "34.07 KB",
       "gzip": true
     },
     {
       "name": "web component (IIFE / CDN)",
       "path": "dist/element.iife.global.js",
-      "limit": "33.46 KB",
+      "limit": "33.58 KB",
       "gzip": true
     },
     {
@@ -328,7 +328,7 @@
     {
       "name": "slim core (subpath, no optional features)",
       "path": "dist/core.js",
-      "limit": "22.34 KB",
+      "limit": "22.5 KB",
       "gzip": true
     },
     {

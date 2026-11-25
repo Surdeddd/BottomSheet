@@ -5,7 +5,7 @@ All notable changes to `@surdeddd/bottom-sheet` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.26.1]
 
 Four defects of the engine that the pass over the renderer turned up. None of them is new; each one is in every earlier release.
 
@@ -15,6 +15,10 @@ Four defects of the engine that the pass over the renderer turned up. None of th
 - **Letting go after a pause does not fling the sheet** — the speed of a release came from the last moves, however long ago they were made. A fast pull, a pause, then letting go sent the sheet flying with the speed of the pull. A release that comes later than the speed window after the last move, 160 ms for a mouse and 120 ms for a finger, now carries no speed, and the sheet settles on the nearest snap point.
 - **A release that never reaches the page does not leave the sheet following the mouse** — when the browser kept a `pointerup` to itself, the engine stayed in the drag and the sheet followed the cursor with no button held until the next click on the handle. A move of a mouse that reports no button held now ends the drag where it was left.
 - **A snap point taller than the window stays inside it** — the sheet was held to the height of the window, or of its container with `bounds: "container"`, only at the moment the window was resized. A later `recompute()`, `setSnapPoints()` or `setMaxHeight()` let it grow back, and its top edge went off the screen until the next resize. The limit now holds after every one of them.
+
+### Changed
+
+- **The full engine is 26.2 KB gzip**, up from 26.1 KB; `/core` is 22.5 KB and `/element` 34.0 KB.
 
 ## [0.26.0]
 

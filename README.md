@@ -44,7 +44,7 @@ HTML.
   way.
 - **Stacks.** Several sheets open at once, each with its own backdrop and focus
   scope.
-- **Small and tree-shakable.** 26.1 KB gzip for the full engine, 22.3 KB for the
+- **Small and tree-shakable.** 26.2 KB gzip for the full engine, 22.5 KB for the
   slim core, no runtime dependencies.
 
 ## Install
@@ -665,11 +665,11 @@ const sheet = new BottomSheetCore({
 
 | Entry | gzip | What is in it |
 | --- | --- | --- |
-| `@surdeddd/bottom-sheet` | 26.1 KB | The full engine |
-| `/core` | 22.3 KB | Gestures, snap points, focus, scroll lock, scrim, stacking |
+| `@surdeddd/bottom-sheet` | 26.2 KB | The full engine |
+| `/core` | 22.5 KB | Gestures, snap points, focus, scroll lock, scrim, stacking |
 | `/features` | 4.2 KB | `routeFeature`, `visualViewportFeature`, `contentSwipeFeature`, `contentFitFeature`, `persistFeature`, `autoCollapseFeature` |
 | `/react` `/vue` `/svelte` `/solid` `/qwik` | 28 to 34 KB | The full engine plus the adapter |
-| `/element` | 33.9 KB | The full engine, the element and its styles |
+| `/element` | 34.0 KB | The full engine, the element and its styles |
 | `/overlay` | 8.4 KB | The standalone [overlay](docs/overlay.md) |
 | `/webgl` | 5.8 KB | Opt-in [GPU renderer](docs/webgl.md) for the sheet surface; the optional content lift adds 4.2 KB |
 | `/debug` | 0.9 KB | `attachDebugOverlay(engine)`: a live panel of the engine's state |
