@@ -535,6 +535,21 @@ describe("drag hardening — what the browser would do with the press", () => {
     engine.destroy();
   });
 
+  it("leaves a selection alone in a later task, even if the release never came", async () => {
+    const dom = makeDom();
+    const engine = sheetOn(dom);
+    const elsewhere = document.createElement("p");
+    document.body.append(elsewhere);
+
+    pointer(dom.handle, "pointerdown", 500);
+    pointer(dom.handle, "pointermove", 480);
+    await new Promise(resolve => setTimeout(resolve, 5));
+
+    expect(native(elsewhere, "selectstart")).toBe(false);
+    expect(native(dom.handle, "selectstart")).toBe(false);
+    engine.destroy();
+  });
+
   it("lets a selection start while a press on the content is not yet a drag", () => {
     const dom = makeDom();
     const engine = sheetOn(dom);

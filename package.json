@@ -265,31 +265,31 @@
     {
       "name": "react adapter",
       "path": "dist/react.js",
-      "limit": "33.78 KB",
+      "limit": "33.79 KB",
       "gzip": true
     },
     {
       "name": "vue adapter",
       "path": "dist/vue.js",
-      "limit": "29.44 KB",
+      "limit": "29.45 KB",
       "gzip": true
     },
     {
       "name": "svelte adapter",
       "path": "dist/svelte.js",
-      "limit": "29.42 KB",
+      "limit": "29.43 KB",
       "gzip": true
     },
     {
       "name": "solid adapter",
       "path": "dist/solid.js",
-      "limit": "28.08 KB",
+      "limit": "28.1 KB",
       "gzip": true
     },
     {
       "name": "qwik adapter",
       "path": "dist/qwik.js",
-      "limit": "27.92 KB",
+      "limit": "27.94 KB",
       "gzip": true
     },
     {
@@ -328,7 +328,7 @@
     {
       "name": "slim core (subpath, no optional features)",
       "path": "dist/core.js",
-      "limit": "22.32 KB",
+      "limit": "22.34 KB",
       "gzip": true
     },
     {

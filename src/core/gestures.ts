@@ -86,6 +86,7 @@ export const installGestures = (
   let startCross = 0;
   let lastCoord = 0;
   let pendingStart = false;
+  let movedInTask = false;
   const VELOCITY_WINDOW_MS = (kind: PointerKind) =>
     kind === "mouse" ? 160 : 120;
   const MAX_SAMPLES = 32;
@@ -107,9 +108,14 @@ export const installGestures = (
     }
   };
 
+  const endOfTask = (): void => {
+    movedInTask = false;
+  };
+
   const releaseTracking = (): void => {
     activePointerId = null;
     pendingStart = false;
+    movedInTask = false;
     samples.reset();
   };
 
@@ -159,6 +165,10 @@ export const installGestures = (
     samples.push(e.timeStamp, coord);
     const cutoff = e.timeStamp - VELOCITY_WINDOW_MS(activePointerType);
     samples.pruneBefore(cutoff, 2);
+    if (!movedInTask) {
+      movedInTask = true;
+      setTimeout(endOfTask);
+    }
     callbacks.onMove(delta);
   };
 
@@ -179,6 +189,7 @@ export const installGestures = (
     }
     const finishedKind = activePointerType;
     activePointerId = null;
+    movedInTask = false;
     samples.reset();
     try {
       if (handle.hasPointerCapture(e.pointerId)) {
@@ -201,15 +212,12 @@ export const installGestures = (
     if (e.target === handle) onPointerCancel(e);
   };
 
-  const ownsPress = (): boolean => activePointerId !== null && !pendingStart;
-  const pressHasMoved = (): boolean => samples.length > 1;
-
   const onNativeDrag = (e: Event) => {
-    if (ownsPress()) e.preventDefault();
+    if (activePointerId !== null && !pendingStart) e.preventDefault();
   };
 
   const onSelectStart = (e: Event) => {
-    if (pressHasMoved()) e.preventDefault();
+    if (movedInTask) e.preventDefault();
   };
 
   handle.addEventListener("pointerdown", onPointerDown);
