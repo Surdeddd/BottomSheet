@@ -44,7 +44,7 @@ HTML.
   way.
 - **Stacks.** Several sheets open at once, each with its own backdrop and focus
   scope.
-- **Small and tree-shakable.** 26.0 KB gzip for the full engine, 22.2 KB for the
+- **Small and tree-shakable.** 26.1 KB gzip for the full engine, 22.3 KB for the
   slim core, no runtime dependencies.
 
 ## Install
@@ -364,7 +364,7 @@ Gestures
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `dragFrom` | `"handle"` | Where a drag may start: the `handle`, the whole `sheet`, or `zones` (`[data-bs-drag]` subtrees only). `[data-bs-no-drag]` opts a subtree out. A sheet without a handle defaults to `sheet` |
+| `dragFrom` | `"handle"` | Where a drag may start: the `handle`, the whole `sheet`, or `zones` (`[data-bs-drag]` subtrees only). `[data-bs-no-drag]` opts a subtree out. A press that starts a drag cancels the browser's own drag of a link or of selected text under it. A sheet without a handle defaults to `sheet` |
 | `dragFromContent` | `true` | Whether a touch on the scroll area drags the sheet. Can be set per point: `{ id, size, dragFromContent: false }` |
 | `disableDrag` | `false` | Turn the gesture off; methods still work |
 | `rubberBand` | `true` | Soft over-drag past the last point |
@@ -665,11 +665,11 @@ const sheet = new BottomSheetCore({
 
 | Entry | gzip | What is in it |
 | --- | --- | --- |
-| `@surdeddd/bottom-sheet` | 26.0 KB | The full engine |
-| `/core` | 22.2 KB | Gestures, snap points, focus, scroll lock, scrim, stacking |
+| `@surdeddd/bottom-sheet` | 26.1 KB | The full engine |
+| `/core` | 22.3 KB | Gestures, snap points, focus, scroll lock, scrim, stacking |
 | `/features` | 4.2 KB | `routeFeature`, `visualViewportFeature`, `contentSwipeFeature`, `contentFitFeature`, `persistFeature`, `autoCollapseFeature` |
 | `/react` `/vue` `/svelte` `/solid` `/qwik` | 28 to 34 KB | The full engine plus the adapter |
-| `/element` | 33.8 KB | The full engine, the element and its styles |
+| `/element` | 33.9 KB | The full engine, the element and its styles |
 | `/overlay` | 8.4 KB | The standalone [overlay](docs/overlay.md) |
 | `/webgl` | 5.8 KB | Experimental [GPU renderer](docs/webgl.md) for the sheet surface; the optional content lift adds 4.2 KB |
 | `/debug` | 0.9 KB | `attachDebugOverlay(engine)`: a live panel of the engine's state |

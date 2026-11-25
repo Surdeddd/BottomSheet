@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   SLOW,
   centreOf,
@@ -20,6 +20,11 @@ import {
 test.beforeEach(async ({ page }) => {
   await openLab(page);
 });
+
+const onScreenTop = (page: Page): Promise<number> =>
+  page.evaluate(
+    () => document.querySelector("#sheet-0")!.getBoundingClientRect().top,
+  );
 
 test.describe("snap points", () => {
   test("pixels, percentages and full resolve against the viewport", async ({
@@ -382,6 +387,30 @@ test.describe("dragging", () => {
     expect(await selectable("#sheet-0")).toBe(false);
     expect(await selectable("#handle-0")).toBe(false);
     expect(await selectable("#content-0")).toBe(true);
+  });
+
+  test("a drag that runs past the sheet selects no text of the page behind it", async ({
+    page,
+  }) => {
+    await page.evaluate(() => {
+      const text = document.createElement("p");
+      text.textContent = "Words on the page behind the sheet. ".repeat(400);
+      text.style.cssText =
+        "position:fixed;inset:0;margin:0;overflow:hidden;font-size:16px";
+      document.body.prepend(text);
+    });
+    await mount(page, { initial: "full", backdropOpacity: 0 });
+
+    const from = await press(page, "#handle-0");
+    const pulled = await move(page, from, { dy: -160, ...SLOW });
+
+    expect(pulled.y).toBeLessThan((await onScreenTop(page)) - 20);
+
+    expect(await page.evaluate(() => getSelection()!.toString().trim())).toBe(
+      "",
+    );
+    await page.mouse.up();
+    await settled(page);
   });
 
   test("a drag reports dragstart, drag and dragend before the snap", async ({

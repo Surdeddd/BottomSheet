@@ -201,11 +201,27 @@ export const installGestures = (
     if (e.target === handle) onPointerCancel(e);
   };
 
+  const ownsPress = (): boolean => activePointerId !== null && !pendingStart;
+  const pressHasMoved = (): boolean => samples.length > 1;
+
+  const onNativeDrag = (e: Event) => {
+    if (ownsPress()) e.preventDefault();
+  };
+
+  const onSelectStart = (e: Event) => {
+    if (pressHasMoved()) e.preventDefault();
+  };
+
   handle.addEventListener("pointerdown", onPointerDown);
   handle.addEventListener("pointermove", onPointerMove);
   handle.addEventListener("pointerup", finishGesture);
   handle.addEventListener("pointercancel", onPointerCancel);
   handle.addEventListener("lostpointercapture", onLostCapture);
+  handle.addEventListener("dragstart", onNativeDrag);
+  const selectScopes = [handle.getRootNode(), handle.ownerDocument];
+  for (const scope of selectScopes) {
+    scope.addEventListener("selectstart", onSelectStart);
+  }
   const managesTouchAction = options.manageTouchAction !== false;
   const prevTouchAction = handle.style.touchAction;
   if (managesTouchAction) {
@@ -218,6 +234,10 @@ export const installGestures = (
     handle.removeEventListener("pointerup", finishGesture);
     handle.removeEventListener("pointercancel", onPointerCancel);
     handle.removeEventListener("lostpointercapture", onLostCapture);
+    handle.removeEventListener("dragstart", onNativeDrag);
+    for (const scope of selectScopes) {
+      scope.removeEventListener("selectstart", onSelectStart);
+    }
     if (managesTouchAction) handle.style.touchAction = prevTouchAction;
     if (activePointerId !== null && handle.hasPointerCapture(activePointerId)) {
       handle.releasePointerCapture(activePointerId);

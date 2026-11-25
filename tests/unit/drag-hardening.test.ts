@@ -447,3 +447,133 @@ describe("drag hardening — churn", () => {
     engine.destroy();
   });
 });
+
+describe("drag hardening — what the browser would do with the press", () => {
+  const native = (
+    target: EventTarget,
+    type: "dragstart" | "selectstart",
+  ): boolean => {
+    const event = new Event(type, { bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    return event.defaultPrevented;
+  };
+
+  const sheetOn = (dom: ReturnType<typeof makeDom>): BottomSheetEngine => {
+    stub(dom.sheet);
+    stub(dom.content);
+    setScrollTop(dom.content, 0);
+    return new BottomSheetEngine({
+      element: dom.sheet,
+      handle: dom.handle,
+      scrollContainer: dom.content,
+      snapPoints: points,
+      initial: "half",
+      ...tween,
+    });
+  };
+
+  it("does not let a press that drags the sheet become a native drag", () => {
+    const dom = makeDom();
+    const engine = sheetOn(dom);
+
+    pointer(dom.handle, "pointerdown", 500);
+
+    expect(native(dom.handle, "dragstart")).toBe(true);
+    engine.destroy();
+  });
+
+  it("leaves a native drag alone before a press and after it", () => {
+    const dom = makeDom();
+    const engine = sheetOn(dom);
+    expect(native(dom.handle, "dragstart")).toBe(false);
+
+    pointer(dom.handle, "pointerdown", 500);
+    pointer(dom.handle, "pointerup", 500);
+
+    expect(native(dom.handle, "dragstart")).toBe(false);
+    engine.destroy();
+  });
+
+  it("leaves a native drag alone while a press on the content is not yet a drag", () => {
+    const dom = makeDom();
+    const engine = sheetOn(dom);
+
+    pointer(dom.content, "pointerdown", 100);
+
+    expect(native(dom.content, "dragstart")).toBe(false);
+    engine.destroy();
+  });
+
+  it("starts no selection anywhere on the page once the press has moved", () => {
+    const dom = makeDom();
+    const engine = sheetOn(dom);
+    const elsewhere = document.createElement("p");
+    document.body.append(elsewhere);
+
+    pointer(dom.handle, "pointerdown", 500);
+    pointer(dom.handle, "pointermove", 480);
+
+    expect(native(dom.handle, "selectstart")).toBe(true);
+    expect(native(elsewhere, "selectstart")).toBe(true);
+    engine.destroy();
+  });
+
+  it("lets a selection start from a press that has not moved, and once it is over", () => {
+    const dom = makeDom();
+    const engine = sheetOn(dom);
+    const elsewhere = document.createElement("p");
+    document.body.append(elsewhere);
+
+    pointer(dom.handle, "pointerdown", 500);
+    expect(native(dom.handle, "selectstart")).toBe(false);
+
+    pointer(dom.handle, "pointermove", 480);
+    pointer(dom.handle, "pointerup", 480);
+
+    expect(native(dom.handle, "selectstart")).toBe(false);
+    expect(native(elsewhere, "selectstart")).toBe(false);
+    engine.destroy();
+  });
+
+  it("lets a selection start while a press on the content is not yet a drag", () => {
+    const dom = makeDom();
+    const engine = sheetOn(dom);
+
+    pointer(dom.content, "pointerdown", 100);
+    pointer(dom.content, "pointermove", 101);
+
+    expect(native(dom.content, "selectstart")).toBe(false);
+    engine.destroy();
+  });
+
+  it("starts no selection inside the shadow root the sheet lives in", () => {
+    const dom = makeDom();
+    const host = document.createElement("div");
+    document.body.append(host);
+    host.attachShadow({ mode: "open" }).append(dom.backdrop, dom.sheet);
+    const engine = sheetOn(dom);
+
+    pointer(dom.handle, "pointerdown", 500);
+    pointer(dom.handle, "pointermove", 480);
+
+    expect(native(dom.backdrop, "selectstart")).toBe(true);
+    engine.destroy();
+  });
+
+  it("takes every listener it put on the page away with the sheet", () => {
+    const dom = makeDom();
+    const added = vi.spyOn(document, "addEventListener");
+    const removed = vi.spyOn(document, "removeEventListener");
+    const of = (spy: typeof added | typeof removed): number =>
+      spy.mock.calls.filter(([type]) => type === "selectstart").length;
+
+    const engine = sheetOn(dom);
+    engine.setDragFrom("sheet");
+    engine.setDragFrom("handle");
+    engine.destroy();
+
+    expect(of(removed)).toBe(of(added));
+    added.mockRestore();
+    removed.mockRestore();
+  });
+});

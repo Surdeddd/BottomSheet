@@ -392,6 +392,49 @@ test.describe("where a drag may start", () => {
     ).toBe("half");
   });
 
+  test("a drag that starts on a link moves the sheet and does not follow the link", async ({
+    page,
+  }) => {
+    await mount(page, { dragFrom: "sheet", initial: "half" });
+    await page.evaluate(() => {
+      const link = document.createElement("a");
+      link.id = "title-link";
+      link.href = "#elsewhere";
+      link.textContent = "A link in the header";
+      document.querySelector("#header-0")!.prepend(link);
+    });
+
+    expect(
+      (await drag(page, "#title-link", { dy: -150, ...SLOW })).activeId,
+    ).toBe("full");
+    expect(await page.evaluate(() => location.hash)).toBe("");
+  });
+
+  test("a field in a part that drags the sheet takes a caret, typing and a double click", async ({
+    page,
+  }) => {
+    await mount(page, { dragFrom: "sheet", initial: "half" });
+    await page.evaluate(() => {
+      const field = document.createElement("input");
+      field.id = "title-field";
+      field.value = "weekly report";
+      document.querySelector("#header-0")!.prepend(field);
+    });
+    const field = page.locator("#title-field");
+
+    await field.dblclick({ position: { x: 20, y: 8 } });
+    const word = await field.evaluate((el: HTMLInputElement) =>
+      el.value.slice(el.selectionStart!, el.selectionEnd!),
+    );
+    expect(word.trim()).toBe("weekly");
+
+    await field.click({ position: { x: 70, y: 8 } });
+    await page.keyboard.type("!");
+    const typed = await field.inputValue();
+    expect(typed.replace("!", "")).toBe("weekly report");
+    expect(typed.indexOf("!")).toBeGreaterThan(6);
+  });
+
   test("setDragFrom switches the drag surface on a live sheet", async ({
     page,
   }) => {
