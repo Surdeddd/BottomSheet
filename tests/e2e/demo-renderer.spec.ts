@@ -88,18 +88,27 @@ const surfaceColour = async (page: Page, adapter: string): Promise<Rgb> => {
 const distance = (a: Rgb, b: Rgb): number =>
   Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b));
 
+const answerOf = async (page: Page, adapter: string): Promise<string> => {
+  if ((await canvasOf(page, adapter).count()) > 0) return "drawn";
+  if (await page.locator(FORCE).isVisible()) return "asks";
+  const key = await page.locator(NOTE).getAttribute("data-i18n");
+  return key === "ctrl.webgl.note.no-webgl" ? "none" : "";
+};
+
+const answered = async (page: Page, adapter: string): Promise<void> => {
+  await expect
+    .poll(() => answerOf(page, adapter), { timeout: 20_000 })
+    .not.toBe("");
+  test.skip(
+    (await answerOf(page, adapter)) === "none",
+    "this browser has no WebGL",
+  );
+};
+
 const turnOn = async (page: Page, adapter: string): Promise<void> => {
   await page.locator(TOGGLE).check();
   const force = page.locator(FORCE);
-  const note = page.locator(NOTE);
-  const settled = async (): Promise<string> => {
-    if ((await canvasOf(page, adapter).count()) > 0) return "drawn";
-    if (await force.isVisible()) return "asks";
-    const key = await note.getAttribute("data-i18n");
-    return key === "ctrl.webgl.note.no-webgl" ? "none" : "";
-  };
-  await expect.poll(settled, { timeout: 20_000 }).not.toBe("");
-  test.skip((await settled()) === "none", "this browser has no WebGL");
+  await answered(page, adapter);
   if (await force.isVisible()) await force.click();
   await expect(canvasOf(page, adapter)).toHaveCount(1);
   await expect(sheetOf(page, adapter)).toHaveAttribute("data-bs-webgl", "on");
@@ -150,6 +159,7 @@ test.describe("the demo's renderer switch", () => {
     await sheetOf(page, "react").waitFor({ state: "attached" });
 
     await expect(page.locator(TOGGLE)).toBeChecked();
+    await answered(page, "react");
     await expect(canvasOf(page, "react")).toHaveCount(1);
   });
 
