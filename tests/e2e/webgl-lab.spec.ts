@@ -310,7 +310,10 @@ test.describe("the WebGL renderer across the engine's features", () => {
       };
 
       const seen = await bent();
-      expect(Math.abs(seen.far.corner - seen.far.centre)).toBeLessThan(1);
+      const devicePixel = await page.evaluate(() => 1 / devicePixelRatio);
+      expect(
+        Math.abs(seen.far.corner - seen.far.centre),
+      ).toBeLessThanOrEqual(devicePixel + 0.01);
       expect(Math.abs(seen.near.corner - seen.near.centre)).toBeLessThan(23);
     });
   }

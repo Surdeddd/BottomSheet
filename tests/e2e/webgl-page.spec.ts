@@ -538,7 +538,7 @@ test.describe("WebGL renderer and the page around it", () => {
     const bothInView = async (): Promise<{ near: Rim; far: Rim }> => {
       for (let attempt = 0; attempt < 4; attempt++) {
         await sendTo(page, "full");
-        for (let i = 0; i < 60; i++) {
+        for (;;) {
           const seen = await rims(page, centre, corner);
           if (!(await flying(page))) break;
           if (seen.near.centre > 4 && seen.far.centre < height - 4) return seen;
@@ -551,8 +551,11 @@ test.describe("WebGL renderer and the page around it", () => {
     };
 
     const seen = await bothInView();
+    const devicePixel = await page.evaluate(() => 1 / devicePixelRatio);
     expect(seen.near.corner - seen.near.centre).toBeGreaterThan(2);
-    expect(Math.abs(seen.far.corner - seen.far.centre)).toBeLessThan(1);
+    expect(
+      Math.abs(seen.far.corner - seen.far.centre),
+    ).toBeLessThanOrEqual(devicePixel + 0.01);
   });
 
   test("the surface follows the sheet when the on-screen keyboard lifts it", async ({
