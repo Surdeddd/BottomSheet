@@ -85,11 +85,14 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.haptic": "haptic on snap",
     "ctrl.rubber": "rubber-band",
     "ctrl.webgl": "WebGL renderer (experimental)",
+    "ctrl.webgl.jelly": "bend the surface while it moves",
     "ctrl.webgl.lift": "bend the content with it",
     "ctrl.webgl.force": "draw on the CPU anyway",
     "ctrl.webgl.note.dom": "The browser paints the sheet. This is the default.",
     "ctrl.webgl.note.webgl":
-      "The GPU draws the surface and bends it while you drag. The content stays in the DOM.",
+      "The GPU draws the surface. The content stays in the DOM.",
+    "ctrl.webgl.note.bent":
+      "The GPU draws the surface and bends it while the sheet moves. The content stays in the DOM.",
     "ctrl.webgl.note.lifted":
       "The GPU draws the surface and, while the sheet moves, the content with it. The content goes back to the DOM when you let go.",
     "ctrl.webgl.note.cpu":
@@ -272,11 +275,14 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ctrl.haptic": "вибро при фиксации",
     "ctrl.rubber": "резиновое отскакивание",
     "ctrl.webgl": "рендерер WebGL (экспериментальный)",
+    "ctrl.webgl.jelly": "гнуть поверхность, пока лист движется",
     "ctrl.webgl.lift": "гнуть вместе с ней и содержимое",
     "ctrl.webgl.force": "всё равно рисовать процессором",
     "ctrl.webgl.note.dom": "Лист рисует браузер. Так по умолчанию.",
     "ctrl.webgl.note.webgl":
-      "Поверхность рисует видеокарта и гнёт её, пока вы тянете. Содержимое остаётся в DOM.",
+      "Поверхность рисует видеокарта. Содержимое остаётся в DOM.",
+    "ctrl.webgl.note.bent":
+      "Поверхность рисует видеокарта и гнёт её, пока лист движется. Содержимое остаётся в DOM.",
     "ctrl.webgl.note.lifted":
       "Видеокарта рисует поверхность, а пока лист движется, и содержимое вместе с ней. Когда отпустите, содержимое вернётся в DOM.",
     "ctrl.webgl.note.cpu":

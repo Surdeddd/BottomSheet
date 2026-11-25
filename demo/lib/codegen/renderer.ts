@@ -2,6 +2,8 @@ import type { DemoSettings } from "../../apps/shared";
 
 const SOURCE = "@surdeddd/bottom-sheet/webgl";
 
+export const JELLY = 0.5;
+
 const importOf = (lifted: boolean): string =>
   lifted
     ? `import { contentLift, webglRenderer } from "${SOURCE}";`
@@ -50,12 +52,14 @@ const USAGE: Record<string, Line> = {
 export const rendererSnippet = (adapter: string, s: DemoSettings): string => {
   const usage = USAGE[adapter];
   if (!s.webgl || !usage) return "";
+  const lifted = s.webglJelly && s.webglLift;
   const given = [
-    s.webglLift ? "lift: contentLift()" : "",
+    s.webglJelly ? `jelly: ${JELLY}` : "",
+    lifted ? "lift: contentLift()" : "",
     s.webglOnCpu ? "allowSoftware: true" : "",
   ].filter(Boolean);
   const call = given.length
     ? `webglRenderer({ ${given.join(", ")} })`
     : "webglRenderer()";
-  return usage(call, importOf(s.webglLift)).join("\n");
+  return usage(call, importOf(lifted)).join("\n");
 };

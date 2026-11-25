@@ -164,6 +164,12 @@ frame; otherwise lines would land a pixel away from where the drag found them.
 
 ## What changed in 0.25.1
 
+**The bend is opt-in.** Seen on a real screen at the speed of a flick, the
+corners of the leading edge stood up to 22 px above its middle, and with the
+content left in the DOM nothing else followed them. The default strength is
+now `0`: the surface is flat and only moves with the sheet. `jelly` asks for
+the bend, and the content lift, which exists to follow it, needs it.
+
 **The bend stops at the far edge.** The shader moved the whole surface by the
 bend of the leading edge, so the opposite edge carried the same curve. That
 edge is out of sight for a sheet that sits flush against the screen, until the

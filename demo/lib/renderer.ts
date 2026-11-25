@@ -1,6 +1,7 @@
 import type { EngineFeature } from "@surdeddd/bottom-sheet";
 import type { WebGLUnsupportedReason } from "@surdeddd/bottom-sheet/webgl";
 import type { DemoSettings } from "../apps/shared";
+import { JELLY } from "./codegen/renderer";
 import { hasHardwareWebGL } from "./hero-3d/capability";
 import { t } from "./i18n";
 
@@ -20,7 +21,11 @@ export const demoFeatures = (
   settings.webgl && settings.mode !== "overlay" && renderer
     ? [
         renderer.webglRenderer({
-          lift: settings.webglLift ? renderer.contentLift() : undefined,
+          jelly: settings.webglJelly ? JELLY : undefined,
+          lift:
+            settings.webglJelly && settings.webglLift
+              ? renderer.contentLift()
+              : undefined,
           allowSoftware: settings.webglOnCpu,
           onUnsupported: reason => report(reason),
         }),
@@ -39,6 +44,9 @@ export const wireRendererSwitch = (
   const container = document.getElementById("renderer-switch");
   const toggle = document.getElementById("tg-webgl") as HTMLInputElement | null;
   let revealed = false;
+  const jelly = document.getElementById(
+    "tg-webgl-jelly",
+  ) as HTMLInputElement | null;
   const lift = document.getElementById(
     "tg-webgl-lift",
   ) as HTMLInputElement | null;
@@ -51,7 +59,8 @@ export const wireRendererSwitch = (
     if (outcome) return outcome;
     if (!settings.webgl) return "dom";
     if (settings.webglOnCpu && !hasHardwareWebGL()) return "cpu";
-    return settings.webglLift ? "lifted" : "webgl";
+    if (!settings.webglJelly) return "webgl";
+    return settings.webglLift ? "lifted" : "bent";
   };
 
   const render = (): void => {
@@ -62,9 +71,14 @@ export const wireRendererSwitch = (
       toggle.checked = settings.webgl;
       toggle.disabled = settings.mode === "overlay";
     }
+    const bent = settings.webgl && settings.webglJelly;
+    if (jelly) {
+      jelly.checked = bent;
+      jelly.disabled = !settings.webgl || settings.mode === "overlay";
+    }
     if (lift) {
-      lift.checked = settings.webgl && settings.webglLift;
-      lift.disabled = !settings.webgl || settings.mode === "overlay";
+      lift.checked = bent && settings.webglLift;
+      lift.disabled = !bent || settings.mode === "overlay";
     }
     if (note) {
       note.dataset.i18n = `ctrl.webgl.note.${key}`;
@@ -92,12 +106,18 @@ export const wireRendererSwitch = (
     settings.webgl = webgl;
     if (!webgl) {
       settings.webglOnCpu = false;
+      settings.webglJelly = false;
       settings.webglLift = false;
     }
     opts.remount();
   };
 
   toggle?.addEventListener("change", () => void choose(toggle.checked));
+  jelly?.addEventListener("change", () => {
+    settings.webglJelly = jelly.checked;
+    if (!jelly.checked) settings.webglLift = false;
+    opts.remount();
+  });
   lift?.addEventListener("change", () => {
     settings.webglLift = lift.checked;
     opts.remount();

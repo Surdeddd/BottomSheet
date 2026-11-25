@@ -1,4 +1,5 @@
 import type { EngineFeature, EngineFeatureContext } from "../core/types";
+import { devWarn } from "../core/primitives/dev-warn";
 import type {
   SurfaceFrame,
   WebGLRendererOptions,
@@ -29,7 +30,7 @@ export type {
   WebGLUnsupportedReason,
 } from "./types";
 
-const DEFAULT_JELLY = 0.5;
+const DEFAULT_JELLY = 0;
 const DEFAULT_SHADOW = 1;
 const DEFAULT_SHEEN = 0.35;
 const DEFAULT_GLASS = 0.6;
@@ -128,6 +129,9 @@ export const webglRenderer = (
     const sheenStrength = options.sheen ?? DEFAULT_SHEEN;
     const glassStrength = options.glass ?? DEFAULT_GLASS;
     const lifter = (options.lift as unknown as Lifter | undefined) ?? null;
+    if (lifter && jelly <= 0) {
+      devWarn("[BottomSheet] contentLift() needs jelly, for example 0.5");
+    }
 
     let handle: GLHandle | null = null;
     let program: SurfaceProgram | null = null;

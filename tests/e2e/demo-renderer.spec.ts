@@ -16,6 +16,7 @@ const FRAME = "#device-frame";
 const TOGGLE = "#tg-webgl";
 const NOTE = "#renderer-note";
 const FORCE = "#renderer-force";
+const JELLY = "#tg-webgl-jelly";
 const LIFT = "#tg-webgl-lift";
 
 const screen = (adapter: string): string =>
@@ -243,16 +244,36 @@ test.describe("the demo's renderer switch", () => {
     );
   });
 
-  test("bending the content is a second choice, offered only once the renderer is on", async ({
+  test("the surface is flat until the bend is asked for, and the content bends only with it", async ({
     page,
   }) => {
+    const hash = (): Promise<string> => page.evaluate(() => location.hash);
     await open(page);
+    await expect(page.locator(JELLY)).toBeDisabled();
     await expect(page.locator(LIFT)).toBeDisabled();
-    await expect(page.locator(LIFT)).not.toBeChecked();
 
     await turnOn(page, "react");
-    await expect(page.locator(LIFT)).toBeEnabled();
+    await expect(page.locator(NOTE)).toHaveAttribute(
+      "data-i18n",
+      /ctrl\.webgl\.note\.(webgl|cpu)/,
+    );
+    await expect(page.locator(JELLY)).toBeEnabled();
+    await expect(page.locator(JELLY)).not.toBeChecked();
+    await expect(page.locator(LIFT)).toBeDisabled();
+    await expect(page.locator("#code-react")).toContainText("webglRenderer(");
+    await expect(page.locator("#code-react")).not.toContainText("jelly");
+
+    await page.locator(JELLY).check();
+
+    await expect(canvasOf(page, "react")).toHaveCount(1);
+    await expect(page.locator(NOTE)).toHaveAttribute(
+      "data-i18n",
+      /ctrl\.webgl\.note\.(bent|cpu)/,
+    );
+    await expect(page.locator("#code-react")).toContainText("jelly: 0.5");
     await expect(page.locator("#code-react")).not.toContainText("contentLift");
+    await expect.poll(hash, { timeout: 3000 }).toContain("jelly=1");
+    await expect(page.locator(LIFT)).toBeEnabled();
 
     await page.locator(LIFT).check();
 
@@ -264,18 +285,36 @@ test.describe("the demo's renderer switch", () => {
     await expect(page.locator("#code-react")).toContainText(
       'import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";',
     );
-    await expect(page.locator("#code-react")).toContainText("lift: contentLift()");
-    await expect
-      .poll(() => page.evaluate(() => location.hash), { timeout: 3000 })
-      .toContain("lift=1");
+    await expect(page.locator("#code-react")).toContainText(
+      "jelly: 0.5, lift: contentLift()",
+    );
+    await expect.poll(hash, { timeout: 3000 }).toContain("lift=1");
 
-    await page.locator(TOGGLE).uncheck();
+    await page.locator(JELLY).uncheck();
 
     await expect(page.locator(LIFT)).toBeDisabled();
     await expect(page.locator(LIFT)).not.toBeChecked();
-    await expect
-      .poll(() => page.evaluate(() => location.hash), { timeout: 3000 })
-      .not.toContain("lift");
+    await expect.poll(hash, { timeout: 3000 }).not.toContain("lift");
+    await expect.poll(hash, { timeout: 3000 }).not.toContain("jelly");
+    await expect(page.locator("#code-react")).not.toContainText("contentLift");
+
+    await page.locator(JELLY).check();
+    await page.locator(TOGGLE).uncheck();
+
+    await expect(page.locator(JELLY)).toBeDisabled();
+    await expect(page.locator(JELLY)).not.toBeChecked();
+    await expect.poll(hash, { timeout: 3000 }).not.toContain("jelly");
+  });
+
+  test("a link from before the bend had its own switch still bends the content", async ({
+    page,
+  }) => {
+    await page.goto("/#adapter=react&webgl=1&cpu=1&lift=1");
+    await page.reload();
+    await sheetOf(page, "react").waitFor({ state: "attached" });
+    await expect(page.locator(TOGGLE)).toBeChecked();
+    await expect(page.locator(JELLY)).toBeChecked();
+    await expect(page.locator(LIFT)).toBeChecked();
   });
 
   test("says why the sheet stayed on the DOM under reduced motion", async ({

@@ -39,6 +39,7 @@ export type Settings = {
   scrimFloatingAction: boolean;
   webgl: boolean;
   webglOnCpu: boolean;
+  webglJelly: boolean;
   webglLift: boolean;
 };
 

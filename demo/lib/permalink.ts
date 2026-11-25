@@ -51,7 +51,9 @@ export function encode(settings: DemoSettings, adapter: AdapterKey): string {
   p.set("scrimF", settings.scrimFloatingAction ? "1" : "0");
   if (settings.webgl) p.set("webgl", "1");
   if (settings.webglOnCpu) p.set("cpu", "1");
-  if (settings.webgl && settings.webglLift) p.set("lift", "1");
+  const bent = settings.webgl && settings.webglJelly;
+  if (bent) p.set("jelly", "1");
+  if (bent && settings.webglLift) p.set("lift", "1");
   return "#" + p.toString();
 }
 
@@ -86,11 +88,13 @@ export function decode(hash: string): Permalink {
     ["scrimF", "scrimFloatingAction"],
     ["webgl", "webgl"],
     ["cpu", "webglOnCpu"],
+    ["jelly", "webglJelly"],
     ["lift", "webglLift"],
   ] as const) {
     const v = flag(p.get(k));
     if (v != null) out.settings[prop] = v;
   }
+  if (out.settings.webglLift) out.settings.webglJelly = true;
   const scrim = p.get("scrim");
   if (scrim && (SCRIM_PRESETS as readonly string[]).includes(scrim)) {
     out.settings.scrimPreset = scrim as ScrimPresetKey;

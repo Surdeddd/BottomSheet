@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **`/webgl` is 5.7 KB gzip**, up from 5.5 KB; with the content lift it is 9.9 KB.
+- **The WebGL surface is flat unless you ask for the bend** — `jelly` defaulted to `0.5`, and on a fast drag the corners of the sheet's leading edge trailed its middle by up to 22 px. The default is `0`: the GPU draws the surface and moves it with the sheet, and nothing bends. `webglRenderer({ jelly: 0.5 })` brings the bend back as it was.
+- **The content lift needs `jelly`** — it exists to make the content follow the bend, so without one it stays idle, and a development build warns about it. `webglRenderer({ lift: contentLift() })` becomes `webglRenderer({ jelly: 0.5, lift: contentLift() })`.
+- **The demo's WebGL switch has a toggle for the bend**, between the renderer and the content lift, and `jelly=1` in the link. A link with `lift=1` alone still switches both on. All of it still shows up only when the link carries `#webgl=1`.
+- **`/webgl` is 5.8 KB gzip**, up from 5.5 KB; with the content lift it is 10.0 KB.
 
 ## [0.25.0]
 

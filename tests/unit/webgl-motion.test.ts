@@ -13,6 +13,7 @@ type Frame = {
 
 const VIEW = { left: 0, top: 0, width: 390, height: 800 };
 const FRAME_MS = 16;
+const BEND: WebGLRendererOptions = { jelly: 0.5 };
 
 const boxOf = (left: number, top: number, width: number, height: number) =>
   ({
@@ -30,6 +31,7 @@ const boxOf = (left: number, top: number, width: number, height: number) =>
 const mount = (
   options: WebGLRendererOptions = {},
   mode: "bottom" | "left" = "bottom",
+  given: WebGLRendererOptions = BEND,
 ) => {
   const frames: Frame[] = [];
   const uniforms: Record<string, number[]> = {};
@@ -158,7 +160,7 @@ const mount = (
     addTeardown: () => {},
   } as unknown as EngineFeatureContext;
 
-  const dispose = webglRenderer(options).install(ctx);
+  const dispose = webglRenderer({ ...given, ...options }).install(ctx);
 
   const emit = (event: string, payload: unknown = {}): void => {
     for (const fn of handlers[event] ?? []) fn(payload);
@@ -372,6 +374,36 @@ describe("the WebGL surface in motion", () => {
     const last = r.frames[r.frames.length - 1]!;
     expect(last.axis).toBe(1);
     expect(Math.max(...r.frames.map(f => Math.abs(f.bend)))).toBeGreaterThan(2);
+    r.dispose();
+  });
+
+  it("stays flat unless a bend is asked for", async () => {
+    const r = mount({}, "bottom", {});
+    await drag(r, 500, 200, 12);
+
+    expect(r.frames.length).toBeGreaterThan(5);
+    expect(Math.max(...r.frames.map(f => Math.abs(f.bend)))).toBe(0);
+    r.dispose();
+  });
+
+  it("says so when a lift is given and there is no bend for it to follow", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const r = mount({ lift: contentLift() }, "bottom", {});
+    await drag(r, 500, 400, 6);
+
+    expect(r.counts.textures).toBe(0);
+    expect(r.line.style.color).toBe("");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]![0])).toContain("jelly");
+    r.dispose();
+  });
+
+  it("keeps quiet about a lift that has a bend to follow", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const r = mount({ lift: contentLift() });
+    await drag(r, 500, 400, 6);
+
+    expect(warn).not.toHaveBeenCalled();
     r.dispose();
   });
 

@@ -26,20 +26,28 @@ new BottomSheetEngine({
 ```
 
 The subpath is only pulled into your bundle if you import it: the main entry
-does not reference it. Measured cost when you do: **5.7 KB gzip** for the
+does not reference it. Measured cost when you do: **5.8 KB gzip** for the
 surface, and **4.2 KB more** for the [content lift](#lifting-the-content), which
 is a separate export and stays out of the bundle unless you import it.
 
 ## What it draws, and what it does not
 
 The renderer paints the **surface**: the panel, its corner radii, its shadow,
-and an edge sheen. While the sheet moves, the surface bends: the middle of its
-leading edge stays on the sheet and the corners trail behind, like a sheet of
-jelly, and it is flat again about a third of a second after the sheet stops.
-The bend fades with the distance from that edge and is gone at the opposite
-one, so the edge the sheet hangs from stays straight when it comes into view:
-on a sheet dragged past its largest snap point, or one that floats above the
-edge of the screen.
+and an edge sheen. Out of the box the surface is flat and moves with the
+sheet.
+
+Pass `jelly` and the surface bends while the sheet moves:
+
+```ts
+webglRenderer({ jelly: 0.5 });
+```
+
+The middle of its leading edge stays on the sheet and the corners trail
+behind, like a sheet of jelly, and it is flat again about a third of a second
+after the sheet stops. The bend fades with the distance from that edge and is
+gone at the opposite one, so the edge the sheet hangs from stays straight when
+it comes into view: on a sheet dragged past its largest snap point, or one
+that floats above the edge of the screen.
 
 Everything else stays where it was, drag or no drag:
 
@@ -54,8 +62,9 @@ Everything else stays where it was, drag or no drag:
 This is deliberate. Text drawn into a texture cannot be selected, and controls
 inside a canvas are invisible to assistive technology. Keeping content in the
 DOM costs nothing and keeps the accessibility contract intact. The content
-rides on the sheet as it always did; only the surface under it bends, and the
-bend is kept small on the inward side so that it never uncovers content.
+rides on the sheet as it always did. With a bend, only the surface under it
+bends, and the bend is kept small on the inward side so that it never uncovers
+content.
 
 While the renderer is active the sheet's chassis stops painting — the library
 stylesheet drops the background and shadow of `.bs-sheet`, `.bs-handle`,
@@ -65,14 +74,17 @@ will sit on top of the GPU surface and you will see both.
 
 ## Lifting the content
 
-By default the content does not bend with the surface. To make it bend, pass
-the content lift:
+A bend moves the surface only; the content stays straight on top of it. To
+make the content bend too, pass the content lift together with `jelly`:
 
 ```ts
 import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";
 
-webglRenderer({ lift: contentLift() });
+webglRenderer({ jelly: 0.5, lift: contentLift() });
 ```
+
+The lift follows the bend and has nothing to do without one. With `jelly` left
+at `0` it stays idle, and a development build says so in the console.
 
 When a drag starts, the lift draws the sheet's content into a texture. Nothing
 changes on screen yet: a press that does not move the sheet leaves the DOM
@@ -168,11 +180,11 @@ webglRenderer({
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `jelly` | `0.5` | How far the corners trail behind the middle of the leading edge while the sheet moves. `0` disables the bend; the surface still renders on the GPU. |
+| `jelly` | `0` | How far the corners trail behind the middle of the leading edge while the sheet moves. `0`, the default, keeps the surface flat; `0.5` is a moderate bend. |
 | `sheen` | `0.35` | Edge and top-light intensity. `0` gives a flat panel. |
 | `glass` | `0.6` | Refraction of the lifted content, scaled by how hard the surface is bending. `0` keeps the texture undistorted. Has no effect without `lift`. |
 | `shadow` | `1` | Multiplier on the shadow the shader casts. `0` removes it. |
-| `lift` | — | Pass `contentLift()` to draw the content into a texture during a drag so that it bends with the surface. Without it the content stays in the DOM at all times. See [Lifting the content](#lifting-the-content). |
+| `lift` | — | Pass `contentLift()` to draw the content into a texture during a drag so that it bends with the surface. Needs `jelly`. Without it the content stays in the DOM at all times. See [Lifting the content](#lifting-the-content). |
 | `dpr` | `devicePixelRatio` | Drawing-buffer scale. Pin it lower (e.g. `1`) to trade sharpness for fill rate on weak GPUs. |
 | `allowSoftware` | `false` | Draw even when the browser renders WebGL on the CPU. Off by default, see [Software rasterisers](#software-rasterisers). |
 | `onUnsupported` | — | Called with the reason when the renderer declines or withdraws. |
@@ -180,7 +192,8 @@ webglRenderer({
 `liftContent`, the boolean this option replaces, is still accepted and no
 longer does anything. Up to 0.24.3 the content was lifted unless
 `liftContent: false` was set; from 0.24.4 it is lifted only when `lift` is
-given.
+given. Up to 0.25.0 the surface bent unless `jelly: 0` was set; from 0.25.1 it
+bends only when `jelly` is given.
 
 The bend itself has no options beyond `jelly`. It follows the real position of
 the sheet's leading edge like a damped spring, so it answers to how the sheet

@@ -18,6 +18,7 @@ const base: DemoSettings = {
   scrimFloatingAction: false,
   webgl: false,
   webglOnCpu: false,
+  webglJelly: false,
   webglLift: false,
 };
 
@@ -63,25 +64,52 @@ describe("the snippet and the renderer", () => {
     ).toContain("webglRenderer({ allowSoftware: true })");
   });
 
-  it("imports the content lift and passes it only when the content is lifted", () => {
-    const plain = genCode("react", { ...base, webgl: true }, snaps);
-    expect(plain).not.toContain("contentLift");
+  it("asks for the bend only when it was switched on", () => {
+    expect(genCode("react", { ...base, webgl: true }, snaps)).not.toContain(
+      "jelly",
+    );
+    expect(
+      genCode("react", { ...base, webgl: true, webglJelly: true }, snaps),
+    ).toContain("webglRenderer({ jelly: 0.5 })");
+  });
 
-    const lifted = genCode("react", { ...base, webgl: true, webglLift: true }, snaps);
+  it("imports the content lift and passes it only when the content is lifted", () => {
+    const bent = genCode("react", { ...base, webgl: true, webglJelly: true }, snaps);
+    expect(bent).not.toContain("contentLift");
+
+    const lifted = genCode(
+      "react",
+      { ...base, webgl: true, webglJelly: true, webglLift: true },
+      snaps,
+    );
     expect(lifted).toContain(
       'import { contentLift, webglRenderer } from "@surdeddd/bottom-sheet/webgl";',
     );
-    expect(lifted).toContain("webglRenderer({ lift: contentLift() })");
+    expect(lifted).toContain(
+      "webglRenderer({ jelly: 0.5, lift: contentLift() })",
+    );
   });
 
-  it("puts the lift and the CPU permission into one call", () => {
+  it("leaves out a lift that has no bend to follow", () => {
+    const code = genCode("react", { ...base, webgl: true, webglLift: true }, snaps);
+    expect(code).not.toContain("contentLift");
+    expect(code).toContain("features={[webglRenderer()]}");
+  });
+
+  it("puts the bend, the lift and the CPU permission into one call", () => {
     const code = genCode(
       "vanilla",
-      { ...base, webgl: true, webglLift: true, webglOnCpu: true },
+      {
+        ...base,
+        webgl: true,
+        webglJelly: true,
+        webglLift: true,
+        webglOnCpu: true,
+      },
       snaps,
     );
     expect(code).toContain(
-      "webglRenderer({ lift: contentLift(), allowSoftware: true })",
+      "webglRenderer({ jelly: 0.5, lift: contentLift(), allowSoftware: true })",
     );
   });
 

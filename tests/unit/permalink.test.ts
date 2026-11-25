@@ -18,6 +18,7 @@ const sample: DemoSettings = {
   scrimFloatingAction: true,
   webgl: false,
   webglOnCpu: false,
+  webglJelly: false,
   webglLift: false,
 };
 
@@ -47,6 +48,7 @@ describe("permalink encode/decode round-trip", () => {
       scrimFloatingAction: _sf,
       webgl: _wg,
       webglOnCpu: _wc,
+      webglJelly: _wj,
       webglLift: _wl,
       ...structural
     } = sample;
@@ -72,6 +74,7 @@ describe("permalink encode/decode round-trip", () => {
       scrimFloatingAction: _sf,
       webgl: _wg,
       webglOnCpu: _wc,
+      webglJelly: _wj,
       webglLift: _wl,
       ...structural
     } = edge;
@@ -205,19 +208,46 @@ describe("permalink and the renderer", () => {
     expect(out.settings.webglOnCpu).toBe(true);
   });
 
-  it("carries the content lift only when it is on", () => {
+  it("carries the bend only when it is on", () => {
     const off = encode({ ...sample, webgl: true }, "react");
-    expect(off).not.toContain("lift");
-    expect(decode(off).settings.webglLift).toBeUndefined();
+    expect(off).not.toContain("jelly");
+    expect(decode(off).settings.webglJelly).toBeUndefined();
 
-    const on = encode({ ...sample, webgl: true, webglLift: true }, "react");
-    expect(on).toContain("lift=1");
-    expect(decode(on).settings.webglLift).toBe(true);
+    const on = encode({ ...sample, webgl: true, webglJelly: true }, "react");
+    expect(on).toContain("jelly=1");
+    expect(decode(on).settings.webglJelly).toBe(true);
   });
 
-  it("drops the content lift from the link when the renderer itself is off", () => {
-    const hash = encode({ ...sample, webgl: false, webglLift: true }, "react");
+  it("carries the content lift only when it is on, and only with the bend", () => {
+    const bent = encode({ ...sample, webgl: true, webglJelly: true }, "react");
+    expect(bent).not.toContain("lift");
+    expect(decode(bent).settings.webglLift).toBeUndefined();
+
+    const lifted = encode(
+      { ...sample, webgl: true, webglJelly: true, webglLift: true },
+      "react",
+    );
+    expect(lifted).toContain("jelly=1");
+    expect(lifted).toContain("lift=1");
+    expect(decode(lifted).settings.webglLift).toBe(true);
+
+    const flat = encode({ ...sample, webgl: true, webglLift: true }, "react");
+    expect(flat).not.toContain("lift");
+  });
+
+  it("drops the bend and the lift from the link when the renderer itself is off", () => {
+    const hash = encode(
+      { ...sample, webgl: false, webglJelly: true, webglLift: true },
+      "react",
+    );
+    expect(hash).not.toContain("jelly");
     expect(hash).not.toContain("lift");
+  });
+
+  it("reads a link from before the bend had a switch of its own", () => {
+    const out = decode("#adapter=react&webgl=1&lift=1");
+    expect(out.settings.webglLift).toBe(true);
+    expect(out.settings.webglJelly).toBe(true);
   });
 
   it("ignores a renderer flag it does not understand", () => {
