@@ -345,6 +345,45 @@ test.describe("dragging", () => {
     expect(kept.phase).toBe("open");
   });
 
+  for (const [mode, pull] of [
+    ["bottom", { dy: -90 }],
+    ["top", { dy: 90 }],
+    ["left", { dx: 90 }],
+    ["right", { dx: -90 }],
+  ] as const) {
+    test(`${mode}: dragging the handle with a mouse selects no text`, async ({
+      page,
+    }) => {
+      await mount(page, { mode });
+      const from = await press(page, "#handle-0");
+      await move(page, from, { ...pull, steps: 6, pause: 20 });
+
+      expect((await state(page)).size).toBeGreaterThan(150);
+      expect(
+        await page.evaluate(() => getSelection()?.toString().trim() ?? ""),
+      ).toBe("");
+      await page.mouse.up();
+    });
+  }
+
+  test("the sheet's chrome cannot be selected, its content can", async ({
+    page,
+  }) => {
+    await mount(page);
+    const selectable = (selector: string): Promise<boolean> =>
+      page.evaluate(sel => {
+        const style = getComputedStyle(document.querySelector(sel)!);
+        const value =
+          style.getPropertyValue("-webkit-user-select") ||
+          style.getPropertyValue("user-select");
+        return value !== "none";
+      }, selector);
+
+    expect(await selectable("#sheet-0")).toBe(false);
+    expect(await selectable("#handle-0")).toBe(false);
+    expect(await selectable("#content-0")).toBe(true);
+  });
+
   test("a drag reports dragstart, drag and dragend before the snap", async ({
     page,
   }) => {

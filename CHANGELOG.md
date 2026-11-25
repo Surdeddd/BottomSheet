@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Safari honours `user-select` on the sheet** — the stylesheet set `user-select` without the `-webkit-` prefix, and Safari listens only to the prefixed property. The handle and the header of a sheet could be selected there, and dragging the handle of a sheet docked to a side with a mouse selected the text of its content. The prefixed property is set next to each one, and the content cannot be selected for the length of a drag.
+
 ## [0.25.1]
 
 The WebGL renderer (`@surdeddd/bottom-sheet/webgl`) after its first check on a real screen. Nothing outside the `/webgl` entry and the demo changes.
