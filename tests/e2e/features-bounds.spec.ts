@@ -66,6 +66,30 @@ test.describe("bounds: what a percentage is a percentage of", () => {
     expect(seen.sizes).toEqual({ closed: 0, half: 200, full: 400 });
   });
 
+  test("a snap point taller than the panel stays inside it when the points are measured again", async ({
+    page,
+  }) => {
+    await mount(page, {
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "tall", size: 700 },
+      ],
+      initial: "tall",
+      bounds: "container",
+      panel: PANEL,
+    });
+    const fits = async (): Promise<number> => {
+      const seen = await boxes(page);
+      return Math.round(seen.sheet!.top - seen.panel!.top);
+    };
+    await expect.poll(fits, { timeout: 3000 }).toBe(0);
+
+    await page.evaluate(() => window.lab.engine().recompute());
+    await settled(page);
+
+    expect(await fits()).toBe(0);
+  });
+
   test("the sheet and its backdrop stay inside the panel", async ({ page }) => {
     await mount(page, {
       snapPoints: POINTS,

@@ -192,3 +192,105 @@ describe("BottomSheetEngine — maxHeight clamp (no upward gap when a snap excee
     engine.destroy();
   });
 });
+
+describe("the room of the window", () => {
+  beforeEach(() => {
+    __resetSheetStackForTests();
+    __resetScrollLockForTests();
+    __resetCssLengthProbeForTests();
+    Object.defineProperty(window, "innerHeight", {
+      value: 600,
+      configurable: true,
+    });
+    Object.defineProperty(window, "innerWidth", {
+      value: 500,
+      configurable: true,
+    });
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  const tall = (mode: "bottom" | "right" = "bottom"): BottomSheetEngine => {
+    const { sheet, handle } = makeDom();
+    return new BottomSheetEngine({
+      element: sheet,
+      handle,
+      mode,
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "open", size: 900 },
+      ],
+      initial: "open",
+      animation: "tween",
+      duration: 0,
+      respectReducedMotion: false,
+    });
+  };
+
+  const resized = (): void => {
+    window.dispatchEvent(new Event("orientationchange"));
+  };
+
+  it("holds a snap point taller than the window to the height of the window", () => {
+    const engine = tall();
+    resized();
+
+    expect(engine.state.size).toBe(600);
+    engine.destroy();
+  });
+
+  it.each<[string, (engine: BottomSheetEngine) => void]>([
+    ["the points are measured again", engine => engine.recompute()],
+    [
+      "the points are replaced",
+      engine =>
+        engine.setSnapPoints([
+          { id: "closed", size: 0 },
+          { id: "open", size: 950 },
+        ]),
+    ],
+    ["a size cap above the window is set", engine => engine.setMaxHeight(800)],
+  ])("still holds it after %s", (_, act) => {
+    const engine = tall();
+    resized();
+
+    act(engine);
+
+    expect(engine.state.size).toBe(600);
+    engine.destroy();
+  });
+
+  it("holds it before the window has reported any resize", () => {
+    const engine = tall();
+
+    engine.recompute();
+
+    expect(engine.state.size).toBe(600);
+    engine.destroy();
+  });
+
+  it("gives the room back when the window grows", () => {
+    const engine = tall();
+    resized();
+    Object.defineProperty(window, "innerHeight", {
+      value: 1000,
+      configurable: true,
+    });
+
+    resized();
+
+    expect(engine.state.size).toBe(900);
+    engine.destroy();
+  });
+
+  it("measures the room across the screen for a sheet docked to a side", () => {
+    const engine = tall("right");
+    resized();
+
+    engine.recompute();
+
+    expect(engine.state.size).toBe(500);
+    engine.destroy();
+  });
+});

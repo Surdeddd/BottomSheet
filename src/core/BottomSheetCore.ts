@@ -1577,13 +1577,9 @@ export class BottomSheetCore {
     if (typeof window !== "undefined") {
       this.teardowns.add(installResizeObserver({
         element: this.element,
-        getMode: () => this.mode as TransformAxis,
         isDestroyed: () => this.destroyed,
         resolveActiveSnap: () => this.snaps.findById(this.activeId),
         getMaxAxisSize: () => this.snaps.getMaxAxisSize(),
-        setMaxAxisSize: size => {
-          this.snaps.setMaxAxisSize(size);
-        },
         recomputeSnaps: () => this.recomputeSnaps(),
         reseat: () => this.reseat(),
         landNow: () => this.landNow(),

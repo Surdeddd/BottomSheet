@@ -1,3 +1,4 @@
+import { extentOf } from "../primitives/css-length";
 import { resolveSnap } from "../primitives/snap-points";
 import { layoutAxis, type TransformAxis } from "../primitives/transform";
 import type { SheetMode } from "../types";
@@ -48,7 +49,15 @@ export function createMaxHeightController(
   };
 
   const clampTo = (): void => {
-    const cap = Math.min(maxHeightCap ?? Infinity, viewportCap || Infinity);
+    const room = extentOf(
+      deps.getContainer?.(),
+      layoutAxis(deps.mode as TransformAxis) === "height",
+    );
+    const cap = Math.min(
+      maxHeightCap ?? Infinity,
+      viewportCap || Infinity,
+      room || Infinity,
+    );
     if (deps.getMaxAxisSize() > cap) deps.setMaxAxisSize(cap);
   };
 

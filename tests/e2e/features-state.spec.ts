@@ -185,6 +185,31 @@ test.describe("limits that follow the viewport", () => {
     expect((await state(page)).activeId).toBe("half");
   });
 
+  test("a snap point taller than the window stays inside it when the points are measured again", async ({
+    page,
+  }) => {
+    const { height } = await viewport(page);
+    await mount(page, {
+      snapPoints: [
+        { id: "closed", size: 0 },
+        { id: "tall", size: height + 300 },
+      ],
+      initial: "tall",
+    });
+    await expect
+      .poll(async () => (await state(page)).size, { timeout: 3000 })
+      .toBe(height);
+
+    await page.evaluate(() => window.lab.engine().recompute());
+
+    expect((await settled(page)).size).toBe(height);
+    expect(
+      await page.evaluate(
+        () => document.querySelector("#sheet-0")!.getBoundingClientRect().top,
+      ),
+    ).toBeGreaterThanOrEqual(0);
+  });
+
   test("recompute picks up a fit snap whose content grew", async ({ page }) => {
     await mount(page, {
       rows: 2,
